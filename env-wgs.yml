@@ -1,0 +1,44 @@
+# env-wgs-osx64.yml
+name: yellow-wgs-x86
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python=3.10
+  - pip
+  # core tools used by your R script
+  - minimap2
+  - samtools
+  - bcftools
+  - gubbins
+  - mash
+  - snp-dists
+  - mummer4
+  - mosdepth
+  - bedtools
+  # annotation + pangenome
+  - perl=5.32
+  - prokka>=1.14.6
+  - tbl2asn-forever
+  - panaroo
+  - mmseqs2
+  - cd-hit
+  - mcl
+  - mafft
+  - blast
+  - barrnap
+  - hmmer
+  - prodigal
+  # R stack for your script
+  - r-base=4.3
+  - r-cairo
+  - r-tidyverse
+  - r-data.table
+  - r-vroom
+  - r-jsonlite
+  - r-optparse
+  - r-ggplot2
+  - r-pheatmap
+  - r-gridextra
+  - r-igraph
+  - r-purrr

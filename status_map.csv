@@ -1,0 +1,277 @@
+Participant_id,Timepoint,Batch,culture_pos_epi,cfu_recorded_any,cfu_ge_1e5_any,beoord_plus3_any,Sx_present_any,Sx_source_epi,raw_CFU_examples,raw_BEO_examples,raw_Pop_examples,Infection_Status
+100009,T0,3,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt met UWI voor/na meting,ASB
+100009,T1,3,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt met UWI voor/na meting,ASB
+100009,T2,3,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt met UWI voor/na meting,ASB
+100010,T0,1,FALSE,TRUE,FALSE,FALSE,FALSE,Population,10.000-100.000 bact/ml,KIEMGETAL,Pt zonder UWI,Negative
+100010,T1,1,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+100010,T3,3,FALSE,TRUE,FALSE,FALSE,FALSE,Population,10.000-100.000 bact/ml,KIEMGETAL,Pt zonder UWI,Negative
+100011,T3,3,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt met UWI voor/na meting,ASB
+100011,Uricult,1,TRUE,TRUE,TRUE,TRUE,TRUE,Population,meer dan 100.000 bact/ml,+++ | KIEMGETAL,Pt met UWI,UTI
+100042,T0,2,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt zonder UWI,ASB
+100042,T1,2,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt zonder UWI,ASB
+100054,T0,1,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+100054,T1,1,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+100055,T0,1,FALSE,TRUE,FALSE,FALSE,FALSE,Population,10.000-100.000 bact/ml,KIEMGETAL,Pt zonder UWI,Negative
+100055,T1,1,FALSE,TRUE,FALSE,FALSE,FALSE,Population,1000-10.000 bact/ml,KIEMGETAL,Pt zonder UWI,Negative
+100064,T0,1,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt zonder UWI,ASB
+100064,T1,1,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+100064,T2,3,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+100064,T3,3,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+110003,T2,2,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt met UWI voor/na meting,ASB
+110003,T3,3,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt met UWI voor/na meting,ASB
+110003,Uricult,1,TRUE,TRUE,TRUE,FALSE,TRUE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt met UWI,UTI
+110009,T0,1,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt zonder UWI,ASB
+110009,T1,1,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,+,Pt zonder UWI,ASB
+110009,T3,3,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt zonder UWI,ASB
+110012,T0,2,FALSE,TRUE,FALSE,FALSE,FALSE,Population,10.000-100.000 bact/ml,++,Pt zonder UWI,Negative
+110012,T1,2,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+110018,T0,2,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt zonder UWI,ASB
+110018,T1,2,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt zonder UWI,ASB
+110022,T0,2,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt zonder UWI,ASB
+110022,T1,2,FALSE,TRUE,FALSE,TRUE,FALSE,Population,10.000-100.000 bact/ml,+++,Pt zonder UWI,Negative
+110023,T0,2,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt zonder UWI,ASB
+110023,T1,2,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+110023,T2,3,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+110029,T0,2,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+110029,T1,2,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+110029,T2,3,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+110029,T3,3,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+110042,T0,2,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+110042,T1,2,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+110042,T2,3,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+110043,T0,2,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt zonder UWI,ASB
+110043,T1,2,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt zonder UWI,ASB
+110056,T0,2,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,++,Pt zonder UWI,ASB
+110056,T1,2,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt zonder UWI,ASB
+110056,T2,3,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+110061,T0,2,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+110061,T1,2,FALSE,TRUE,FALSE,FALSE,FALSE,Population,10.000-100.000 bact/ml,KIEMGETAL,Pt zonder UWI,Negative
+110061,T2,3,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+111019,T0,2,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt zonder UWI,ASB
+111019,T1,2,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt zonder UWI,ASB
+120002,T0,2,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+120002,T1,2,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt zonder UWI,ASB
+120002,T2,3,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+120002,T3,3,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+120003,T0,1,FALSE,TRUE,FALSE,TRUE,FALSE,Population,10.000-100.000 bact/ml,+++,Pt met UWI voor/na meting,Negative
+120003,T1,1,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt met UWI voor/na meting,ASB
+120003,T2,2,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt met UWI voor/na meting,ASB
+120003,Uricult,1,FALSE,TRUE,FALSE,FALSE,TRUE,Population,1000-10.000 bact/ml,KIEMGETAL,Pt met UWI,Negative
+120006,T2,2,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt met UWI voor/na meting,ASB
+120006,Uricult,1,TRUE,TRUE,TRUE,TRUE,TRUE,Population,meer dan 100.000 bact/ml,+++,Pt met UWI,UTI
+120007,T0,2,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt zonder UWI,ASB
+120007,T1,2,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+120014,Uricult,3,TRUE,TRUE,TRUE,FALSE,TRUE,Population,meer dan 100.000 bact/ml,++,Pt met UWI,UTI
+121009,T0,2,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+121009,T1,2,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+121009,T2,3,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+121009,T3,3,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+121014,T0,2,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+121014,T1,2,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+121014,T2,3,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt zonder UWI,ASB
+121014,T3,3,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+122005,Uricult,2,TRUE,TRUE,TRUE,FALSE,TRUE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt met UWI,UTI
+122006,T0,2,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+122006,T1,2,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+122006,T2,3,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt met UWI voor/na meting,ASB
+122006,T3,3,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt met UWI voor/na meting,ASB
+122006,Uricult,3,TRUE,TRUE,TRUE,FALSE,TRUE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt met UWI,UTI
+122030,T0,2,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+122030,T1,2,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt zonder UWI,ASB
+122034,T0,2,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+122034,T1,2,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+122034,T2,3,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt zonder UWI,ASB
+122034,T3,3,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+122036,T0,2,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+122036,T1,2,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+122036,T2,3,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt zonder UWI,ASB
+130004,T0,2,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+130004,T1,2,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+130004,T2,3,FALSE,TRUE,FALSE,FALSE,FALSE,Population,10.000-100.000 bact/ml,KIEMGETAL,Pt zonder UWI,Negative
+130004,T3,3,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+130008,T0,2,FALSE,TRUE,FALSE,FALSE,FALSE,Population,10.000-100.000 bact/ml,KIEMGETAL,Pt zonder UWI,Negative
+130008,T1,2,FALSE,TRUE,FALSE,FALSE,FALSE,Population,10.000-100.000 bact/ml,KIEMGETAL,Pt zonder UWI,Negative
+130024,T0,2,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+130024,T1,2,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+130028,T0,2,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt zonder UWI,ASB
+130028,T1,3,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+130034,T0,2,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+130034,T1,2,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+140005,T0,2,FALSE,TRUE,FALSE,FALSE,FALSE,Population,1000-10.000 bact/ml,KIEMGETAL,Pt zonder UWI,Negative
+140005,T1,2,FALSE,TRUE,FALSE,FALSE,FALSE,Population,1000-10.000 bact/ml,KIEMGETAL,Pt zonder UWI,Negative
+140007,T0,2,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+140007,T1,2,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+140007,T3,3,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+140012,T0,3,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+140012,T1,3,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt zonder UWI,ASB
+140015,T0,2,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+140015,T1,2,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+140015,T2,3,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+140025,T0,3,FALSE,TRUE,FALSE,FALSE,FALSE,Population,10.000-100.000 bact/ml,KIEMGETAL,Pt zonder UWI,Negative
+140025,T1,3,FALSE,TRUE,FALSE,FALSE,FALSE,Population,10.000-100.000 bact/ml,KIEMGETAL,Pt zonder UWI,Negative
+140029,T0,3,FALSE,TRUE,FALSE,FALSE,FALSE,Population,10.000-100.000 bact/ml,++,Pt zonder UWI,Negative
+140029,T1,3,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt zonder UWI,ASB
+141001,T0,2,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+141001,T1,2,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+141001,T2,3,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+141019,T0,1,FALSE,TRUE,FALSE,FALSE,FALSE,Population,10.000-100.000 bact/ml,++,Pt zonder UWI,Negative
+141019,T1,1,FALSE,TRUE,FALSE,FALSE,FALSE,Population,10.000-100.000 bact/ml,++,Pt zonder UWI,Negative
+141019,T2,3,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+141020,T0,3,FALSE,TRUE,FALSE,FALSE,FALSE,Population,10.000-100.000 bact/ml,KIEMGETAL,Pt zonder UWI,Negative
+141020,T1,3,FALSE,TRUE,FALSE,FALSE,FALSE,Population,10.000-100.000 bact/ml,KIEMGETAL,Pt zonder UWI,Negative
+20002,T0,1,TRUE,FALSE,FALSE,TRUE,FALSE,Population,,+++ | ++,Pt zonder UWI,ASB
+20002,T1,1,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt zonder UWI,ASB
+20002,T2,3,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt zonder UWI,ASB
+20002,T3,3,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+20003,T0,1,TRUE,FALSE,FALSE,TRUE,FALSE,Population,,+++,Pt met UWI voor/na meting,ASB
+20003,T3,3,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt met UWI voor/na meting,ASB
+20003,T4,3,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt met UWI voor/na meting,ASB
+20003,Uricult,1,TRUE,TRUE,TRUE,FALSE,TRUE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt met UWI,UTI
+20011,T0,1,TRUE,FALSE,FALSE,TRUE,FALSE,Population,,+++,Pt zonder UWI,ASB
+20011,T1,1,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+20011,T2,3,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt zonder UWI,ASB
+20011,T3,3,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+20011,T4,3,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+20026,T3,3,FALSE,TRUE,FALSE,FALSE,FALSE,Population,10.000-100.000 bact/ml,++,Pt met UWI voor/na meting,Negative
+20026,Uricult,3,TRUE,TRUE,TRUE,TRUE,TRUE,Population,meer dan 100.000 bact/ml,+++ | KIEMGETAL,Pt met UWI,UTI
+20031,T0,1,TRUE,FALSE,FALSE,TRUE,FALSE,Population,,+++,Pt met UWI voor/na meting,ASB
+20031,T1,1,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt met UWI voor/na meting,ASB
+20031,T2,2,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt met UWI voor/na meting,ASB
+20031,T3,3,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt met UWI voor/na meting,ASB
+20031,T4,3,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt met UWI voor/na meting,ASB
+20031,Uricult,1,TRUE,TRUE,TRUE,FALSE,TRUE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt met UWI,UTI
+20032,T0,1,TRUE,FALSE,FALSE,TRUE,FALSE,Population,,+++,Pt zonder UWI,ASB
+20032,T1,1,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+20032,T2,3,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+20032,T4,3,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt zonder UWI,ASB
+20034,T0,1,FALSE,FALSE,FALSE,FALSE,FALSE,Population,,++,Pt met UWI voor/na meting,Negative
+20034,T1,1,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt met UWI voor/na meting,ASB
+20034,T2,2,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt met UWI voor/na meting,ASB
+20034,T3,3,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt met UWI voor/na meting,ASB
+20034,Uricult,2,TRUE,TRUE,TRUE,TRUE,TRUE,Population,meer dan 100.000 bact/ml,+++,Pt met UWI,UTI
+20037,T0,2,FALSE,TRUE,FALSE,FALSE,FALSE,Population,10.000-100.000 bact/ml,++,Pt zonder UWI,Negative
+20037,T1,2,FALSE,TRUE,FALSE,FALSE,FALSE,Population,10.000-100.000 bact/ml,++,Pt zonder UWI,Negative
+20037,T2,3,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+20040,T0,1,TRUE,FALSE,FALSE,TRUE,FALSE,Population,,+++,Pt zonder UWI,ASB
+20040,T1,1,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+20043,T0,1,TRUE,FALSE,FALSE,TRUE,FALSE,Population,,+++,Pt met UWI voor/na meting,ASB
+20043,T1,1,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt met UWI voor/na meting,ASB
+20043,T2,2,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt met UWI voor/na meting,ASB
+20043,T3,3,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt met UWI voor/na meting,ASB
+20043,T4,3,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt met UWI voor/na meting,ASB
+20043,Uricult,1,TRUE,TRUE,TRUE,TRUE,TRUE,Population, | meer dan 100.000 bact/ml,+++,Pt met UWI,UTI
+20043,Uricult,2,TRUE,TRUE,TRUE,TRUE,TRUE,Population,meer dan 100.000 bact/ml,+++,Pt met UWI,UTI
+20057,T0,2,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt zonder UWI,ASB
+20057,T1,2,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+20057,T2,3,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt zonder UWI,ASB
+20061,T0,2,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt zonder UWI,ASB
+20061,T1,2,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt zonder UWI,ASB
+20061,T2,3,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt zonder UWI,ASB
+20062,T0,2,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt zonder UWI,ASB
+20062,T1,2,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+20062,T2,3,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+20067,T0,2,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt zonder UWI,ASB
+20067,T1,2,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt zonder UWI,ASB
+20071,T0,1,FALSE,FALSE,FALSE,FALSE,FALSE,Population,,+,Pt zonder UWI,Negative
+20071,T1,1,FALSE,TRUE,FALSE,FALSE,FALSE,Population,1000-10.000 bact/ml,KIEMGETAL,Pt zonder UWI,Negative
+20072,T0,1,FALSE,FALSE,FALSE,FALSE,FALSE,Population,,+,Pt zonder UWI,Negative
+20072,T1,1,FALSE,TRUE,FALSE,FALSE,FALSE,Population,10.000-100.000 bact/ml,KIEMGETAL,Pt zonder UWI,Negative
+20084,T0,2,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt zonder UWI,ASB
+20084,T1,2,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+20084,T2,3,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+20085,T0,1,TRUE,FALSE,FALSE,TRUE,FALSE,Population,,+++,Pt zonder UWI,ASB
+20085,T1,1,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt zonder UWI,ASB
+30012,T0,2,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+30012,T1,2,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+30012,T2,3,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+30013,T0,1,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt zonder UWI,ASB
+30013,T1,1,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+30013,T2,3,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+30013,T3,3,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt zonder UWI,ASB
+30016,T0,1,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+30016,T1,1,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+30016,T2,3,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+30016,T3,3,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+30019,T0,1,FALSE,TRUE,FALSE,FALSE,FALSE,Population,10.000-100.000 bact/ml,KIEMGETAL,Pt zonder UWI,Negative
+30019,T1,1,FALSE,TRUE,FALSE,FALSE,FALSE,Population,10.000-100.000 bact/ml,KIEMGETAL,Pt zonder UWI,Negative
+30019,T2,3,FALSE,TRUE,FALSE,FALSE,FALSE,Population,10.000-100.000 bact/ml,+,Pt zonder UWI,Negative
+30019,T3,3,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt zonder UWI,ASB
+30020,T0,1,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+30020,T1,1,FALSE,TRUE,FALSE,FALSE,FALSE,Population,10.000-100.000 bact/ml,KIEMGETAL,Pt zonder UWI,Negative
+30021,T0,1,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+30021,T1,1,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+30021,T3,3,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,++,Pt zonder UWI,ASB
+31004,T0,2,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+31004,T1,2,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+31014,T2,2,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt met UWI voor/na meting,ASB
+31014,T3,3,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,+ | ++,Pt met UWI voor/na meting,ASB
+31014,Uricult,1,TRUE,TRUE,TRUE,TRUE,TRUE,Population,meer dan 100.000 bact/ml,+++,Pt met UWI,UTI
+31014,Uricult,3,TRUE,TRUE,TRUE,FALSE,TRUE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt met UWI,UTI
+31035,T0,1,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt met UWI voor/na meting,ASB
+31035,T1,1,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt met UWI voor/na meting,ASB
+31035,T2,2,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt met UWI voor/na meting,ASB
+31035,T3,3,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt met UWI voor/na meting,ASB
+31035,Uricult,1,TRUE,TRUE,TRUE,FALSE,TRUE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt met UWI,UTI
+31036,T0,1,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt met UWI voor/na meting,ASB
+31036,T2,2,FALSE,TRUE,FALSE,FALSE,FALSE,Population,10.000-100.000 bact/ml,+,Pt met UWI voor/na meting,Negative
+31036,Uricult,1,TRUE,TRUE,TRUE,FALSE,TRUE,Population,10.000-100.000 bact/ml | meer dan 100.000 bact/ml,KIEMGETAL,Pt met UWI,UTI
+40001,T0,1,TRUE,FALSE,FALSE,TRUE,FALSE,Population,,+++,Pt met UWI voor/na meting,ASB
+40001,T1,1,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt met UWI voor/na meting,ASB
+40001,Uricult,1,TRUE,TRUE,TRUE,FALSE,TRUE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt met UWI,UTI
+40004,T1,1,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt met UWI voor/na meting,ASB
+40004,Uricult,1,TRUE,TRUE,TRUE,TRUE,TRUE,Population,meer dan 100.000 bact/ml,+++,Pt met UWI,UTI
+40005,T0,1,TRUE,FALSE,FALSE,TRUE,FALSE,Population,,+++,Pt met UWI voor/na meting,ASB
+40005,T1,1,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt met UWI voor/na meting,ASB
+40005,T4,3,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt met UWI voor/na meting,ASB
+40005,Uricult,1,TRUE,TRUE,TRUE,FALSE,TRUE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt met UWI,UTI
+40021,T0,1,TRUE,FALSE,FALSE,TRUE,FALSE,Population,,+++,Pt zonder UWI,ASB
+40021,T1,1,FALSE,TRUE,FALSE,FALSE,FALSE,Population,10.000-100.000 bact/ml,KIEMGETAL,Pt zonder UWI,Negative
+40022,T0,2,FALSE,TRUE,FALSE,FALSE,FALSE,Population,10.000-100.000 bact/ml,++,Pt zonder UWI,Negative
+40022,T1,2,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+40022,T2,3,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+50007,T0,1,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+50007,T1,1,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt zonder UWI,ASB
+50007,T2,3,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt zonder UWI,ASB
+50007,T3,3,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt zonder UWI,ASB
+50009,T0,1,FALSE,TRUE,FALSE,FALSE,FALSE,Population,1000-10.000 bact/ml,KIEMGETAL,Pt zonder UWI,Negative
+50009,T1,1,FALSE,TRUE,FALSE,FALSE,FALSE,Population,10.000-100.000 bact/ml,KIEMGETAL,Pt zonder UWI,Negative
+50026,T0,2,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+50026,T1,2,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+50033,T0,2,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+50033,T1,2,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+50040,T3,3,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt met UWI voor/na meting,ASB
+50040,Uricult,3,TRUE,TRUE,TRUE,FALSE,TRUE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt met UWI,UTI
+60020,T0,1,FALSE,TRUE,FALSE,FALSE,FALSE,Population,10.000-100.000 bact/ml,+,Pt zonder UWI,Negative
+60020,T1,1,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+60020,T2,3,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+61002,T0,1,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+61002,T1,1,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+61002,T2,3,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+70006,T0,1,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+70006,T1,1,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+70006,T2,3,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+70012,T0,1,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt zonder UWI,ASB
+70012,T1,1,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+70018,T0,1,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+70018,T1,1,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+70018,T2,3,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+70027,T0,1,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt met UWI voor/na meting,ASB
+70027,T2,3,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt met UWI voor/na meting,ASB
+70027,Uricult,1,TRUE,TRUE,TRUE,FALSE,TRUE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt met UWI,UTI
+70032,T0,1,FALSE,TRUE,FALSE,FALSE,FALSE,Population,1000-10.000 bact/ml,KIEMGETAL,Pt zonder UWI,Negative
+70032,T1,1,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+70032,T2,3,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+71015,T0,2,TRUE,TRUE,TRUE,TRUE,FALSE,Population,meer dan 100.000 bact/ml,+++,Pt zonder UWI,ASB
+71015,T1,2,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+80015,T0,1,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+80015,T1,1,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+80015,T2,3,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+80015,T3,3,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+80029,T0,1,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+80029,T1,1,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+80029,T2,3,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+80029,T3,3,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+90008,T0,2,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+90008,T1,2,TRUE,TRUE,TRUE,FALSE,FALSE,Population,meer dan 100.000 bact/ml,KIEMGETAL,Pt zonder UWI,ASB
+Niet te koppelen,Uricult,3,TRUE,TRUE,TRUE,TRUE,NA,NA,meer dan 100.000 bact/ml,+++,.,"Culture-positive, S&S unknown"
+Still to be linked,Uricult,2,TRUE,TRUE,TRUE,TRUE,TRUE,Population,meer dan 100.000 bact/ml,+++,Pt met UWI,UTI

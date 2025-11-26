@@ -1,0 +1,15 @@
+name: rutis-core
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python=3.11
+  - snippy=4.6.0
+  - snp-sites
+  - iqtree=2.*
+  - bcftools
+  - vcflib
+  # help the solver on macOS:
+  - perl=5.26.2
+  - bioperl=1.7.2

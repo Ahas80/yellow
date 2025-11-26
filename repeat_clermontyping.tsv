@@ -1,0 +1,383 @@
+PR0010_barcode01_24110099601-1_flye.fasta	['ybgD', 'trpA', 'trpBA', 'TspE4.C2', 'arpA', 'trpAgpC']	['+', '-', '-', '+']	['trpAgpC']	B1	PR0010_barcode01_24110099601-1_flye.fasta_mash_screen.tab
+PR0010_barcode01_24110099601-1_longcycler.fasta	['ybgD', 'trpA', 'trpBA', 'TspE4.C2', 'arpA', 'trpAgpC']	['+', '-', '-', '+']	['trpAgpC']	B1	PR0010_barcode01_24110099601-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode02_24110099601-2_flye.fasta	['ybgD', 'trpA', 'trpBA', 'TspE4.C2', 'arpA', 'trpAgpC']	['+', '-', '-', '+']	['trpAgpC']	B1	PR0010_barcode02_24110099601-2_flye.fasta_mash_screen.tab
+PR0010_barcode02_24110099601-2_longcycler.fasta	['ybgD', 'trpA', 'trpBA', 'TspE4.C2', 'arpA', 'arpA', 'arpA', 'trpAgpC']	['+', '-', '-', '+']	['trpAgpC']	B1	PR0010_barcode02_24110099601-2_longcycler.fasta_mash_screen.tab
+PR0010_barcode03_24110100101-1_flye.fasta	['trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode03_24110100101-1_flye.fasta_mash_screen.tab
+PR0010_barcode03_24110100101-1_longcycler.fasta	['trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode03_24110100101-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode05_24110180401-1_flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode05_24110180401-1_flye.fasta_mash_screen.tab
+PR0010_barcode05_24110180401-1_longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode05_24110180401-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode06_24110180101-1_flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode06_24110180101-1_flye.fasta_mash_screen.tab
+PR0010_barcode06_24110180101-1_longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode06_24110180101-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode07_24110180001-1_flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode07_24110180001-1_flye.fasta_mash_screen.tab
+PR0010_barcode07_24110180001-1_longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode07_24110180001-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode09_24110182501-1_flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode09_24110182501-1_flye.fasta_mash_screen.tab
+PR0010_barcode09_24110182501-1_longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode09_24110182501-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode10_24120051701-1_flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode10_24120051701-1_flye.fasta_mash_screen.tab
+PR0010_barcode10_24120051701-1_longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode10_24120051701-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode11_24120051801-1_flye.fasta	['ybgD', 'trpA', 'trpBA', 'chuA', 'trpAgpC']	['-', '+', '-', '-']	['trpAgpC']	G	PR0010_barcode11_24120051801-1_flye.fasta_mash_screen.tab
+PR0010_barcode11_24120051801-1_longcycler.fasta	['ybgD', 'trpA', 'trpBA', 'chuA', 'trpAgpC']	['-', '+', '-', '-']	['trpAgpC']	G	PR0010_barcode11_24120051801-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode13_24200175001-1_flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode13_24200175001-1_flye.fasta_mash_screen.tab
+PR0010_barcode13_24200175001-1_longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode13_24200175001-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode14_24200174501-1_flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode14_24200174501-1_flye.fasta_mash_screen.tab
+PR0010_barcode14_24200174501-1_longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode14_24200174501-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode15_24200174401-1_flye.fasta	['ybgD', 'trpA', 'trpBA', 'arpA', 'trpAgpC']	['+', '-', '-', '-']	['trpAgpC']	A	PR0010_barcode15_24200174401-1_flye.fasta_mash_screen.tab
+PR0010_barcode15_24200174401-1_longcycler.fasta	['ybgD', 'trpA', 'trpBA', 'arpA', 'trpAgpC']	['+', '-', '-', '-']	['trpAgpC']	A	PR0010_barcode15_24200174401-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode16_24200174101-1_flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode16_24200174101-1_flye.fasta_mash_screen.tab
+PR0010_barcode16_24200174101-1_longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode16_24200174101-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode17_24200174601-1_flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode17_24200174601-1_flye.fasta_mash_screen.tab
+PR0010_barcode17_24200174601-1_longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode17_24200174601-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode18_24200199301-1_flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode18_24200199301-1_flye.fasta_mash_screen.tab
+PR0010_barcode18_24200199301-1_longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode18_24200199301-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode19_24200198501-1_flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode19_24200198501-1_flye.fasta_mash_screen.tab
+PR0010_barcode19_24200198501-1_longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode19_24200198501-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode20_24100220001-1_flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode20_24100220001-1_flye.fasta_mash_screen.tab
+PR0010_barcode20_24100220001-1_longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode20_24100220001-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode21_24100220201-1_flye.fasta	['ybgD', 'trpA', 'trpBA', 'chuA', 'TspE4.C2', 'arpA', 'trpAgpC']	['+', '+', '-', '+']	['trpAgpC']	D	PR0010_barcode21_24100220201-1_flye.fasta_mash_screen.tab
+PR0010_barcode21_24100220201-1_longcycler.fasta	['ybgD', 'trpA', 'trpBA', 'chuA', 'TspE4.C2', 'arpA', 'trpAgpC']	['+', '+', '-', '+']	['trpAgpC']	D	PR0010_barcode21_24100220201-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode22_24100220101-1_flye.fasta	['trpBA', 'chuA', 'yjaA', 'trpAgpC']	['-', '+', '+', '-']	['trpAgpC']	B2	PR0010_barcode22_24100220101-1_flye.fasta_mash_screen.tab
+PR0010_barcode22_24100220101-1_longcycler.fasta	['trpBA', 'chuA', 'yjaA', 'trpAgpC']	['-', '+', '+', '-']	['trpAgpC']	B2	PR0010_barcode22_24100220101-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode23_24240134901-1_flye.fasta	['trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode23_24240134901-1_flye.fasta_mash_screen.tab
+PR0010_barcode23_24240134901-1_longcycler.fasta	['trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode23_24240134901-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode24_24240136201-1_flye.fasta	['trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode24_24240136201-1_flye.fasta_mash_screen.tab
+PR0010_barcode24_24240136201-1_longcycler.fasta	['trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode24_24240136201-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode25_24180073601-1_flye.fasta	['trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode25_24180073601-1_flye.fasta_mash_screen.tab
+PR0010_barcode25_24180073601-1_longcycler.fasta	['trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode25_24180073601-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode26_24180073601-2_flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode26_24180073601-2_flye.fasta_mash_screen.tab
+PR0010_barcode26_24180073601-2_longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode26_24180073601-2_longcycler.fasta_mash_screen.tab
+PR0010_barcode27_24180073701-1_flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode27_24180073701-1_flye.fasta_mash_screen.tab
+PR0010_barcode27_24180073701-1_longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode27_24180073701-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode28_24250189101-1_flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode28_24250189101-1_flye.fasta_mash_screen.tab
+PR0010_barcode28_24250189101-1_longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode28_24250189101-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode30_24250190101-1_flye.fasta	['trpA', 'trpBA', 'chuA', 'trpAgpC']	['-', '+', '-', '-']	['trpAgpC']	F	PR0010_barcode30_24250190101-1_flye.fasta_mash_screen.tab
+PR0010_barcode30_24250190101-1_longcycler.fasta	['trpA', 'trpBA', 'chuA', 'trpAgpC']	['-', '+', '-', '-']	['trpAgpC']	F	PR0010_barcode30_24250190101-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode31_24250198501-1_flye.fasta	['ybgD', 'trpA', 'trpBA', 'arpA']	['+', '-', '-', '-']	[]	A	PR0010_barcode31_24250198501-1_flye.fasta_mash_screen.tab
+PR0010_barcode31_24250198501-1_longcycler.fasta	['ybgD', 'trpA', 'trpBA', 'arpA']	['+', '-', '-', '-']	[]	A	PR0010_barcode31_24250198501-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode33_24190081501-1_flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode33_24190081501-1_flye.fasta_mash_screen.tab
+PR0010_barcode33_24190081501-1_longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode33_24190081501-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode34_24190082801-1_flye.fasta	['trpBA', 'chuA', 'yjaA', 'trpAgpC']	['-', '+', '+', '-']	['trpAgpC']	B2	PR0010_barcode34_24190082801-1_flye.fasta_mash_screen.tab
+PR0010_barcode34_24190082801-1_longcycler.fasta	['trpBA', 'chuA', 'yjaA', 'trpAgpC']	['-', '+', '+', '-']	['trpAgpC']	B2	PR0010_barcode34_24190082801-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode36_24150193201-1_flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode36_24150193201-1_flye.fasta_mash_screen.tab
+PR0010_barcode36_24150193201-1_longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode36_24150193201-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode37_24150193001-1_flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode37_24150193001-1_flye.fasta_mash_screen.tab
+PR0010_barcode37_24150193001-1_longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode37_24150193001-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode38_24150194901-1_flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode38_24150194901-1_flye.fasta_mash_screen.tab
+PR0010_barcode38_24150194901-1_longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode38_24150194901-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode39_24210071001-1_flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode39_24210071001-1_flye.fasta_mash_screen.tab
+PR0010_barcode39_24210071001-1_longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode39_24210071001-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode40_24220034901-1_flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2']	['-', '+', '+', '+']	[]	B2	PR0010_barcode40_24220034901-1_flye.fasta_mash_screen.tab
+PR0010_barcode40_24220034901-1_longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2']	['-', '+', '+', '+']	[]	B2	PR0010_barcode40_24220034901-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode41_24230069701-1_flye.fasta	['ybgD', 'trpA', 'trpBA', 'TspE4.C2', 'arpA', 'trpAgpC']	['+', '-', '-', '+']	['trpAgpC']	B1	PR0010_barcode41_24230069701-1_flye.fasta_mash_screen.tab
+PR0010_barcode41_24230069701-1_longcycler.fasta	['ybgD', 'trpA', 'trpBA', 'TspE4.C2', 'arpA', 'trpAgpC']	['+', '-', '-', '+']	['trpAgpC']	B1	PR0010_barcode41_24230069701-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode43_24240063401-1_flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode43_24240063401-1_flye.fasta_mash_screen.tab
+PR0010_barcode43_24240063401-1_longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode43_24240063401-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode44_24240063201-1_flye.fasta	['trpA', 'trpBA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '-', '+', '+']	['trpAgpC']	B2	PR0010_barcode44_24240063201-1_flye.fasta_mash_screen.tab
+PR0010_barcode44_24240063201-1_longcycler.fasta	['trpA', 'trpBA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '-', '+', '+']	['trpAgpC']	B2	PR0010_barcode44_24240063201-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode45_24240064401-1_flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode45_24240064401-1_flye.fasta_mash_screen.tab
+PR0010_barcode45_24240064401-1_longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode45_24240064401-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode46_24240065001-1_flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode46_24240065001-1_flye.fasta_mash_screen.tab
+PR0010_barcode46_24240065001-1_longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode46_24240065001-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode47_24240068601-1_flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode47_24240068601-1_flye.fasta_mash_screen.tab
+PR0010_barcode47_24240068601-1_longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode47_24240068601-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode48_24240068401-1_flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode48_24240068401-1_flye.fasta_mash_screen.tab
+PR0010_barcode48_24240068401-1_longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode48_24240068401-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode49_24240135301-1_flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode49_24240135301-1_flye.fasta_mash_screen.tab
+PR0010_barcode49_24240135301-1_longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode49_24240135301-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode50_24240133801-1_flye.fasta	['trpA', 'trpBA', 'chuA', 'TspE4.C2', 'trpAgpC']	['-', '+', '-', '+']	['trpAgpC']	B2	PR0010_barcode50_24240133801-1_flye.fasta_mash_screen.tab
+PR0010_barcode50_24240133801-1_longcycler.fasta	['trpA', 'trpBA', 'chuA', 'TspE4.C2', 'trpAgpC']	['-', '+', '-', '+']	['trpAgpC']	B2	PR0010_barcode50_24240133801-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode51_24240134101-1_flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode51_24240134101-1_flye.fasta_mash_screen.tab
+PR0010_barcode51_24240134101-1_longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode51_24240134101-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode52_24330145501-1_flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode52_24330145501-1_flye.fasta_mash_screen.tab
+PR0010_barcode52_24330145501-1_longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode52_24330145501-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode53_24330145401-1_flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode53_24330145401-1_flye.fasta_mash_screen.tab
+PR0010_barcode53_24330145401-1_longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode53_24330145401-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode54_24330144501-1_flye.fasta	['ybgD', 'trpA', 'trpBA', 'chuA', 'arpA', 'trpAgpC']	['+', '+', '-', '-']	['trpAgpC']	D	PR0010_barcode54_24330144501-1_flye.fasta_mash_screen.tab
+PR0010_barcode54_24330144501-1_longcycler.fasta	['ybgD', 'trpA', 'trpBA', 'chuA', 'arpA', 'trpAgpC']	['+', '+', '-', '-']	['trpAgpC']	D	PR0010_barcode54_24330144501-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode55_24330146801-1_flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode55_24330146801-1_flye.fasta_mash_screen.tab
+PR0010_barcode55_24330146801-1_longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode55_24330146801-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode56_24330146401-1_longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode56_24330146401-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode57_24330145901-1_flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode57_24330145901-1_flye.fasta_mash_screen.tab
+PR0010_barcode57_24330145901-1_longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode57_24330145901-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode59_24230208601-1_flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode59_24230208601-1_flye.fasta_mash_screen.tab
+PR0010_barcode59_24230208601-1_longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode59_24230208601-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode60_24230207601-1_flye.fasta	['ybgD', 'trpA', 'trpBA', 'chuA', 'TspE4.C2', 'arpA', 'trpAgpC']	['+', '+', '-', '+']	['trpAgpC']	D	PR0010_barcode60_24230207601-1_flye.fasta_mash_screen.tab
+PR0010_barcode60_24230207601-1_longcycler.fasta	['ybgD', 'trpA', 'trpBA', 'chuA', 'TspE4.C2', 'arpA', 'trpAgpC']	['+', '+', '-', '+']	['trpAgpC']	D	PR0010_barcode60_24230207601-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode61_24230207701-1_flye.fasta	['trpBA', 'chuA', 'yjaA', 'trpAgpC']	['-', '+', '+', '-']	['trpAgpC']	B2	PR0010_barcode61_24230207701-1_flye.fasta_mash_screen.tab
+PR0010_barcode61_24230207701-1_longcycler.fasta	['trpBA', 'chuA', 'yjaA', 'trpAgpC']	['-', '+', '+', '-']	['trpAgpC']	B2	PR0010_barcode61_24230207701-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode63_24360127801-2_flye.fasta	['trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode63_24360127801-2_flye.fasta_mash_screen.tab
+PR0010_barcode63_24360127801-2_longcycler.fasta	['trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode63_24360127801-2_longcycler.fasta_mash_screen.tab
+PR0010_barcode64_24360128601-1_flye.fasta	['trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode64_24360128601-1_flye.fasta_mash_screen.tab
+PR0010_barcode64_24360128601-1_longcycler.fasta	['trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode64_24360128601-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode65_24300180001-1_flye.fasta	['trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode65_24300180001-1_flye.fasta_mash_screen.tab
+PR0010_barcode65_24300180001-1_longcycler.fasta	['trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode65_24300180001-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode66_24300180301-1_flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode66_24300180301-1_flye.fasta_mash_screen.tab
+PR0010_barcode66_24300180301-1_longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode66_24300180301-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode67_24380097901-1_flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode67_24380097901-1_flye.fasta_mash_screen.tab
+PR0010_barcode67_24380097901-1_longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode67_24380097901-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode68_24380097401-1_flye.fasta	['trpBA', 'chuA', 'yjaA', 'trpAgpC']	['-', '+', '+', '-']	['trpAgpC']	B2	PR0010_barcode68_24380097401-1_flye.fasta_mash_screen.tab
+PR0010_barcode68_24380097401-1_longcycler.fasta	['trpBA', 'chuA', 'yjaA', 'trpAgpC']	['-', '+', '+', '-']	['trpAgpC']	B2	PR0010_barcode68_24380097401-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode70_24380102501-1_flye.fasta	['ybgD', 'trpA', 'trpBA', 'TspE4.C2', 'arpA', 'trpAgpC']	['+', '-', '-', '+']	['trpAgpC']	B1	PR0010_barcode70_24380102501-1_flye.fasta_mash_screen.tab
+PR0010_barcode70_24380102501-1_longcycler.fasta	['ybgD', 'trpA', 'trpBA', 'TspE4.C2', 'arpA', 'trpAgpC']	['+', '-', '-', '+']	['trpAgpC']	B1	PR0010_barcode70_24380102501-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode71_24310131201-1_flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode71_24310131201-1_flye.fasta_mash_screen.tab
+PR0010_barcode71_24310131201-1_longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode71_24310131201-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode72_24310131001-1_flye.fasta	['trpBA', 'chuA', 'yjaA', 'trpAgpC']	['-', '+', '+', '-']	['trpAgpC']	B2	PR0010_barcode72_24310131001-1_flye.fasta_mash_screen.tab
+PR0010_barcode72_24310131001-1_longcycler.fasta	['trpBA', 'chuA', 'yjaA', 'trpAgpC']	['-', '+', '+', '-']	['trpAgpC']	B2	PR0010_barcode72_24310131001-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode73_24270071901-1_flye.fasta	['trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode73_24270071901-1_flye.fasta_mash_screen.tab
+PR0010_barcode73_24270071901-1_longcycler.fasta	['trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode73_24270071901-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode74_24270072201-1_flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode74_24270072201-1_flye.fasta_mash_screen.tab
+PR0010_barcode74_24270072201-1_longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode74_24270072201-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode75_24270072001-1_flye.fasta	['ybgD', 'trpA', 'trpBA', 'chuA', 'TspE4.C2', 'arpA', 'trpAgpC']	['+', '+', '-', '+']	['trpAgpC']	D	PR0010_barcode75_24270072001-1_flye.fasta_mash_screen.tab
+PR0010_barcode75_24270072001-1_longcycler.fasta	['ybgD', 'trpA', 'trpA', 'trpBA', 'trpBA', 'chuA', 'chuA', 'TspE4.C2', 'arpA', 'trpAgpC', 'trpAgpC']	['+', '+', '-', '+']	['trpAgpC']	D	PR0010_barcode75_24270072001-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode76_24270071701-1_flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode76_24270071701-1_flye.fasta_mash_screen.tab
+PR0010_barcode76_24270071701-1_longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode76_24270071701-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode77_24340138301-3_flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode77_24340138301-3_flye.fasta_mash_screen.tab
+PR0010_barcode77_24340138301-3_longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode77_24340138301-3_longcycler.fasta_mash_screen.tab
+PR0010_barcode78_24350039401-1_flye.fasta	['trpA', 'trpBA', 'yjaA', 'arpA']	['+', '-', '+', '-']	[]	A	PR0010_barcode78_24350039401-1_flye.fasta_mash_screen.tab
+PR0010_barcode78_24350039401-1_longcycler.fasta	['trpA', 'trpBA', 'yjaA', 'arpA']	['+', '-', '+', '-']	[]	A	PR0010_barcode78_24350039401-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode79_24350113801-1_flye.fasta	['ybgD', 'trpA', 'trpBA', 'TspE4.C2', 'arpA', 'trpAgpC']	['+', '-', '-', '+']	['trpAgpC']	B1	PR0010_barcode79_24350113801-1_flye.fasta_mash_screen.tab
+PR0010_barcode79_24350113801-1_longcycler.fasta	['ybgD', 'trpA', 'trpBA', 'TspE4.C2', 'arpA', 'trpAgpC']	['+', '-', '-', '+']	['trpAgpC']	B1	PR0010_barcode79_24350113801-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode80_24140050001-1_flye.fasta	['trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode80_24140050001-1_flye.fasta_mash_screen.tab
+PR0010_barcode80_24140050001-1_longcycler.fasta	['trpBA', 'chuA', 'yjaA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode80_24140050001-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode81_24220043201-1_flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode81_24220043201-1_flye.fasta_mash_screen.tab
+PR0010_barcode81_24220043201-1_longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode81_24220043201-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode82_24130109201-2_flye.fasta	['ybgD', 'trpA', 'trpBA', 'TspE4.C2', 'arpA', 'trpAgpC']	['+', '-', '-', '+']	['trpAgpC']	B1	PR0010_barcode82_24130109201-2_flye.fasta_mash_screen.tab
+PR0010_barcode82_24130109201-2_longcycler.fasta	['ybgD', 'trpA', 'trpBA', 'yjaA', 'TspE4.C2', 'arpA', 'trpAgpC']	['+', '-', '+', '+']	['trpAgpC']	Unknown	PR0010_barcode82_24130109201-2_longcycler.fasta_mash_screen.tab
+PR0010_barcode83_24390107401-2_flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode83_24390107401-2_flye.fasta_mash_screen.tab
+PR0010_barcode83_24390107401-2_longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode83_24390107401-2_longcycler.fasta_mash_screen.tab
+PR0010_barcode84_24240274801-1_flye.fasta	['trpBA', 'chuA', 'yjaA', 'trpAgpC']	['-', '+', '+', '-']	['trpAgpC']	B2	PR0010_barcode84_24240274801-1_flye.fasta_mash_screen.tab
+PR0010_barcode84_24240274801-1_longcycler.fasta	['trpBA', 'chuA', 'yjaA', 'trpAgpC']	['-', '+', '+', '-']	['trpAgpC']	B2	PR0010_barcode84_24240274801-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode85_24220149601-1_flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode85_24220149601-1_flye.fasta_mash_screen.tab
+PR0010_barcode85_24220149601-1_longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode85_24220149601-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode86_24240106201-1_flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode86_24240106201-1_flye.fasta_mash_screen.tab
+PR0010_barcode87_24240213401-1_flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode87_24240213401-1_flye.fasta_mash_screen.tab
+PR0010_barcode87_24240213401-1_longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode87_24240213401-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode88_24330039801-1_flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode88_24330039801-1_flye.fasta_mash_screen.tab
+PR0010_barcode88_24330039801-1_longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode88_24330039801-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode89_24190088401-1_flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode89_24190088401-1_flye.fasta_mash_screen.tab
+PR0010_barcode89_24190088401-1_longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode89_24190088401-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode90_24160258401-1_flye.fasta	['ybgD', 'trpA', 'trpBA', 'chuA', 'TspE4.C2', 'arpA', 'trpAgpC']	['+', '+', '-', '+']	['trpAgpC']	D	PR0010_barcode90_24160258401-1_flye.fasta_mash_screen.tab
+PR0010_barcode90_24160258401-1_longcycler.fasta	['ybgD', 'trpA', 'trpBA', 'chuA', 'TspE4.C2', 'arpA', 'trpAgpC']	['+', '+', '-', '+']	['trpAgpC']	D	PR0010_barcode90_24160258401-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode91_24370103201-1_flye.fasta	['ybgD', 'trpA', 'trpBA', 'arpA']	['+', '-', '-', '-']	[]	A	PR0010_barcode91_24370103201-1_flye.fasta_mash_screen.tab
+PR0010_barcode91_24370103201-1_longcycler.fasta	['ybgD', 'trpA', 'trpBA', 'arpA']	['+', '-', '-', '-']	[]	A	PR0010_barcode91_24370103201-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode92_24310233401-2_flye.fasta	['ybgD', 'trpA', 'trpBA', 'TspE4.C2', 'arpA']	['+', '-', '-', '+']	[]	B1	PR0010_barcode92_24310233401-2_flye.fasta_mash_screen.tab
+PR0010_barcode92_24310233401-2_longcycler.fasta	['ybgD', 'trpA', 'trpBA', 'TspE4.C2', 'arpA']	['+', '-', '-', '+']	[]	B1	PR0010_barcode92_24310233401-2_longcycler.fasta_mash_screen.tab
+PR0010_barcode93_24350273001-1_flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode93_24350273001-1_flye.fasta_mash_screen.tab
+PR0010_barcode93_24350273001-1_longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0010_barcode93_24350273001-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode94_24290206901-1_flye.fasta	['ybgD', 'trpA', 'trpBA', 'arpA']	['+', '-', '-', '-']	[]	A	PR0010_barcode94_24290206901-1_flye.fasta_mash_screen.tab
+PR0010_barcode94_24290206901-1_longcycler.fasta	['ybgD', 'trpA', 'trpBA', 'arpA']	['+', '-', '-', '-']	[]	A	PR0010_barcode94_24290206901-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode95_24240274601-1_flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2']	['-', '+', '+', '+']	[]	B2	PR0010_barcode95_24240274601-1_flye.fasta_mash_screen.tab
+PR0010_barcode95_24240274601-1_longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2']	['-', '+', '+', '+']	[]	B2	PR0010_barcode95_24240274601-1_longcycler.fasta_mash_screen.tab
+PR0010_barcode96_24320128901-3_flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2']	['-', '+', '+', '+']	[]	B2	PR0010_barcode96_24320128901-3_flye.fasta_mash_screen.tab
+PR0010_barcode96_24320128901-3_longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2']	['-', '+', '+', '+']	[]	B2	PR0010_barcode96_24320128901-3_longcycler.fasta_mash_screen.tab
+PR0012_barcode85_2446C173601-2-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0012_barcode85_2446C173601-2-flye.fasta_mash_screen.tab
+PR0012_barcode85_2446C173601-2-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0012_barcode85_2446C173601-2-longcycler.fasta_mash_screen.tab
+PR0017_barcode01_24200171901-1-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0017_barcode01_24200171901-1-flye.fasta_mash_screen.tab
+PR0017_barcode01_24200171901-1-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0017_barcode01_24200171901-1-longcycler.fasta_mash_screen.tab
+PR0017_barcode02_24200175201-1-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0017_barcode02_24200175201-1-flye.fasta_mash_screen.tab
+PR0017_barcode02_24200175201-1-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0017_barcode02_24200175201-1-longcycler.fasta_mash_screen.tab
+PR0017_barcode04_24210083001-1-flye.fasta	['trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0017_barcode04_24210083001-1-flye.fasta_mash_screen.tab
+PR0017_barcode04_24210083001-1-longcycler.fasta	['trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0017_barcode04_24210083001-1-longcycler.fasta_mash_screen.tab
+PR0017_barcode05_24210087001-1-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0017_barcode05_24210087001-1-flye.fasta_mash_screen.tab
+PR0017_barcode05_24210087001-1-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0017_barcode05_24210087001-1-longcycler.fasta_mash_screen.tab
+PR0017_barcode06_24210072701-1-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0017_barcode06_24210072701-1-flye.fasta_mash_screen.tab
+PR0017_barcode06_24210072701-1-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0017_barcode06_24210072701-1-longcycler.fasta_mash_screen.tab
+PR0017_barcode07_24210073701-1-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0017_barcode07_24210073701-1-flye.fasta_mash_screen.tab
+PR0017_barcode07_24210073701-1-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0017_barcode07_24210073701-1-longcycler.fasta_mash_screen.tab
+PR0017_barcode08_24210085701-2-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0017_barcode08_24210085701-2-flye.fasta_mash_screen.tab
+PR0017_barcode08_24210085701-2-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0017_barcode08_24210085701-2-longcycler.fasta_mash_screen.tab
+PR0017_barcode09_24210074301-1-flye.fasta	['ybgD', 'trpA', 'trpBA', 'TspE4.C2', 'arpA']	['+', '-', '-', '+']	[]	B1	PR0017_barcode09_24210074301-1-flye.fasta_mash_screen.tab
+PR0017_barcode09_24210074301-1-longcycler.fasta	['ybgD', 'trpA', 'trpBA', 'TspE4.C2', 'arpA']	['+', '-', '-', '+']	[]	B1	PR0017_barcode09_24210074301-1-longcycler.fasta_mash_screen.tab
+PR0017_barcode10_24210086001-1-flye.fasta	['trpA', 'trpBA', 'yjaA', 'arpA']	['+', '-', '+', '-']	[]	A	PR0017_barcode10_24210086001-1-flye.fasta_mash_screen.tab
+PR0017_barcode10_24210086001-1-longcycler.fasta	['trpA', 'trpBA', 'yjaA', 'arpA']	['+', '-', '+', '-']	[]	A	PR0017_barcode10_24210086001-1-longcycler.fasta_mash_screen.tab
+PR0017_barcode11_24210070601-1-flye.fasta	['ybgD', 'trpA', 'trpBA', 'chuA', 'arpA', 'trpAgpC']	['+', '+', '-', '-']	['trpAgpC']	D	PR0017_barcode11_24210070601-1-flye.fasta_mash_screen.tab
+PR0017_barcode11_24210070601-1-longcycler.fasta	['ybgD', 'trpA', 'trpBA', 'chuA', 'arpA', 'trpAgpC']	['+', '+', '-', '-']	['trpAgpC']	D	PR0017_barcode11_24210070601-1-longcycler.fasta_mash_screen.tab
+PR0017_barcode12_24210133501-1-flye.fasta	['ybgD', 'trpA', 'trpBA', 'arpA', 'trpAgpC']	['+', '-', '-', '-']	['trpAgpC']	A	PR0017_barcode12_24210133501-1-flye.fasta_mash_screen.tab
+PR0017_barcode12_24210133501-1-longcycler.fasta	['ybgD', 'trpA', 'trpBA', 'arpA', 'trpAgpC']	['+', '-', '-', '-']	['trpAgpC']	A	PR0017_barcode12_24210133501-1-longcycler.fasta_mash_screen.tab
+PR0017_barcode13_24210131801-1-flye.fasta	['ybgD', 'trpA', 'trpBA', 'chuA', 'arpA', 'trpAgpC']	['+', '+', '-', '-']	['trpAgpC']	D	PR0017_barcode13_24210131801-1-flye.fasta_mash_screen.tab
+PR0017_barcode13_24210131801-1-longcycler.fasta	['ybgD', 'trpA', 'trpBA', 'chuA', 'arpA', 'trpAgpC']	['+', '+', '-', '-']	['trpAgpC']	D	PR0017_barcode13_24210131801-1-longcycler.fasta_mash_screen.tab
+PR0017_barcode15_24210132101-1-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'trpAgpC']	['-', '+', '+', '-']	['trpAgpC']	B2	PR0017_barcode15_24210132101-1-flye.fasta_mash_screen.tab
+PR0017_barcode15_24210132101-1-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0017_barcode15_24210132101-1-longcycler.fasta_mash_screen.tab
+PR0017_barcode16_24210133601-1-flye.fasta	['ybgD', 'trpA', 'trpBA', 'TspE4.C2', 'arpA', 'trpAgpC']	['+', '-', '-', '+']	['trpAgpC']	B1	PR0017_barcode16_24210133601-1-flye.fasta_mash_screen.tab
+PR0017_barcode16_24210133601-1-longcycler.fasta	['ybgD', 'trpA', 'trpBA', 'TspE4.C2', 'arpA', 'trpAgpC']	['+', '-', '-', '+']	['trpAgpC']	B1	PR0017_barcode16_24210133601-1-longcycler.fasta_mash_screen.tab
+PR0017_barcode17_24210085201-2-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0017_barcode17_24210085201-2-flye.fasta_mash_screen.tab
+PR0017_barcode17_24210085201-2-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0017_barcode17_24210085201-2-longcycler.fasta_mash_screen.tab
+PR0017_barcode18_24220036901-1-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0017_barcode18_24220036901-1-flye.fasta_mash_screen.tab
+PR0017_barcode18_24220036901-1-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0017_barcode18_24220036901-1-longcycler.fasta_mash_screen.tab
+PR0017_barcode19_24220036501-1-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0017_barcode19_24220036501-1-flye.fasta_mash_screen.tab
+PR0017_barcode19_24220036501-1-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0017_barcode19_24220036501-1-longcycler.fasta_mash_screen.tab
+PR0017_barcode20_24220035301-1-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2']	['-', '+', '+', '+']	[]	B2	PR0017_barcode20_24220035301-1-flye.fasta_mash_screen.tab
+PR0017_barcode20_24220035301-1-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2']	['-', '+', '+', '+']	[]	B2	PR0017_barcode20_24220035301-1-longcycler.fasta_mash_screen.tab
+PR0017_barcode21_24220034801-1-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0017_barcode21_24220034801-1-flye.fasta_mash_screen.tab
+PR0017_barcode21_24220034801-1-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0017_barcode21_24220034801-1-longcycler.fasta_mash_screen.tab
+PR0017_barcode22_24220088501-1-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0017_barcode22_24220088501-1-flye.fasta_mash_screen.tab
+PR0017_barcode22_24220088501-1-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0017_barcode22_24220088501-1-longcycler.fasta_mash_screen.tab
+PR0017_barcode23_24220088701-1-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0017_barcode23_24220088701-1-flye.fasta_mash_screen.tab
+PR0017_barcode23_24220088701-1-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0017_barcode23_24220088701-1-longcycler.fasta_mash_screen.tab
+PR0017_barcode24_24220091701-1-flye.fasta	['ybgD', 'trpA', 'trpBA', 'chuA', 'arpA', 'trpAgpC']	['+', '+', '-', '-']	['trpAgpC']	D	PR0017_barcode24_24220091701-1-flye.fasta_mash_screen.tab
+PR0017_barcode24_24220091701-1-longcycler.fasta	['ybgD', 'trpA', 'trpBA', 'chuA', 'arpA', 'trpAgpC']	['+', '+', '-', '-']	['trpAgpC']	D	PR0017_barcode24_24220091701-1-longcycler.fasta_mash_screen.tab
+PR0017_barcode25_24220091301-1-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0017_barcode25_24220091301-1-flye.fasta_mash_screen.tab
+PR0017_barcode25_24220091301-1-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0017_barcode25_24220091301-1-longcycler.fasta_mash_screen.tab
+PR0017_barcode26_24230067901-1-flye.fasta	['chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0017_barcode26_24230067901-1-flye.fasta_mash_screen.tab
+PR0017_barcode26_24230067901-1-longcycler.fasta	['ybgD', 'trpA', 'trpBA', 'chuA', 'chuA', 'yjaA', 'TspE4.C2', 'arpA', 'trpAgpC', 'trpAgpC', 'trpAgpC']	['+', '+', '+', '+']	['trpAgpC']	Unknown	PR0017_barcode26_24230067901-1-longcycler.fasta_mash_screen.tab
+PR0017_barcode27_24230071601-1-flye.fasta	['ybgD', 'trpA', 'trpBA', 'arpA', 'trpAgpC']	['+', '-', '-', '-']	['trpAgpC']	A	PR0017_barcode27_24230071601-1-flye.fasta_mash_screen.tab
+PR0017_barcode27_24230071601-1-longcycler.fasta	['ybgD', 'trpA', 'trpBA', 'arpA', 'trpAgpC']	['+', '-', '-', '-']	['trpAgpC']	A	PR0017_barcode27_24230071601-1-longcycler.fasta_mash_screen.tab
+PR0017_barcode28_24230067801-1-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0017_barcode28_24230067801-1-flye.fasta_mash_screen.tab
+PR0017_barcode28_24230067801-1-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0017_barcode28_24230067801-1-longcycler.fasta_mash_screen.tab
+PR0017_barcode29_24230071901-1-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0017_barcode29_24230071901-1-flye.fasta_mash_screen.tab
+PR0017_barcode29_24230071901-1-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0017_barcode29_24230071901-1-longcycler.fasta_mash_screen.tab
+PR0017_barcode30_24230209101-1-flye.fasta	['trpBA', 'chuA', 'yjaA', 'trpAgpC']	['-', '+', '+', '-']	['trpAgpC']	B2	PR0017_barcode30_24230209101-1-flye.fasta_mash_screen.tab
+PR0017_barcode30_24230209101-1-longcycler.fasta	['trpBA', 'chuA', 'yjaA', 'trpAgpC']	['-', '+', '+', '-']	['trpAgpC']	B2	PR0017_barcode30_24230209101-1-longcycler.fasta_mash_screen.tab
+PR0017_barcode32_24240139301-1-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0017_barcode32_24240139301-1-flye.fasta_mash_screen.tab
+PR0017_barcode32_24240139301-1-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'trpAgpC']	['-', '+', '+', '-']	['trpAgpC']	B2	PR0017_barcode32_24240139301-1-longcycler.fasta_mash_screen.tab
+PR0017_barcode33_24240141501-1-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0017_barcode33_24240141501-1-flye.fasta_mash_screen.tab
+PR0017_barcode33_24240141501-1-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0017_barcode33_24240141501-1-longcycler.fasta_mash_screen.tab
+PR0017_barcode34_24240139701-1-flye.fasta	['ybgD', 'trpA', 'trpBA', 'arpA']	['+', '-', '-', '-']	[]	A	PR0017_barcode34_24240139701-1-flye.fasta_mash_screen.tab
+PR0017_barcode34_24240139701-1-longcycler.fasta	['ybgD', 'trpA', 'trpBA', 'arpA']	['+', '-', '-', '-']	[]	A	PR0017_barcode34_24240139701-1-longcycler.fasta_mash_screen.tab
+PR0017_barcode35_24240139401-1-flye.fasta	['ybgD', 'trpA', 'trpBA', 'arpA']	['+', '-', '-', '-']	[]	A	PR0017_barcode35_24240139401-1-flye.fasta_mash_screen.tab
+PR0017_barcode35_24240139401-1-longcycler.fasta	['ybgD', 'trpA', 'trpBA', 'arpA']	['+', '-', '-', '-']	[]	A	PR0017_barcode35_24240139401-1-longcycler.fasta_mash_screen.tab
+PR0017_barcode36_24240138001-1-flye.fasta	['ybgD', 'trpA', 'trpBA', 'TspE4.C2', 'arpA', 'trpAgpC']	['+', '-', '-', '+']	['trpAgpC']	B1	PR0017_barcode36_24240138001-1-flye.fasta_mash_screen.tab
+PR0017_barcode36_24240138001-1-longcycler.fasta	['ybgD', 'trpA', 'trpBA', 'TspE4.C2', 'arpA', 'trpAgpC']	['+', '-', '-', '+']	['trpAgpC']	B1	PR0017_barcode36_24240138001-1-longcycler.fasta_mash_screen.tab
+PR0017_barcode37_24240137601-1-flye.fasta	['trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0017_barcode37_24240137601-1-flye.fasta_mash_screen.tab
+PR0017_barcode37_24240137601-1-longcycler.fasta	['trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0017_barcode37_24240137601-1-longcycler.fasta_mash_screen.tab
+PR0017_barcode38_24240138901-2-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0017_barcode38_24240138901-2-flye.fasta_mash_screen.tab
+PR0017_barcode38_24240138901-2-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'trpAgpC']	['-', '+', '+', '-']	['trpAgpC']	B2	PR0017_barcode38_24240138901-2-longcycler.fasta_mash_screen.tab
+PR0017_barcode39_24250200001-1-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0017_barcode39_24250200001-1-flye.fasta_mash_screen.tab
+PR0017_barcode39_24250200001-1-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0017_barcode39_24250200001-1-longcycler.fasta_mash_screen.tab
+PR0017_barcode40_24270074201-2-flye.fasta	['ybgD', 'trpA', 'trpBA', 'TspE4.C2', 'arpA', 'trpAgpC']	['+', '-', '-', '+']	['trpAgpC']	B1	PR0017_barcode40_24270074201-2-flye.fasta_mash_screen.tab
+PR0017_barcode40_24270074201-2-longcycler.fasta	['ybgD', 'trpA', 'trpBA', 'TspE4.C2', 'arpA', 'trpAgpC']	['+', '-', '-', '+']	['trpAgpC']	B1	PR0017_barcode40_24270074201-2-longcycler.fasta_mash_screen.tab
+PR0017_barcode41_24280284201-1-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0017_barcode41_24280284201-1-flye.fasta_mash_screen.tab
+PR0017_barcode41_24280284201-1-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0017_barcode41_24280284201-1-longcycler.fasta_mash_screen.tab
+PR0017_barcode42_24280284201-2-flye.fasta	['trpBA', 'chuA', 'yjaA', 'trpAgpC']	['-', '+', '+', '-']	['trpAgpC']	B2	PR0017_barcode42_24280284201-2-flye.fasta_mash_screen.tab
+PR0017_barcode42_24280284201-2-longcycler.fasta	['trpBA', 'chuA', 'yjaA', 'trpAgpC']	['-', '+', '+', '-']	['trpAgpC']	B2	PR0017_barcode42_24280284201-2-longcycler.fasta_mash_screen.tab
+PR0017_barcode43_24330078701-1-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0017_barcode43_24330078701-1-flye.fasta_mash_screen.tab
+PR0017_barcode43_24330078701-1-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0017_barcode43_24330078701-1-longcycler.fasta_mash_screen.tab
+PR0017_barcode44_24330078201-1-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0017_barcode44_24330078201-1-flye.fasta_mash_screen.tab
+PR0017_barcode44_24330078201-1-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0017_barcode44_24330078201-1-longcycler.fasta_mash_screen.tab
+PR0017_barcode45_24330079501-1-flye.fasta	['ybgD', 'trpA', 'trpBA', 'chuA', 'arpA', 'trpAgpC']	['+', '+', '-', '-']	['trpAgpC']	D	PR0017_barcode45_24330079501-1-flye.fasta_mash_screen.tab
+PR0017_barcode45_24330079501-1-longcycler.fasta	['ybgD', 'trpA', 'trpBA', 'chuA', 'arpA', 'trpAgpC']	['+', '+', '-', '-']	['trpAgpC']	D	PR0017_barcode45_24330079501-1-longcycler.fasta_mash_screen.tab
+PR0017_barcode46_24330080601-1-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0017_barcode46_24330080601-1-flye.fasta_mash_screen.tab
+PR0017_barcode46_24330080601-1-longcycler.fasta	['trpA', 'trpBA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0017_barcode46_24330080601-1-longcycler.fasta_mash_screen.tab
+PR0017_barcode47_24330141501-1-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0017_barcode47_24330141501-1-flye.fasta_mash_screen.tab
+PR0017_barcode47_24330141501-1-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0017_barcode47_24330141501-1-longcycler.fasta_mash_screen.tab
+PR0017_barcode48_24330142201-1-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0017_barcode48_24330142201-1-flye.fasta_mash_screen.tab
+PR0017_barcode48_24330142201-1-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0017_barcode48_24330142201-1-longcycler.fasta_mash_screen.tab
+PR0018_barcode49_24340102501-1-flye.fasta	['trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0018_barcode49_24340102501-1-flye.fasta_mash_screen.tab
+PR0018_barcode49_24340102501-1-longcycler.fasta	['trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0018_barcode49_24340102501-1-longcycler.fasta_mash_screen.tab
+PR0018_barcode50_24340139401-2-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0018_barcode50_24340139401-2-flye.fasta_mash_screen.tab
+PR0018_barcode50_24340139401-2-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0018_barcode50_24340139401-2-longcycler.fasta_mash_screen.tab
+PR0018_barcode51_24340139101-1-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0018_barcode51_24340139101-1-flye.fasta_mash_screen.tab
+PR0018_barcode51_24340139101-1-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0018_barcode51_24340139101-1-longcycler.fasta_mash_screen.tab
+PR0018_barcode52_24340139601-1-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0018_barcode52_24340139601-1-flye.fasta_mash_screen.tab
+PR0018_barcode52_24340139601-1-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0018_barcode52_24340139601-1-longcycler.fasta_mash_screen.tab
+PR0018_barcode53_24340103801-1-flye.fasta	['trpA', 'trpBA', 'yjaA', 'arpA']	['+', '-', '+', '-']	[]	A	PR0018_barcode53_24340103801-1-flye.fasta_mash_screen.tab
+PR0018_barcode53_24340103801-1-longcycler.fasta	['trpA', 'trpBA', 'yjaA', 'arpA']	['+', '-', '+', '-']	[]	A	PR0018_barcode53_24340103801-1-longcycler.fasta_mash_screen.tab
+PR0018_barcode56_24340101901-1-flye.fasta	['trpBA', 'chuA']	['-', '+', '-', '-']	[]	F	PR0018_barcode56_24340101901-1-flye.fasta_mash_screen.tab
+PR0018_barcode56_24340101901-1-longcycler.fasta	['trpBA', 'chuA']	['-', '+', '-', '-']	[]	F	PR0018_barcode56_24340101901-1-longcycler.fasta_mash_screen.tab
+PR0018_barcode57_24340104001-1-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0018_barcode57_24340104001-1-flye.fasta_mash_screen.tab
+PR0018_barcode57_24340104001-1-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0018_barcode57_24340104001-1-longcycler.fasta_mash_screen.tab
+PR0018_barcode59_24350041601-1-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2']	['-', '+', '+', '+']	[]	B2	PR0018_barcode59_24350041601-1-flye.fasta_mash_screen.tab
+PR0018_barcode59_24350041601-1-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2']	['-', '+', '+', '+']	[]	B2	PR0018_barcode59_24350041601-1-longcycler.fasta_mash_screen.tab
+PR0018_barcode60_24350040301-1-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0018_barcode60_24350040301-1-flye.fasta_mash_screen.tab
+PR0018_barcode60_24350040301-1-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0018_barcode60_24350040301-1-longcycler.fasta_mash_screen.tab
+PR0018_barcode63_24350115501-1-flye.fasta	['ybgD', 'trpA', 'trpBA', 'TspE4.C2', 'arpA', 'trpAgpC']	['+', '-', '-', '+']	['trpAgpC']	B1	PR0018_barcode63_24350115501-1-flye.fasta_mash_screen.tab
+PR0018_barcode63_24350115501-1-longcycler.fasta	['ybgD', 'trpA', 'trpBA', 'TspE4.C2', 'arpA', 'trpAgpC']	['+', '-', '-', '+']	['trpAgpC']	B1	PR0018_barcode63_24350115501-1-longcycler.fasta_mash_screen.tab
+PR0018_barcode64_24350115701-1-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0018_barcode64_24350115701-1-flye.fasta_mash_screen.tab
+PR0018_barcode64_24350115701-1-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0018_barcode64_24350115701-1-longcycler.fasta_mash_screen.tab
+PR0018_barcode65_24350118501-1-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0018_barcode65_24350118501-1-flye.fasta_mash_screen.tab
+PR0018_barcode65_24350118501-1-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0018_barcode65_24350118501-1-longcycler.fasta_mash_screen.tab
+PR0018_barcode67_24350119701-1-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0018_barcode67_24350119701-1-flye.fasta_mash_screen.tab
+PR0018_barcode67_24350119701-1-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0018_barcode67_24350119701-1-longcycler.fasta_mash_screen.tab
+PR0018_barcode70_24350208801-1-flye.fasta	['ybgD', 'trpA', 'trpBA', 'chuA', 'arpA', 'trpAgpC']	['+', '+', '-', '-']	['trpAgpC']	D	PR0018_barcode70_24350208801-1-flye.fasta_mash_screen.tab
+PR0018_barcode70_24350208801-1-longcycler.fasta	['ybgD', 'trpA', 'trpBA', 'chuA', 'arpA', 'trpAgpC']	['+', '+', '-', '-']	['trpAgpC']	D	PR0018_barcode70_24350208801-1-longcycler.fasta_mash_screen.tab
+PR0018_barcode71_24350207901-1-flye.fasta	['ybgD', 'trpA', 'trpBA', 'TspE4.C2', 'arpA', 'trpAgpC']	['+', '-', '-', '+']	['trpAgpC']	B1	PR0018_barcode71_24350207901-1-flye.fasta_mash_screen.tab
+PR0018_barcode71_24350207901-1-longcycler.fasta	['ybgD', 'trpA', 'trpBA', 'TspE4.C2', 'arpA', 'trpAgpC']	['+', '-', '-', '+']	['trpAgpC']	B1	PR0018_barcode71_24350207901-1-longcycler.fasta_mash_screen.tab
+PR0018_barcode74_24360037501-1-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0018_barcode74_24360037501-1-flye.fasta_mash_screen.tab
+PR0018_barcode74_24360037501-1-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0018_barcode74_24360037501-1-longcycler.fasta_mash_screen.tab
+PR0018_barcode75_24360128901-1-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0018_barcode75_24360128901-1-flye.fasta_mash_screen.tab
+PR0018_barcode75_24360128901-1-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0018_barcode75_24360128901-1-longcycler.fasta_mash_screen.tab
+PR0018_barcode77_24380101601-1-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0018_barcode77_24380101601-1-flye.fasta_mash_screen.tab
+PR0018_barcode77_24380101601-1-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0018_barcode77_24380101601-1-longcycler.fasta_mash_screen.tab
+PR0018_barcode78_2441C161901-2-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0018_barcode78_2441C161901-2-flye.fasta_mash_screen.tab
+PR0018_barcode78_2441C161901-2-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0018_barcode78_2441C161901-2-longcycler.fasta_mash_screen.tab
+PR0018_barcode79_2443C049701-1-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0018_barcode79_2443C049701-1-flye.fasta_mash_screen.tab
+PR0018_barcode79_2443C049701-1-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0018_barcode79_2443C049701-1-longcycler.fasta_mash_screen.tab
+PR0018_barcode89_24120049901-1-flye.fasta	['ybgD', 'trpA', 'trpBA', 'arpA']	['+', '-', '-', '-']	[]	A	PR0018_barcode89_24120049901-1-flye.fasta_mash_screen.tab
+PR0018_barcode89_24120049901-1-longcycler.fasta	['ybgD', 'trpA', 'trpBA', 'arpA']	['+', '-', '-', '-']	[]	A	PR0018_barcode89_24120049901-1-longcycler.fasta_mash_screen.tab
+PR0018_barcode90_24120051101-1-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0018_barcode90_24120051101-1-flye.fasta_mash_screen.tab
+PR0018_barcode90_24120051101-1-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0018_barcode90_24120051101-1-longcycler.fasta_mash_screen.tab
+PR0018_barcode91_24120052101-1-flye.fasta	['ybgD', 'trpA', 'trpBA', 'arpA']	['+', '-', '-', '-']	[]	A	PR0018_barcode91_24120052101-1-flye.fasta_mash_screen.tab
+PR0018_barcode91_24120052101-1-longcycler.fasta	['ybgD', 'trpA', 'trpBA', 'arpA']	['+', '-', '-', '-']	[]	A	PR0018_barcode91_24120052101-1-longcycler.fasta_mash_screen.tab
+PR0018_barcode92_24120050401-1-flye.fasta	['trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0018_barcode92_24120050401-1-flye.fasta_mash_screen.tab
+PR0018_barcode92_24120050401-1-longcycler.fasta	['trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0018_barcode92_24120050401-1-longcycler.fasta_mash_screen.tab
+PR0018_barcode93_24120050501-1-flye.fasta	['ybgD', 'trpA', 'trpBA', 'TspE4.C2', 'arpA', 'trpAgpC']	['+', '-', '-', '+']	['trpAgpC']	B1	PR0018_barcode93_24120050501-1-flye.fasta_mash_screen.tab
+PR0018_barcode93_24120050501-1-longcycler.fasta	['ybgD', 'trpA', 'trpBA', 'TspE4.C2', 'arpA', 'trpAgpC']	['+', '-', '-', '+']	['trpAgpC']	B1	PR0018_barcode93_24120050501-1-longcycler.fasta_mash_screen.tab
+PR0018_barcode96_24190038401-1-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0018_barcode96_24190038401-1-flye.fasta_mash_screen.tab
+PR0018_barcode96_24190038401-1-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0018_barcode96_24190038401-1-longcycler.fasta_mash_screen.tab
+PR0018_barcode96_24190038401-1-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0018_barcode96_24190038401-1-longcycler.fasta_mash_screen.tab
+PR0022_barcode01_24110100501-1-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0022_barcode01_24110100501-1-flye.fasta_mash_screen.tab
+PR0022_barcode01_24110100501-1-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0022_barcode01_24110100501-1-longcycler.fasta_mash_screen.tab
+PR0022_barcode02_24110181601-1-flye.fasta	['ybgD', 'trpA', 'trpBA', 'arpA']	['+', '-', '-', '-']	[]	A	PR0022_barcode02_24110181601-1-flye.fasta_mash_screen.tab
+PR0022_barcode02_24110181601-1-longcycler.fasta	['ybgD', 'trpA', 'trpBA', 'arpA']	['+', '-', '-', '-']	[]	A	PR0022_barcode02_24110181601-1-longcycler.fasta_mash_screen.tab
+PR0022_barcode03_24120052501-1-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0022_barcode03_24120052501-1-flye.fasta_mash_screen.tab
+PR0022_barcode03_24120052501-1-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0022_barcode03_24120052501-1-longcycler.fasta_mash_screen.tab
+PR0022_barcode04_24250198401-1-flye.fasta	['trpBA', 'chuA', 'yjaA', 'trpAgpC']	['-', '+', '+', '-']	['trpAgpC']	B2	PR0022_barcode04_24250198401-1-flye.fasta_mash_screen.tab
+PR0022_barcode04_24250198401-1-longcycler.fasta	['trpBA', 'chuA', 'yjaA', 'trpAgpC']	['-', '+', '+', '-']	['trpAgpC']	B2	PR0022_barcode04_24250198401-1-longcycler.fasta_mash_screen.tab
+PR0022_barcode05_24250198101-1-flye.fasta	['ybgD', 'trpA', 'trpBA', 'arpA', 'trpAgpC']	['+', '-', '-', '-']	['trpAgpC']	A	PR0022_barcode05_24250198101-1-flye.fasta_mash_screen.tab
+PR0022_barcode05_24250198101-1-longcycler.fasta	['ybgD', 'ybgD', 'ybgD', 'ybgD', 'ybgD', 'trpA', 'trpBA', 'TspE4.C2', 'arpA', 'arpA', 'trpAgpC']	['+', '-', '-', '+']	['trpAgpC']	B1	PR0022_barcode05_24250198101-1-longcycler.fasta_mash_screen.tab
+PR0022_barcode06_24150190901-1-flye.fasta	['trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0022_barcode06_24150190901-1-flye.fasta_mash_screen.tab
+PR0022_barcode06_24150190901-1-longcycler.fasta	['trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0022_barcode06_24150190901-1-longcycler.fasta_mash_screen.tab
+PR0022_barcode07_24240064901-1-flye.fasta	['ybgD', 'trpA', 'trpBA', 'TspE4.C2', 'arpA', 'trpAgpC']	['+', '-', '-', '+']	['trpAgpC']	B1	PR0022_barcode07_24240064901-1-flye.fasta_mash_screen.tab
+PR0022_barcode07_24240064901-1-longcycler.fasta	['ybgD', 'trpA', 'trpBA', 'TspE4.C2', 'arpA', 'trpAgpC']	['+', '-', '-', '+']	['trpAgpC']	B1	PR0022_barcode07_24240064901-1-longcycler.fasta_mash_screen.tab
+PR0022_barcode08_24230207401-1-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0022_barcode08_24230207401-1-flye.fasta_mash_screen.tab
+PR0022_barcode08_24230207401-1-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0022_barcode08_24230207401-1-longcycler.fasta_mash_screen.tab
+PR0022_barcode09_24360127801-1-flye.fasta	['trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0022_barcode09_24360127801-1-flye.fasta_mash_screen.tab
+PR0022_barcode09_24360127801-1-longcycler.fasta	['trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0022_barcode09_24360127801-1-longcycler.fasta_mash_screen.tab
+PR0022_barcode10_24380097601-1-flye.fasta	['trpA', 'trpBA', 'chuA', 'trpAgpC']	['-', '+', '-', '-']	['trpAgpC']	F	PR0022_barcode10_24380097601-1-flye.fasta_mash_screen.tab
+PR0022_barcode10_24380097601-1-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'trpAgpC']	['-', '+', '-', '-']	['trpAgpC']	F	PR0022_barcode10_24380097601-1-longcycler.fasta_mash_screen.tab
+PR0022_barcode11_24210074401-1-flye.fasta	['trpBA', 'chuA']	['-', '+', '-', '-']	[]	F	PR0022_barcode11_24210074401-1-flye.fasta_mash_screen.tab
+PR0022_barcode11_24210074401-1-longcycler.fasta	['trpBA', 'chuA']	['-', '+', '-', '-']	[]	F	PR0022_barcode11_24210074401-1-longcycler.fasta_mash_screen.tab
+PR0022_barcode12_24210134101-1-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0022_barcode12_24210134101-1-flye.fasta_mash_screen.tab
+PR0022_barcode12_24210134101-1-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0022_barcode12_24210134101-1-longcycler.fasta_mash_screen.tab
+PR0022_barcode13_24240065901-1-flye.fasta	['ybgD', 'trpA', 'trpBA', 'chuA', 'arpA', 'trpAgpC']	['+', '+', '-', '-']	['trpAgpC']	D	PR0022_barcode13_24240065901-1-flye.fasta_mash_screen.tab
+PR0022_barcode13_24240065901-1-longcycler.fasta	['ybgD', 'trpA', 'trpBA', 'chuA', 'arpA', 'trpAgpC']	['+', '+', '-', '-']	['trpAgpC']	D	PR0022_barcode13_24240065901-1-longcycler.fasta_mash_screen.tab
+PR0022_barcode14_24340100601-1-flye.fasta	['trpA', 'trpBA', 'yjaA', 'arpA']	['+', '-', '+', '-']	[]	A	PR0022_barcode14_24340100601-1-flye.fasta_mash_screen.tab
+PR0022_barcode14_24340100601-1-longcycler.fasta	['trpA', 'trpBA', 'yjaA', 'arpA']	['+', '-', '+', '-']	[]	A	PR0022_barcode14_24340100601-1-longcycler.fasta_mash_screen.tab
+PR0022_barcode15_24340101101-1-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0022_barcode15_24340101101-1-flye.fasta_mash_screen.tab
+PR0022_barcode15_24340101101-1-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0022_barcode15_24340101101-1-longcycler.fasta_mash_screen.tab
+PR0022_barcode16_24340103201-1-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0022_barcode16_24340103201-1-flye.fasta_mash_screen.tab
+PR0022_barcode16_24340103201-1-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0022_barcode16_24340103201-1-longcycler.fasta_mash_screen.tab
+PR0022_barcode17_24350039801-1-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0022_barcode17_24350039801-1-flye.fasta_mash_screen.tab
+PR0022_barcode17_24350039801-1-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0022_barcode17_24350039801-1-longcycler.fasta_mash_screen.tab
+PR0022_barcode18_24350039001-1-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0022_barcode18_24350039001-1-flye.fasta_mash_screen.tab
+PR0022_barcode18_24350039001-1-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0022_barcode18_24350039001-1-longcycler.fasta_mash_screen.tab
+PR0022_barcode19_24350117601-1-flye.fasta	['ybgD', 'trpA', 'trpBA', 'chuA', 'arpA', 'trpAgpC']	['+', '+', '-', '-']	['trpAgpC']	D	PR0022_barcode19_24350117601-1-flye.fasta_mash_screen.tab
+PR0022_barcode19_24350117601-1-longcycler.fasta	['ybgD', 'trpA', 'trpA', 'trpBA', 'trpBA', 'chuA', 'chuA', 'yjaA', 'TspE4.C2', 'arpA', 'trpAgpC', 'trpAgpC']	['+', '+', '+', '+']	['trpAgpC']	Unknown	PR0022_barcode19_24350117601-1-longcycler.fasta_mash_screen.tab
+PR0022_barcode20_24350206601-1-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0022_barcode20_24350206601-1-flye.fasta_mash_screen.tab
+PR0022_barcode20_24350206601-1-longcycler.fasta	['trpA', 'trpBA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0022_barcode20_24350206601-1-longcycler.fasta_mash_screen.tab
+PR0022_barcode21_24350207201-1-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0022_barcode21_24350207201-1-flye.fasta_mash_screen.tab
+PR0022_barcode21_24350207201-1-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0022_barcode21_24350207201-1-longcycler.fasta_mash_screen.tab
+PR0022_barcode22_24360035101-1-flye.fasta	['trpBA', 'chuA', 'yjaA', 'trpAgpC']	['-', '+', '+', '-']	['trpAgpC']	B2	PR0022_barcode22_24360035101-1-flye.fasta_mash_screen.tab
+PR0022_barcode22_24360035101-1-longcycler.fasta	['trpBA', 'chuA', 'yjaA', 'trpAgpC']	['-', '+', '+', '-']	['trpAgpC']	B2	PR0022_barcode22_24360035101-1-longcycler.fasta_mash_screen.tab
+PR0022_barcode23_24360036001-1-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0022_barcode23_24360036001-1-flye.fasta_mash_screen.tab
+PR0022_barcode23_24360036001-1-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0022_barcode23_24360036001-1-longcycler.fasta_mash_screen.tab
+PR0022_barcode24_24360130301-1-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0022_barcode24_24360130301-1-flye.fasta_mash_screen.tab
+PR0022_barcode24_24360130301-1-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0022_barcode24_24360130301-1-longcycler.fasta_mash_screen.tab
+PR0022_barcode25_2446C038801-1-flye.fasta	['ybgD', 'trpA', 'trpBA', 'chuA', 'arpA', 'trpAgpC']	['+', '+', '-', '-']	['trpAgpC']	D	PR0022_barcode25_2446C038801-1-flye.fasta_mash_screen.tab
+PR0022_barcode25_2446C038801-1-longcycler.fasta	['ybgD', 'trpA', 'trpBA', 'chuA', 'arpA', 'trpAgpC']	['+', '+', '-', '-']	['trpAgpC']	D	PR0022_barcode25_2446C038801-1-longcycler.fasta_mash_screen.tab
+PR0022_barcode26_2446C039301-1-flye.fasta	['trpA', 'trpBA', 'yjaA', 'arpA']	['+', '-', '+', '-']	[]	A	PR0022_barcode26_2446C039301-1-flye.fasta_mash_screen.tab
+PR0022_barcode26_2446C039301-1-longcycler.fasta	['trpA', 'trpBA', 'yjaA', 'arpA']	['+', '-', '+', '-']	[]	A	PR0022_barcode26_2446C039301-1-longcycler.fasta_mash_screen.tab
+PR0022_barcode27_2446C174101-1-flye.fasta	['trpA', 'trpBA', 'chuA', 'arpA', 'ArpAgpE']	['+', '+', '-', '-']	['ArpAgpE']	E	PR0022_barcode27_2446C174101-1-flye.fasta_mash_screen.tab
+PR0022_barcode27_2446C174101-1-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'arpA', 'ArpAgpE']	['+', '+', '-', '-']	['ArpAgpE']	E	PR0022_barcode27_2446C174101-1-longcycler.fasta_mash_screen.tab
+PR0022_barcode28_2446C171801-1-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0022_barcode28_2446C171801-1-flye.fasta_mash_screen.tab
+PR0022_barcode28_2446C171801-1-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0022_barcode28_2446C171801-1-longcycler.fasta_mash_screen.tab
+PR0022_barcode29_2446C173601-2-flye.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0022_barcode29_2446C173601-2-flye.fasta_mash_screen.tab
+PR0022_barcode29_2446C173601-2-longcycler.fasta	['trpA', 'trpBA', 'chuA', 'yjaA', 'TspE4.C2', 'trpAgpC']	['-', '+', '+', '+']	['trpAgpC']	B2	PR0022_barcode29_2446C173601-2-longcycler.fasta_mash_screen.tab
+PR0022_barcode30_2447C151501-1-flye.fasta	['trpA', 'trpBA', 'yjaA', 'arpA']	['+', '-', '+', '-']	[]	A	PR0022_barcode30_2447C151501-1-flye.fasta_mash_screen.tab
+PR0022_barcode30_2447C151501-1-longcycler.fasta	['trpA', 'trpBA', 'yjaA', 'arpA']	['+', '-', '+', '-']	[]	A	PR0022_barcode30_2447C151501-1-longcycler.fasta_mash_screen.tab
+PR0022_barcode31_24100219701-1-flye.fasta	['trpBA', 'chuA', 'yjaA', 'trpAgpC']	['-', '+', '+', '-']	['trpAgpC']	B2	PR0022_barcode31_24100219701-1-flye.fasta_mash_screen.tab
+PR0022_barcode31_24100219701-1-longcycler.fasta	['trpBA', 'chuA', 'yjaA', 'trpAgpC']	['-', '+', '+', '-']	['trpAgpC']	B2	PR0022_barcode31_24100219701-1-longcycler.fasta_mash_screen.tab
+PR0022_barcode32_24110181201-1-flye.fasta	['ybgD', 'trpA', 'trpBA', 'chuA', 'arpA', 'trpAgpC']	['+', '+', '-', '-']	['trpAgpC']	D	PR0022_barcode32_24110181201-1-flye.fasta_mash_screen.tab
+PR0022_barcode32_24110181201-1-longcycler.fasta	['ybgD', 'trpA', 'trpBA', 'chuA', 'arpA', 'trpAgpC']	['+', '+', '-', '-']	['trpAgpC']	D	PR0022_barcode32_24110181201-1-longcycler.fasta_mash_screen.tab
+PR0022_barcode33_24150192201-2-flye.fasta	['ybgD', 'trpA', 'trpBA', 'TspE4.C2', 'arpA', 'trpAgpC']	['+', '-', '-', '+']	['trpAgpC']	B1	PR0022_barcode33_24150192201-2-flye.fasta_mash_screen.tab
+PR0022_barcode33_24150192201-2-longcycler.fasta	['ybgD', 'trpA', 'trpBA', 'TspE4.C2', 'arpA', 'trpAgpC']	['+', '-', '-', '+']	['trpAgpC']	B1	PR0022_barcode33_24150192201-2-longcycler.fasta_mash_screen.tab
+PR0022_barcode34_24150192201-1-flye.fasta	['ybgD', 'trpA', 'trpBA', 'TspE4.C2', 'arpA', 'trpAgpC']	['+', '-', '-', '+']	['trpAgpC']	B1	PR0022_barcode34_24150192201-1-flye.fasta_mash_screen.tab
+PR0022_barcode34_24150192201-1-longcycler.fasta	['ybgD', 'trpA', 'trpBA', 'TspE4.C2', 'arpA', 'trpAgpC']	['+', '-', '-', '+']	['trpAgpC']	B1	PR0022_barcode34_24150192201-1-longcycler.fasta_mash_screen.tab

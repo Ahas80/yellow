@@ -1,0 +1,75 @@
+# Data
+ont-yellow-routine-fastas/
+data/
+assemblies.list
+*.fasta
+*.fa
+*.fna
+*.fastq
+*.fq
+*.gz
+*.tgz
+*.tar.gz
+*.zip
+*.bam
+*.sam
+*.vcf
+*.gff
+
+# Installers (too large for GitHub)
+miniforge_x86.sh
+Miniconda3-latest-MacOSX-arm64.sh
+*.sh
+!*.sh  # Re-allow scripts
+11_cleanup.sh
+13_deep_clean.sh
+run_wgs.sh
+01_kmer_mash.sh
+02_core_snp.sh
+debug_panaroo*.sh
+cleanup_*.sh
+
+# Results & Logs
+results/
+plots/
+logs/
+debug_bundle_*/
+debug_output*.txt
+test.out*
+*.log
+*.err
+*.out
+
+# System & Config
+.DS_Store
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+rUTIs.Rproj
+
+# Temporary & Backups
+tmp*/
+backups/
+*.bak
+*~
+*.swp
+
+# Specific large files/folders
+miniforge_x86.sh
+Miniconda3-latest-MacOSX-arm64.sh
+fake ecoli/
+phyloseq try out/
+not-assemblies/
+multi_*.fa.*
+
+# Generated PDFs (unless documentation)
+*.pdf
+!docs/*.pdf
+
+# Keep documentation and scripts
+!*.R
+!*.sh
+!*.md
+!*.yml
+!Makevars
