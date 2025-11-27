@@ -1,0 +1,51 @@
+---
+title: "WGS Report: Participant {{pid}}"
+date: "`r Sys.Date()`"
+output: pdf_document
+params:
+  pid: "NA"
+  qc_df: "NA"
+  pairs_path: "NA"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+library(dplyr)
+library(readr)
+library(stringr)
+library(knitr)
+```
+
+## 1. Assembly Quality Control
+
+```{r qc_table}
+p_qc <- params$qc_df %>% filter(Participant_id == params$pid) %>% select(Timepoint, n_contigs, N50, total_bp, QC_PASS)
+kable(p_qc, caption = "Assembly Metrics")
+```
+
+## 2. Core Genome SNPs
+
+```{r snp_pairs}
+if(file.exists(params$pairs_path)) {
+  pairs <- read_csv(params$pairs_path, show_col_types = FALSE)
+
+  # Filter for pairs involving this participant (assuming SampleID contains PID)
+  # Robust check: A or B contains the PID string
+  my_pairs <- pairs %>%
+    filter(str_detect(A, params$pid) | str_detect(B, params$pid)) %>%
+    arrange(snps)
+
+  if(nrow(my_pairs) > 0) {
+    kable(head(my_pairs, 10), caption = "Top Related Strains (SNP distance)")
+  } else {
+    cat("No close relatives found involving this participant.")
+  }
+} else {
+  cat("Strain comparison data not available (run 12b_core_snp.R).")
+}
+```
+
+## 3. Pangenome & Plasmids
+
+(Placeholder for gene content summary)
+

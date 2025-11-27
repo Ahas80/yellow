@@ -41,6 +41,7 @@ episode_tbl <- read_csv(file.path(DIR_CLINICAL, "status_map.csv"), show_col_type
 assembly_df <- load_metadata() # Use helper from config
 
 msg("Loaded status_map.csv (%d rows) and assembly_metadata.csv (%d rows)", nrow(episode_tbl), nrow(assembly_df))
+cat("DEBUG: After msg(), before Helpers section\n")
 
 # Helpers
 # ------------------------------------------------------------------------------
@@ -80,13 +81,17 @@ tp_norm2 <- function(x) {
         )
     )
 }
+cat("DEBUG: After tp_norm2 definition\n")
 
 # Prepare Data for Plotting
 # ------------------------------------------------------------------------------
+cat("DEBUG: Before bind_cols on line 88\n")
 episode_tbl <- episode_tbl %>% bind_cols(tp_norm2(.$Timepoint))
+cat("DEBUG: After bind_cols, tp_lab exists:", "tp_lab" %in% names(episode_tbl), "\n")
 
 episode_plot <- episode_tbl %>%
     filter(Infection_Status %in% c("Negative", "ASB", "UTI", "Culture-positive, S&S unknown"))
+cat("DEBUG: After creating episode_plot\n")
 
 status_order <- c("UTI", "ASB", "Culture-positive, S&S unknown", "Negative")
 status_levels_story <- c("Negative", "ASB", "UTI", "Culture-positive, S&S unknown")
@@ -99,24 +104,25 @@ status_cols <- c(
 
 # 1. Status Distribution
 # ------------------------------------------------------------------------------
-status_by_tp <- episode_plot %>%
-    count(tp_lab, Infection_Status, name = "n") %>%
-    group_by(tp_lab) %>%
-    mutate(pct = 100 * n / sum(n)) %>%
-    ungroup() %>%
-    arrange(tp_lab, desc(n))
+cat("DEBUG: Before status_by_tp creation\n")
+# status_by_tp <- episode_plot %>%
+#     count(tp_lab, Infection_Status, name = "n") %>%
+#     group_by(tp_lab) %>%
+#     mutate(pct = 100 * n / sum(n)) %>%
+#     ungroup() %>%
+#     arrange(tp_lab, desc(n))
 
-p_status <- ggplot(status_by_tp, aes(tp_lab, n, fill = Infection_Status)) +
-    geom_col() +
-    geom_text(aes(label = sprintf("%d\\n%.1f%%", n, pct)),
-        position = position_stack(vjust = 0.5), size = 3
-    ) +
-    scale_fill_manual(values = status_cols) +
-    labs(
-        title = sprintf("Status distribution per timepoint (N=%d episodes)", nrow(episode_plot)),
-        subtitle = sprintf("%d participants across timepoints", n_distinct(episode_plot$Participant_id)),
-        x = "Timepoint", y = "N episodes"
-    )
+# p_status <- ggplot(status_by_tp, aes(tp_lab, n, fill = Infection_Status)) +
+#     geom_col() +
+#     geom_text(aes(label = sprintf("%d\\n%.1f%%", n, pct)),
+#         position = position_stack(vjust = 0.5), size = 3
+#     ) +
+#     scale_fill_manual(values = status_cols) +
+#     labs(
+#         title = sprintf("Status distribution per timepoint (N=%d episodes)", nrow(episode_plot)),
+#         subtitle = sprintf("%d participants across timepoints", n_distinct(episode_plot$Participant_id)),
+#         x = "Timepoint", y = "N episodes"
+#     )
 
 # 2. Trajectories
 # ------------------------------------------------------------------------------
@@ -211,7 +217,7 @@ assembly_by_status <- episode_plot %>%
         .groups = "drop"
     ) %>%
     arrange(tp_lab, Infection_Status)
-arrange(tp_lab, Infection_Status)
+
 write_csv(assembly_by_status, file.path(DIR_CLINICAL, "assembly_metrics_by_status.csv"))
 
 p_asm_contigs <- ggplot(
@@ -249,14 +255,14 @@ p_waterfall <- ggplot(waterfall, aes(x = factor(step, levels = step), y = n)) +
 # 6. Save Plots
 # ------------------------------------------------------------------------------
 msg("Saving plots to %s", DIR_PLOTS_CLINICAL)
-safe_save_plot(file.path(DIR_PLOTS_CLINICAL, "status_by_timepoint.png"), p_status, width = 8, height = 5)
+# safe_save_plot(file.path(DIR_PLOTS_CLINICAL, "status_distribution.png"), p_status, width = 8, height = 5)
 safe_save_plot(file.path(DIR_PLOTS_CLINICAL, "trajectories_heatmap.png"), p_traj, width = 10, height = 12)
 safe_save_plot(file.path(DIR_PLOTS_CLINICAL, "transitions_alluvial_or_heatmap.png"), p_transitions_flow, width = 12, height = 8)
 safe_save_plot(file.path(DIR_PLOTS_CLINICAL, "assembly_contigs_boxplot.png"), p_asm_contigs, width = 10, height = 6)
 safe_save_plot(file.path(DIR_PLOTS_CLINICAL, "waterfall_counts.png"), p_waterfall, width = 9, height = 5)
 
 safe_pdf_begin(file.path(DIR_PLOTS_CLINICAL, "overview_plots.pdf"), width = 10, height = 6)
-print(p_status)
+# print(p_status)
 print(p_traj)
 print(p_transitions_flow)
 print(p_asm_contigs)

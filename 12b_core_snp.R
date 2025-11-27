@@ -69,7 +69,7 @@ log_info("Staging FASTAs in ", temp_fasta_dir)
 # Symlink files
 for (f in valid_genomes) {
     link_name <- file.path(temp_fasta_dir, fs::path_file(f))
-    if (!file.exists(link_name)) file_symlink(f, link_name)
+    if (!file.exists(link_name)) fs::link_create(f, link_name)
 }
 
 # 5. Run Parsnp

@@ -14,6 +14,16 @@ suppressPackageStartupMessages({
     library(processx)
 })
 
+# --- Environment Setup ---
+# Add common conda paths to PATH
+conda_paths <- c(
+    file.path(Sys.getenv("HOME"), "miniconda3/envs/asm-snp-x86/bin"),
+    file.path(Sys.getenv("HOME"), "miniconda3/envs/wgs/bin"),
+    file.path(Sys.getenv("HOME"), "miniconda3/envs/panaroo/bin")
+)
+curr_path <- Sys.getenv("PATH")
+Sys.setenv(PATH = paste(c(conda_paths, curr_path), collapse = .Platform$path.sep))
+
 # --- Configuration & Paths ---
 # Directories (fixed by project structure)
 # These should be consistent across all scripts
@@ -348,63 +358,63 @@ discover_samples <- function(asm_dir = ASM_DIR, reads_dir = READS_DIR, pids = "A
 
 # 1. QC Configuration
 get_qc_config <- function() {
-  list(
-    MAX_CONTIGS     = 200,
-    MIN_N50         = 20000,
-    MIN_GENOME_SIZE = 4.0e6,
-    MAX_GENOME_SIZE = 6.0e6,
-    MIN_COMPLETENESS = 95.0,
-    MAX_CONTAMINATION = 5.0
-  )
+    list(
+        MAX_CONTIGS = 200,
+        MIN_N50 = 20000,
+        MIN_GENOME_SIZE = 4.0e6,
+        MAX_GENOME_SIZE = 6.0e6,
+        MIN_COMPLETENESS = 95.0,
+        MAX_CONTAMINATION = 5.0
+    )
 }
 
 # 2. Logging Adapters
 log_info <- function(...) {
-  msg <- paste0(...)
-  message(format(Sys.time(), "[%Y-%m-%d %H:%M:%S] [INFO] "), msg)
+    msg <- paste0(...)
+    message(format(Sys.time(), "[%Y-%m-%d %H:%M:%S] [INFO] "), msg)
 }
 
 log_warn <- function(...) {
-  msg <- paste0(...)
-  message(format(Sys.time(), "[%Y-%m-%d %H:%M:%S] [WARN] "), msg)
+    msg <- paste0(...)
+    message(format(Sys.time(), "[%Y-%m-%d %H:%M:%S] [WARN] "), msg)
 }
 
 log_error <- function(...) {
-  msg <- paste0(...)
-  message(format(Sys.time(), "[%Y-%m-%d %H:%M:%S] [ERROR] "), msg)
+    msg <- paste0(...)
+    message(format(Sys.time(), "[%Y-%m-%d %H:%M:%S] [ERROR] "), msg)
 }
 
 # 3. Data Loading
 load_qc_summary <- function(qc_file = NULL) {
-  if (is.null(qc_file)) {
-    # Try to find it in standard location
-    # Assuming DIR_RESULTS is available from 00_config.R
-    if (exists("DIR_RESULTS")) {
-        qc_file <- file.path(DIR_RESULTS, "wgs", "qc_summary.csv")
-    } else {
-        qc_file <- "results/wgs/qc_summary.csv"
+    if (is.null(qc_file)) {
+        # Try to find it in standard location
+        # Assuming DIR_RESULTS is available from 00_config.R
+        if (exists("DIR_RESULTS")) {
+            qc_file <- file.path(DIR_RESULTS, "wgs", "qc_summary.csv")
+        } else {
+            qc_file <- "results/wgs/qc_summary.csv"
+        }
     }
-  }
-  
-  if (!file.exists(qc_file)) {
-    stop("QC summary file not found: ", qc_file, "\nPlease run 12a_wgs_qc.R first.")
-  }
-  
-  readr::read_csv(qc_file, show_col_types = FALSE)
+
+    if (!file.exists(qc_file)) {
+        stop("QC summary file not found: ", qc_file, "\nPlease run 12a_wgs_qc.R first.")
+    }
+
+    readr::read_csv(qc_file, show_col_types = FALSE)
 }
 
 get_valid_genomes <- function(pid, qc_df) {
-  qc_df %>%
-    dplyr::filter(Participant_id == pid, QC_PASS == TRUE) %>%
-    dplyr::pull(full_path)
+    qc_df %>%
+        dplyr::filter(Participant_id == pid, QC_PASS == TRUE) %>%
+        dplyr::pull(full_path)
 }
 
 # 4. Tool Checks
 check_wgs_tool <- function(tool_name) {
-  path <- Sys.which(tool_name)
-  if (path == "") {
-    warning(sprintf("Tool '%s' not found in PATH. WGS steps requiring it will fail.", tool_name))
-    return(FALSE)
-  }
-  return(TRUE)
+    path <- Sys.which(tool_name)
+    if (path == "") {
+        warning(sprintf("Tool '%s' not found in PATH. WGS steps requiring it will fail.", tool_name))
+        return(FALSE)
+    }
+    return(TRUE)
 }

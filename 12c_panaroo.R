@@ -92,8 +92,7 @@ cmd_panaroo <- paste(
     "-o", DIR_PAN,
     "--clean-mode", "strict",
     "--remove-invalid-genes",
-    "-t", CORES_USE,
-    "--verbose"
+    "-t", "1"
 )
 
 # Check if already run (Panaroo fails if output dir exists and is not empty)

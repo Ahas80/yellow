@@ -36,6 +36,10 @@ suppressPackageStartupMessages({
     library(ggplot2)
 })
 
+canon_tp <- function(x) {
+    tp_norm(x)$tp_lab
+}
+
 # 2. Load Centralized QC Data (from 12a_wgs_qc.R)
 # ------------------------------------------------------------------------------
 qc_file <- file.path(DIR_WGS, "qc_summary.csv")

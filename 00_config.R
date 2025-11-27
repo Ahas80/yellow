@@ -30,6 +30,7 @@ DIR_STRAIN <- file.path(DIR_RESULTS, "strain_compare")
 DIR_WGS <- file.path(DIR_RESULTS, "wgs")
 DIR_MODELS <- file.path(DIR_RESULTS, "models")
 DIR_QC <- file.path(DIR_RESULTS, "qc") # General QC
+DIR_REPORTS <- file.path(DIR_RESULTS, "reports")
 
 # WGS Subdirectories
 DIR_WGS_QC <- file.path(DIR_WGS, "qc")
@@ -48,6 +49,10 @@ DIR_PLOTS_PLASMIDS <- file.path(DIR_PLOTS, "plasmids")
 DIR_PLOTS_STRAIN <- file.path(DIR_PLOTS, "strain_compare")
 DIR_PLOTS_WGS <- file.path(DIR_PLOTS, "wgs")
 DIR_PLOTS_MODELS <- file.path(DIR_PLOTS, "models")
+
+# Logs Directory
+DIR_LOGS <- file.path(DIR_ROOT, "logs")
+
 
 # ------------------------------------------------------------------------------
 # 2. Files
@@ -143,5 +148,8 @@ for (d in c(DIR_CLINICAL, DIR_VF, DIR_MLST, DIR_PLASMIDS, DIR_STRAIN, DIR_WGS, D
 for (d in c(DIR_PLOTS_CLINICAL, DIR_PLOTS_VF, DIR_PLOTS_MLST, DIR_PLOTS_PLASMIDS, DIR_PLOTS_STRAIN, DIR_PLOTS_WGS, DIR_PLOTS_MODELS)) {
     ensure_dir(d)
 }
+
+# Ensure Logs Directory
+ensure_dir(DIR_LOGS)
 
 message("Loaded configuration from 00_config.R")

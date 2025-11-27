@@ -39,6 +39,9 @@ suppressPackageStartupMessages({
   library(scales)
 })
 
+# Load configuration
+source("00_config.R")
+
 # dependencies
 if (!requireNamespace("optparse", quietly = TRUE)) {
   stop("Package 'optparse' is required. Install with install.packages('optparse').")
@@ -116,9 +119,15 @@ parse_csv_pairs <- function(path) {
 }
 
 parse_participants <- function(participants_str, timepoints_str, between = FALSE) {
-  pids <- strsplit(participants_str, ",")[[1]] %>%
-    trimws() %>%
-    unique()
+  if (participants_str == "ALL") {
+    pids <- core$assemblies$Participant_id %>%
+      unique() %>%
+      as.character()
+  } else {
+    pids <- strsplit(participants_str, ",")[[1]] %>%
+      trimws() %>%
+      unique()
+  }
   if (length(pids) < 1) stop("No participants parsed from --participants")
   # if no timepoints supplied, infer from assemblies
   if (is.na(timepoints_str) || timepoints_str == "") {
@@ -132,6 +141,9 @@ parse_participants <- function(participants_str, timepoints_str, between = FALSE
   }
   # within-participant all combinations (unordered)
   within <- map_dfr(pids, function(pid) {
+    if (length(tps) < 2) {
+      return(tibble())
+    }
     comb <- t(combn(tps, 2))
     if (!nrow(comb)) {
       return(tibble())
@@ -334,7 +346,8 @@ pair_metrics <- purrr::pmap_dfr(list(pairs$Participant_id_A, pairs$Timepoint_A, 
 if (!nrow(pair_metrics)) stop("No metrics computed – check inputs and availability of assemblies")
 
 # ----- classification ---------------------------------------------------------
-apply_class <- function(row) {
+apply_class <- function(...) {
+  row <- list(...)
   res <- classify_pair(row, thresholds = list(id = opt$id_thresh, snps = opt$snp_thresh, vf = 0.9, inc = 0.8, vf_rel = 0.7, inc_rel = 0.7))
   c(Classification = res$Classification, RuleUsed = res$RuleUsed)
 }
