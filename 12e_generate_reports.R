@@ -62,12 +62,14 @@ output: pdf_document
 params:
   pid: "NA"
   qc_df: "NA"
+  pairs_path: "NA"
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 library(dplyr)
-library(ggplot2)
+library(readr)
+library(stringr)
 library(knitr)
 ```
 
@@ -80,17 +82,23 @@ kable(p_qc, caption = "Assembly Metrics")
 
 ## 2. Core Genome SNPs
 
-(Placeholder for SNP tree or matrix)
 ```{r snp_pairs}
-pairs_file <- file.path("results/wgs/core/strain_pairs.csv")
-if(file.exists(pairs_file)) {
-  pairs <- read_csv(pairs_file, show_col_types = FALSE)
-  my_pairs <- pairs %>% filter(A == params$pid | B == params$pid)
+if(file.exists(params$pairs_path)) {
+  pairs <- read_csv(params$pairs_path, show_col_types = FALSE)
+
+  # Filter for pairs involving this participant (assuming SampleID contains PID)
+  # Robust check: A or B contains the PID string
+  my_pairs <- pairs %>%
+    filter(str_detect(A, params$pid) | str_detect(B, params$pid)) %>%
+    arrange(snps)
+
   if(nrow(my_pairs) > 0) {
     kable(head(my_pairs, 10), caption = "Top Related Strains (SNP distance)")
   } else {
-    cat("No close relatives found.")
+    cat("No close relatives found involving this participant.")
   }
+} else {
+  cat("Strain comparison data not available (run 12b_core_snp.R).")
 }
 ```
 
@@ -103,6 +111,8 @@ if(file.exists(pairs_file)) {
 
 # 5. Generate Reports
 # ------------------------------------------------------------------------------
+pairs_csv <- file.path(DIR_WGS, "core", "strain_pairs.csv")
+
 for (pid in valid_pids) {
     outfile <- file.path(DIR_REPORTS, paste0("Participant_", pid, "_WGS_Report.pdf"))
 
@@ -116,7 +126,8 @@ for (pid in valid_pids) {
                 output_file = outfile,
                 params = list(
                     pid = pid,
-                    qc_df = qc_df
+                    qc_df = qc_df,
+                    pairs_path = pairs_csv
                 ),
                 quiet = TRUE
             )

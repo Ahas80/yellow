@@ -401,60 +401,77 @@ run_simple_glm <- function(feature, data) {
 }
 
 # Mixed-effects GLMM (with participant random intercepts)
+# Mixed-effects GLMM (with participant random intercepts)
 run_glmm <- function(feature, data) {
+    # Helper to format result
+    format_res <- function(mod, type, converged) {
+        tidy(mod, conf.int = TRUE) %>%
+            filter(term == paste0("`", feature, "`") | term == feature) %>%
+            mutate(
+                feature = feature,
+                OR = exp(estimate),
+                OR_lower = exp(conf.low),
+                OR_upper = exp(conf.high),
+                converged = converged,
+                model_type = type
+            ) %>%
+            select(feature, estimate, std.error, OR, OR_lower, OR_upper, p.value, converged, model_type)
+    }
+
+    # Empty result helper
+    empty_res <- function(type = "GLMM") {
+        tibble(
+            feature = feature,
+            estimate = NA_real_,
+            std.error = NA_real_,
+            OR = NA_real_,
+            OR_lower = NA_real_,
+            OR_upper = NA_real_,
+            p.value = NA_real_,
+            converged = FALSE,
+            model_type = type
+        )
+    }
+
     tryCatch(
         {
             # Build formula
-            # [STAT] Adjust for Timepoint (temporal trend) and Batch (batch effects) if available
             has_batch <- "Batch" %in% names(data) && n_distinct(data$Batch, na.rm = TRUE) > 1
-
             covariate_terms <- c()
             if (n_distinct(data$Timepoint) > 1) covariate_terms <- c(covariate_terms, "Timepoint")
             if (has_batch) covariate_terms <- c(covariate_terms, "Batch")
 
             fixed_part <- paste(c(paste0("`", feature, "`"), covariate_terms), collapse = " + ")
-            fml <- as.formula(sprintf("%s + (1 | Participant_id)", fixed_part))
-            fml <- reformulate(
-                termlabels = c(paste0("`", feature, "`"), covariate_terms, "(1 | Participant_id)"),
-                response = "Outcome"
-            )
 
-            # Fit model
-            mod <- glmer(fml,
+            # 1. Try GLMM
+            fml_glmm <- as.formula(sprintf("Outcome ~ %s + (1 | Participant_id)", fixed_part))
+
+            mod <- glmer(fml_glmm,
                 data = data, family = binomial(link = "logit"),
-                control = glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 1e5))
+                control = glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 2e5))
             )
 
-            # Check for singular fit
             is_singular <- isSingular(mod)
-
-            # Extract fixed effects
-            # We only want the feature coefficient, not Timepoint or Intercept
-            tidy_mod <- tidy(mod, effects = "fixed", conf.int = TRUE) %>%
-                filter(term == paste0("`", feature, "`") | term == feature) %>%
-                mutate(
-                    feature = feature,
-                    OR = exp(estimate),
-                    OR_lower = exp(conf.low),
-                    OR_upper = exp(conf.high),
-                    converged = !is_singular,
-                    model_type = "GLMM"
-                ) %>%
-                select(feature, estimate, std.error, OR, OR_lower, OR_upper, p.value, converged, model_type)
-
-            tidy_mod
+            if (is_singular) {
+                # Singular fit often means random effect variance is ~0.
+                # We can treat this as converged for practical purposes or fallback.
+                # Here we'll accept it but maybe flag it? For now, treat as GLMM.
+                format_res(mod, "GLMM (Singular)", TRUE)
+            } else {
+                format_res(mod, "GLMM", TRUE)
+            }
         },
         error = function(e) {
-            tibble(
-                feature = feature,
-                estimate = NA_real_,
-                std.error = NA_real_,
-                OR = NA_real_,
-                OR_lower = NA_real_,
-                OR_upper = NA_real_,
-                p.value = NA_real_,
-                converged = FALSE,
-                model_type = "GLMM"
+            # 2. Fallback to GLM
+            tryCatch(
+                {
+                    fml_glm <- as.formula(sprintf("Outcome ~ %s", fixed_part))
+                    mod_glm <- glm(fml_glm, data = data, family = binomial(link = "logit"))
+                    format_res(mod_glm, "GLM_Fallback", TRUE)
+                },
+                error = function(e2) {
+                    empty_res("Failed")
+                }
             )
         }
     )
@@ -502,6 +519,7 @@ if (opt$`simple-glm`) {
 }
 
 # Save GLMM results
+write_csv(glmm_results, file.path(DIR_MODELS, "gwas_multivariable_glmm.csv"))
 msg("Generating plots...")
 
 # Volcano plot

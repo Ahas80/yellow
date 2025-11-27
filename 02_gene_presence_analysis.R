@@ -63,6 +63,15 @@ log_info("Thresholds: ID >= ", opt$min_id, "%, Coverage >= ", opt$min_cov, "%")
 # ------------------------------------------------------------------------------
 assembly_df <- load_metadata()
 
+# Filter out assemblies with missing Participant_id (data quality check)
+n_before <- nrow(assembly_df)
+assembly_df <- assembly_df %>%
+  filter(!is.na(Participant_id))
+n_after <- nrow(assembly_df)
+if (n_before > n_after) {
+  log_info("Excluded %d assemblies with missing Participant_id", n_before - n_after)
+}
+
 # Ensure full_path exists
 if (!"full_path" %in% names(assembly_df)) {
   if (!"file_name" %in% names(assembly_df)) {

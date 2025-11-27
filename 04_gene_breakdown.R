@@ -248,7 +248,33 @@ if (file.exists(FILE_STATUS_MAP)) {
           )
 
         # [STAT] Enhanced GLMM with proper adjustment for confounders
+        # [LIMITATION] Clinical covariates (Age, Catheter, Diabetes, Antibiotics) are currently
+        # missing from the dataset. Their absence is a potential source of unmeasured confounding.
+        # Future versions should include them in the fixed effects if available.
         run_glmm <- function(gene_col) {
+          # Helper to format result
+          format_res <- function(mod, type, converged) {
+            coefs <- summary(mod)$coefficients
+            if (gene_col %in% rownames(coefs)) {
+              gene_prev <- mean(samples_focus[[gene_col]], na.rm = TRUE)
+              tibble(
+                Gene = gene_col,
+                OR = exp(coefs[gene_col, "Estimate"]),
+                CI_lower = exp(coefs[gene_col, "Estimate"] - 1.96 * coefs[gene_col, "Std. Error"]),
+                CI_upper = exp(coefs[gene_col, "Estimate"] + 1.96 * coefs[gene_col, "Std. Error"]),
+                p = coefs[gene_col, "Pr(>|z|)"],
+                Converged = converged,
+                Adjusted_for = paste(covariate_terms, collapse = "+"),
+                Prevalence = gene_prev,
+                Power_Flag = ifelse(gene_prev >= 0.10, "Adequate", "Underpowered (<10%)"),
+                Role = ifelse(gene_prev >= 0.10, "Inferential-core", "Exploratory"),
+                Model_Type = type
+              )
+            } else {
+              tibble(Gene = gene_col, OR = NA, p = NA, Converged = FALSE, Model_Type = type)
+            }
+          }
+
           # Build formula based on available covariates
           # Priority: adjust for Timepoint (temporal trend) and Batch (batch effects)
           has_tp <- sum(!is.na(samples_focus$tp_num)) > 10
@@ -259,54 +285,33 @@ if (file.exists(FILE_STATUS_MAP)) {
           if (has_batch) covariate_terms <- c(covariate_terms, "Batch")
 
           fixed_part <- paste(c(gene_col, covariate_terms), collapse = " + ")
-          fmla <- as.formula(paste("Outcome ~", fixed_part, "+ (1|Participant_id)"))
 
           tryCatch(
             {
-              # Use glmer for mixed effects
-              m <- lme4::glmer(fmla,
+              # 1. Try GLMM
+              fmla_glmm <- as.formula(paste("Outcome ~", fixed_part, "+ (1|Participant_id)"))
+              m <- lme4::glmer(fmla_glmm,
                 data = samples_focus, family = binomial,
-                control = lme4::glmerControl(optimizer = "bobyqa")
+                control = lme4::glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 1e5))
               )
-              coefs <- summary(m)$coefficients
-              if (gene_col %in% rownames(coefs)) {
-                # Calculate gene prevalence for power flag
-                gene_prev <- mean(samples_focus[[gene_col]], na.rm = TRUE)
-                tibble(
-                  Gene = gene_col,
-                  OR = exp(coefs[gene_col, "Estimate"]),
-                  CI_lower = exp(coefs[gene_col, "Estimate"] - 1.96 * coefs[gene_col, "Std. Error"]),
-                  CI_upper = exp(coefs[gene_col, "Estimate"] + 1.96 * coefs[gene_col, "Std. Error"]),
-                  p = coefs[gene_col, "Pr(>|z|)"],
-                  Converged = TRUE,
-                  Adjusted_for = paste(covariate_terms, collapse = "+"),
-                  Prevalence = gene_prev,
-                  Power_Flag = ifelse(gene_prev >= 0.10, "Adequate", "Underpowered (<10%)"),
-                  Role = ifelse(gene_prev >= 0.10, "Inferential-core", "Exploratory")
-                )
+
+              is_singular <- isSingular(m)
+              if (is_singular) {
+                format_res(m, "GLMM (Singular)", TRUE)
               } else {
-                tibble(Gene = gene_col, OR = NA, p = NA, Converged = FALSE)
+                format_res(m, "GLMM", TRUE)
               }
             },
             error = function(e) {
-              # Fallback to simple glm if singular fit or other error (often happens with rare genes)
+              # 2. Fallback to GLM
               tryCatch(
                 {
-                  m_glm <- glm(as.formula(paste("Outcome ~", gene_col)), data = samples_focus, family = binomial)
-                  coefs <- summary(m_glm)$coefficients
-                  if (gene_col %in% rownames(coefs)) {
-                    tibble(
-                      Gene = gene_col,
-                      OR = exp(coefs[gene_col, "Estimate"]),
-                      p = coefs[gene_col, "Pr(>|z|)"],
-                      Converged = "GLM_Fallback"
-                    )
-                  } else {
-                    tibble(Gene = gene_col, OR = NA, p = NA, Converged = FALSE)
-                  }
+                  fmla_glm <- as.formula(paste("Outcome ~", fixed_part))
+                  m_glm <- glm(fmla_glm, data = samples_focus, family = binomial)
+                  format_res(m_glm, "GLM_Fallback", TRUE)
                 },
                 error = function(e2) {
-                  tibble(Gene = gene_col, OR = NA, p = NA, Converged = FALSE)
+                  tibble(Gene = gene_col, OR = NA, p = NA, Converged = FALSE, Model_Type = "Failed")
                 }
               )
             }

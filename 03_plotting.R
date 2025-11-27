@@ -129,7 +129,7 @@ load_robust_metadata <- function() {
 
 # 3. Load Data
 # ------------------------------------------------------------------------------
-FILE_GENE_STATS <- file.path(DIR_RESULTS, "stats_gene_level.csv")
+FILE_GENE_STATS <- file.path(DIR_VF, "stats_gene_level.csv")
 
 if (!file.exists(FILE_VF_HITS) || !file.exists(FILE_VF_PA) || !file.exists(FILE_GENE_STATS)) {
   stop("Missing required inputs. Run 02_gene_presence_analysis.R first.")
@@ -154,7 +154,7 @@ genes_per_sample <- vf_hits_all %>%
 
 # Per-participant summary
 participant_tbl <- genes_per_sample %>%
-  filter(!is.na(tp_num)) %>%
+  filter(!is.na(tp_num) | tp_lab == "Uricult") %>%
   arrange(Participant_id, tp_num) %>%
   group_by(Participant_id) %>%
   summarise(
