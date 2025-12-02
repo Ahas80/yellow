@@ -251,3 +251,31 @@ conda create -n yellow-wgs-x86 -c bioconda -c conda-forge \
 **Date**: 2025-11-28  
 **Status**: ✅ Analysis Complete - Ready for Publication
 
+## 📝 To-Do & Future Directions
+
+### 1. Investigate Within-Host E. coli Variation
+**Question:** Are the *E. coli* isolates in a single participant different across timepoints (T0, T1, T2, Uricult)?
+
+**Postulate & Approach:**
+To determine if we are seeing the same strain persisting or new strains entering (strain replacement), we can use the following results:
+
+1.  **Genomic Distance (SNPs)**:
+    *   **Source:** `results/strain_compare/pairwise_metrics.csv`
+    *   **Method:** Filter for `within_participant == TRUE`.
+    *   **Thresholds:**
+        *   **< 10 SNPs**: Likely the **same strain** (persistent infection).
+        *   **> 1000 SNPs**: Likely a **different strain** (re-infection/replacement).
+        *   **10-100 SNPs**: Grey area (potential within-host evolution).
+
+2.  **Gene Content (Pangenome)**:
+    *   **Source:** `results/wgs/pan/gene_data.csv` (or `presence_absence.Rtab`)
+    *   **Method:** Calculate Jaccard distance between isolates from the same patient.
+    *   **Expectation:** Same strains should share >95% of their accessory genome.
+
+3.  **Visual Check**:
+    *   **Source:** `plots/publication/Fig1_Swimmer_Plot.png`
+    *   **Method:** Look for patients with multiple timepoints. If the "Strain ID" (if annotated) changes, it's a replacement.
+
+**Next Steps:**
+- [ ] Create a boxplot of "Pairwise SNP Distance" for all within-patient pairs.
+- [ ] Flag any patient with >0 but <50 SNPs for manual review (evolution candidates).

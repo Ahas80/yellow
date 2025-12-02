@@ -1,4 +1,4 @@
-# Data
+# Data (Large files)
 ont-yellow-routine-fastas/
 data/
 assemblies.list
@@ -16,18 +16,9 @@ assemblies.list
 *.vcf
 *.gff
 
-# Installers (too large for GitHub)
+# Installers
 miniforge_x86.sh
 Miniconda3-latest-MacOSX-arm64.sh
-*.sh
-!*.sh  # Re-allow scripts
-11_cleanup.sh
-13_deep_clean.sh
-run_wgs.sh
-01_kmer_mash.sh
-02_core_snp.sh
-debug_panaroo*.sh
-cleanup_*.sh
 
 # Results & Logs
 results/
@@ -54,28 +45,23 @@ backups/
 *.bak
 *~
 *.swp
+temp_*/
 
-# Specific large files/folders
-miniforge_x86.sh
-Miniconda3-latest-MacOSX-arm64.sh
+# Specific large/irrelevant folders
 fake ecoli/
 phyloseq try out/
 not-assemblies/
 multi_*.fa.*
-temp_prokka_test_*/
 rUTIs_backup_*.tar.gz
 
 # Generated PDFs (unless documentation)
 *.pdf
 !docs/*.pdf
 
-# Keep documentation and scripts
-!*.R
-!*.sh
-!*.md
-!*.yml
-!Makevars
-
-# Curated plots directory (do not ignore)
+# Force include important directories (even if they match patterns above)
 !plots/
 !plots/**/*
+!scripts/
+!docs/
+!R/
+
