@@ -57,7 +57,7 @@ p1 <- ggplot(df_swim, aes(x = Timepoint, y = Participant_id)) +
     geom_line(aes(group = Participant_id), color = "gray80") +
     geom_point(aes(color = Status, shape = Status), size = 3) +
     scale_colour_infection() +
-    scale_shape_manual(values = c(1, 16, 17)) + # Circle open, Circle filled, Triangle
+    scale_shape_manual(values = c(15, 17, 16)) + # Negative=Square(15), ASB=Triangle(17), UTI=Circle(16)
     theme_minimal() +
     labs(
         title = "Longitudinal Clinical Trajectories",

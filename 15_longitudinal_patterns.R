@@ -204,6 +204,12 @@ if (nrow(plot_data) > 0) {
         # Add Strain ID labels (optional, might be cluttered)
         # geom_text(aes(label = Strain_ID), vjust = -0.5, size = 2) +
         scale_colour_infection() +
+        # Use filled shapes so colors are visible (not hollow circles)
+        scale_shape_manual(
+            name = "Infection Status",
+            values = c("UTI" = 16, "ASB" = 17, "Negative" = 15),  # 16=filled circle, 17=filled triangle, 15=filled square
+            breaks = c("UTI", "ASB", "Negative")
+        ) +
         theme_minimal() +
         labs(
             title = "Longitudinal Infection Status (Participants > 1 Timepoint)",
