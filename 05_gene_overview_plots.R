@@ -136,8 +136,8 @@ prev_plot <- ggplot(
   coord_flip() +
   scale_y_continuous(labels = scales::percent) +
   labs(
-    x = NULL, y = "Isolates",
-    title = paste("Top", topN, "genes by prevalence")
+    x = NULL, y = "Number of Isolates",
+    title = "Top 40 Most Prevalent Virulence Factor Genes"
   ) +
   theme_minimal(base_size = 10)
 
@@ -164,6 +164,7 @@ if (length(variable_genes) > 0) {
     show_rownames  = FALSE,
     fontsize_col   = 5,
     annotation_row = ann_row,
+    main           = "Variable Virulence Gene Presence/Absence",
     filename       = heat_file_png
   )
 
@@ -174,6 +175,7 @@ if (length(variable_genes) > 0) {
     cluster_cols   = TRUE,
     show_rownames  = FALSE,
     fontsize_col   = 6,
+    main           = "Variable Virulence Gene Presence/Absence",
     annotation_row = ann_row
   )
   dev.off()

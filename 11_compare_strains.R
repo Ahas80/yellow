@@ -380,7 +380,7 @@ if (any(!is.na(pair_metrics$VF_Jaccard))) {
   g <- ggplot(pair_metrics %>% mutate(idx = row_number()), aes(x = 1, y = idx, fill = VF_Jaccard)) +
     geom_tile() +
     scale_fill_viridis_c(option = "C", na.value = "grey85") +
-    labs(title = "VF Jaccard per pair", x = NULL, y = "Pair index") +
+    labs(title = "Pairwise Virulence Factor Jaccard Similarity", x = NULL, y = "Pair index") +
     theme_minimal(base_size = 11) +
     theme(axis.text.x = element_blank(), axis.ticks.x = element_blank())
   ggsave_safe(file.path(plots_dir, "heatmap_vf_jaccard.png"), g, width = 4, height = max(3, 0.15 * nrow(pair_metrics)))
@@ -390,7 +390,7 @@ if (any(!is.na(pair_metrics$Inc_Jaccard))) {
   g <- ggplot(pair_metrics %>% mutate(idx = row_number()), aes(x = 1, y = idx, fill = Inc_Jaccard)) +
     geom_tile() +
     scale_fill_viridis_c(option = "C", na.value = "grey85") +
-    labs(title = "Inc replicon Jaccard per pair", x = NULL, y = "Pair index") +
+    labs(title = "Pairwise Plasmid Replicon Jaccard Similarity", x = NULL, y = "Pair index") +
     theme_minimal(base_size = 11) +
     theme(axis.text.x = element_blank(), axis.ticks.x = element_blank())
   ggsave_safe(file.path(plots_dir, "heatmap_inc_jaccard.png"), g, width = 4, height = max(3, 0.15 * nrow(pair_metrics)))
@@ -401,7 +401,7 @@ if (any(!is.na(pair_metrics$AvgIdentity) & !is.na(pair_metrics$TotalSNPs))) {
   g <- ggplot(pair_metrics, aes(AvgIdentity, TotalSNPs, color = Classification, shape = within_participant)) +
     geom_point(size = 2, alpha = 0.8) +
     scale_y_continuous(trans = "log1p") +
-    labs(title = "Identity vs SNPs", x = "AvgIdentity (%)", y = "Total SNPs (log1p)") +
+    labs(title = "Genomic Identity vs. SNP Distance", x = "AvgIdentity (%)", y = "Total SNPs (log1p)") +
     theme_minimal(base_size = 11)
   ggsave_safe(file.path(plots_dir, "identity_vs_snps_scatter.png"), g, width = 6, height = 4)
 
@@ -410,7 +410,7 @@ if (any(!is.na(pair_metrics$AvgIdentity) & !is.na(pair_metrics$TotalSNPs))) {
     geom_violin(alpha = 0.6) +
     geom_jitter(width = 0.2, alpha = 0.2, size = 0.5) +
     scale_y_log10() +
-    labs(title = "Pairwise SNP Distances", x = NULL, y = "SNP Distance (log10 + 1)", fill = "Comparison") +
+    labs(title = "Pairwise SNP Distances: Within-Host vs. Between-Host", x = NULL, y = "SNP Distance (log10 + 1)", fill = "Comparison") +
     theme_minimal(base_size = 11) +
     theme(legend.position = "none")
   ggsave_safe(file.path(plots_dir, "snp_distance_violin.png"), g_violin, width = 6, height = 5)
@@ -430,7 +430,7 @@ if (requireNamespace("igraph", quietly = TRUE) && requireNamespace("ggraph", qui
       ggraph$geom_edge_link(alpha = .4) +
       ggraph$geom_node_point(size = 4, colour = "steelblue") +
       ggraph$geom_node_text(ggplot2::aes(label = name), repel = TRUE, size = 3) +
-      ggplot2::theme_void() + ggplot2::ggtitle("Same-strain network")
+      ggplot2::theme_void() + ggplot2::ggtitle("Network of Same-Strain Isolates")
     ggsave_safe(file.path(plots_dir, "network_same_strain.png"), p, width = 7, height = 6)
   }
 }
@@ -446,7 +446,7 @@ if (nrow(within_pairs)) {
   g <- ggplot(within_pairs, aes(x = tpA_num, xend = tpB_num, y = pid, yend = pid, color = Classification)) +
     geom_segment(linewidth = 1.2, alpha = 0.8) +
     scale_x_continuous(breaks = sort(unique(c(within_pairs$tpA_num, within_pairs$tpB_num))), limits = c(min(within_pairs$tpA_num, na.rm = TRUE) - 0.5, max(within_pairs$tpB_num, na.rm = TRUE) + 0.5)) +
-    labs(title = "Within-participant pair classifications over time", x = "Numeric timepoint", y = "Participant") +
+    labs(title = "Longitudinal Strain Classification Timeline", x = "Numeric timepoint", y = "Participant") +
     theme_minimal(base_size = 11)
   ggsave_safe(file.path(plots_dir, "timeline_by_participant.png"), g, width = 8, height = max(4, 0.3 * dplyr::n_distinct(within_pairs$pid)))
 }

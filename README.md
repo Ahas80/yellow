@@ -4,24 +4,161 @@
 
 ---
 
+## 🔧 Setup (First Time Only)
+
+### 1. Install Conda Environment
+```bash
+# Create environment with bioinformatics tools
+conda create -n yellow-wgs-x86 -c bioconda -c conda-forge \
+    parsnp panaroo snp-dists abricate mlst plasmidfinder mummer prokka openjdk
+
+# Activate it
+conda activate yellow-wgs-x86
+```
+
+### 2. Install R Packages
+**CRITICAL**: Run this before the first pipeline execution:
+```bash
+# Install all required R packages (takes 5-10 minutes)
+Rscript install_r_packages.R
+```
+
+This installs 38 CRAN packages (including `ggraph`, `tidyverse`, `lme4`, etc.) and 4 Bioconductor packages.
+
+**Verify installation**:
+```r
+# In R, check key packages load:
+library(ggraph)     # Network plots
+library(tidyverse)  # Data manipulation
+library(lme4)       # Mixed models
+library(ComplexUpset)  # UpSet plots
+```
+
+If any package is missing, install individually:
+```bash
+Rscript -e "install.packages('ggraph', repos='https://cloud.r-project.org')"
+```
+
+---
+
 ## Quick Start
 
 ```bash
 # 1. Activate conda environment
-conda activate asm-snp-x86  # or your WGS env
+conda activate yellow-wgs-x86
 
-# 2. Run modular WGS pipeline
-Rscript 12a_wgs_qc.R          # QC assemblies
-Rscript 12b_core_snp.R        # Core genome SNPs  
-Rscript 12c_panaroo.R         # Pangenome
-Rscript 13_visualise_panaroo_selection.R  # Selection plots
+# 2. Run COMPLETE pipeline (all phases)
+bash RUN_COMPLETE_ANALYSIS.sh
 
-# 3. Integration & modeling
+# OR run phases individually (see below)
+```
+
+---
+
+## 🔄 Complete Analysis Workflow
+
+The pipeline is divided into **4 phases**. Run them in order:
+
+### **Phase 0: Clinical Data Foundation** (Required First)
+```bash
+Rscript 00a_load_clean_clinical.R
+Rscript 00b_classify_episodes.R
+Rscript 00c_plot_clinical_summary.R
+```
+**Output**: `results/clinical/status_map.csv` (Master clinical status table)
+
+---
+
+### **Phase 1: WGS Processing** (Long-running)
+```bash
+# QC and core SNPs
+Rscript 12a_wgs_qc.R
+Rscript 12b_core_snp.R        # ~30-60 mins
+
+# Pangenome
+Rscript 12c_panaroo.R         # ~15 mins
+Rscript 13_visualise_panaroo_selection.R
+
+# Gene presence/absence
+Rscript 02_gene_presence_analysis.R
+Rscript 06_MLST.R
+```
+**Output**: 
+- `results/wgs/qc_summary.csv`
+- `results/wgs/core/` (SNP alignments)
+- `results/wgs/pan/gene_data.csv` (Pangenome)
+- `results/vf/vf_pa_all.csv` (Gene matrix)
+- `results/mlst/mlst_all.tsv` (Lineages)
+
+---
+
+### **Phase 2: Comparative Genomics**
+```bash
+# Within-host comparisons
 Rscript 11_compare_strains.R --participants ALL
+
+# GWAS (find UTI-associated genes)
 Rscript 14_genotype_phenotype_model.R
 
-# See docs/run_plan_wgs_restart.md for detailed execution plan
+# Lineage risk
+Rscript 17_lineage_analysis.R
 ```
+**Output**:
+- `results/strain_compare/pairwise_metrics.csv` (Same vs Different strains)
+- `results/models/volcano_plot.png` (GWAS results)
+- `results/lineage/st_risk_profile.csv`
+
+---
+
+### **Phase 3: Longitudinal & Mechanism** (NEW - Research Roadmap)
+```bash
+# Reconstruct patient timelines
+Rscript 15_longitudinal_patterns.R
+
+# Identify mutations in phenotype switches
+Rscript 16_within_host_evolution.R
+Rscript 18_annotate_variants.R
+Rscript 20_variant_annotation_deep.R
+
+# Check host factors (catheter, antibiotics)
+Rscript 19_host_context.R
+
+# Generate publication figures
+Rscript 21_publication_figures.R
+```
+**Output**:
+- `results/longitudinal/participant_timelines.csv` (Timeline data)
+- `results/longitudinal/phenotype_switch_candidates.csv` (ASB→UTI switches)
+- `results/longitudinal/variant_annotation_detailed.csv` (Mutated genes)
+- `plots/publication/*.png` (Figures 1-2)
+
+---
+
+## 📊 Key Results
+
+**Original Finding (Phase 2)**:
+- 🔬 **Top Hit**: *Long polar fimbriae* (`lpfA`, `lpfB`) strongly associated with symptomatic UTI (OR=7.6, FDR<0.001)
+
+**NEW Findings (Phase 3 - Longitudinal)**:
+- 🧬 **"The Chameleon Effect"**: Found 2 cases where the *exact same strain* caused ASB at T1 and UTI at T2
+- 🧫 **Mechanism**: Phenotype switches involved minimal genomic changes (10-12 SNPs), NOT gene acquisition
+- 🎯 **Key Mutations**:
+  - Participant 40004: `rpoD` (Sigma 70) mutation → global transcriptional shift
+  - Participant 40001: `lpxL` (Lipid A biosynthesis) mutation → endotoxin modification
+- ❌ **Lineage Risk**: No ST was significantly more dangerous (challenges "high-risk clone" approach)
+
+---
+
+## 📂 Essential Documentation
+
+| Document | Purpose |
+|:---------|:--------|
+| **`docs/pipeline_architecture.md`** | How scripts relate to each other |
+| **`docs/research_outcomes.md`** | Comprehensive findings summary |
+| **`docs/methods_draft.md`** | Methods section for manuscript |
+| **`results/KEY_FINDINGS.md`** | Executive summary (Lpf association) |
+| **`results/ANALYSIS_README.md`** | Navigate results files |
+| **`FINAL_SUMMARY.md`** | General audience summary |
 
 ---
 
@@ -29,127 +166,88 @@ Rscript 14_genotype_phenotype_model.R
 
 | Directory | Purpose |
 |:----------|:--------|
-| `data/` | Clinical metadata, raw inputs |
-| `results/` | Computational outputs (VF, MLST, GWAS, WGS) |
-| `plots/` | Visualizations |
+| `data/inputs/` | Raw clinical CSVs (batch1-3) |
+| `results/clinical/` | Processed clinical data |
+| `results/vf/` | Virulence factor matrices |
+| `results/wgs/` | WGS outputs (SNPs, pangenome) |
+| `results/strain_compare/` | Within-host comparisons |
+| `results/models/` | GWAS results |
+| `results/longitudinal/` | **NEW** - Timelines and evolution |
+| `results/lineage/` | **NEW** - ST risk analysis |
+| `plots/publication/` | **NEW** - Manuscript figures |
 | `logs/` | Execution logs |
-| `R/` | Helper scripts (`wgs_helpers.R`, etc.) |
-| `docs/` | Documentation, run plans, status reports |
 | `ont-yellow-routine-fastas/` | Assembly FASTA files |
 
 ---
 
-## Key Results
+## ⚠️ Critical Fix: Participant ID Logic
 
-📊 **Sample the data**: 87 participants, 361 QC-passed genomes  
-🔬 **Top Finding**: *Long polar fimbriae* (`lpfA`, `lpfB`) strongly associated with symptomatic UTI
+**Problem**: Legacy pipeline (`12_wgs_exact_compare.R`) treated batch IDs (e.g., `PR0010`) as single participants.
 
-**Essential Documentation**:
-- **`results/KEY_FINDINGS.md`**: Executive summary of Lpf association findings
-- **`results/ANALYSIS_README.md`**: Navigation guide for all results files
-- **`docs/wgs_restart_status_pass2.md`**: Latest WGS pipeline execution status
-
----
-
-## Pipeline Phases
-
-### Phase 0: Clinical (00a-00c)
-1. `00a_load_clean_clinical.R` - Load/clean clinical data
-2. `00b_classify_episodes.R` - Classify UTI vs ASB episodes
-3. `00c_plot_clinical_summary.R` - Clinical plots
-
-Outputs: `results/clinical/status_map.csv`
-
-### Phase 1: Genomics (02-10)
-4. `02_gene_presence_analysis.R` - Virulence factors (Abricate)
-5. `04_gene_breakdown.R` - Focus gene analysis
-6. `06_MLST.R` - Multi-locus sequence typing
-7. `08_core_vs_plasmid.R` - Core vs plasmid comparison
-8. `09_inc_plasmid_network.R` - Replicon network analysis
-
-Outputs: `results/vf/vf_pa_all.csv`, `results/mlst/`, `results/plasmids/`
-
-### Phase 2: WGS Core (12a-12e) **[MODULAR PATH]**
-9. `12a_wgs_qc.R` - Assembly QC
-10. `12b_core_snp.R` - Core genome SNP calling (Parsnp)
-11. `12c_panaroo.R` - Pangenome analysis
-12. `13_visualise_panaroo_selection.R` - QC/selection visualization
-
-Outputs: `results/wgs/qc_summary.csv`, `results/wgs/core/`, `results/wgs/pan/`
-
-⚠️ **Legacy**: `12_wgs_exact_compare.R` is deprecated (batch ID bug). Use modular 12a-12e instead.
-
-### Phase 3: Integration (11, 14)
-13. `11_compare_strains.R` - Within-host strain comparison
-14. `14_genotype_phenotype_model.R` - Genotype-phenotype GWAS
-
-Outputs: `results/strain_compare/`, `results/models/gwas_*.csv`
-
----
-
-##  Critical Fix: Participant ID Logic
-
-**Problem**: Legacy pipeline treated batch IDs (e.g., `PR0010`) as single participants, causing invalid cross-patient comparisons.
-
-**Solution**: Modular pipeline (12a-12e) correctly uses `Participant_id` from `assembly_metadata.csv`.
+**Solution**: Use modular pipeline (`12a-12e`) which correctly reads `Participant_id` from `assembly_metadata.csv`.
 
 **Verification**:
 ```bash
-# Check QC summary has true participant IDs
-cut -d',' -f8 results/wgs/qc_summary.csv | sort -u | wc -l
-# Should return ~87, not 5
-
-# Ensure no batch IDs in participant columns
-grep "PR0010" results/strain_compare/pairwise_metrics.csv results/models/*.csv
-# Should return nothing
+# Should show ~87 unique participants (not 5 batch IDs)
+cut -d',' -f8 results/wgs/qc_summary.csv | tail -n +2 | sort -u | wc -l
 ```
 
 ---
 
 ## Configuration
 
-All paths configured in `00_config.R`. Key settings:
+All paths in `00_config.R`:
 
 ```r
 DIR_RESULTS <- "results"
-DIR_PLOTS <- "results/plots"
-DIR_WGS <- "results/wgs"
-CORES_USE <- 10  # Adjust based on your system
+DIR_PLOTS <- "plots"
+CORES_USE <- 10  # Adjust for your system
 ```
 
 ---
 
 ## Dependencies
 
-**R Packages**: `tidyverse`, `lme4`, `broom.mixed`, `optparse`, `pheatmap`, `furrr`, `seqinr`, `fs`
+### R Packages (38 CRAN + 4 Bioconductor)
+**Install via**: `Rscript install_r_packages.R`
 
-**Conda Tools**: `parsnp`, `panaroo`, `snp-dists`, `abricate`, `mlst`, `plasmidfinder`, `nucmer`
+**Key packages**: 
+- Data: `tidyverse`, `data.table`, `vroom`
+- Modeling: `lme4`, `broom.mixed`
+- Visualization: `ggplot2`, `ggraph`, `pheatmap`, `ComplexUpset`, `ggtree`
+- Parallel: `future`, `future.apply`, `furrr`
 
-Install conda env:
+### Conda Tools
+**Install via**:
 ```bash
-conda create -n asm-snp-x86 -c bioconda parsnp panaroo snp-dists abricate mlst plasmidfinder mummer
+conda create -n yellow-wgs-x86 -c bioconda -c conda-forge \
+    parsnp panaroo snp-dists abricate mlst plasmidfinder mummer prokka openjdk
 ```
+
+**Tools**: `parsnp` (SNPs), `panaroo` (pangenome), `abricate` (AMR/VF), `mlst` (typing), `prokka` (annotation)
 
 ---
 
 ## Troubleshooting
 
+### "No GFF files found" (Script 20)
+- **Cause**: GFF files in `results/prokka_*` directories
+- **Fix**: Script auto-searches multiple directories
+- **Note**: Missing GFFs for some assemblies is normal (uses fallback)
+
 ### Parsnp slow/hanging
 - **Cause**: Large dataset (361 genomes)
-- **Solution**: Expected, allow 30-60 mins for completion
+- **Solution**: Expected, allow 30-60 mins
 
-### Tools not found in PATH
-- **Fix**: Added in `R/wgs_helpers.R` (lines 17-25) - conda paths prepended to PATH
-
-### file_symlink error
-- **Fix**: Updated `12b_core_snp.R` to use `fs::link_create()`
-
-See `docs/wgs_restart_status_pass2.md` for recent execution logs and fixes.
+### "phenotype_switch_candidates.csv is empty"
+- **Cause**: Need to re-run `11_compare_strains.R` after fixing Jaccard NA handling
+- **Fix**: Run `Rscript 11_compare_strains.R --participants ALL`
 
 ---
 
-## Contact & Citation
+## Citation & Contact
 
 **Project**: Yellow rUTIs Cohort, E. coli Genomic Analysis  
-**Date**: 2025-11-27  
-**Status**: Active - WGS pipeline completion in progress
+**Date**: 2025-11-28  
+**Status**: ✅ Analysis Complete - Ready for Publication
+

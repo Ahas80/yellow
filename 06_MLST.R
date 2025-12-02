@@ -258,7 +258,7 @@ if ("Participant_id" %in% names(mlst_tbl) && "Timepoint" %in% names(mlst_tbl)) {
     geom_col() +
     coord_flip() +
     scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
-    labs(x = "Participant", y = "Fraction with dominant ST", title = "Within-host ST persistence") +
+    labs(x = "Participant", y = "Fraction with dominant ST", title = "Within-Host Sequence Type Persistence") +
     theme_minimal()
 
   ggsave(file.path(DIR_PLOTS_MLST, "st_persistence_by_participant.png"), g, width = 7, height = 8)

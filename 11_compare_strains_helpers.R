@@ -287,10 +287,13 @@ classify_pair <- function(metrics, thresholds = list(id = 99.9, snps = 50, vf = 
   has_id <- !is.na(metrics$AvgIdentity) && !is.na(metrics$TotalSNPs)
   mean_acc <- mean(c(metrics$VF_Jaccard, metrics$Inc_Jaccard), na.rm = TRUE)
 
+  # Helper: treat NA as passing (1.0) for Jaccard (implies empty union -> identical in emptiness)
+  pass_j <- function(val, thresh) is.na(val) || val >= thresh
+
   # Same strain criteria
   same_rule <- ST_equal && (
     (!has_id || (metrics$AvgIdentity >= thresholds$id && metrics$TotalSNPs <= thresholds$snps))
-  ) && (!is.na(metrics$VF_Jaccard) && metrics$VF_Jaccard >= thresholds$vf) && (!is.na(metrics$Inc_Jaccard) && metrics$Inc_Jaccard >= thresholds$inc)
+  ) && pass_j(metrics$VF_Jaccard, thresholds$vf) && pass_j(metrics$Inc_Jaccard, thresholds$inc)
 
   if (same_rule) {
     return(list(Classification = "Same", RuleUsed = "ST + ID/SNP + accessory"))

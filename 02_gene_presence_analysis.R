@@ -207,21 +207,21 @@ top25 <- tbl_gene %>%
 p1 <- ggplot(top25, aes(GENE, n_participants)) +
   geom_col(fill = "steelblue") +
   coord_flip() +
-  labs(title = "Top 25 VFDB genes", y = "Participants", x = NULL) +
+  labs(title = "Top 25 VFDB genes", y = "Number of Participants", x = NULL) +
   theme_minimal(base_size = 11)
-ggsave(file.path(DIR_PLOTS_VF, "core_bar_top25_all.png"), p1, width = 6, height = 6)
+ggsave(file.path(DIR_PLOTS_VF, "core_bar_top25_all.png"), p1, width = 6, height = 6, dpi = 300)
 
 p2 <- ggplot(tbl_gene, aes(n_participants)) +
   geom_histogram(binwidth = 1, fill = "grey70") +
-  labs(title = "VF gene prevalence", x = "# participants", y = "Gene count") +
+  labs(title = "VF gene prevalence", x = "Number of Participants", y = "Gene count") +
   theme_minimal(base_size = 11)
-ggsave(file.path(DIR_PLOTS_VF, "core_histogram_all.png"), p2, width = 5, height = 4)
+ggsave(file.path(DIR_PLOTS_VF, "core_histogram_all.png"), p2, width = 5, height = 4, dpi = 300)
 
 # 9. Nucmer Trajectories (Pairwise)
 # ------------------------------------------------------------------------------
 ids_multi <- vf_pa_all %>%
   distinct(Participant_id, tp_lab) %>%
-  mutate(tp_num = readr::parse_number(as.character(tp_lab))) %>%
+  mutate(tp_num = suppressWarnings(readr::parse_number(as.character(tp_lab)))) %>%
   filter(!is.na(tp_num)) %>%
   count(Participant_id, name = "n_tp") %>%
   filter(n_tp >= 2) %>%

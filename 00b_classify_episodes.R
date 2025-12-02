@@ -159,8 +159,9 @@ classified <- meta_plus %>%
 # 3. Episode-level Collapse
 # ------------------------------------------------------------------------------
 episode_tbl <- classified %>%
-    group_by(Participant_id, Timepoint, Batch) %>%
+    group_by(Participant_id, Timepoint) %>%
     summarise(
+        Batch = paste(sort(unique(Batch)), collapse = ","),
         culture_pos_epi = any(culture_pos, na.rm = TRUE),
         cfu_recorded_any = any(ifelse(is.na(cfu_recorded), FALSE, cfu_recorded)),
         cfu_ge_1e5_any = any(cfu_cat == ">=1e5", na.rm = TRUE),

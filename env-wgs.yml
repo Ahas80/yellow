@@ -1,4 +1,3 @@
-# env-wgs-osx64.yml
 name: yellow-wgs-x86
 channels:
   - conda-forge
@@ -42,3 +41,11 @@ dependencies:
   - r-gridextra
   - r-igraph
   - r-purrr
+  # Added R packages to fix compilation issues
+  - r-here
+  - r-scales
+  - r-future.apply
+  - r-lme4
+  - r-broom.mixed
+  - r-seqinr
+  - bioconductor-biostrings

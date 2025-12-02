@@ -32,7 +32,6 @@ suppressPackageStartupMessages({
   library(readr)
   library(tibble)
   library(ggplot2)
-  library(ComplexUpset)
   library(stringr)
   library(purrr)
   library(forcats)
@@ -190,11 +189,15 @@ if (nrow(nitrate_long)) {
 
   # Plot
   if (any(colSums(nitrate_mat[, c("Nar", "Nap", "Nas"), drop = FALSE]) > 0)) {
-    ups_df <- nitrate_mat %>%
-      unite(Sample, Participant_id, Timepoint, sep = "_") %>%
-      mutate(across(c(Nar, Nap, Nas), as.logical))
-    p <- ComplexUpset::upset(ups_df, intersect = c("Nar", "Nap", "Nas"), name = "Nitrate System")
-    ggsave(file.path(DIR_PLOTS_VF, "nitrate_upset.png"), p, width = 6, height = 4)
+    if (requireNamespace("ComplexUpset", quietly = TRUE)) {
+      ups_df <- nitrate_mat %>%
+        unite(Sample, Participant_id, Timepoint, sep = "_") %>%
+        mutate(across(c(Nar, Nap, Nas), as.logical))
+      p <- ComplexUpset::upset(ups_df, intersect = c("Nar", "Nap", "Nas"), name = "Nitrate System")
+      ggsave(file.path(DIR_PLOTS_VF, "nitrate_upset.png"), p, width = 6, height = 4)
+    } else {
+      message("⚠ Skipping Nitrate UpSet plot: Package 'ComplexUpset' not installed.")
+    }
   }
 }
 

@@ -22,6 +22,7 @@
 
 # 1. Load Configuration & Libraries
 source("00_config.R")
+source("R/plot_helpers.R")
 suppressPackageStartupMessages({
   library(dplyr)
   library(tidyr)
@@ -33,6 +34,16 @@ suppressPackageStartupMessages({
   library(stringr)
   library(tibble)
 })
+
+# Standard Color Palette
+# Standard Color Palette
+# Note: Infection colors are now handled by scale_colour_infection() in R/plot_helpers.R
+rutis_palette <- c(
+  `Culture-positive` = "#009E73",
+  Other = "#999999",
+  `Within-Host` = "#0072B2",
+  `Between-Host` = "#CC79A7"
+)
 
 # 2. Helper Functions
 # ------------------------------------------------------------------------------
@@ -130,6 +141,7 @@ load_robust_metadata <- function() {
 # 3. Load Data
 # ------------------------------------------------------------------------------
 FILE_GENE_STATS <- file.path(DIR_VF, "stats_gene_level.csv")
+FILE_STATUS_MAP <- file.path(DIR_RESULTS, "clinical", "status_map.csv")
 
 if (!file.exists(FILE_VF_HITS) || !file.exists(FILE_VF_PA) || !file.exists(FILE_GENE_STATS)) {
   stop("Missing required inputs. Run 02_gene_presence_analysis.R first.")
@@ -214,14 +226,14 @@ top25 <- tbl_gene %>%
 ggplot(top25, aes(GENE, n_participants)) +
   geom_col(fill = "steelblue") +
   coord_flip() +
-  labs(title = "Top 25 VFDB genes (entire cohort)", y = "Participants", x = NULL) +
+  labs(title = "Top 25 Most Prevalent Virulence Factor Genes", y = "Participants", x = NULL) +
   theme_minimal()
 safe_ggsave("core_bar_top25_all.png", width = 6, height = 6)
 
 # Prevalence Histogram
 ggplot(tbl_gene, aes(n_participants)) +
   geom_histogram(binwidth = 1, fill = "grey70") +
-  labs(title = "VF gene prevalence distribution", x = "# participants", y = "Gene count") +
+  labs(title = "Distribution of Virulence Gene Prevalence", x = "Number of Participants", y = "Count of Genes") +
   theme_minimal()
 safe_ggsave("core_histogram_all.png", width = 5, height = 4)
 
@@ -229,7 +241,7 @@ safe_ggsave("core_histogram_all.png", width = 5, height = 4)
 ggplot(genes_per_sample, aes(tp_lab, n_genes)) +
   geom_boxplot(outlier.shape = NA, width = 0.6) +
   geom_jitter(width = 0.15, alpha = 0.5, size = 1.5) +
-  labs(title = "Per-sample VF gene richness by timepoint", x = "Timepoint", y = "# VF genes") +
+  labs(title = "Virulence Gene Richness per Sample by Timepoint", x = "Timepoint", y = "Number of Detected VF Genes") +
   theme_minimal()
 safe_ggsave("richness_by_timepoint.png", width = 7, height = 4.5)
 
@@ -240,7 +252,7 @@ if (nrow(traj_df) > 0) {
     geom_line(alpha = 0.35) +
     geom_point(size = 1.6) +
     scale_x_continuous(breaks = sort(unique(traj_df$tp_num))) +
-    labs(title = "Within-participant trajectories of VF gene richness", x = "Numeric timepoint", y = "# VF genes") +
+    labs(title = "Longitudinal Changes in Virulence Gene Richness", x = "Timepoint", y = "Number of Detected VF Genes") +
     theme_minimal()
   safe_ggsave("richness_trajectories_numeric.png", width = 7, height = 4.5)
 }
@@ -303,7 +315,6 @@ if (has_pkg("ComplexUpset")) {
   if (nrow(persist_stats)) write_csv(persist_stats, file.path(DIR_RESULTS, "persistence_summary.csv"))
 
   # 6B. Status-stratified UpSet
-  FILE_STATUS_MAP <- file.path(DIR_RESULTS, "status_map.csv")
   if (file.exists(FILE_STATUS_MAP)) {
     status_map <- read_csv(FILE_STATUS_MAP, show_col_types = FALSE) %>%
       ensure_tp_lab() %>%
@@ -314,7 +325,7 @@ if (has_pkg("ComplexUpset")) {
       pivot_longer(-c(Participant_id, tp_lab), names_to = "GENE", values_to = "present") %>%
       filter(present > 0) %>%
       select(-present) %>%
-      left_join(status_map, by = c("Participant_id", "tp_lab")) %>%
+      left_join(status_map, by = c("Participant_id", "tp_lab"), relationship = "many-to-many") %>%
       filter(!is.na(Infection_Status)) %>%
       distinct(GENE, Infection_Status) %>%
       mutate(val = TRUE) %>%
@@ -333,7 +344,7 @@ if (has_pkg("ComplexUpset")) {
       p <- ComplexUpset::upset(
         gene_status_df,
         intersect = status_sets, min_size = 1,
-        name = "Genes by status"
+        name = "Intersection of Virulence Genes by Infection Status"
       )
       safe_ggsave("upset_genes_by_status.png", p, width = 10, height = 6)
     }
@@ -373,8 +384,8 @@ if (file.exists(FILE_FISHER)) {
       }
     } +
     labs(
-      title = "UTI vs ASB: per-gene enrichment",
-      x = "log2(odds ratio)  (UTI / ASB)",
+      title = "Genomic Features Associated with UTI vs. ASB",
+      x = "log2(Odds Ratio)",
       y = "-log10(FDR)"
     ) +
     theme_minimal()
@@ -401,7 +412,7 @@ if (file.exists(FILE_TREE) && has_pkg("ape")) {
       # We need a map: isolate_ID -> Infection_Status
 
       annot <- meta_map %>%
-        inner_join(status, by = c("Participant_id", "Timepoint" = "tp_lab")) %>%
+        inner_join(status, by = c("Participant_id", "Timepoint" = "tp_lab"), relationship = "many-to-many") %>%
         select(isolate_ID, Infection_Status) %>%
         distinct()
 
@@ -418,7 +429,7 @@ if (file.exists(FILE_TREE) && has_pkg("ape")) {
           # Fallback: if extraction fails, assume label IS the ID
           match_id = coalesce(extracted_id, label)
         ) %>%
-        left_join(annot, by = c("match_id" = "isolate_ID")) %>%
+        left_join(annot, by = c("match_id" = "isolate_ID"), relationship = "many-to-many") %>%
         select(label, Infection_Status)
 
       # Update annot to use the exact tip labels from the tree
@@ -433,9 +444,9 @@ if (file.exists(FILE_TREE) && has_pkg("ape")) {
         try({
           p <- ggtree(tree, layout = "rectangular") %<+% annot +
             geom_tippoint(aes(color = Infection_Status), size = 2, alpha = 0.8) +
-            scale_color_manual(values = c("ASB" = "#1f77b4", "UTI" = "#d62728", "Negative" = "grey50"), na.value = "grey80") +
+            scale_colour_infection() +
             theme_tree2() +
-            labs(title = "Core-genome Phylogeny", color = "Phenotype")
+            labs(title = "Core Genome Phylogeny of E. coli Isolates", color = "Infection Status")
           safe_ggsave("phylogeny/core_tree_phenotype.png", p, width = 8, height = 10)
         })
       } else {
@@ -479,8 +490,8 @@ if (file.exists(FILE_MLST_ALL) && file.exists(FILE_STATUS_MAP) && !is.null(meta_
     g <- ggplot(st_plot_df, aes(x = Infection_Status, fill = ST_grouped)) +
       geom_bar(position = "fill") +
       scale_y_continuous(labels = scales::percent) +
-      scale_fill_brewer(palette = "Set3") +
-      labs(title = "ST Distribution by Phenotype", x = NULL, y = "Proportion of Episodes") +
+      scale_fill_brewer(palette = "Set3", name = "Sequence Type") +
+      labs(title = "Sequence Type Distribution by Infection Status", x = "Infection Status", y = "Proportion of Isolates") +
       theme_minimal()
     safe_ggsave("epidemiology/st_distribution_stacked.png", g, width = 6, height = 5)
   }
@@ -503,8 +514,8 @@ if (exists("vf_hits_all") && file.exists(FILE_STATUS_MAP)) {
     g <- ggplot(vf_counts, aes(x = Infection_Status, y = n_vf, fill = Infection_Status)) +
       geom_boxplot(outlier.shape = NA, alpha = 0.7) +
       geom_jitter(width = 0.2, alpha = 0.4) +
-      scale_fill_manual(values = c("ASB" = "#1f77b4", "UTI" = "#d62728")) +
-      labs(title = "Virulence Gene Burden by Phenotype", y = "Count of VFDB Genes", x = NULL) +
+      scale_fill_manual(values = rutis_palette, name = "Infection Status") +
+      labs(title = "Total Virulence Gene Burden by Infection Status", y = "Total VF Genes", x = "Infection Status") +
       theme_minimal() +
       theme(legend.position = "none")
 
@@ -544,7 +555,8 @@ if (file.exists(FILE_PAIR_STATS)) {
       geom_violin(alpha = 0.5) +
       geom_jitter(height = 0, width = 0.2, alpha = 0.1, size = 0.5) +
       scale_y_log10() +
-      labs(title = "Pairwise SNP Distances", y = "SNP Distance (log10 + 1)", x = NULL) +
+      scale_fill_manual(values = rutis_palette, name = "Comparison Type") +
+      labs(title = "Pairwise SNP Distances: Within-Host vs. Between-Host", y = "SNP Distance (log10 + 1)", x = "Comparison Type") +
       theme_minimal() +
       theme(legend.position = "none")
 
@@ -585,11 +597,11 @@ if (file.exists(FILE_STATUS_MAP) && file.exists(FILE_MLST_ALL) && !is.null(meta_
     ) +
       geom_line(color = "grey80") +
       geom_point(aes(color = Infection_Status, shape = ST_Label), size = 3) +
-      scale_color_manual(values = c("ASB" = "#1f77b4", "UTI" = "#d62728", "Negative" = "grey50")) +
+      scale_color_manual(values = rutis_palette) +
       labs(
-        title = "Longitudinal States (Top 20 Participants)",
+        title = "Longitudinal Infection Dynamics (Top 20 Participants)",
         x = "Timepoint", y = "Participant",
-        color = "Status", shape = "ST"
+        color = "Infection Status", shape = "ST"
       ) +
       theme_minimal()
 
@@ -627,7 +639,8 @@ if (file.exists(FILE_PAIR_STATS) && has_pkg("igraph") && has_pkg("ggraph")) {
 
     edges <- pairs %>%
       filter(TotalSNPs <= SNP_THRESHOLD) %>%
-      select(from = SampleA, to = SampleB, weight = TotalSNPs)
+      mutate(weight = (SNP_THRESHOLD + 1) - TotalSNPs) %>%
+      select(from = SampleA, to = SampleB, weight)
 
     if (nrow(edges) > 0) {
       try({
@@ -651,7 +664,7 @@ if (file.exists(FILE_PAIR_STATS) && has_pkg("igraph") && has_pkg("ggraph")) {
         p <- ggraph(g_net, layout = "fr") +
           geom_edge_link(aes(alpha = 0.5), show.legend = FALSE) +
           geom_node_point(aes(color = Phenotype), size = 3) +
-          scale_color_manual(values = c("ASB" = "#1f77b4", "UTI" = "#d62728", "Negative" = "grey50"), na.value = "grey80") +
+          scale_color_manual(values = rutis_palette, na.value = "grey80") +
           theme_graph() +
           labs(title = paste("Transmission Network (SNPs <=", SNP_THRESHOLD, ")"))
 

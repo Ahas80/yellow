@@ -81,7 +81,7 @@ if (!"Timepoint" %in% names(df) && exists("meta")) {
     # Actually 12a output preserves input columns from assembly_metadata.csv usually?
     # Let's check 12a code... it reads FILE_METADATA.
     # So qc_df should have Participant_id and Timepoint.
-    pass
+    # pass
 }
 
 # 3. Summary
@@ -104,7 +104,7 @@ df <- df %>%
 # Plot 3: Participant vs Timepoint Status
 # We want to see for each person, what they have.
 p3 <- ggplot(df, aes(x = Timepoint, y = Participant_id, fill = Reason)) +
-    geom_tile(color = "white", size = 0.2) +
+    geom_tile(color = "white", linewidth = 0.2) +
     scale_fill_manual(values = c(
         "Selected" = "dodgerblue",
         "Size > 7MB" = "firebrick",
@@ -113,7 +113,7 @@ p3 <- ggplot(df, aes(x = Timepoint, y = Participant_id, fill = Reason)) +
         "Other" = "grey50"
     )) +
     labs(
-        title = "Sample Selection Status by Participant & Timepoint",
+        title = "Panaroo Sample Selection Matrix",
         subtitle = "Blue = Kept, Other colors = Eliminated (Reason)",
         x = "Timepoint",
         y = "Participant ID"
@@ -126,7 +126,7 @@ p3 <- ggplot(df, aes(x = Timepoint, y = Participant_id, fill = Reason)) +
     )
 
 plot_file3 <- file.path(DIR_PLOTS_WGS, "panaroo_selection_matrix.png")
-ggsave(plot_file3, p3, width = 10, height = 12, bg = "white") # Taller for many participants
+ggsave(plot_file3, p3, width = 10, height = 12, bg = "white", dpi = 300) # Taller for many participants
 message(sprintf("Matrix Plot saved to %s", plot_file3))
 
 # Export detailed CSV with metadata
@@ -134,8 +134,9 @@ out_csv_detailed <- file.path(DIR_WGS, "panaroo_selection_detailed.csv")
 write_csv(df, out_csv_detailed)
 message(sprintf("Detailed summary saved to %s", out_csv_detailed))
 
-# Plot 4: Overview - How many individuals have X valid timepoints?
-# Group by Participant and count valid samples
+# Plot 4: Overview - How many individuals have X valid isolates?
+# Note: Each biological sample may have 2+ isolates (different assemblers)
+# Group by Participant and count valid assembly files (isolates)
 overview_df <- df %>%
     group_by(Participant_id) %>%
     summarise(
@@ -144,7 +145,8 @@ overview_df <- df %>%
     ) %>%
     ungroup()
 
-# Count how many participants have 0, 1, 2, ... valid timepoints
+# Count how many participants have 0, 1, 2, ... valid isolates
+# Note: n_valid counts ISOLATES (assemblies), not unique biological samples
 overview_counts <- overview_df %>%
     count(n_valid) %>%
     mutate(label = paste0(n, " participants"))
@@ -153,9 +155,9 @@ p4 <- ggplot(overview_counts, aes(x = factor(n_valid), y = n)) +
     geom_col(fill = "dodgerblue", width = 0.7) +
     geom_text(aes(label = n), vjust = -0.5) +
     labs(
-        title = "Overview of Longitudinal Data Availability",
-        subtitle = "How many participants have X valid timepoints for Panaroo?",
-        x = "Number of Valid Timepoints per Participant",
+        title = "Distribution of Valid Isolates per Participant",
+        subtitle = "Isolates = assembly files passing QC (note: multiple assemblers per sample)",
+        x = "Number of Valid Isolates per Participant",
         y = "Number of Participants"
     ) +
     theme_minimal() +
@@ -165,7 +167,7 @@ p4 <- ggplot(overview_counts, aes(x = factor(n_valid), y = n)) +
     )
 
 plot_file4 <- file.path(DIR_PLOTS_WGS, "panaroo_selection_overview.png")
-ggsave(plot_file4, p4, width = 8, height = 6, bg = "white")
+ggsave(plot_file4, p4, width = 8, height = 6, bg = "white", dpi = 300)
 message(sprintf("Overview Plot saved to %s", plot_file4))
 
 # ---- 4 · Timepoint-level selection summary ----------------------------------
@@ -205,7 +207,7 @@ message("Wrote timepoint selection summary to: ", timepoint_csv)
 
 # Make an explicit, stable ordering of timepoints (T0, T1, T2, ... then anything else)
 tp_order <- timepoint_df %>%
-    summarise(Timepoint = sort(unique(Timepoint))) %>%
+    reframe(Timepoint = sort(unique(Timepoint))) %>%
     pull(Timepoint)
 
 tp_bar <- timepoint_df %>%
@@ -222,7 +224,7 @@ tp_bar <- timepoint_df %>%
 p_tp_bar <- ggplot(tp_bar, aes(x = Timepoint, y = n_timepoints, fill = status_simple)) +
     geom_col(position = "stack", colour = "black", linewidth = 0.2) +
     labs(
-        title = "Which participant–timepoints survive Panaroo QC?",
+        title = "Panaroo Selection Outcome by Timepoint",
         subtitle = "Each bar = study timepoint; height = number of participant x timepoint combinations",
         x = "Study timepoint (per participant)",
         y = "Number of participant x timepoint combinations",
@@ -260,7 +262,7 @@ p_tp_tile <- ggplot(tp_tile, aes(x = Timepoint, y = Participant_id, fill = statu
         "dropped (no isolates kept)" = "firebrick"
     )) +
     labs(
-        title = "Timepoints kept vs dropped for Panaroo (per participant)",
+        title = "Panaroo Selection Status Heatmap",
         subtitle = "Each tile = one participant x timepoint; colour shows Panaroo QC outcome",
         x = "Study timepoint",
         y = "Participants (one row per participant)",
@@ -293,7 +295,7 @@ p5 <- ggplot(sample_util_df, aes(x = Timepoint, y = n, fill = Status)) +
         "Not Utilized (Failed QC)" = "grey50"
     )) +
     labs(
-        title = "Total Samples Utilized vs Not Utilized per Timepoint",
+        title = "Sample Utilization for Panaroo by Timepoint",
         subtitle = "Zoomed-out view of all 1552 samples",
         x = "Timepoint",
         y = "Number of Samples",
@@ -306,7 +308,7 @@ p5 <- ggplot(sample_util_df, aes(x = Timepoint, y = n, fill = Status)) +
     )
 
 plot_file5 <- file.path(PLOTDIR, "panaroo_selection_samples_per_timepoint.png")
-ggsave(plot_file5, p5, width = 10, height = 6, bg = "white")
+ggsave(plot_file5, p5, width = 10, height = 6, bg = "white", dpi = 300)
 message(sprintf("Sample Utilization Plot saved to %s", plot_file5))
 
 # 5. QC Bias Analysis (Infection Status)
@@ -327,6 +329,7 @@ if (file.exists(status_map_file)) {
     qc_status <- df %>%
         mutate(tp_clean = canon_tp(Timepoint)) %>%
         inner_join(status_map %>% mutate(tp_clean = canon_tp(Timepoint)),
+            relationship = "many-to-many",
             by = c("Participant_id", "tp_clean")
         )
 

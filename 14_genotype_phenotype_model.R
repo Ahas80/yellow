@@ -42,6 +42,7 @@ suppressPackageStartupMessages({
     library(pheatmap)
     library(future)
     library(future.apply)
+    library(broom)
 })
 
 # 2. CLI Options
@@ -115,9 +116,9 @@ msg(
 )
 
 # VF/AMR matrix - Use hits file and create presence/absence matrix
-FILE_VF <- file.path(DIR_VF, "vf_hits_all.csv")
+FILE_VF <- file.path(DIR_VF, "vf_hits_all.rds")
 if (!file.exists(FILE_VF)) stop("Missing ", FILE_VF)
-vf_hits <- read_csv(FILE_VF, show_col_types = FALSE)
+vf_hits <- readRDS(FILE_VF)
 
 # Create presence/absence: 1 if GENE present for that Participant/Timepoint
 # Need to extract participant and timepoint from the hits
@@ -196,7 +197,7 @@ status <- status %>%
 
 # Join with status
 data_vf <- status %>%
-    inner_join(vf, by = c("Participant_id", "Timepoint"))
+    inner_join(vf, by = c("Participant_id", "Timepoint"), relationship = "many-to-many")
 
 msg("  After VF join: %d samples", nrow(data_vf))
 
@@ -205,7 +206,7 @@ data_plasmid <- NULL
 if (!is.null(plasmid_raw)) {
     # Link plasmid Isolate_ID to Participant_id/Timepoint via metadata
     plasmid_linked <- plasmid_raw %>%
-        inner_join(metadata, by = "Isolate_ID") %>%
+        inner_join(metadata, by = "Isolate_ID", relationship = "many-to-many") %>%
         select(-Isolate_ID)
 
     # Normalize Timepoint format to match status map
@@ -226,7 +227,7 @@ if (!is.null(plasmid_raw)) {
 
     # Join with status
     data_plasmid <- status %>%
-        inner_join(plasmid_agg, by = c("Participant_id", "Timepoint"))
+        inner_join(plasmid_agg, by = c("Participant_id", "Timepoint"), relationship = "many-to-many")
 
     msg("  After plasmid join: %d samples", nrow(data_plasmid))
 }
@@ -538,13 +539,13 @@ p_volcano <- ggplot(univar_results, aes(log2_OR, neg_log10_p)) +
         max.overlaps = 15,
         box.padding = 0.5
     ) +
-    scale_color_manual(values = c("TRUE" = "red", "FALSE" = "grey40")) +
+    scale_color_manual(values = c("TRUE" = "red", "FALSE" = "grey40"), labels = c("Not Significant", sprintf("FDR < %.2f", opt$fdr_thresh))) +
     labs(
-        title = "Genotype-Phenotype Association: UTI vs ASB",
+        title = "Genotype-Phenotype Association: UTI vs. ASB",
         subtitle = sprintf("%d features tested (Fisher's exact)", nrow(univar_results)),
         x = "Log2 Odds Ratio",
         y = "-Log10 P-value",
-        color = sprintf("FDR < %.2f", opt$fdr_thresh)
+        color = "Significance"
     ) +
     theme_minimal(base_size = 11) +
     theme(legend.position = "top")
@@ -567,7 +568,7 @@ if (nrow(top_glmm) > 0) {
         geom_text(aes(label = sprintf("%.2f", OR)), hjust = -0.5, size = 3) +
         scale_x_log10() +
         labs(
-            title = "Top GLMM Associations (UTI vs ASB)",
+            title = "Top GLMM Associations (UTI vs. ASB)",
             subtitle = sprintf("%d features with FDR < 0.2", nrow(top_glmm)),
             x = "Odds Ratio (95% CI)",
             y = NULL
@@ -587,16 +588,25 @@ top_features <- glmm_results %>%
     pull(feature)
 
 if (length(top_features) > 1) {
+    # Create unique Sample_ID to avoid duplicate row names
     heatmap_data <- data_final %>%
-        select(Participant_id, Infection_Status, all_of(top_features)) %>%
-        arrange(Infection_Status, Participant_id) %>%
-        column_to_rownames("Participant_id") %>%
+        mutate(Sample_ID = ifelse(!is.na(Timepoint),
+            paste(Participant_id, Timepoint, sep = "_"),
+            make.unique(as.character(Participant_id))
+        )) %>%
+        select(Sample_ID, Infection_Status, all_of(top_features)) %>%
+        arrange(Infection_Status, Sample_ID) %>%
+        column_to_rownames("Sample_ID") %>%
         select(-Infection_Status)
 
     annotation <- data_final %>%
-        select(Participant_id, Infection_Status) %>%
+        mutate(Sample_ID = ifelse(!is.na(Timepoint),
+            paste(Participant_id, Timepoint, sep = "_"),
+            make.unique(as.character(Participant_id))
+        )) %>%
+        select(Sample_ID, Infection_Status) %>%
         distinct() %>%
-        column_to_rownames("Participant_id")
+        column_to_rownames("Sample_ID")
 
     pheatmap(
         t(as.matrix(heatmap_data)),
@@ -606,11 +616,13 @@ if (length(top_features) > 1) {
         show_colnames = FALSE,
         color = c("white", "darkblue"),
         border_color = NA,
+        main = "Top Discriminatory Features (UTI vs. ASB)",
         filename = file.path(DIR_PLOTS, "heatmap_top_discriminators.png"),
         width = 10,
         height = max(6, length(top_features) * 0.2)
     )
 }
+
 
 # ======================== OPTIONAL: RANDOM FOREST =============================
 if (opt$run_rf && requireNamespace("randomForest", quietly = TRUE)) {

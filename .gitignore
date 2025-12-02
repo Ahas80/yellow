@@ -31,7 +31,6 @@ cleanup_*.sh
 
 # Results & Logs
 results/
-plots/
 logs/
 debug_bundle_*/
 debug_output*.txt
@@ -44,6 +43,7 @@ test.out*
 .DS_Store
 .Rproj.user
 .Rhistory
+.Rapp.history
 .RData
 .Ruserdata
 rUTIs.Rproj
@@ -62,6 +62,8 @@ fake ecoli/
 phyloseq try out/
 not-assemblies/
 multi_*.fa.*
+temp_prokka_test_*/
+rUTIs_backup_*.tar.gz
 
 # Generated PDFs (unless documentation)
 *.pdf
@@ -73,3 +75,7 @@ multi_*.fa.*
 !*.md
 !*.yml
 !Makevars
+
+# Curated plots directory (do not ignore)
+!plots/
+!plots/**/*

@@ -111,6 +111,9 @@ if (length(keep) > 1) {
   coocc_edges <- t(mat) %*% mat
   diag(coocc_edges) <- 0
 
+  # Keep only upper triangle to avoid duplicate edges in undirected graph
+  coocc_edges[lower.tri(coocc_edges)] <- 0
+
   edges_tbl <- as.data.frame(as.table(coocc_edges)) %>%
     filter(Freq > 0) %>%
     rename(from = Var1, to = Var2, weight = Freq)
@@ -118,12 +121,12 @@ if (length(keep) > 1) {
   g1 <- graph_from_data_frame(edges_tbl, directed = FALSE)
 
   pdf(file.path(DIR_PLOTS_PLASMIDS, "replicon_cooccurrence.pdf"), width = 7, height = 7)
-  print(ggraph(g1, layout = "fr") +
+  print(ggraph(g1, layout = "nicely") +
     geom_edge_link(aes(width = weight), alpha = .6) +
     geom_node_point(size = 4) +
     geom_node_text(aes(label = name), vjust = 1.5) +
     theme_void() +
-    ggtitle("Replicon co-occurrence (Inc types)"))
+    ggtitle("Plasmid Replicon Co-occurrence Network"))
   dev.off()
 }
 
@@ -148,7 +151,7 @@ if (file.exists(FILE_MLST)) {
       scale_color_manual(values = c("steelblue", "tomato"), labels = c("Replicon", "ST"), name = "") +
       geom_node_text(aes(label = name), repel = TRUE, size = 3) +
       theme_void() +
-      ggtitle("Chromosomal ST vs Inc replicon network"))
+      ggtitle("Bipartite Network: Sequence Types vs. Plasmid Replicons"))
     dev.off()
   }
 }

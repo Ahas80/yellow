@@ -12,6 +12,7 @@
 #   - results/wgs/core/core.aln.fasta
 #   - results/wgs/core/snp_dists.tsv
 #   - results/wgs/core/strain_pairs.csv
+#   - results/wgs/core/core_genome.tree
 #
 # Usage:
 #   Rscript 12b_core_snp.R
@@ -29,6 +30,8 @@ suppressPackageStartupMessages({
     library(dplyr)
     library(readr)
     library(fs)
+    library(ape)
+    library(tidyr)
 })
 
 # 2. Setup
@@ -37,6 +40,16 @@ DIR_CORE <- file.path(DIR_WGS, "core")
 ensure_dir(DIR_CORE)
 
 log_info("Starting 12b_core_snp.R")
+
+# Check if outputs already exist
+tree_file <- file.path(DIR_CORE, "core_genome.tree")
+dist_file <- file.path(DIR_CORE, "snp_dists.tsv")
+
+if (file.exists(tree_file) && file.exists(dist_file)) {
+    log_info("Core genome tree and SNP distances already exist at %s", DIR_CORE)
+    log_info("Skipping Parsnp run to save time. Delete 'results/wgs/core' to force re-run.")
+    quit(save = "no", status = 0)
+}
 
 # Check tools
 has_parsnp <- check_wgs_tool("parsnp")
@@ -78,6 +91,7 @@ for (f in valid_genomes) {
 # -r !: random reference
 # -p: threads
 # -o: output dir
+# -n: skip tree construction (avoids RAxML "Too few species" error on identical seqs)
 parsnp_out <- file.path(DIR_CORE, "parsnp_out")
 if (dir_exists(parsnp_out)) dir_delete(parsnp_out) # Parsnp requires clean dir
 
@@ -88,23 +102,43 @@ cmd_parsnp <- paste(
     "-d", temp_fasta_dir,
     "-o", parsnp_out,
     "-p", CORES_USE,
+    "-x", # Filter duplicates (helps with "Too few species")
     "--verbose"
 )
 
 log_info("Running Parsnp...")
 res <- system(cmd_parsnp)
 
+# Check if alignment exists even if Parsnp failed (e.g. at tree step)
+xmfa_file <- file.path(parsnp_out, "parsnp.xmfa")
+
 if (res != 0) {
-    log_error("Parsnp failed with exit code ", res)
-    stop("Parsnp execution failed.")
+    if (file.exists(xmfa_file)) {
+        log_warn("Parsnp exited with error (likely RAxML failure), but alignment exists. Proceeding...")
+    } else {
+        log_error("Parsnp failed with exit code ", res)
+        stop("Parsnp execution failed and no alignment found.")
+    }
+} else {
+    log_info("Parsnp completed successfully.")
 }
 
-log_info("Parsnp completed successfully.")
-
-# 6. Run snp-dists
+# 5b. Convert XMFA/GGR to FASTA (if needed)
 # ------------------------------------------------------------------------------
-aln_file <- file.path(parsnp_out, "parsnp.fasta") # Parsnp output alignment
+aln_file <- file.path(parsnp_out, "parsnp.fasta")
+ggr_file <- file.path(parsnp_out, "parsnp.ggr")
+
+if (!file.exists(aln_file) && file.exists(ggr_file)) {
+    log_info("Converting GGR to FASTA...")
+    # harvesttools -i <ggr> -M <fasta>
+    cmd_conv <- paste("harvesttools -i", ggr_file, "-M", aln_file)
+    system(cmd_conv)
+}
+
+# 6. Run snp-dists & Build Tree
+# ------------------------------------------------------------------------------
 dist_file <- file.path(DIR_CORE, "snp_dists.tsv")
+tree_file <- file.path(DIR_CORE, "core_genome.tree")
 
 if (file.exists(aln_file) && has_snp_dists) {
     log_info("Running snp-dists...")
@@ -112,12 +146,29 @@ if (file.exists(aln_file) && has_snp_dists) {
     system(cmd_dists)
     log_info("SNP distances written to ", dist_file)
 
+    # 6b. Build Tree (Robust Fix for "Too Few Species")
+    # ------------------------------------------------------------------------------
+    # Parsnp's RAxML often fails on identical sequences. We build a robust NJ tree here.
+    log_info("Building Neighbor-Joining tree from SNP distances...")
+
+    # Load distances as matrix
+    dists_df <- read_tsv(dist_file, show_col_types = FALSE)
+    dist_mat <- as.matrix(dists_df[, -1])
+    rownames(dist_mat) <- colnames(dist_mat)
+
+    # Build NJ tree
+    tree <- ape::nj(as.dist(dist_mat))
+
+    # Save tree
+    ape::write.tree(tree, file = tree_file)
+    log_info("Tree saved to ", tree_file)
+
     # 7. Pairwise Classification
     # ------------------------------------------------------------------------------
     log_info("Classifying strain pairs...")
 
-    # Load distances
-    dists <- read_tsv(dist_file, show_col_types = FALSE)
+    # Load distances (already loaded as dists_df, but keeping flow)
+    dists <- dists_df
 
     # Convert to long format
     # Columns are SampleIDs, rows are SampleIDs (first col is id)

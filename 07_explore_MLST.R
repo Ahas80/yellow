@@ -91,8 +91,8 @@ p <- ggplot(top20, aes(x = reorder(factor(ST), n), y = n)) +
   geom_col(fill = "steelblue") +
   coord_flip() +
   labs(
-    x = "Sequence type (ST)", y = "Isolates",
-    title = "Top 20 E. coli STs (unique isolates)"
+    x = "Sequence type (ST)", y = "Number of Isolates",
+    title = "Top 20 Most Frequent E. coli Sequence Types"
   ) +
   theme_minimal(base_size = 12)
 

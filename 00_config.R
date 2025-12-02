@@ -39,6 +39,8 @@ DIR_WGS_PAN <- file.path(DIR_WGS, "pan")
 DIR_WGS_KMER <- file.path(DIR_WGS, "kmer")
 DIR_WGS_PLASMIDS <- file.path(DIR_WGS, "plasmids")
 DIR_WGS_SV <- file.path(DIR_WGS, "sv")
+DIR_PROKKA <- file.path(DIR_RESULTS, "prokka")
+DIR_PROKKA_SLIM <- file.path(DIR_RESULTS, "prokka_prefixed_slim")
 
 # Plots Directories
 DIR_PLOTS <- file.path(DIR_ROOT, "plots")

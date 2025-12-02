@@ -24,6 +24,7 @@
 
 source("00_config.R")
 source(here::here("R", "clinical_helpers.R"))
+source("R/plot_helpers.R")
 
 suppressPackageStartupMessages({
     library(dplyr)
@@ -95,12 +96,6 @@ cat("DEBUG: After creating episode_plot\n")
 
 status_order <- c("UTI", "ASB", "Culture-positive, S&S unknown", "Negative")
 status_levels_story <- c("Negative", "ASB", "UTI", "Culture-positive, S&S unknown")
-status_cols <- c(
-    Negative = "#56B4E9",
-    ASB = "#E69F00",
-    UTI = "#D55E00",
-    `Culture-positive, S&S unknown` = "#009E73"
-)
 
 # 1. Status Distribution
 # ------------------------------------------------------------------------------
@@ -136,8 +131,15 @@ plot_df <- episode_plot %>% mutate(Participant_id = factor(Participant_id, level
 p_traj <- ggplot(plot_df, aes(tp_lab, Participant_id, fill = Infection_Status)) +
     geom_tile(color = "white") +
     scale_y_discrete(drop = FALSE) +
-    scale_fill_manual(values = status_cols) +
-    labs(title = "Within-person infection status across time (episode-level)", x = "Timepoint", y = "Participant") +
+    scale_y_discrete(drop = FALSE) +
+    scale_fill_infection() +
+    labs(
+        title = "Longitudinal Infection Status by Participant",
+        x = "Timepoint",
+        y = "Participant ID",
+        fill = "Infection Status"
+    ) +
+    theme_minimal(base_size = 11) +
     theme(axis.text.y = element_text(size = 6))
 
 # 3. Transitions
@@ -176,8 +178,14 @@ make_transitions_plot <- function(from_to, status_levels_story, status_cols) {
                     ggalluvial::geom_alluvium(aes(fill = From), width = 0, alpha = 0.9) +
                     ggalluvial::geom_stratum(width = 0.15, fill = "grey85", colour = "grey40") +
                     ggplot2::geom_text(stat = "stratum", aes(label = after_stat(stratum))) +
-                    scale_fill_manual(values = status_cols, drop = FALSE) +
-                    labs(title = "Transitions between consecutive timepoints", x = NULL, y = "Count", fill = "From status") +
+                    ggplot2::geom_text(stat = "stratum", aes(label = after_stat(stratum))) +
+                    scale_fill_infection(drop = FALSE) +
+                    labs(
+                        title = "Infection Status Transitions Between Consecutive Timepoints",
+                        x = "From Status",
+                        y = "Count",
+                        fill = "Previous Status"
+                    ) +
                     theme_minimal(base_size = 11)
             },
             silent = TRUE
@@ -191,10 +199,14 @@ make_transitions_plot <- function(from_to, status_levels_story, status_cols) {
         geom_tile() +
         geom_text(aes(label = n)) +
         scale_fill_continuous(name = "Count") +
-        labs(title = "Transitions (heatmap)", x = "From", y = "To") +
+        labs(
+            title = "Infection Status Transitions (Heatmap)",
+            x = "From Status",
+            y = "To Status"
+        ) +
         theme_minimal(base_size = 11)
 }
-p_transitions_flow <- make_transitions_plot(from_to, status_levels_story, status_cols)
+p_transitions_flow <- make_transitions_plot(from_to, status_levels_story, NULL)
 
 # 4. Assembly Metrics
 # ------------------------------------------------------------------------------
@@ -230,7 +242,13 @@ p_asm_contigs <- ggplot(
     geom_boxplot(outlier.shape = NA) +
     geom_jitter(width = 0.2, alpha = 0.3) +
     facet_wrap(~tp_lab, scales = "free_x") +
-    labs(title = "Assembly contig counts by status", x = "Status", y = "# contigs")
+    labs(
+        title = "Assembly Quality Distribution by Infection Status",
+        x = "Infection Status",
+        y = "Number of Contigs"
+    ) +
+    theme_minimal(base_size = 11) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 # 5. Waterfall
 # ------------------------------------------------------------------------------
@@ -248,7 +266,11 @@ readr::write_csv(waterfall, file.path(DIR_CLINICAL, "waterfall_counts.csv"))
 p_waterfall <- ggplot(waterfall, aes(x = factor(step, levels = step), y = n)) +
     geom_col() +
     geom_text(aes(label = n), vjust = -0.3, size = 3) +
-    labs(title = "How rules narrow episodes down to UTIs", x = NULL, y = "Episodes") +
+    labs(
+        title = "Cohort Selection and Case Definition",
+        x = "Selection Step",
+        y = "Number of Episodes"
+    ) +
     theme_minimal(base_size = 11) +
     theme(axis.text.x = element_text(angle = 25, hjust = 1))
 

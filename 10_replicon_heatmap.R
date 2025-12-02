@@ -159,6 +159,7 @@ if (use_complex) {
     name = "Inc\npresent", col = c("white", "black"),
     show_row_names = FALSE, cluster_rows = TRUE, cluster_columns = TRUE,
     row_order = row_order, column_order = col_order,
+    column_title = "Plasmid Replicon Presence/Absence Heatmap",
     left_annotation = ha_row
   ))
   dev.off()
@@ -170,7 +171,8 @@ if (use_complex) {
   pheatmap(heat,
     color = c("white", "black"), cluster_rows = TRUE, cluster_cols = TRUE,
     annotation_row = ann, annotation_colors = list(ST = st_colours),
-    show_rownames = FALSE, border_color = NA
+    show_rownames = FALSE, border_color = NA,
+    main = "Plasmid Replicon Presence/Absence Heatmap"
   )
   dev.off()
 }
