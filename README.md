@@ -180,7 +180,7 @@ Rscript 21_publication_figures.R
 
 ---
 
-## ⚠️ Critical Fix: Participant ID Logic
+## solved : Participant ID Logic - deprecated R file so this is solved 
 
 **Problem**: Legacy pipeline (`12_wgs_exact_compare.R`) treated batch IDs (e.g., `PR0010`) as single participants.
 
@@ -249,12 +249,12 @@ conda create -n yellow-wgs-x86 -c bioconda -c conda-forge \
 
 **Project**: Yellow rUTIs Cohort, E. coli Genomic Analysis  
 **Date**: 2025-11-28  
-**Status**: ✅ Analysis Complete - Ready for Publication
+**Status**: Initial analysis complete - now to figure out exactly what different E colis are and how they are different.
 
 ## 📝 To-Do & Future Directions
 
 ### 1. Investigate Within-Host E. coli Variation
-**Question:** Are the *E. coli* isolates in a single participant different across timepoints (T0, T1, T2, Uricult)?
+**Question:** Are the *E. coli* isolates in a single participant different across timepoints (T0, T1, T2, Uricult)? - especially between UTIs vs ASBs (Uricult vs Timepoint X)
 
 **Postulate & Approach:**
 To determine if we are seeing the same strain persisting or new strains entering (strain replacement), we can use the following results:
@@ -262,10 +262,10 @@ To determine if we are seeing the same strain persisting or new strains entering
 1.  **Genomic Distance (SNPs)**:
     *   **Source:** `results/strain_compare/pairwise_metrics.csv`
     *   **Method:** Filter for `within_participant == TRUE`.
-    *   **Thresholds:**
-        *   **< 10 SNPs**: Likely the **same strain** (persistent infection).
-        *   **> 1000 SNPs**: Likely a **different strain** (re-infection/replacement).
-        *   **10-100 SNPs**: Grey area (potential within-host evolution).
+    *   **Thresholds:** TBD
+        *   **< 10 SNPs**: Likely the **same strain** (persistent infection)? 
+        *   **> 1000 SNPs**: Likely a **different strain** (re-infection/replacement)?
+        *   **10-100 SNPs**: Grey area (potential within-host evolution)?
 
 2.  **Gene Content (Pangenome)**:
     *   **Source:** `results/wgs/pan/gene_data.csv` (or `presence_absence.Rtab`)
