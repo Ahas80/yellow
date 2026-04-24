@@ -1,27 +1,42 @@
 #!/usr/bin/env Rscript
 # ==============================================================================
 # 02_gene_presence_analysis.R
-# ------------------------------------------------------------------------------
-# Role: [Descriptive/Exploratory] - Profile virulence factors (VFDB) using Abricate.
+# ==============================================================================
 #
-# Inputs:
-#   - assembly_metadata.csv
-#   - data/assemblies/*.fasta
+# GOAL:
+#   Profile all assembled isolates for virulence factor (VF) genes using
+#   Abricate against the VFDB database, and build a binary presence/absence
+#   matrix.  This is the core VF data generation step: all downstream VF
+#   analysis (scripts 03, 04, 05, 14, 22–25) depends on its outputs.
 #
-# Outputs:
-#   - results/vf/vf_hits_all.rds
-#   - results/vf/vf_pa_all.csv
-#   - results/vf/stats_gene_level.csv
-#   - results/vf/abricate/ (cache)
-#   - results/strain_compare/nucmer/ (pairwise alignment)
+# WHY THIS SCRIPT EXISTS:
+#   Virulence factors are the bacterial genes that enable pathogenesis—
+#   adhesins, toxins, iron acquisition systems, etc.  By profiling every
+#   isolate’s VF repertoire, we can ask: do bacteria causing UTI carry
+#   different VFs from those causing ASB?
 #
-# Usage:
-#   Rscript 02_gene_presence_analysis.R [--min_id 80] [--min_cov 80]
+# KEY DESIGN DECISIONS:
+#   - Uses UNION logic: a gene is called “present” if detected in EITHER
+#     the Flye OR Longcycler assembly for a given participant×timepoint.
+#     This maximises sensitivity at the cost of potential false positives
+#     from a single assembler.
+#   - Minimum thresholds: identity ≥ 80%, coverage ≥ 80% (Abricate defaults).
+#   - Results are cached per-isolate in results/vf/abricate/ so re-runs
+#     skip already-processed assemblies.
 #
-# Biological/Statistical purpose:
-#   - Detects virulence factors to determine the pathogenic potential of isolates.
-#   - Generates presence/absence matrices for downstream association testing.
-#   - Performs initial pairwise genomic comparisons (Nucmer) for strain tracking.
+# INPUTS:
+#   - assembly_metadata.csv              (isolate-level metadata)
+#   - data/assemblies/*.fasta            (long-read assemblies)
+#
+# OUTPUTS:
+#   - results/vf/vf_hits_all.rds         (full Abricate hit table)
+#   - results/vf/vf_pa_all.csv           (binary P/A matrix: participant×tp)
+#   - results/vf/stats_gene_level.csv    (per-gene prevalence stats)
+#   - results/vf/abricate/               (per-isolate cache)
+#
+# DOWNSTREAM:
+#   → 22_vf_build_analysis_dataset.R joins vf_pa_all.csv with clinical status
+#   → 14_genotype_phenotype_model.R uses vf_hits_all.rds for GLMM testing
 # ==============================================================================
 
 # 1. Load Configuration & Libraries
@@ -181,6 +196,13 @@ message("✓ Saved VF hits: ", FILE_VF_HITS)
 
 # 6. Generate Presence/Absence Matrix
 # ------------------------------------------------------------------------------
+# We aggregate the Abricate hits to the participant-timepoint level.
+# CRITICAL LOGIC (UNION-BASED CALLING): 
+# Because some participant-timepoints have multiple assemblies (e.g., both Flye
+# and Longcycler versions), calling distinct(Participant_id, tp_lab, GENE)
+# effectively applies a UNION rule. If a gene is found in ANY assembly for that 
+# participant-timepoint, it is marked as present (= 1). 
+# This maximizes sensitivity but may slightly increase false positives.
 vf_pa_all <- vf_hits_all %>%
   filter(!is.na(Participant_id), !is.na(tp_lab), !is.na(GENE)) %>%
   distinct(Participant_id, tp_lab, GENE) %>%

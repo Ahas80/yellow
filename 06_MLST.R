@@ -1,23 +1,32 @@
 #!/usr/bin/env Rscript
 # ==============================================================================
 # 06_MLST.R
-# ------------------------------------------------------------------------------
-# Role: [Typing] - Perform Multi-Locus Sequence Typing (MLST) on all assemblies.
+# ==============================================================================
 #
-# Inputs:
-#   - assembly_metadata.csv
-#   - data/assemblies/*.fasta
+# GOAL:
+#   Perform Multi-Locus Sequence Typing (MLST) on all assemblies to assign
+#   each isolate a Sequence Type (ST).  ST is the fundamental lineage
+#   identifier used throughout the project.
 #
-# Outputs:
-#   - results/mlst/mlst_all.tsv
-#   - results/mlst/mlst_matrix.csv
-#   - results/mlst/mlst_qc_summary.csv
-#   - results/mlst/top_STs.csv
-#   - results/mlst/raw/ (cache)
-#   - results/mlst/logs/
+# WHY THIS SCRIPT EXISTS:
+#   Knowing the ST of each isolate is essential for:
+#   1. Strain tracking: determining if the same bacterial lineage persists
+#      within a participant over time (scripts 11, 15)
+#   2. Lineage confounding: testing whether VF differences between ASB and
+#      UTI are driven by ST composition rather than clinical status (script 25)
+#   3. Epidemiology: identifying which STs dominate in this nursing home
+#      cohort and whether specific STs are associated with UTI (script 17)
 #
-# Usage:
-#   Rscript 06_MLST.R
+# INPUTS:
+#   - assembly_metadata.csv              (isolate-level metadata)
+#   - data/assemblies/*.fasta            (assemblies to type)
+#
+# OUTPUTS:
+#   - results/mlst/mlst_all.tsv          (full MLST results)
+#   - results/mlst/mlst_matrix.csv       (participant × timepoint ST table)
+#   - results/mlst/mlst_qc_summary.csv   (typing quality summary)
+#   - results/mlst/top_STs.csv           (most frequent STs)
+# ==============================================================================
 #
 # Biological/Statistical purpose:
 #   - Assigns Sequence Types (STs) to define bacterial lineages.
@@ -171,6 +180,9 @@ if (!"Isolate_ID" %in% names(mlst_tbl)) {
 mlst_tbl <- mlst_tbl %>% relocate(Isolate_ID, ST, .before = 1)
 
 # QC Flags
+# We evaluate typing completeness because missing or ambiguous loci can result in
+# non-typable or inaccurate ST assignments. This helps downstream scripts decide 
+# whether to drop an isolate from lineage-specific analyses.
 meta_cols <- unique(c("scheme", "ST", "Isolate_ID", "file_name", "full_path", names(assembly_df)))
 locus_cols <- setdiff(names(mlst_tbl), meta_cols)
 
@@ -227,8 +239,10 @@ if ("Participant_id" %in% names(mlst_tbl) && "Timepoint" %in% names(mlst_tbl)) {
 
   write_csv(st_persist, file.path(DIR_MLST, "ST_persistence_by_participant.csv"))
 
-  # [REPRO] Calculate consecutive-timepoint concordance (more rigorous persistence metric)
-  # Sort by participant and timepoint, then compare ST to previous timepoint
+  # [REPRO] Calculate consecutive-timepoint concordance
+  # This is a more rigorous persistence metric than simple "dominant ST".
+  # It asks: if we look at adjacent timepoints for the same participant,
+  # does the ST change? This defines "strain replacement" vs "persistence".
   st_concordance <- mlst_tbl %>%
     select(Participant_id, Timepoint, ST) %>%
     bind_cols(tp_norm(.$Timepoint)) %>%

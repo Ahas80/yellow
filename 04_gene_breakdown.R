@@ -1,19 +1,35 @@
 #!/usr/bin/env Rscript
 # ==============================================================================
 # 04_gene_breakdown.R
-# ------------------------------------------------------------------------------
-# Role: [Inferential-core] - Detailed gene analysis, annotation, and focus-gene statistics.
+# ==============================================================================
 #
-# Inputs:
-#   - results/vf/vf_hits_all.rds
-#   - results/clinical/status_map.csv
+# GOAL:
+#   Annotate detected VF genes with functional categories (e.g., Adhesion,
+#   Iron Acquisition, Toxins), perform gene-level GLMM tests on focus genes,
+#   and produce the gene_map.csv that the VF pipeline (22–25) depends on.
 #
-# Outputs:
-#   - results/vf/annotated_gene_table.csv
-#   - results/vf/per_sample_category_counts.csv
-#   - results/vf/nitrate_presence_matrix.csv
-#   - results/vf/diff_focus_genes_UTI_vs_ASB_glmm.csv
-#   - plots/vf/
+# WHY THIS SCRIPT EXISTS:
+#   Raw Abricate output (from 02_) gives gene names but no biological context.
+#   This script maps each gene to a VF functional category using the VFDB
+#   classification, enabling category-level summaries ("How many adhesion
+#   genes does this isolate carry?") that are more biologically interpretable
+#   than individual gene lists.
+#
+#   It also runs mixed-effects logistic regression (GLMM) on selected
+#   "focus genes" (e.g., fimH, papGII, hlyA, cnf1) to test their association
+#   with UTI vs ASB, accounting for within-participant correlation.
+#
+# INPUTS:
+#   - results/vf/vf_hits_all.rds          (from 02_gene_presence_analysis.R)
+#   - results/clinical/status_map.csv     (from 00b_classify_episodes.R)
+#
+# OUTPUTS:
+#   - results/vf/annotated_gene_table.csv       (gene-level annotation)
+#   - results/vf/gene_map.csv                   (Gene → Category mapping)
+#   - results/vf/per_sample_category_counts.csv  (category counts per isolate)
+#   - results/vf/diff_focus_genes_UTI_vs_ASB_glmm.csv  (focus gene GLMM)
+#   - plots/vf/                                 (category and gene plots)
+# ==============================================================================
 #
 # Usage:
 #   Rscript 04_gene_breakdown.R

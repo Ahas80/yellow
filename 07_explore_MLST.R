@@ -1,6 +1,14 @@
 #!/usr/bin/env Rscript
 # ==============================================================================
 # 07_explore_MLST.R
+# ==============================================================================
+#
+# GOAL:
+#   Summarise and visualise MLST results: ST frequency distributions, top-20
+#   ST bar chart, and merged metadata for downstream lineage analyses.
+#   Produces mlst_with_meta.csv which is the authoritative MLST+metadata join
+#   used by scripts 14, 17, 22, and 25.
+#
 # ------------------------------------------------------------------------------
 # Role: [Descriptive] - Explore and summarize MLST data.
 #

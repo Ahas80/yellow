@@ -162,6 +162,32 @@ echo "✓ Publication figures generated"
 echo "✓ Phase 3 complete: Mechanism identified"
 
 # ============================================================================
+# Phase 4: Virulence Factor (VF) Deep Analysis
+# ============================================================================
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "PHASE 4: VF Deep Analysis [Est: 1 min]"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+echo "[1/4] Building canonical VF dataset..."
+Rscript 22_vf_build_analysis_dataset.R
+echo "✓ VF dataset built"
+
+echo "[2/4] Cross-sectional analysis..."
+Rscript 23_vf_cross_sectional.R
+echo "✓ VF cross-sectional done"
+
+echo "[3/4] Longitudinal dynamics..."
+Rscript 24_vf_longitudinal_dynamics.R
+echo "✓ VF longitudinal done"
+
+echo "[4/4] Lineage confounding check..."
+Rscript 25_vf_lineage_vf_interaction.R
+echo "✓ Lineage interaction checked"
+
+echo "✓ Phase 4 complete: VF Deep Analysis"
+
+# ============================================================================
 # Done
 # ============================================================================
 echo ""

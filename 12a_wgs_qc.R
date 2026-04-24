@@ -1,6 +1,13 @@
 #!/usr/bin/env Rscript
 # ==============================================================================
 # 12a_wgs_qc.R
+# ==============================================================================
+#
+# GOAL:
+#   Perform quality control on all genome assemblies: N50, contig count,
+#   total bases, GC content.  Identifies poor-quality assemblies that should
+#   be flagged or excluded from downstream comparisons.
+#
 # ------------------------------------------------------------------------------
 # Role: [QC] - Perform Quality Control (QC) on all assemblies.
 #

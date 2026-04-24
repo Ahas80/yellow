@@ -1,6 +1,14 @@
 #!/usr/bin/env Rscript
 # ==============================================================================
 # 08_core_vs_plasmid.R
+# ==============================================================================
+#
+# GOAL:
+#   Compare chromosomal ST lineages with plasmid replicon types to assess
+#   whether specific plasmids are associated with particular E. coli lineages.
+#   This informs whether plasmid-carried VFs are lineage-linked or independently
+#   mobile across different STs.
+#
 # ------------------------------------------------------------------------------
 # Role: [Inferential-core] - Compare chromosomal STs with plasmid types.
 #

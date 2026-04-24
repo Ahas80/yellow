@@ -1,21 +1,33 @@
 #!/usr/bin/env Rscript
 # ==============================================================================
 # 00a_load_clean_clinical.R
-# ------------------------------------------------------------------------------
-# Role: [Data Prep] - Load and merge raw clinical batches.
+# ==============================================================================
 #
-# Inputs:
-#   - data/inputs/batch1.csv (and batch2, batch3...)
+# GOAL:
+#   Load and merge the three raw clinical data batches (batch1, batch2, batch3)
+#   into a single harmonised dataset.  This is the very first step in the
+#   pipeline — all subsequent clinical classification depends on this merge.
 #
-# Outputs:
+# WHY THIS SCRIPT EXISTS:
+#   The YELLOW RoUTIne study collected clinical data in three recruitment
+#   batches.  Each batch has slightly different column naming conventions
+#   and data formatting.  This script reconciles those differences so that
+#   downstream scripts can work with a consistent dataset.
+#
+#   Signs & Symptoms (S&S) columns are deliberately separated from metadata
+#   because they require special boolean parsing (Dutch-language values like
+#   "ja"/"nee", numeric codes, etc.).
+#
+# INPUTS:
+#   - data/inputs/batch1.csv, batch2.csv, batch3.csv  (raw clinical exports)
+#
+# OUTPUTS:
 #   - results/clinical/intermediate/clinical_merged.rds
+#     (contains metadata, symptom data, and S&S table as a named list)
 #
-# Usage:
-#   Rscript 00a_load_clean_clinical.R
-#
-# Biological/Statistical purpose:
-#   - Harmonizes clinical data from multiple collection batches to create a
-#     single, consistent dataset for downstream analysis.
+# DOWNSTREAM:
+#   → 00b_classify_episodes.R reads clinical_merged.rds to assign
+#     Infection_Status (UTI/ASB/Negative) to each episode.
 # ==============================================================================
 
 source("00_config.R")

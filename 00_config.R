@@ -1,9 +1,29 @@
 # ==============================================================================
 # 00_config.R
-# ------------------------------------------------------------------------------
-# Central configuration for the rUTIs pipeline.
-# Sources this file at the beginning of every R script to ensure consistent
-# paths, settings, and helper functions.
+# ==============================================================================
+#
+# GOAL:
+#   Central configuration for the entire rUTIs / YELLOW RoUTIne pipeline.
+#   Every numbered R script sources this file first to get consistent paths,
+#   helpers, and directory setup.
+#
+# WHY THIS FILE EXISTS:
+#   Without a single config, each script would hardcode its own paths and
+#   directory-creation logic.  This file guarantees that:
+#     - All scripts agree on where inputs and outputs live
+#     - Output directories are created automatically
+#     - Common helpers (logging, directory creation, metadata loading) are
+#       available everywhere without duplication
+#
+# WHAT IT PROVIDES:
+#   Section 1 — Global paths (DIR_ROOT, DIR_VF, DIR_MLST, etc.)
+#   Section 2 — Key file paths (FILE_VF_PA, FILE_MLST_ALL, etc.)
+#   Section 3 — Settings (parallel cores)
+#   Section 4 — Helper functions (msg, ensure_dir, check_tool, load_metadata)
+#   Section 5 — Automatic directory initialisation
+#
+# USAGE:
+#   source("00_config.R")   # at the top of every pipeline script
 # ==============================================================================
 
 # ------------------------------------------------------------------------------

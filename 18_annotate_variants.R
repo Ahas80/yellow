@@ -1,6 +1,20 @@
 #!/usr/bin/env Rscript
+# ==============================================================================
 # 18_annotate_variants.R
+# ==============================================================================
 #
+# GOAL:
+#   Parse raw SNP variants (from Nucmer output) between consecutive timepoints
+#   and cross-reference their positions against Prokka GFF annotations to
+#   identify which specific genes (or intergenic regions) contain the variants.
+#
+# WHY THIS SCRIPT EXISTS:
+#   Knowing that two sequential strains differ by 5 SNPs is useful for
+#   strain tracking. But knowing *where* those SNPs are (e.g., in a particular
+#   virulence gene, AMR gene, or promoter) is critical for explaining
+#   phenotype switching (e.g., ASB to UTI).
+#
+# ------------------------------------------------------------------------------
 # Purpose:
 #   - Parse raw .snps files from Nucmer (dnadiff).
 #   - Annotate them with gene information from Prokka GFFs.

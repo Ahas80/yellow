@@ -1,23 +1,37 @@
 #!/usr/bin/env Rscript
 # ==============================================================================
 # 11_compare_strains.R
-# ------------------------------------------------------------------------------
-# Role: [Inferential-core] - Compare E. coli strains between specified participants/timepoints.
+# ==============================================================================
 #
-# Inputs:
+# GOAL:
+#   Compute pairwise strain similarity between all within-participant
+#   isolates using multiple metrics (ST match, VF Jaccard, plasmid Jaccard,
+#   core SNP distance).  This is the foundation for longitudinal strain
+#   tracking: are participants colonised by the same or different strains
+#   at each timepoint?
+#
+# WHY THIS SCRIPT EXISTS:
+#   A central question of this project is whether the same bacterial strain
+#   persists within a host over time.  If the same ST131 causes both ASB
+#   at T0 and UTI at T2, that is biologically very different from a new
+#   ST73 arriving to cause UTI.  This script produces the pairwise_metrics
+#   table that scripts 15 and 16 use to define strain persistence and
+#   phenotype-switch events.
+#
+# INPUTS:
 #   - assembly_metadata.csv
 #   - results/clinical/status_map.csv
 #   - results/mlst/mlst_all.tsv
 #   - results/vf/vf_pa_all.csv
 #   - results/plasmids/plasmidfinder_presence_absence.csv
 #
-# Outputs:
-#   - results/strain_compare/pairwise_metrics.csv
+# OUTPUTS:
+#   - results/strain_compare/pairwise_metrics.csv  (all within-participant pairs)
 #   - results/strain_compare/summary_counts.csv
 #   - results/strain_compare/summary_by_participant.csv
 #   - results/strain_compare/stats_within_vs_between.csv
-#   - results/strain_compare/stats_by_status.csv
 #   - plots/strain_compare/
+# ==============================================================================
 #
 # Usage:
 #   Rscript 11_compare_strains.R --participants P001,P002 --timepoints T0,T1

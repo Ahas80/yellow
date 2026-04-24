@@ -1,6 +1,13 @@
 #!/usr/bin/env Rscript
 # ==============================================================================
 # 09_inc_plasmid_network.R
+# ==============================================================================
+#
+# GOAL:
+#   Detect plasmid replicons (Inc types) using PlasmidFinder, build replicon
+#   co-occurrence matrices, and visualise ST–plasmid associations as networks.
+#   Produces the plasmidfinder_presence_absence.csv used by scripts 10, 11, 14.
+#
 # ------------------------------------------------------------------------------
 # Role: [Exploratory] - Analyze plasmid replicon co-occurrence and ST associations.
 #

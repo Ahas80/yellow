@@ -1,18 +1,29 @@
 #!/usr/bin/env Rscript
 # ==============================================================================
 # 05_gene_overview_plots.R
-# ------------------------------------------------------------------------------
-# Role: [Descriptive] - Visualize gene prevalence and variability.
+# ==============================================================================
 #
-# Inputs:
-#   - results/vf/vf_pa_all.csv
+# GOAL:
+#   Visualise VF gene prevalence across the cohort and classify genes as
+#   "core" (present in >95% of isolates) or "variable" (present in <95%).
+#   Produces heatmaps and bar charts for thesis/poster figures.
 #
-# Outputs:
-#   - results/vf/core_gene_list.txt
-#   - results/vf/variable_gene_list.txt
+# WHY THIS SCRIPT EXISTS:
+#   Understanding which VF genes are universally carried (core) vs sporadically
+#   present (variable) is biologically important.  Core genes (e.g., fimH)
+#   are likely essential for colonisation regardless of clinical outcome.
+#   Variable genes are the candidates most likely to differ between ASB and
+#   UTI — they are the features worth testing in the GLMM (script 14).
+#
+# INPUTS:
+#   - results/vf/vf_pa_all.csv           (from 02_gene_presence_analysis.R)
+#
+# OUTPUTS:
+#   - results/vf/core_gene_list.txt      (genes present in >95% of isolates)
+#   - results/vf/variable_gene_list.txt  (genes present in <95%)
 #   - plots/vf/gene_prevalence_bar.png
-#   - plots/vf/variable_gene_heatmap.png
-#   - plots/vf/variable_gene_heatmap.pdf
+#   - plots/vf/variable_gene_heatmap.png, .pdf
+# ==============================================================================
 #
 # Usage:
 #   Rscript 05_gene_overview_plots.R

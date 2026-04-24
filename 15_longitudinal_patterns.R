@@ -1,6 +1,15 @@
 #!/usr/bin/env Rscript
 # ==============================================================================
 # 15_longitudinal_patterns.R
+# ==============================================================================
+#
+# GOAL:
+#   Construct longitudinal timelines for each participant: assign strain IDs
+#   based on pairwise similarity, track strain persistence duration, and
+#   identify "phenotype-switch" events where the same strain changes clinical
+#   status (e.g., ASB at T0 → UTI at T2).  These switch events are the
+#   candidates for deep within-host evolution analysis in script 16.
+#
 # ------------------------------------------------------------------------------
 # Role: [Analysis] - Construct longitudinal timelines and identify transitions.
 #
@@ -39,8 +48,10 @@ msg("Starting 15_longitudinal_patterns.R")
 # 1. Load Data
 # ------------------------------------------------------------------------------
 # Clinical Status
-status_map <- read_csv(file.path(DIR_CLINICAL, "status_map.csv"), show_col_types = FALSE)
-msg("Loaded %d episodes from status_map.csv", nrow(status_map))
+status_file <- file.path(DIR_CLINICAL, "status_map_with_poster_tp.csv")
+if (!file.exists(status_file)) status_file <- file.path(DIR_CLINICAL, "status_map.csv")
+status_map <- read_csv(status_file, show_col_types = FALSE)
+msg("Loaded %d episodes from %s", nrow(status_map), basename(status_file))
 
 # Pairwise Metrics
 pairwise_file <- file.path(DIR_STRAIN, "pairwise_metrics.csv")
@@ -52,8 +63,11 @@ msg("Loaded %d pairwise comparisons", nrow(pairwise))
 # ------------------------------------------------------------------------------
 msg("Assigning Strain IDs based on 'Same' classification...")
 
-# We treat "Same" classification as an edge in a graph.
-# Connected components = A single strain lineage.
+# [EPI] Why Graph Clustering?
+# The pairwise comparisons in Script 11 only tell us if Isolate A == Isolate B.
+# To track a strain over time (A == B, B == C), we treat each "Same" classification
+# as an edge in an undirected graph. The connected components of this graph
+# represent a single contiguous strain lineage (Strain_ID) persisting within the host.
 
 # Filter for "Same" edges
 edges <- pairwise %>%
@@ -87,7 +101,17 @@ timeline <- status_map %>%
     left_join(strain_map, by = "SampleKey", relationship = "many-to-many") %>%
     select(-Cluster_ID)
 
-msg("Assigned %d unique Strain IDs across %d episodes", n_distinct(timeline$Strain_ID), nrow(timeline))
+msg("Assigned %d unique Strain IDs across %d episodes", n_distinct(timeline$Strain_ID, na.rm = TRUE), nrow(timeline))
+
+# [Transparency Check] Report episodes with missing Strain IDs (QC Failures/No Seq)
+missing_strain <- sum(is.na(timeline$Strain_ID))
+if (missing_strain > 0) {
+    msg(
+        "NOTE: %d episodes (%.1f%%) have no assigned Strain ID (Sequencing failed or unavailable). These are retained in the timeline as 'No_Seq' but excluded from strain comparisons.",
+        missing_strain,
+        missing_strain / nrow(timeline) * 100
+    )
+}
 
 # 3. Order Timelines & Calculate Transitions
 # ------------------------------------------------------------------------------
@@ -109,7 +133,11 @@ parse_time_order <- function(tp) {
 
 timeline <- timeline %>%
     mutate(
-        Time_Order = parse_time_order(Timepoint),
+        Time_Order = if ("Plot_TP_Num_Poster" %in% names(.)) {
+            Plot_TP_Num_Poster
+        } else {
+            parse_time_order(Timepoint)
+        },
         # Clean Infection Status for plotting
         Status_Simple = case_when(
             Infection_Status == "UTI" ~ "UTI",
@@ -118,6 +146,8 @@ timeline <- timeline %>%
             TRUE ~ "Other"
         )
     ) %>%
+    # WARNING: Uricults without a Plot_TP_Num_Poster are excluded from ordered analysis
+    filter(!is.na(Time_Order)) %>%
     arrange(Participant_id, Time_Order)
 
 # Identify Transitions
@@ -187,6 +217,7 @@ msg("Saved tables to %s", out_dir)
 # ------------------------------------------------------------------------------
 # Filter to participants with > 1 timepoint for cleaner plot
 plot_data <- timeline %>%
+    filter(!is.na(Time_Order)) %>%
     group_by(Participant_id) %>%
     filter(n() > 1) %>%
     ungroup()
@@ -194,9 +225,12 @@ plot_data <- timeline %>%
 if (nrow(plot_data) > 0) {
     # Ensure Timepoint is ordered correctly
     plot_data <- plot_data %>%
-        mutate(Timepoint = fct_reorder(Timepoint, Time_Order))
+        mutate(
+            Plot_Label = if ("Plot_TP_Label_Poster" %in% names(.)) Plot_TP_Label_Poster else Timepoint,
+            Plot_Label = fct_reorder(Plot_Label, Time_Order)
+        )
 
-    p <- ggplot(plot_data, aes(x = Timepoint, y = Participant_id)) +
+    p <- ggplot(plot_data, aes(x = Plot_Label, y = Participant_id)) +
         # Line connecting points
         geom_line(aes(group = Participant_id), color = "grey80") +
         # Points colored by Status, shaped by Strain (if feasible, or just Status)
@@ -207,7 +241,7 @@ if (nrow(plot_data) > 0) {
         # Use filled shapes so colors are visible (not hollow circles)
         scale_shape_manual(
             name = "Infection Status",
-            values = c("UTI" = 16, "ASB" = 17, "Negative" = 15),  # 16=filled circle, 17=filled triangle, 15=filled square
+            values = c("UTI" = 16, "ASB" = 17, "Negative" = 15), # 16=filled circle, 17=filled triangle, 15=filled square
             breaks = c("UTI", "ASB", "Negative")
         ) +
         theme_minimal() +

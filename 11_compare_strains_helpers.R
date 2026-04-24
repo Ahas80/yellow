@@ -282,6 +282,11 @@ jaccard_from_wide <- function(df_wide, row_key_cols = c("Participant_id", "tp_la
 }
 
 # ------------- classification -------------------------------------------------
+# [EPI] Strain Persistence Classification Rules
+# This function defines what constitutes "strain persistence" (Same) versus
+# "strain replacement" (Different) or "strain evolution/relatedness" (Related).
+# These definitions are critical because they dictate which pairs are analyzed
+# in the deep-dive phenotype-switch analysis (Script 16).
 classify_pair <- function(metrics, thresholds = list(id = 99.9, snps = 50, vf = 0.9, inc = 0.8, vf_rel = 0.7, inc_rel = 0.7)) {
   ST_equal <- isTRUE(metrics$ST_equal)
   has_id <- !is.na(metrics$AvgIdentity) && !is.na(metrics$TotalSNPs)

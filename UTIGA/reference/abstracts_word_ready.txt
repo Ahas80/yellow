@@ -1,0 +1,22 @@
+ABSTRACT: Longitudinal E. coli Sequence Type Dynamics in Nursing Home Residents (<300 words)
+
+BACKGROUND
+E. coli is the predominant uropathogen in the elderly, causing both asymptomatic bacteriuria (ASB) and urinary tract infections (UTI). It is unclear whether specific lineages differ between ASB and UTI, or if lineage turnover drives clinical changes. We characterized E. coli sequence type (ST) dynamics in a longitudinal nursing home cohort.
+
+METHODS
+We analyzed E. coli isolates from nursing home residents (samples every 3 months for 18 months + suspected UTI). Episodes were clinically defined as ASB or UTI. Isolates were typed via multi-locus sequence typing (MLST). We assessed lineage stability in a primary cohort (>=2 timepoints) and performed a sensitivity analysis on residents with longer follow-up (>=3 timepoints).
+
+RESULTS
+In the primary cohort (83 participants, 181 episodes), 38 distinct STs were identified. 31 episodes (17.1%) were untypeable due to sequencing ambiguity. Among typeable isolates, ST43 (11.6%), ST4 (7.7%), ST6 (6.6%), and ST1 (5.5%) were most prevalent. Longitudinal analysis of 96 consecutive isolate pairs revealed high stability: 80.2% (77/96) of pairs remained identical.
+
+These dynamics were robust to follow-up duration. In the subset of residents with >=3 timepoints (N=54, 119 episodes), lineage stability marginally increased to 81.8% (54/66 pairs identical), with ST6 (10.1%) and ST43 (9.2%) remaining the dominant lineages. Across all groups, strain switching occurred in ~20% of participants, regardless of observation length.
+
+CONCLUSIONS
+E. coli populations in this cohort were diverse but dominated by globally disseminated lineages. Despite minor variations in dominant strains across follow-up groups, colonization dynamics were remarkably consistent: observing ~80% within-host stability independent of clinical status transitions. This suggests symptomatic UTI typically arises from resident commensal ASB strains rather than novel introductions.
+
+================================================================================
+UNUSED / OPTIONAL TEXT (Sensitivity Analysis: Strict >=4 Timepoints Cohort)
+[Use this text if a stricter definition of longitudinal follow-up is required]
+
+"Even in the strictest subset of residents with >=4 timepoints (N=24 participants, 59 episodes), where diversity narrowed to 20 distinct STs and ST6 became the clear dominant lineage (20.3%), within-host dynamics remained robust: stability was 80.0% (28/35 pairs)."
+================================================================================

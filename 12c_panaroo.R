@@ -1,6 +1,13 @@
 #!/usr/bin/env Rscript
 # ==============================================================================
 # 12c_panaroo.R
+# ==============================================================================
+#
+# GOAL:
+#   Run Panaroo pangenome analysis on QC-passed assemblies to identify
+#   core and accessory gene content.  The pangenome complements the VF
+#   analysis by providing a genome-wide view of gene content variation.
+#
 # ------------------------------------------------------------------------------
 # Role: [Pangenome] - Perform Pangenome Analysis using Panaroo.
 #

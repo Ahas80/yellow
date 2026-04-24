@@ -1,23 +1,28 @@
 #!/usr/bin/env Rscript
 # ==============================================================================
 # 00c_plot_clinical_summary.R
-# ------------------------------------------------------------------------------
-# Role: [Descriptive] - Visualize clinical status distribution and assembly metrics.
+# ==============================================================================
 #
-# Inputs:
-#   - results/clinical/status_map.csv
-#   - assembly_metadata.csv
+# GOAL:
+#   Visualise the clinical cohort: status distribution, assembly quality
+#   metrics, waterfall/attrition counts. Produces the figures that describe
+#   the study population in a thesis Results section or poster.
 #
-# Outputs:
-#   - plots/clinical/*.png
-#   - plots/clinical/*.pdf
+# WHY THIS SCRIPT EXISTS:
+#   Before any genomic analysis, reviewers and supervisors need to see the
+#   clinical landscape: how many UTI vs ASB vs Negative episodes, how are
+#   they distributed across batches, and whether assembly quality differs
+#   by status (which could bias downstream VF detection).
+#
+# INPUTS:
+#   - results/clinical/status_map.csv    (from 00b_classify_episodes.R)
+#   - assembly_metadata.csv              (isolate-level metadata)
+#
+# OUTPUTS:
+#   - plots/clinical/*.png, *.pdf        (status distribution figures)
 #   - results/clinical/assembly_metrics_by_status.csv
 #   - results/clinical/waterfall_counts.csv
-#
-# Usage:
-#   Rscript 00c_plot_clinical_summary.R
-#
-# Biological/Statistical purpose:
+# ==============================================================================
 #   - Provides an overview of the cohort: how many UTIs vs ASBs, how they distribute
 #     over time, and whether assembly quality varies by status.
 # ==============================================================================

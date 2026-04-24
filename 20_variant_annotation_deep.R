@@ -1,5 +1,35 @@
 #!/usr/bin/env Rscript
-# 20_variant_annotation_deep.R (Simplified)
+# ==============================================================================
+# 20_variant_annotation_deep.R
+# ==============================================================================
+#
+# GOAL:
+#   Annotate within-host SNP variants with gene-level context by cross-
+#   referencing variant positions against Prokka GFF annotations.  This adds
+#   biological meaning to the raw SNP calls: is a variant in a known gene?
+#   What is the gene product?  Is it intergenic?
+#
+# WHY THIS SCRIPT EXISTS:
+#   Script 18_annotate_variants.R detects SNPs between consecutive timepoints
+#   for the same participant, but only reports positions (contig + coordinate).
+#   This script overlays those positions on the GFF annotation to determine
+#   which genes are affected.  For the phenotype-switch candidates (ASB→UTI),
+#   this is critical: if a SNP hits a known virulence gene, it could explain
+#   the clinical transition.
+#
+# CURRENT SCOPE:
+#   Currently focused on two specific participants (40001, 40004) that were
+#   identified as ASB→UTI transition candidates.  Can be extended to all
+#   participants by modifying the 'candidates' vector.
+#
+# INPUTS:
+#   - results/longitudinal/annotated_snps.csv  (from 18_annotate_variants.R)
+#   - assembly_metadata.csv
+#   - results/prokka_prefixed_slim/*.gff       (Prokka gene annotations)
+#
+# OUTPUTS:
+#   - results/longitudinal/variant_annotation_detailed.csv
+# ==============================================================================
 
 suppressPackageStartupMessages({
     library(dplyr)

@@ -1,6 +1,14 @@
 #!/usr/bin/env Rscript
 # ==============================================================================
 # 12b_core_snp.R
+# ==============================================================================
+#
+# GOAL:
+#   Perform core genome SNP calling and alignment to quantify genetic distance
+#   between isolates.  SNP distances are used by script 11 (strain comparison)
+#   and script 15 (longitudinal patterns) to distinguish "same strain" from
+#   "different strain" within the same participant.
+#
 # ------------------------------------------------------------------------------
 # Role: [Phylogeny] - Perform core genome SNP calling and alignment.
 #

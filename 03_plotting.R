@@ -1,6 +1,15 @@
 #!/usr/bin/env Rscript
 # ==============================================================================
 # 03_plotting.R
+# ==============================================================================
+#
+# GOAL:
+#   Generate comprehensive VF-focused visualisations: gene prevalence plots,
+#   heatmaps, and initial burden comparisons.  This was the original "plotting
+#   engine" for VF data.  Many of its figures are now superseded by the more
+#   rigorous outputs from 23_vf_cross_sectional.R and 05_gene_overview_plots.R,
+#   but it remains useful for exploratory visualisation.
+#
 # ------------------------------------------------------------------------------
 # Purpose: Generates comprehensive visualizations for gene presence/absence,
 #          phylogeny, epidemiology, and transmission networks.
@@ -492,8 +501,16 @@ if (file.exists(FILE_MLST_ALL) && file.exists(FILE_STATUS_MAP) && !is.null(meta_
       scale_y_continuous(labels = scales::percent) +
       scale_fill_brewer(palette = "Set3", name = "Sequence Type") +
       labs(title = "Sequence Type Distribution by Infection Status", x = "Infection Status", y = "Proportion of Isolates") +
-      theme_minimal()
-    safe_ggsave("epidemiology/st_distribution_stacked.png", g, width = 6, height = 5)
+      theme_minimal(base_size = 20) +
+      theme(
+        plot.title = element_text(size = 26, face = "bold", hjust = 0.5),
+        legend.position = "top",
+        legend.text = element_text(size = 16),
+        axis.text.x = element_text(size = 18, face = "bold"),
+        axis.text.y = element_text(size = 18, face = "bold"),
+        plot.margin = margin(15, 15, 15, 15)
+      )
+    safe_ggsave("epidemiology/st_distribution_stacked.png", g, width = 12, height = 8, dpi = 600)
   }
 }
 
@@ -567,10 +584,12 @@ if (file.exists(FILE_PAIR_STATS)) {
 # ==============================================================================
 # SECTION 2.1: Longitudinal Timelines
 # ==============================================================================
-if (file.exists(FILE_STATUS_MAP) && file.exists(FILE_MLST_ALL) && !is.null(meta_map)) {
+if ((file.exists(FILE_STATUS_MAP) || file.exists(file.path(DIR_CLINICAL, "status_map_with_poster_tp.csv"))) && file.exists(FILE_MLST_ALL) && !is.null(meta_map)) {
   ensure_dir(file.path(DIR_PLOTS, "timelines"))
 
-  status <- read_csv(FILE_STATUS_MAP, show_col_types = FALSE) %>% ensure_tp_lab()
+  status_file <- file.path(DIR_CLINICAL, "status_map_with_poster_tp.csv")
+  if (!file.exists(status_file)) status_file <- FILE_STATUS_MAP
+  status <- read_csv(status_file, show_col_types = FALSE) %>% ensure_tp_lab()
   mlst <- read_tsv(FILE_MLST_ALL, show_col_types = FALSE) %>%
     mutate(extracted_ID = str_extract(file_name, "24[0-9A-Za-z]+-[0-9]+")) %>%
     select(-any_of(c("Participant_id", "Timepoint")))
@@ -580,7 +599,8 @@ if (file.exists(FILE_STATUS_MAP) && file.exists(FILE_MLST_ALL) && !is.null(meta_
     inner_join(status, by = c("Participant_id", "Timepoint" = "tp_lab")) %>%
     mutate(
       ST_Label = ifelse(is.na(ST), "Unknown", paste0("ST", ST)),
-      tp_num = tp_norm(Timepoint)$tp_num
+      tp_num = if("Plot_TP_Num_Poster" %in% names(.)) Plot_TP_Num_Poster else tp_norm(Timepoint)$tp_num,
+      Plot_Label = if("Plot_TP_Label_Poster" %in% names(.)) Plot_TP_Label_Poster else Timepoint
     ) %>%
     filter(!is.na(tp_num)) %>%
     arrange(Participant_id, tp_num)
@@ -591,9 +611,12 @@ if (file.exists(FILE_STATUS_MAP) && file.exists(FILE_MLST_ALL) && !is.null(meta_
       slice_head(n = 20) %>%
       pull(Participant_id)
 
+    plot_data <- timeline_df %>% filter(Participant_id %in% top_pids) %>% 
+      mutate(Plot_Label = fct_reorder(Plot_Label, tp_num))
+
     g <- ggplot(
-      timeline_df %>% filter(Participant_id %in% top_pids),
-      aes(x = tp_num, y = as.factor(Participant_id))
+      plot_data,
+      aes(x = Plot_Label, y = as.factor(Participant_id))
     ) +
       geom_line(color = "grey80") +
       geom_point(aes(color = Infection_Status, shape = ST_Label), size = 3) +

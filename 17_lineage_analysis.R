@@ -1,6 +1,17 @@
 #!/usr/bin/env Rscript
 # ==============================================================================
 # 17_lineage_analysis.R
+# ==============================================================================
+#
+# GOAL:
+#   Compute UTI risk per Sequence Type: for each ST with sufficient data,
+#   what proportion of its episodes are UTI?  This identifies STs that are
+#   disproportionately associated with symptomatic infection in this cohort.
+#
+# NOTE:
+#   Script 25_vf_lineage_vf_interaction.R extends this by linking VF burden
+#   to ST and testing for lineage confounding of VF–status associations.
+#
 # ------------------------------------------------------------------------------
 # Role: [Analysis] - Priority 3: Lineage-Specific Virulence.
 #
@@ -104,7 +115,12 @@ st_risk <- data_merged %>%
 
 # 4. Statistical Test (Fisher's Exact per ST)
 # ------------------------------------------------------------------------------
-# Compare each ST against "All Other STs"
+# [STAT] NOTE ON INDEPENDENCE:
+# We compare each ST against "All Other STs" using Fisher's Exact test.
+# Because the same participant can contribute multiple episodes (and multiple
+# isolates of the same ST), this test violates the assumption of independent
+# observations. It should be interpreted as an exploratory screen for
+# over-represented STs, not as formal inference.
 calc_p <- function(st_target, df) {
     # Contingency Table
     #       UTI  ASB
@@ -154,7 +170,7 @@ p <- ggplot(final_res, aes(x = reorder(ST, Risk_UTI), y = Risk_UTI, fill = Risk_
         ),
         width = 0.2, alpha = 0.5
     ) +
-    geom_text(aes(label = sprintf("n=%d", n_total)), vjust = -0.5, size = 3) +
+    geom_text(aes(label = sprintf("n=%d", n_total)), vjust = -0.5, size = 6, fontface = "bold") +
     scale_y_continuous(labels = scales::percent, limits = c(0, 1.1)) +
     scale_fill_gradient(low = infection_cols[["ASB"]], high = infection_cols[["UTI"]]) +
     labs(
@@ -163,9 +179,15 @@ p <- ggplot(final_res, aes(x = reorder(ST, Risk_UTI), y = Risk_UTI, fill = Risk_
         x = "Sequence Type",
         y = "UTI Risk (%)"
     ) +
-    theme_minimal() +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+    theme_minimal(base_size = 20) +
+    theme(
+      plot.title = element_text(size = 26, face = "bold"),
+      plot.subtitle = element_text(size = 18, color = "grey40"),
+      axis.text.x = element_text(angle = 45, hjust = 1, size = 16, face = "bold"),
+      axis.text.y = element_text(size = 16, face = "bold"),
+      plot.margin = margin(15, 15, 15, 15)
+    )
 
-ggsave(file.path(out_dir, "st_risk_plot.png"), p, width = 8, height = 6)
+ggsave(file.path(out_dir, "st_risk_plot.png"), p, width = 12, height = 8, dpi = 600)
 
 msg("Saved results to %s", out_dir)

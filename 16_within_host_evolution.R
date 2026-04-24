@@ -1,6 +1,18 @@
 #!/usr/bin/env Rscript
 # ==============================================================================
 # 16_within_host_evolution.R
+# ==============================================================================
+#
+# GOAL:
+#   Deep-dive into phenotype-switch pairs (same strain, status changed).
+#   For each pair: compute exact SNP distance and identify VF/plasmid gene
+#   content changes.  This answers: "When the same E. coli lineage causes
+#   ASB and then UTI, what genomic changes accompanied the transition?"
+#
+# NOTE:
+#   Script 24_vf_longitudinal_dynamics.R complements this by computing VF
+#   stability across ALL transitions (not just phenotype switches).
+#
 # ------------------------------------------------------------------------------
 # Role: [Analysis] - Deep dive into "Phenotype Switch" pairs.
 #

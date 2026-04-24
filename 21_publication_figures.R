@@ -1,9 +1,23 @@
 #!/usr/bin/env Rscript
+# ==============================================================================
 # 21_publication_figures.R
+# ==============================================================================
 #
-# Input:
-#   - results/longitudinal/participant_timelines.csv
-#   - results/longitudinal/variant_annotation_detailed.csv
+# GOAL:
+#   Generate high-quality, annotated figures specifically targeted for
+#   publication, manuscripts, or thesis chapters.  These figures often combine
+#   outputs from multiple upstream analytical scripts into a single, polished
+#   composite (e.g., Swimmer Plot + Mutation Map).
+#
+# WHY THIS SCRIPT EXISTS:
+#   Analytical scripts (e.g., 15_, 18_) produce utilitarian tracking plots
+#   sufficient for interpretation.  This separate script applies project-wide
+#   aesthetics, careful labelling, and final polish without cluttering the
+#   core analytical pipeline with ggplot2 aesthetic minutiae.
+#
+# ------------------------------------------------------------------------------
+# Purpose:
+#   - Generate high-quality, annotated figures for the manuscript.
 #
 # Output:
 #   - plots/publication/Fig1_Swimmer_Plot.png
@@ -43,17 +57,19 @@ pids_multi <- timelines %>%
     unique()
 
 df_swim <- timelines %>%
-    filter(Participant_id %in% pids_multi) %>%
+    filter(Participant_id %in% pids_multi, !is.na(Time_Order)) %>%
     mutate(
         Status = Infection_Status, # Rename for plotting
         Participant_id = factor(Participant_id),
-        Status = factor(Status, levels = c("Negative", "ASB", "UTI"))
+        Status = factor(Status, levels = c("Negative", "ASB", "UTI")),
+        Plot_Label = if ("Plot_TP_Label_Poster" %in% names(.)) Plot_TP_Label_Poster else Timepoint,
+        Plot_Label = reorder(factor(Plot_Label), Time_Order)
     )
 
 # Highlight Switch Candidates
 switch_pids <- c("40001", "40004", "31036") # 31036 was Neg->UTI
 
-p1 <- ggplot(df_swim, aes(x = Timepoint, y = Participant_id)) +
+p1 <- ggplot(df_swim, aes(x = Plot_Label, y = Participant_id)) +
     geom_line(aes(group = Participant_id), color = "gray80") +
     geom_point(aes(color = Status, shape = Status), size = 3) +
     scale_colour_infection() +

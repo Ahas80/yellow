@@ -1,29 +1,52 @@
 #!/usr/bin/env Rscript
 # ==============================================================================
 # 14_genotype_phenotype_model.R
-# ------------------------------------------------------------------------------
-# Role: [Modelling] - Test genotype-phenotype associations (GWAS).
+# ==============================================================================
 #
-# Inputs:
+# GOAL:
+#   Perform genome-wide association testing (GWAS-style) to identify bacterial
+#   genomic features (VF genes, plasmid replicons, ST lineage) associated with
+#   symptomatic UTI vs asymptomatic bacteriuria (ASB).
+#
+# WHY THIS SCRIPT EXISTS:
+#   Scripts 03 and 23 provide descriptive and exploratory Fisher-based
+#   comparisons, but these VIOLATE the independence assumption because
+#   participants contribute multiple episodes.  This script is the formal
+#   inferential engine: it uses Generalised Linear Mixed Models (GLMM) with
+#   a random intercept for Participant_id — (1|Participant_id) — to properly
+#   account for within-participant correlation.
+#
+#   This is the ONLY script in the pipeline that provides statistically
+#   valid p-values for VF–status associations.  All other enrichment tests
+#   (in 23_, 04_) are labelled EXPLORATORY.
+#
+# STATISTICAL APPROACH:
+#   For each genomic feature with prevalence between 5–95%:
+#     1. Univariable Fisher exact test (screening)
+#     2. GLMM: Outcome ~ Feature + (1|Participant_id),
+#        family = binomial, where Outcome = 1 for UTI, 0 for ASB
+#     3. Benjamini-Hochberg FDR correction across all features
+#   Falls back to standard GLM if GLMM fails to converge (singular fit).
+#
+# INPUTS:
 #   - results/clinical/status_map.csv
-#   - results/vf/vf_hits_all.csv
+#   - results/vf/vf_hits_all.rds
 #   - results/plasmids/plasmidfinder_presence_absence.csv
 #   - results/mlst/mlst_with_meta.csv
 #   - assembly_metadata.csv
 #
-# Outputs:
-#   - results/models/gwas_univariable_stats.csv
-#   - results/models/gwas_multivariable_glmm.csv
+# OUTPUTS:
+#   - results/models/gwas_univariable_stats.csv   (Fisher + prevalence)
+#   - results/models/gwas_multivariable_glmm.csv  (GLMM coefficients, FDR)
 #   - results/models/plots/volcano_plot_UTI_vs_ASB.png
 #   - results/models/plots/forest_plot_top_hits.png
 #   - results/models/plots/heatmap_top_discriminators.png
 #
-# Usage:
-#   Rscript 14_genotype_phenotype_model.R
-#
-# Biological/Statistical purpose:
-#   - Identifies bacterial genomic features (VFs, plasmids, lineages) associated
-#     with symptomatic UTI vs ASB, adjusting for repeated measures (GLMM).
+# RELATIONSHIP TO OTHER VF SCRIPTS:
+#   → 23_vf_cross_sectional.R runs exploratory Fisher tests (screening only)
+#   → 25_vf_lineage_vf_interaction.R checks whether ST should be added as
+#     a covariate in this GLMM
+#   → This script is the definitive statistical test for VF–UTI associations
 # ==============================================================================
 
 Sys.setlocale("LC_ALL", "en_US.UTF-8")
@@ -437,6 +460,13 @@ run_glmm <- function(feature, data) {
     tryCatch(
         {
             # Build formula
+            # [STAT] NOTE ON CONFOUNDING:
+            # We adjust for Timepoint and Batch if available. 
+            # Bacterial lineage (ST) is NOT automatically included as a covariate here
+            # because adding a factor with many levels can cause severe convergence issues.
+            # If script 25_vf_lineage_vf_interaction.R indicates significant lineage 
+            # confounding, you should manually add `ST` to the covariate_terms here 
+            # (or run a sensitivity analysis on a single dominant ST).
             has_batch <- "Batch" %in% names(data) && n_distinct(data$Batch, na.rm = TRUE) > 1
             covariate_terms <- c()
             if (n_distinct(data$Timepoint) > 1) covariate_terms <- c(covariate_terms, "Timepoint")

@@ -1,6 +1,14 @@
 #!/usr/bin/env Rscript
 # ==============================================================================
 # 13_visualise_panaroo_selection.R
+# ==============================================================================
+#
+# GOAL:
+#   Visualise which assemblies were selected for Panaroo input and check
+#   whether the selection introduces any bias (e.g., over-representing
+#   certain batches, statuses, or assemblers).  This is a QC step to
+#   ensure pangenome analysis is not biased by input selection.
+#
 # ------------------------------------------------------------------------------
 # Role: [Visualization] - Visualize Panaroo input selection and QC bias.
 #

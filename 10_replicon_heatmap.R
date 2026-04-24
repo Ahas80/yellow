@@ -1,6 +1,13 @@
 #!/usr/bin/env Rscript
 # ==============================================================================
 # 10_replicon_heatmap.R
+# ==============================================================================
+#
+# GOAL:
+#   Generate a clustered presence/absence heatmap of plasmid replicons across
+#   all isolates, annotated by ST.  This visualises which plasmid types are
+#   shared across lineages and which are lineage-specific.
+#
 # ------------------------------------------------------------------------------
 # Role: [Descriptive] - Generate a presence/absence heatmap of plasmid replicons.
 #

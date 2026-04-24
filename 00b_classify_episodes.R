@@ -1,23 +1,41 @@
 #!/usr/bin/env Rscript
 # ==============================================================================
 # 00b_classify_episodes.R
-# ------------------------------------------------------------------------------
-# Role: [Data Prep] - Classify episodes as UTI, ASB, or Negative.
+# ==============================================================================
 #
-# Inputs:
-#   - results/clinical/intermediate/clinical_merged.rds
+# GOAL:
+#   Classify each clinical episode as UTI, ASB, or Negative based on culture
+#   results and symptom data.  This produces the authoritative status_map.csv
+#   that every downstream analysis depends on.
 #
-# Outputs:
-#   - results/clinical/status_map.csv
-#   - assembly_metadata.csv (Project Root)
+# WHY THIS SCRIPT EXISTS:
+#   The distinction between UTI and ASB is the central clinical question of
+#   this project.  In elderly nursing home residents, most bacteriuria is
+#   asymptomatic (ASB).  True UTI requires BOTH:
+#     1. Significant bacteriuria (≥10⁵ CFU/mL or Beoordeling +++)
+#     2. Presence of urinary symptoms (Signs & Symptoms = positive)
 #
-# Usage:
-#   Rscript 00b_classify_episodes.R
+#   This script applies these clinical rules systematically, handles the
+#   complexity of three data sources for symptom information (Population
+#   field, S&S sheets, SNS tables), and assigns confidence levels to each
+#   classification for sensitivity analyses.
 #
-# Biological/Statistical purpose:
-#   - Applies clinical rules (CFU thresholds + Symptoms) to define the infection
-#     status (UTI/ASB/Negative) for each episode.
-#   - Assigns confidence levels for sensitivity analyses.
+# CLASSIFICATION RULES:
+#   UTI      = culture-positive AND symptoms present
+#   ASB      = culture-positive AND NO symptoms (or symptoms unknown)
+#   Negative = culture-negative (regardless of symptoms)
+#
+# INPUTS:
+#   - results/clinical/intermediate/clinical_merged.rds  (from 00a_)
+#
+# OUTPUTS:
+#   - results/clinical/status_map.csv    (Participant_id × Timepoint × Status)
+#   - assembly_metadata.csv              (isolate-level metadata for genomics)
+#
+# DOWNSTREAM:
+#   → Infection_Status is used by virtually every analysis script (02–25).
+#   → The GLMM in 14_ models UTI vs ASB as the binary outcome.
+#   → The VF pipeline (22–25) stratifies all analyses by this status.
 # ==============================================================================
 
 source("00_config.R")
@@ -158,6 +176,11 @@ classified <- meta_plus %>%
 
 # 3. Episode-level Collapse
 # ------------------------------------------------------------------------------
+# We collapse the raw clinical data down to one row per Participant_id + Timepoint.
+# This is crucial because the scientific unit of interest is the clinical episode,
+# not the individual isolate or assembly file.
+# Without this step, participants with multiple isolates sequenced at the same
+# timepoint would contribute more heavily to ASB/UTI comparisons, biasing the summaries.
 episode_tbl <- classified %>%
     group_by(Participant_id, Timepoint) %>%
     summarise(
