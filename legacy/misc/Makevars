@@ -1,3 +1,0 @@
-CC=/usr/bin/clang
-CXX=/usr/bin/clang++ -std=gnu++17
-FC=/Users/Aamir/miniconda3/envs/wgs/bin/gfortran
