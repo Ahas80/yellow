@@ -1,75 +1,45 @@
 # REPO_CLEANUP_MANIFEST
 
-Date: 2026-04-26
+Date: 2026-04-25
 Branch: `work`
 Anchor workflow: `RUN_COMPLETE_ANALYSIS.sh`
 
-## Scope
-This repository is trimmed to the minimal YELLOW RoUTIne / rUTI analysis workflow.
+## Cleanup goal
+Retain only files needed for the current YELLOW RoUTIne / rUTI canonical analysis pipeline and remove UTIGA/poster/legacy/generated clutter.
 
-## Kept (required)
+## Canonical scripts called directly by `RUN_COMPLETE_ANALYSIS.sh`
 
-### 1) Canonical runner
-- `RUN_COMPLETE_ANALYSIS.sh`
+- Phase 0: `00a_load_clean_clinical.R`, `00b_classify_episodes.R`, `00c_plot_clinical_summary.R`
+- Phase 1: `12a_wgs_qc.R`, `12b_core_snp.R`, `12c_panaroo.R`, `13_visualise_panaroo_selection.R`, `02_gene_presence_analysis.R`, `06_MLST.R`
+- Phase 1b: `03_plotting.R`, `04_gene_breakdown.R`, `05_gene_overview_plots.R`, `07_explore_MLST.R`, `08_core_vs_plasmid.R`, `09_inc_plasmid_network.R`, `10_replicon_heatmap.R`
+- Phase 2: `11_compare_strains.R`, `14_genotype_phenotype_model.R`, `17_lineage_analysis.R`
+- Phase 3: `15_longitudinal_patterns.R`, `16_within_host_evolution.R`, `18_annotate_variants.R`, `20_variant_annotation_deep.R`, `19_host_context.R`, `21_publication_figures.R`
+- Phase 4: `22_vf_build_analysis_dataset.R`, `23_vf_cross_sectional.R`, `24_vf_longitudinal_dynamics.R`, `25_vf_lineage_vf_interaction.R`
 
-### 2) Canonical numbered scripts called by runner
-- `00a_load_clean_clinical.R`
-- `00b_classify_episodes.R`
-- `00c_plot_clinical_summary.R`
-- `12a_wgs_qc.R`
-- `12b_core_snp.R`
-- `12c_panaroo.R`
-- `13_visualise_panaroo_selection.R`
-- `02_gene_presence_analysis.R`
-- `06_MLST.R`
-- `03_plotting.R`
-- `04_gene_breakdown.R`
-- `05_gene_overview_plots.R`
-- `07_explore_MLST.R`
-- `08_core_vs_plasmid.R`
-- `09_inc_plasmid_network.R`
-- `10_replicon_heatmap.R`
-- `11_compare_strains.R`
-- `14_genotype_phenotype_model.R`
-- `17_lineage_analysis.R`
-- `15_longitudinal_patterns.R`
-- `16_within_host_evolution.R`
-- `18_annotate_variants.R`
-- `20_variant_annotation_deep.R`
-- `19_host_context.R`
-- `21_publication_figures.R`
-- `22_vf_build_analysis_dataset.R`
-- `23_vf_cross_sectional.R`
-- `24_vf_longitudinal_dynamics.R`
-- `25_vf_lineage_vf_interaction.R`
+## Keep / remove policy
 
-### 3) Directly sourced helpers
-- `00_config.R`
-- `11_compare_strains_helpers.R`
-- `R/clinical_helpers.R`
-- `R/plot_helpers.R`
-- `R/wgs_helpers.R`
+### Keep
+1. `RUN_COMPLETE_ANALYSIS.sh`
+2. Numbered canonical pipeline scripts listed above
+3. Direct helper files sourced by kept scripts (e.g. selected files in `R/`)
+4. Required environment and user documentation (`README.md`, `.gitignore`, env YAMLs)
+5. Small static lookup/reference files required as inputs
 
-### 4) Required workflow docs/config
-- `README.md`
-- `.gitignore`
-- `REPO_CLEANUP_MANIFEST.md`
-- Environment files: `environment-rutis-core.yml`, `env-wgs.yml`, `env-annot.yml`
+### Remove
+1. Generated outputs (`plots/`, `results/`, `logs/`, caches/intermediates)
+2. Poster/conference/slides and presentation artifacts
+3. UTIGA-specific material
+4. Legacy/proposed/backup/debug/one-off scripts not in canonical pipeline
+5. Duplicate drafts superseded by kept numbered scripts
 
-### 5) Required small input file(s)
-- `assembly_metadata.csv` (used by canonical scripts)
+### Needs decision (if encountered)
+Any file not directly called/sourced/read by canonical scripts and not clearly generated output should be marked as uncertain in review notes instead of silently retained.
 
-## Removed
-- UTIGA/poster/conference/slides material
-- generated outputs (`plots/`, result artifacts)
-- legacy/proposed/debug/backup/one-off scripts
-- non-canonical helper/doc files not required to run the canonical pipeline
-
-## Validation checklist
+## Safety checks planned
 - `bash -n RUN_COMPLETE_ANALYSIS.sh`
 - Confirm every `Rscript` target in `RUN_COMPLETE_ANALYSIS.sh` exists
-- Confirm `source(...)` paths in canonical scripts exist
-- Parse-check canonical `.R` scripts with `Rscript -e "parse(file='...')"` when `Rscript` is available
+- Parse-check kept `.R` scripts (`Rscript -e "parse(file='...')"`) if R is available
+- Verify `source("...")` references resolve to existing files
 
-## Sensitive data policy
-If private/raw clinical or sequencing data is found, keep it out of the working tree, ignore it in Git, and note that old history may still contain prior commits.
+## Notes on sensitive/raw data
+If private or raw sequencing/clinical data appears during cleanup, remove from working tree, block via `.gitignore`, and flag that it may still exist in Git history.
