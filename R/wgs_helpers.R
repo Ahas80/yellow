@@ -1,5 +1,32 @@
-# R/wgs_helpers.R
-# Shared helper functions for WGS pipeline scripts (12a-12e)
+# ==============================================================================
+# SCRIPT NAME: R/wgs_helpers.R
+# GOAL:
+#   Provide shared utility functions for the WGS phase (QC, core SNP, pangenome)
+#   so all Phase 1 scripts apply the same command execution, logging, and path
+#   assumptions.
+#
+# WHY THIS EXISTS:
+#   Centralising helper logic avoids script-specific drift in tool detection,
+#   logging formats, and output paths, which improves reproducibility and audit.
+#
+# INPUTS:
+#   - Environment PATH / conda binaries.
+#   - Metadata and result files referenced by calling scripts.
+#
+# OUTPUTS:
+#   - Helper-returned objects, logs, and standardised command execution records.
+#
+# KEY DESIGN DECISIONS:
+#   - Prefer robust wrappers (run_cmd/check_bin/safe_read_csv) over ad hoc
+#     system2 calls to make failures explicit and traceable.
+#   - Shared path constants keep Phase 1 outputs structurally consistent.
+#
+# POSITION IN PIPELINE:
+#   - Sourced by 12a_wgs_qc.R, 12b_core_snp.R, and 12c/13 WGS scripts.
+#
+# NOTES / LIMITATIONS:
+#   - Helper functions do not validate scientific thresholds; callers do.
+# ==============================================================================
 
 suppressPackageStartupMessages({
     library(dplyr)

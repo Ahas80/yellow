@@ -29,6 +29,16 @@
 #
 # OUTPUTS:
 #   - results/longitudinal/variant_annotation_detailed.csv
+#
+# KEY DESIGN DECISIONS:
+#   - Focuses on curated phenotype-switch participants to prioritise manual,
+#     biologically interpretable annotation during thesis-stage deep dive.
+#
+# POSITION IN PIPELINE:
+#   - Phase 3 deep annotation step after 18_annotate_variants.R.
+#
+# NOTES / LIMITATIONS:
+#   - Current participant subset is intentionally narrow and not cohort-wide.
 # ==============================================================================
 
 suppressPackageStartupMessages({

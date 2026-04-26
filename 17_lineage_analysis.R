@@ -28,6 +28,16 @@
 #   - Determine if specific STs (e.g. ST131) are inherently more "symptomatic"
 #     than others in this cohort.
 #   - Risk stratification of clones.
+#
+# KEY DESIGN DECISIONS:
+#   - Computes per-ST UTI proportions only for analysable ST strata to avoid
+#     unstable rates from single-observation lineages.
+#
+# POSITION IN PIPELINE:
+#   - Phase 2 comparative genomics lineage-risk summary, complements 14 and 25.
+#
+# NOTES / LIMITATIONS:
+#   - ST-risk estimates are confounded by repeated measures and small per-ST n.
 # ==============================================================================
 
 source("00_config.R")

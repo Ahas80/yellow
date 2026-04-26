@@ -32,6 +32,17 @@
 # Biological/Statistical purpose:
 #   - Visualizes which samples passed QC and were selected for pangenome analysis.
 #   - Checks for selection bias (e.g., are UTI samples more likely to fail QC?).
+#
+# KEY DESIGN DECISIONS:
+#   - Summarises selection by participant/timepoint/status to detect unbalanced
+#     representation before interpreting pangenome associations.
+#
+# POSITION IN PIPELINE:
+#   - Phase 1 QC transparency step immediately after 12c_panaroo.R input curation.
+#
+# NOTES / LIMITATIONS:
+#   - Selection-bias plots are descriptive diagnostics and do not correct bias by
+#     themselves; interpretation remains cohort-size limited.
 # ==============================================================================
 
 # 1. Load Configuration & Libraries

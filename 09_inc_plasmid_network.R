@@ -28,6 +28,16 @@
 # Biological/Statistical purpose:
 #   - Visualizes how plasmid replicons co-occur (e.g., multi-replicon plasmids).
 #   - Maps plasmid content to bacterial lineages (STs).
+#
+# KEY DESIGN DECISIONS:
+#   - Caches Abricate/PlasmidFinder output to keep reruns deterministic and fast.
+#   - Uses presence/absence abstraction to align with downstream matrix analyses.
+#
+# POSITION IN PIPELINE:
+#   - Phase 1b plasmid exploration; outputs feed 10_replicon_heatmap.R and later models.
+#
+# NOTES / LIMITATIONS:
+#   - Replicon presence does not prove plasmid copy number, structure, or expression.
 # ==============================================================================
 
 # 1. Load Configuration & Libraries

@@ -27,6 +27,18 @@
 # Outputs:
 #   - results/stats_*.csv
 #   - results/plots/ (various PNGs)
+#
+# KEY DESIGN DECISIONS:
+#   - Treated as exploratory visualisation (not confirmatory inference).
+#   - Reuses canonical infection-status colours from R/plot_helpers.R so figure
+#     semantics stay consistent across manuscripts and pipeline phases.
+#
+# POSITION IN PIPELINE:
+#   - Phase 1b exploratory plotting after 02_gene_presence_analysis.R.
+#
+# NOTES / LIMITATIONS:
+#   - Repeated participant samples are not independent; apparent differences are
+#     descriptive and can be lineage-confounded.
 # ==============================================================================
 
 # 1. Load Configuration & Libraries

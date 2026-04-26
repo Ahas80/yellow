@@ -25,6 +25,17 @@
 # Biological/Statistical purpose:
 #   - Filters out low-quality assemblies (contamination, fragmentation) to ensure
 #     downstream analyses (SNP, Pangenome) are robust.
+#
+# KEY DESIGN DECISIONS:
+#   - Applies fixed QC thresholds from central config for reproducible cohort-wide
+#     inclusion criteria before core SNP/pangenome inference.
+#
+# POSITION IN PIPELINE:
+#   - Phase 1 gatekeeper; run before 12b_core_snp.R and 12c_panaroo.R.
+#
+# NOTES / LIMITATIONS:
+#   - Assembly-level QC cannot detect all biological artefacts (e.g., mixed strain
+#     samples) and should be interpreted with metadata/context.
 # ==============================================================================
 
 # 1. Load Configuration & Libraries

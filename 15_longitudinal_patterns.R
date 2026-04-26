@@ -28,6 +28,16 @@
 #   - Tracks persistence duration.
 #   - Identifies specific "Phenotype Switch" events (Same Strain, ASB <-> UTI)
 #     for downstream evolutionary analysis.
+#
+# KEY DESIGN DECISIONS:
+#   - Uses graph connected-components over pairwise "Same" calls so transitive
+#     strain continuity (A~B~C) is captured within participants.
+#
+# POSITION IN PIPELINE:
+#   - Phase 3 longitudinal backbone; consumed by 16/18/19/21 downstream scripts.
+#
+# NOTES / LIMITATIONS:
+#   - Longitudinal gaps and sparse UTI timepoints can obscure true transition order.
 # ==============================================================================
 
 source("00_config.R")

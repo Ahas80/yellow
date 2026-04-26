@@ -29,6 +29,16 @@
 #   - Extract "Urine collection method" (Catheter use) and Symptoms for
 #     the specific episodes involved in phenotype switching.
 #   - (Antibiotics data is currently missing from inputs).
+#
+# KEY DESIGN DECISIONS:
+#   - Aligns host-context extraction directly to phenotype-switch episode pairs so
+#     genomic findings can be interpreted against potential clinical confounders.
+#
+# POSITION IN PIPELINE:
+#   - Phase 3 host integration layer after candidate transitions are identified.
+#
+# NOTES / LIMITATIONS:
+#   - Missing antibiotic/exposure metadata limits causal interpretation.
 # ==============================================================================
 
 source("00_config.R")

@@ -25,6 +25,17 @@
 # Biological/Statistical purpose:
 #   - Defines the pangenome (core + accessory genes) of the cohort.
 #   - Generates gene presence/absence matrices for downstream association testing.
+#
+# KEY DESIGN DECISIONS:
+#   - Uses QC-filtered genomes and Prokka annotations to reduce artefactual gene
+#     absence caused by poor assemblies.
+#
+# POSITION IN PIPELINE:
+#   - Phase 1 pangenome module; outputs support exploratory gene content analyses.
+#
+# NOTES / LIMITATIONS:
+#   - Gene presence/absence indicates sequence detection, not transcription or
+#     protein-level virulence activity.
 # ==============================================================================
 
 # 1. Load Configuration & Libraries

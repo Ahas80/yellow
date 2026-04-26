@@ -23,8 +23,16 @@
 #   - plots/publication/Fig1_Swimmer_Plot.png
 #   - plots/publication/Fig2_Mutation_Map.png
 #
-# Purpose:
-#   - Generate high-quality, annotated figures for the manuscript.
+# KEY DESIGN DECISIONS:
+#   - Separate publication aesthetics from core analytics so figure polishing
+#     does not alter upstream analytical artifacts.
+#
+# POSITION IN PIPELINE:
+#   - Phase 3 final visual packaging after longitudinal and variant scripts.
+#
+# NOTES / LIMITATIONS:
+#   - Figure narratives depend on earlier exploratory analyses and should be read
+#     with cohort-size and repeated-measures caveats in mind.
 # ==============================================================================
 
 source("00_config.R")

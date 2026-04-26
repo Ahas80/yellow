@@ -1,9 +1,31 @@
 #!/usr/bin/env Rscript
-# =============================================================
-# 11_compare_strains_helpers.R
-# Shared helpers for strain comparison across participants/timepoints
-# Yellow RoUTIne – production-grade utilities
-# =============================================================
+# ==============================================================================
+# SCRIPT NAME: 11_compare_strains_helpers.R
+# GOAL:
+#   Shared helper functions for within-host strain comparison workflows.
+#
+# WHY THIS EXISTS:
+#   Scripts 11 and 16 repeatedly need consistent timepoint normalisation,
+#   core-table loading, and safe IO wrappers. Centralising these helpers
+#   avoids divergent joins and inconsistent pairwise-strain definitions.
+#
+# INPUTS:
+#   - assembly_metadata.csv, results/status_map.csv (if present),
+#     results/mlst/mlst_all.tsv, and optional plasmid/VF tables.
+#
+# OUTPUTS:
+#   - In-memory helper objects plus safely written CSV intermediates.
+#
+# KEY DESIGN DECISIONS:
+#   - Timepoints are canonicalised so routine vs Uricult events are comparable.
+#   - Tool detection is explicit because external binaries may differ by host.
+#
+# POSITION IN PIPELINE:
+#   - Sourced by 11_compare_strains.R and reused in 16_within_host_evolution.R.
+#
+# NOTES / LIMITATIONS:
+#   - Optional tables are tolerated; callers must decide analytic fallbacks.
+# ==============================================================================
 
 suppressPackageStartupMessages({
   library(dplyr)
