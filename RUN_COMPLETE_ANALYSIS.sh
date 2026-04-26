@@ -1,9 +1,35 @@
 #!/bin/bash
 # ==============================================================================
-# RUN_COMPLETE_ANALYSIS.sh
-# ------------------------------------------------------------------------------
-# Complete pipeline execution script for rUTIs project
-# Runs all 4 phases in order
+# SCRIPT NAME: RUN_COMPLETE_ANALYSIS.sh
+# GOAL:
+#   Execute the canonical end-to-end YELLOW RoUTIne / rUTI analysis pipeline
+#   in the intended scientific order (Phase 0 → Phase 4).
+#
+# WHY THIS EXISTS:
+#   This is the primary workflow entry point used for reproducible reruns.
+#   Running scripts in the wrong order can silently produce incomplete joins
+#   (e.g., missing status_map.csv, stale VF matrices, or missing SNP outputs).
+#
+# INPUTS:
+#   - Canonical project files expected by each numbered script (clinical data,
+#     assembly metadata, assemblies, prior external tool outputs where needed).
+#   - Active conda environment containing required R packages and CLI tools.
+#
+# OUTPUTS:
+#   - Aggregated pipeline outputs under results/ and plots/ as produced by each
+#     numbered script (clinical status map, VF matrix, MLST, SNP, lineage, etc.).
+#
+# KEY DESIGN DECISIONS:
+#   - set -e / set -u fail fast to avoid partial, hard-to-audit analyses.
+#   - Explicit phase boundaries make progression and failure location obvious.
+#   - Conda environment check prevents running with wrong dependency stack.
+#
+# POSITION IN PIPELINE:
+#   - Canonical top-level orchestrator (run first for full reproducible build).
+#
+# NOTES / LIMITATIONS:
+#   - This wrapper assumes all required raw inputs are already present.
+#   - It intentionally does not alter thresholds or reroute script logic.
 # ==============================================================================
 
 set -e  # Exit on error
@@ -14,7 +40,8 @@ echo "rUTIs Complete Analysis Pipeline"
 echo "Started: $(date)"
 echo "=========================================="
 
-# Check conda environment
+# Check conda environment up front so all downstream R scripts use the same
+# toolchain (R packages + external binaries such as Panaroo/Parsnp/Abricate).
 if [ -z "${CONDA_DEFAULT_ENV:-}" ]; then
     echo "⚠️  WARNING: No conda environment active. Activate with:"
     echo "   conda activate asm-snp-x86"

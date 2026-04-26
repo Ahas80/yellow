@@ -28,6 +28,17 @@
 # Biological/Statistical purpose:
 #   - Visualizes the distribution of Sequence Types (STs) in the cohort.
 #   - Identifies dominant lineages (e.g., ST131, ST73).
+#
+# KEY DESIGN DECISIONS:
+#   - Produces a canonical MLST+metadata join so downstream scripts do not
+#     re-implement participant/timepoint linkage differently.
+#
+# POSITION IN PIPELINE:
+#   - Phase 1b exploratory lineage context, after 06_MLST.R.
+#
+# NOTES / LIMITATIONS:
+#   - MLST is a lineage proxy, not full-genome relatedness; recombination and
+#     accessory genome changes are not captured by ST alone.
 # ==============================================================================
 
 # 1. Load Configuration & Libraries

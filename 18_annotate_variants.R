@@ -27,6 +27,17 @@
 # Output:
 #   - results/longitudinal/annotated_snps.csv
 #   - results/longitudinal/variant_report.md
+#
+# KEY DESIGN DECISIONS:
+#   - Maintains raw Nucmer-derived SNP rows before deep annotation so provenance
+#     from pairwise comparison files remains auditable.
+#
+# POSITION IN PIPELINE:
+#   - Phase 3 variant processing step between 16_within_host_evolution and 20_deep.
+#
+# NOTES / LIMITATIONS:
+#   - Positional annotation is reference/GFF dependent; functional impact requires
+#     additional interpretation beyond locus overlap.
 # ==============================================================================
 
 source("00_config.R")

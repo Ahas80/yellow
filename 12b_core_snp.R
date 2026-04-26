@@ -28,6 +28,18 @@
 # Biological/Statistical purpose:
 #   - Constructs a core genome alignment to infer phylogenetic relationships.
 #   - Calculates pairwise SNP distances to identify "Same" vs "Different" strains.
+#
+# KEY DESIGN DECISIONS:
+#   - Restricts analysis to QC-passed assemblies to avoid inflated SNP distances
+#     from fragmented/low-quality inputs.
+#   - Persists both tree and distance matrix for transparent downstream thresholds.
+#
+# POSITION IN PIPELINE:
+#   - Phase 1 phylogeny module feeding 11_compare_strains.R and longitudinal scripts.
+#
+# NOTES / LIMITATIONS:
+#   - Core SNP distances depend on chosen reference/alignment strategy and do not
+#     capture accessory genome turnover.
 # ==============================================================================
 
 # 1. Load Configuration & Libraries

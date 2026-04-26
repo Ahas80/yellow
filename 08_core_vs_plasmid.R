@@ -28,6 +28,16 @@
 # Biological/Statistical purpose:
 #   - Investigates associations between bacterial lineages (STs) and plasmid types.
 #   - Tests for significant co-occurrence (e.g., IncF plasmids in ST131).
+#
+# KEY DESIGN DECISIONS:
+#   - Uses observed ST and plasmid calls without redefining typing thresholds.
+#   - Keeps outputs wide/long so later scripts can pivot without re-calling tools.
+#
+# POSITION IN PIPELINE:
+#   - Phase 1b exploratory plasmid-lineage context after 06_MLST.R and before 11/14.
+#
+# NOTES / LIMITATIONS:
+#   - Associations are observational and may reflect sampling imbalance between STs.
 # ==============================================================================
 
 # 1. Load Configuration & Libraries

@@ -25,6 +25,16 @@
 # Biological/Statistical purpose:
 #   - Visualizes the plasmid content landscape across the cohort.
 #   - Highlights associations between specific plasmids and STs.
+#
+# KEY DESIGN DECISIONS:
+#   - Uses binary presence/absence heatmaps to compare many replicons uniformly.
+#   - Keeps ST annotation on rows to make lineage clustering visually auditable.
+#
+# POSITION IN PIPELINE:
+#   - Phase 1b visual summary after 09_inc_plasmid_network.R.
+#
+# NOTES / LIMITATIONS:
+#   - Heatmap clustering is descriptive and sensitive to sparse replicon matrices.
 # ==============================================================================
 
 # 1. Load Configuration & Libraries

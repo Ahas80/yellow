@@ -31,6 +31,16 @@
 #     1. Calculate precise SNP distance (nucmer).
 #     2. Identify gene content changes (VF gain/loss, Plasmid gain/loss).
 #     3. Report "Chameleon" candidates: 0 SNPs but status change?
+#
+# KEY DESIGN DECISIONS:
+#   - Restricts deep-dive to phenotype-switch candidates to prioritise biologically
+#     meaningful transitions instead of all pairwise comparisons.
+#
+# POSITION IN PIPELINE:
+#   - Phase 3 mechanistic follow-up after candidate generation in 15_.
+#
+# NOTES / LIMITATIONS:
+#   - Candidate count is typically small; findings are hypothesis-generating.
 # ==============================================================================
 
 source("00_config.R")
