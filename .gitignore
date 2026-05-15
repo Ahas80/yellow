@@ -1,0 +1,79 @@
+# Raw sequencing / assemblies / genomics files
+ont-yellow-routine-fastas/
+data/
+assemblies.list
+*.fasta
+*.fa
+*.fna
+*.fastq
+*.fq
+*.fastq.gz
+*.fq.gz
+*.gz
+*.tgz
+*.tar.gz
+*.zip
+*.bam
+*.sam
+*.vcf
+*.gff
+*.gff3
+*.gbk
+*.gbff
+
+# Installers
+miniforge_x86.sh
+Miniconda3-latest-MacOSX-arm64.sh
+
+# Large/generated outputs
+results/
+plots/
+logs/
+tmp/
+temp/
+cache/
+.snakemake/
+debug_bundle_*/
+debug_output*.txt
+test.out*
+*.log
+*.err
+*.out
+
+# System & Config
+.DS_Store
+.Rproj.user
+.Rhistory
+.Rapp.history
+.RData
+.Ruserdata
+rUTIs.Rproj
+
+# Temporary & Backups
+backups/
+*.bak
+*~
+*.swp
+tmp*/
+temp_*/
+
+# Python/Conda
+__pycache__/
+*.pyc
+.env
+.venv/
+env/
+conda-env/
+
+# Specific large/irrelevant folders
+fake ecoli/
+phyloseq try out/
+not-assemblies/
+archive/
+multi_*.fa.*
+rUTIs_backup_*.tar.gz
+
+# Generated PDFs (unless documentation)
+*.pdf
+docs/papers/
+docs/slides/
