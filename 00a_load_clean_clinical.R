@@ -4,22 +4,30 @@
 # ==============================================================================
 #
 # GOAL:
-#   Load and merge the three raw clinical data batches (batch1, batch2, batch3)
-#   into a single harmonised dataset.  This is the very first step in the
-#   pipeline — all subsequent clinical classification depends on this merge.
+#   Load and merge clinical data batches into a single harmonised dataset.
+#   This is the very first step in the pipeline — all subsequent clinical
+#   classification depends on this merge.
 #
 # WHY THIS SCRIPT EXISTS:
-#   The YELLOW RoUTIne study collected clinical data in three recruitment
-#   batches.  Each batch has slightly different column naming conventions
-#   and data formatting.  This script reconciles those differences so that
-#   downstream scripts can work with a consistent dataset.
+#   The YELLOW RoUTIne study collected clinical data in recruitment batches.
+#   Each batch has slightly different column naming conventions and data
+#   formatting.  This script reconciles those differences so that downstream
+#   scripts can work with a consistent dataset.
 #
 #   Signs & Symptoms (S&S) columns are deliberately separated from metadata
 #   because they require special boolean parsing (Dutch-language values like
 #   "ja"/"nee", numeric codes, etc.).
 #
+# BATCH HANDLING (v2 — Batches 1–6):
+#   - The list of clinical batch CSVs is defined centrally in 00_config.R
+#     (BATCH_DEFINITIONS / BATCH_CLINICAL_CSVS).
+#   - Batches 4–6 may not yet have clinical CSV files.  The script loads
+#     only those CSVs that exist on disk and warns (not crashes) about missing ones.
+#   - Batch 4–6 clinical CSVs are exported from the master overview workbook
+#     into data/inputs/ and then listed in BATCH_DEFINITIONS in 00_config.R.
+#
 # INPUTS:
-#   - data/inputs/batch1.csv, batch2.csv, batch3.csv  (raw clinical exports)
+#   - data/inputs/batch*.csv  (clinical exports — as many as exist)
 #
 # OUTPUTS:
 #   - results/clinical/intermediate/clinical_merged.rds
@@ -46,10 +54,13 @@ msg("Starting 00a_load_clean_clinical.R")
 DIR_INTERMEDIATE <- file.path(DIR_CLINICAL, "intermediate")
 ensure_dir(DIR_INTERMEDIATE)
 
-# 1. Load Batches
-# ------------------------------------------------------------------------------
+# ==============================================================================
+# 1. Load Batches — dynamically from BATCH_DEFINITIONS
+# ==============================================================================
+# read_batch: reads a single batch CSV, trying data/inputs/ first, then root.
+# Returns NULL (not a crash) if the file does not exist.
 read_batch <- function(fname) {
-    # Try data/inputs/ first, then root
+    if (is.na(fname)) return(NULL)
     p1 <- file.path("data", "inputs", fname)
     if (file.exists(p1)) {
         return(read_csv(p1, show_col_types = FALSE))
@@ -57,17 +68,41 @@ read_batch <- function(fname) {
     if (file.exists(fname)) {
         return(read_csv(fname, show_col_types = FALSE))
     }
-    stop("Could not find input file: ", fname)
+    # File does not exist — return NULL rather than crashing.
+    NULL
 }
 
-batch1 <- read_batch("batch1.csv")
-batch2 <- read_batch("batch2.csv")
-batch3 <- read_batch("batch3.csv")
+# Load all defined batches.  Keep track of which ones were found.
+batch_data <- list()
+batch_ids_loaded <- integer(0)
+batch_ids_missing <- integer(0)
 
-msg("Loaded batches: B1=%d, B2=%d, B3=%d rows", nrow(batch1), nrow(batch2), nrow(batch3))
+for (bdef in BATCH_DEFINITIONS) {
+    csv_name <- bdef$clinical_csv
+    bid <- bdef$batch_id
+    df <- read_batch(csv_name)
+    if (!is.null(df)) {
+        batch_data[[as.character(bid)]] <- df
+        batch_ids_loaded <- c(batch_ids_loaded, bid)
+    } else {
+        batch_ids_missing <- c(batch_ids_missing, bid)
+    }
+}
 
+if (length(batch_ids_loaded) == 0) {
+    stop("No clinical batch CSV files found. Cannot proceed without clinical data.")
+}
+
+msg("Loaded %d clinical batch CSV(s): %s",
+    length(batch_ids_loaded), paste(batch_ids_loaded, collapse = ", "))
+if (length(batch_ids_missing) > 0) {
+    msg("⚠ Missing clinical CSV(s) for batch(es): %s",
+        paste(batch_ids_missing, collapse = ", "))
+}
+
+# ==============================================================================
 # 2. Clean and Merge Metadata (excluding S&S columns)
-# ------------------------------------------------------------------------------
+# ==============================================================================
 drop_SnS_cols <- function(df) {
     df %>%
         select(
@@ -82,17 +117,22 @@ drop_SnS_cols <- function(df) {
         )
 }
 
-b1_clean <- drop_SnS_cols(batch1)
-b2_clean <- drop_SnS_cols(batch2)
-b3_clean <- drop_SnS_cols(batch3)
+# Clean each batch and harmonize column types
+cleaned_list <- lapply(names(batch_data), function(bid_str) {
+    df <- batch_data[[bid_str]]
+    df_clean <- drop_SnS_cols(df)
+    # Coerce all columns to character for safe binding
+    df_clean <- df_clean %>% mutate(across(everything(), as.character))
+    df_clean$Batch <- as.integer(bid_str)
+    df_clean
+})
 
-common_cols <- Reduce(intersect, list(names(b1_clean), names(b2_clean), names(b3_clean)))
+# Find common columns and bind
+all_cols <- lapply(cleaned_list, names)
+common_cols <- Reduce(intersect, all_cols)
+msg("Common columns across %d batches: %d", length(cleaned_list), length(common_cols))
 
-metadata <- bind_rows(
-    mutate(b1_clean, across(all_of(common_cols), as.character), Batch = 1L),
-    mutate(b2_clean, across(all_of(common_cols), as.character), Batch = 2L),
-    mutate(b3_clean, across(all_of(common_cols), as.character), Batch = 3L)
-)
+metadata <- bind_rows(cleaned_list)
 
 # Standardize ID & Timepoint
 standardize_id_tp <- function(df) {
@@ -130,10 +170,11 @@ if (nrow(batch_conflicts) > 0) {
     msg("✓ Participant IDs are unique to batches (no cross-batch participants)")
 }
 
-msg("Merged metadata: %d rows", nrow(metadata))
+msg("Merged metadata: %d rows from %d batches", nrow(metadata), length(batch_ids_loaded))
 
+# ==============================================================================
 # 3. Recover S&S Columns (for detailed symptom logic)
-# ------------------------------------------------------------------------------
+# ==============================================================================
 symptom_cols2 <- function(df) {
     nm <- names(df)
     id_col <- nm[grepl("^participant[_ ]?id$", nm, ignore.case = TRUE)][1]
@@ -150,20 +191,24 @@ symptom_cols2 <- function(df) {
         ) %>%
         select(
             Participant_id, Timepoint,
-            matches("sympt|dysur|urg|urge|fever|koorts|pijn|pain|burn", ignore.case = TRUE),
-            -matches("status|sns.*status|signs.*symptoms.*status", ignore.case = TRUE)
+            matches(
+                "s\\s*&\\s*s|sympt|dysur|urg|urge|frequen|fever|koorts|pijn|pain|burn|incontin|pus|flank|suprapub|rilling|chill|delir|other|anders",
+                ignore.case = TRUE
+            ),
+            -matches(
+                "status|sns.*status|signs.*symptoms.*status|^no\\s+s\\s*&\\s*s$|^geen\\s+s\\s*&\\s*s$",
+                ignore.case = TRUE
+            )
         ) %>%
         mutate(across(-c(Participant_id, Timepoint), as.character))
 }
 
-sym_b1 <- symptom_cols2(batch1)
-sym_b2 <- symptom_cols2(batch2)
-sym_b3 <- symptom_cols2(batch3)
-sym_list <- list(sym_b1, sym_b2, sym_b3)
+sym_list <- lapply(batch_data, symptom_cols2)
 sym_all_raw <- bind_rows(sym_list[!vapply(sym_list, is.null, logical(1))])
 
+# ==============================================================================
 # 4. Extract SnS Status (Fallback for B1/B2)
-# ------------------------------------------------------------------------------
+# ==============================================================================
 empty_sns_frame <- function() {
     tibble(
         Participant_id = character(), Timepoint = character(),
@@ -207,14 +252,20 @@ extract_sns_status <- function(df, batch_id) {
         )
 }
 
-sns_12 <- bind_rows(
-    extract_sns_status(batch1, 1L),
-    extract_sns_status(batch2, 2L)
-)
+# Extract S&S status from batches 1 and 2 (those that have this fallback)
+sns_parts <- list()
+for (bid_str in names(batch_data)) {
+    bid <- as.integer(bid_str)
+    if (bid %in% c(1L, 2L)) {
+        sns_parts[[bid_str]] <- extract_sns_status(batch_data[[bid_str]], bid)
+    }
+}
+sns_12 <- bind_rows(sns_parts)
 if (ncol(sns_12) == 0) sns_12 <- empty_sns_frame()
 
+# ==============================================================================
 # 5. Save Intermediate Data
-# ------------------------------------------------------------------------------
+# ==============================================================================
 saveRDS(list(
     metadata = metadata,
     sym_all_raw = sym_all_raw,

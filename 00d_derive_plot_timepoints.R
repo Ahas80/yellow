@@ -41,7 +41,7 @@ msg("Starting 00d_derive_plot_timepoints.R")
 # ==============================================================================
 # 1. Load Status Map
 # ==============================================================================
-status_file <- file.path(DIR_CLINICAL, "status_map.csv")
+status_file <- FILE_STATUS_MAP
 if (!file.exists(status_file)) {
     stop("status_map.csv not found. Run 00b_classify_episodes.R first.")
 }
@@ -71,11 +71,12 @@ read_batch_dates <- function(fname) {
         )
 }
 
-batch_dates <- bind_rows(
-    read_batch_dates("batch1.csv"),
-    read_batch_dates("batch2.csv"),
-    read_batch_dates("batch3.csv")
-) %>%
+# Dynamically load dates from all available batch CSVs defined in 00_config.R.
+# Batches 4–6 may not have clinical CSVs yet; read_batch_dates handles missing
+# files by returning an empty tibble and printing a warning.
+batch_date_parts <- lapply(BATCH_CLINICAL_CSVS[!is.na(BATCH_CLINICAL_CSVS)],
+                           read_batch_dates)
+batch_dates <- bind_rows(batch_date_parts) %>%
     mutate(
         date_parsed = lubridate::dmy(Collection_Date_raw)
     )
@@ -94,7 +95,18 @@ msg("Recovered dates for %d episodes from batch CSVs", nrow(episode_dates))
 
 # Join dates into status_map
 status_aug <- status_map %>%
-    left_join(episode_dates, by = c("Participant_id", "Timepoint"))
+    left_join(episode_dates, by = c("Participant_id", "Timepoint"), suffix = c("", "_recovered")) %>%
+    mutate(
+        Collection_Date = coalesce(
+            if ("Collection_Date" %in% names(.)) as.character(Collection_Date) else NA_character_,
+            if ("Collection_Date_recovered" %in% names(.)) as.character(Collection_Date_recovered) else NA_character_
+        ),
+        Collection_Date_dmy = coalesce(
+            if ("Collection_Date_dmy" %in% names(.)) Collection_Date_dmy else as.Date(NA),
+            suppressWarnings(lubridate::dmy(Collection_Date))
+        )
+    ) %>%
+    select(-any_of("Collection_Date_recovered"))
 
 n_with_date <- sum(!is.na(status_aug$Collection_Date_dmy))
 msg("Joined dates: %d/%d episodes have Collection_Date", n_with_date, nrow(status_aug))
@@ -128,10 +140,15 @@ msg("Built routine-visit lookup: %d participant-timepoint pairs", nrow(routine_v
 #        - Assign T{prior}.5, Confidence = "Moderate"
 #     C) Only next routine visit known, ≤90 days away, next ≥ T1:
 #        - Assign T{next-1}.5, Confidence = "Moderate"
-#     D) All other cases (>90d single-sided, unlinkable, no routine visits):
+#     D) Valid participant/date but no close routine anchor:
+#        - Assign a DISPLAY-ONLY approximate position so the Uricult event can
+#          appear on clinical/poster timelines, but mark confidence explicitly
+#          as DisplayOnly_*.
+#     E) All other cases (unlinkable participant/date):
 #        - Assign NA, Confidence = "Excluded"
 
 MAX_SINGLE_SIDE_DAYS <- 90
+DISPLAY_INTERVAL_DAYS <- 90
 
 assign_poster_tp <- function(df, routine_lkp) {
     # Pre-allocate output columns
@@ -177,10 +194,11 @@ assign_poster_tp <- function(df, routine_lkp) {
         rv <- routine_lkp %>% filter(Participant_id == pid) %>% arrange(tp_int)
 
         if (nrow(rv) == 0) {
-            # No routine visits at all
-            plot_label[i] <- "Uricult_unplaced"
-            plot_num[i]   <- NA_real_
-            confidence[i] <- "Excluded"
+            # No routine visits at all. Keep visible on display timelines, but
+            # do not pretend this has a true routine-visit anchor.
+            plot_label[i] <- "Uricult_only"
+            plot_num[i]   <- -0.5
+            confidence[i] <- "DisplayOnly_NoRoutineAnchor"
             next
         }
 
@@ -241,9 +259,11 @@ assign_poster_tp <- function(df, routine_lkp) {
                 plot_num[i]   <- half
                 confidence[i] <- "Moderate"
             } else {
-                plot_label[i] <- "Uricult_unplaced"
-                plot_num[i]   <- NA_real_
-                confidence[i] <- "Excluded"
+                intervals_past <- floor(days_after_prior / DISPLAY_INTERVAL_DAYS)
+                est_tp <- prior_int + intervals_past
+                plot_label[i] <- paste0("T", est_tp, ".5")
+                plot_num[i]   <- est_tp + 0.5
+                confidence[i] <- "DisplayOnly_Extrapolated"
             }
             next
         }
@@ -256,9 +276,11 @@ assign_poster_tp <- function(df, routine_lkp) {
                 plot_num[i]   <- half
                 confidence[i] <- "Moderate"
             } else {
-                plot_label[i] <- "Uricult_unplaced"
-                plot_num[i]   <- NA_real_
-                confidence[i] <- "Excluded"
+                intervals_before <- floor(days_before_next / DISPLAY_INTERVAL_DAYS)
+                est_tp <- max(0, next_int - intervals_before - 1L)
+                plot_label[i] <- paste0("T", est_tp, ".5")
+                plot_num[i]   <- est_tp + 0.5
+                confidence[i] <- "DisplayOnly_Extrapolated"
             }
             next
         }
@@ -289,7 +311,7 @@ msg("")
 
 # Counts by label
 label_counts <- uricult_rows %>%
-    count(Plot_TP_Label_Poster, Placement_Confidence, name = "n") %>%
+    dplyr::count(Plot_TP_Label_Poster, Placement_Confidence, name = "n") %>%
     arrange(Plot_TP_Num_Poster = NA)
 msg("By label:")
 for (j in seq_len(nrow(label_counts))) {
@@ -302,12 +324,20 @@ for (j in seq_len(nrow(label_counts))) {
 # Placed vs excluded
 n_placed   <- sum(!is.na(uricult_rows$Plot_TP_Num_Poster))
 n_excluded <- sum(is.na(uricult_rows$Plot_TP_Num_Poster))
+unplaced_uricult <- uricult_rows %>%
+    filter(is.na(Plot_TP_Num_Poster) | Placement_Confidence == "Excluded")
+write_csv(unplaced_uricult, file.path(DIR_CLINICAL, "unplaced_uricult_rows.csv"))
+msg("Wrote detailed unplaced Uricult rows to %s", file.path(DIR_CLINICAL, "unplaced_uricult_rows.csv"))
+display_only_uricult <- uricult_rows %>%
+    filter(grepl("^DisplayOnly", Placement_Confidence))
+write_csv(display_only_uricult, file.path(DIR_CLINICAL, "display_only_uricult_rows.csv"))
+msg("Wrote display-only Uricult placements to %s", file.path(DIR_CLINICAL, "display_only_uricult_rows.csv"))
 msg("")
 msg("Placed:   %d Uricult rows (%d%%)", n_placed, round(n_placed / nrow(uricult_rows) * 100))
 msg("Excluded: %d Uricult rows (%d%%)", n_excluded, round(n_excluded / nrow(uricult_rows) * 100))
 
 # Confidence breakdown
-conf_counts <- uricult_rows %>% count(Placement_Confidence, name = "n")
+conf_counts <- uricult_rows %>% dplyr::count(Placement_Confidence, name = "n")
 msg("")
 msg("By confidence:")
 for (j in seq_len(nrow(conf_counts))) {
@@ -342,6 +372,15 @@ status_final <- status_out %>% select(any_of(out_cols))
 out_path <- file.path(DIR_CLINICAL, "status_map_with_poster_tp.csv")
 write_csv(status_final, out_path)
 msg("Wrote %s (%d rows, %d cols)", out_path, nrow(status_final), ncol(status_final))
+
+append_denominator_summary(
+    status_final,
+    "00d_derive_plot_timepoints.R",
+    "status_map_with_poster_tp",
+    "clinical_episode",
+    out_path,
+    "Uricult poster half-step labels are display-only; unplaced rows are written separately"
+)
 
 # Also copy to UTIGA/data/ if that directory exists (for poster scripts)
 utiga_data <- file.path(DIR_ROOT, "UTIGA", "data")

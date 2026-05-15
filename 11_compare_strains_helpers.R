@@ -13,6 +13,7 @@ suppressPackageStartupMessages({
   library(purrr)
   library(tibble)
 })
+if (!exists("FILE_VF_PA")) source("00_config.R")
 
 # ------------- timepoint normalization ---------------------------------------
 tp_norm <- function(x) {
@@ -51,6 +52,11 @@ timestamp_msg <- function(...) {
   message(...)
 }
 
+usable_fasta_path <- function(path) {
+  path <- as.character(path)
+  !is.na(path) & nzchar(path) & path != "NA" & file.exists(path)
+}
+
 # ------------- tool detection ------------------------------------------------
 has_tool <- function(bin) nzchar(Sys.which(bin))
 
@@ -67,7 +73,7 @@ detect_tools <- function() {
 load_core_tables <- function() {
   # assemblies
   if (!file.exists("assembly_metadata.csv")) {
-    stop("assembly_metadata.csv not found – run 01_prepare_assembly_metadata.R")
+    stop("assembly_metadata.csv not found - run 00_make_assembly_metadata.r")
   }
   asm <- readr::read_csv("assembly_metadata.csv", show_col_types = FALSE)
   # ensure tp_lab
@@ -87,11 +93,24 @@ load_core_tables <- function() {
     }
     asm <- select(asm, -found)
   }
+  asm <- asm %>%
+    mutate(
+      full_path = as.character(full_path),
+      assembly_available = usable_fasta_path(full_path)
+    )
+  if (any(!asm$assembly_available, na.rm = TRUE)) {
+    warning(
+      sum(!asm$assembly_available, na.rm = TRUE),
+      " assembly metadata row(s) have no usable FASTA path and will be skipped in strain comparison."
+    )
+  }
 
   # status map (optional)
   status_map <- NULL
-  if (file.exists("results/status_map.csv")) {
-    status_map <- readr::read_csv("results/status_map.csv", show_col_types = FALSE)
+  status_candidates <- c(FILE_STATUS_MAP, file.path("results", "status_map.csv"), "status_map.csv")
+  status_file <- status_candidates[file.exists(status_candidates)][1]
+  if (!is.na(status_file)) {
+    status_map <- readr::read_csv(status_file, show_col_types = FALSE)
     if (!"tp_lab" %in% names(status_map)) {
       if (!"Timepoint" %in% names(status_map)) stop("status_map.csv must contain 'tp_lab' or 'Timepoint'")
       status_map <- dplyr::bind_cols(status_map, tp_norm(status_map$Timepoint))
@@ -102,10 +121,15 @@ load_core_tables <- function() {
   }
 
   # MLST
-  if (!file.exists("results/mlst/mlst_all.tsv")) {
-    stop("results/mlst/mlst_all.tsv not found – run 06_MLST.R")
+  mlst_file <- if (file.exists(FILE_MLST_ISOLATE_EXPLORATORY)) FILE_MLST_ISOLATE_EXPLORATORY else FILE_MLST_ALL
+  if (!file.exists(mlst_file)) {
+    stop("No isolate-level MLST file found – run 06_MLST.R and 07_explore_MLST.R")
   }
-  mlst <- readr::read_tsv("results/mlst/mlst_all.tsv", show_col_types = FALSE)
+  mlst <- if (grepl("\\.tsv$", mlst_file, ignore.case = TRUE)) {
+    readr::read_tsv(mlst_file, show_col_types = FALSE)
+  } else {
+    readr::read_csv(mlst_file, show_col_types = FALSE)
+  }
   st_col <- names(mlst)[tolower(names(mlst)) == "st"]
   if (!length(st_col)) {
     alt <- names(mlst)[grepl("(?i)^sequence[_ ]?type$", names(mlst))]
@@ -141,8 +165,13 @@ load_core_tables <- function() {
 
   # replicon presence/absence (plasmidfinder)
   inc_pa <- NULL
-  if (file.exists("results/plasmidfinder_presence_absence.csv")) {
-    inc_pa <- readr::read_csv("results/plasmidfinder_presence_absence.csv", show_col_types = FALSE)
+  inc_candidates <- c(
+    file.path("results", "plasmids", "plasmidfinder_presence_absence.csv"),
+    file.path("results", "plasmidfinder_presence_absence.csv")
+  )
+  inc_file <- inc_candidates[file.exists(inc_candidates)][1]
+  if (!is.na(inc_file)) {
+    inc_pa <- readr::read_csv(inc_file, show_col_types = FALSE)
     # ensure Isolate_ID column exists
     if (!"Isolate_ID" %in% names(inc_pa)) {
       iso <- names(inc_pa)[grepl("(?i)^isolate[_ ]?id$", names(inc_pa))][1]
@@ -165,7 +194,8 @@ resolve_sample <- function(Participant_id, tp_lab, assemblies, prefer_assembler 
   stopifnot("Participant_id" %in% names(assemblies), "tp_lab" %in% names(assemblies))
   df <- assemblies %>% filter(
     Participant_id == !!Participant_id,
-    as.character(tp_lab) == as.character(!!tp_lab)
+    as.character(tp_lab) == as.character(!!tp_lab),
+    usable_fasta_path(full_path)
   )
   if (!nrow(df)) {
     return(NULL)
@@ -206,7 +236,7 @@ parse_dnadiff_report <- function(report_path) {
 
 run_dnadiff <- function(a_fasta, b_fasta, cache_dir, key) {
   safe_dir_create(cache_dir)
-  if (!has_tool("dnadiff")) {
+  if (!has_tool("dnadiff") || !usable_fasta_path(a_fasta) || !usable_fasta_path(b_fasta)) {
     return(tibble(AvgIdentity = NA_real_, TotalSNPs = NA_real_))
   }
   # sanitize key for filesystem; avoid regex escaping issues by placing '-' at end of class
@@ -223,16 +253,24 @@ run_dnadiff <- function(a_fasta, b_fasta, cache_dir, key) {
 }
 
 mash_distance <- function(a_fasta, b_fasta) {
-  if (!has_tool("mash")) {
+  if (!has_tool("mash") || !usable_fasta_path(a_fasta) || !usable_fasta_path(b_fasta)) {
     return(NA_real_)
   }
-  cmd <- sprintf("mash dist %s %s", shQuote(a_fasta), shQuote(b_fasta))
-  out <- suppressWarnings(system(cmd, intern = TRUE))
+  out <- suppressWarnings(tryCatch(
+    system2("mash", c("dist", a_fasta, b_fasta), stdout = TRUE, stderr = TRUE),
+    error = function(e) character()
+  ))
   if (!length(out)) {
     return(NA_real_)
   }
   # typical format: a\tb\tdist\tvar\tshared-hashes
-  parts <- strsplit(out[1], "\t")[[1]]
+  result_line <- out[vapply(strsplit(out, "\t", fixed = TRUE), function(parts) {
+    length(parts) >= 3 && !is.na(suppressWarnings(as.numeric(parts[3])))
+  }, logical(1))]
+  if (!length(result_line)) {
+    return(NA_real_)
+  }
+  parts <- strsplit(result_line[1], "\t", fixed = TRUE)[[1]]
   if (length(parts) < 3) {
     return(NA_real_)
   }
@@ -327,6 +365,8 @@ classify_pair <- function(metrics, thresholds = list(id = 99.9, snps = 50, vf = 
 # ------------- plotting helpers ---------------------------------------------
 ggsave_safe <- function(filename, plot, width = 7, height = 5, dpi = 300) {
   dir.create(dirname(filename), recursive = TRUE, showWarnings = FALSE)
+  width <- min(width, 49)
+  height <- min(height, 49)
   if (grepl("\\.png$", filename, ignore.case = TRUE) && requireNamespace("ragg", quietly = TRUE)) {
     ggplot2::ggsave(filename, plot, device = ragg::agg_png, width = width, height = height, dpi = dpi, units = "in")
   } else {

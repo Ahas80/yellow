@@ -5,9 +5,9 @@
 #
 # GOAL:
 #   Summarise and visualise MLST results: ST frequency distributions, top-20
-#   ST bar chart, and merged metadata for downstream lineage analyses.
-#   Produces mlst_with_meta.csv which is the authoritative MLST+metadata join
-#   used by scripts 14, 17, 22, and 25.
+#   ST bar chart, and an exploratory assembly-level metadata join.
+#   The canonical episode-level MLST table is produced by 06_MLST.R as
+#   mlst_with_meta.csv; this script must not overwrite it.
 #
 # ------------------------------------------------------------------------------
 # Role: [Descriptive] - Explore and summarize MLST data.
@@ -18,7 +18,7 @@
 #
 # Outputs:
 #   - results/mlst/ST_frequencies.csv
-#   - results/mlst/mlst_with_meta.csv
+#   - results/mlst/mlst_isolate_with_metadata_exploratory.csv
 #   - plots/mlst/top20_STs.pdf
 #   - plots/mlst/top20_STs.png
 #
@@ -123,12 +123,14 @@ if (!is.null(meta)) {
       warning("Metadata has duplicate Isolate_IDs. See results/debug/meta_duplicates.csv")
     }
 
-    # Join
+    # Exploratory assembly/isolate-level join. Do not overwrite
+    # mlst_with_meta.csv, which 06_MLST.R owns as the canonical
+    # participant-timepoint table for downstream ST joins.
     mlst_with_meta <- mlst_in %>%
       left_join(meta, by = setNames(iso_col, "Isolate_ID"), suffix = c("", "_meta"))
 
-    write_csv(mlst_with_meta, file.path(DIR_MLST, "mlst_with_meta.csv"))
-    msg("Joined MLST with metadata.")
+    write_csv(mlst_with_meta, FILE_MLST_ISOLATE_EXPLORATORY)
+    msg("Joined MLST with metadata for exploratory output: %s", FILE_MLST_ISOLATE_EXPLORATORY)
   }
 }
 

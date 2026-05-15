@@ -11,19 +11,35 @@
 # WHY THIS SCRIPT EXISTS:
 #   The distinction between UTI and ASB is the central clinical question of
 #   this project.  In elderly nursing home residents, most bacteriuria is
-#   asymptomatic (ASB).  True UTI requires BOTH:
-#     1. Significant bacteriuria (≥10⁵ CFU/mL or Beoordeling +++)
-#     2. Presence of urinary symptoms (Signs & Symptoms = positive)
+#   asymptomatic (ASB).  This script applies the project's operational episode-classification rules
+#   systematically, handles three data sources for symptom information
+#   (Population field, S&S sheets, SNS tables), and assigns confidence levels
+#   for sensitivity analyses.
 #
-#   This script applies these clinical rules systematically, handles the
-#   complexity of three data sources for symptom information (Population
-#   field, S&S sheets, SNS tables), and assigns confidence levels to each
-#   classification for sensitivity analyses.
+# IMPORTANT TERMINOLOGY:
+#   In this script, "culture-positive" does NOT mean any bacterial growth.
+#   It means a qualifying positive culture under the current operational rule:
+#     - explicit CFU category interpreted as >=10^5 CFU/mL, OR
+#     - Beoordeling "+++" when CFU_Count is unavailable.
+#
+#   This is more conservative than the broader YELLOW protocol description,
+#   where uropathogen identification may occur from >10^3 CFU for urine
+#   samples and >10^4 CFU for dipslides. Therefore, this script's threshold
+#   should be described as the analysis threshold used for status_map.csv.
 #
 # CLASSIFICATION RULES:
-#   UTI      = culture-positive AND symptoms present
-#   ASB      = culture-positive AND NO symptoms (or symptoms unknown)
-#   Negative = culture-negative (regardless of symptoms)
+#   UTI      = qualifying culture-positive AND UTI-related S&S present
+#   ASB      = qualifying culture-positive AND UTI-related S&S absent
+#   Culture-positive, S&S unknown
+#            = qualifying culture-positive AND S&S cannot be determined
+#   Negative = no qualifying positive culture
+#
+#   In this analysis script, UTI classification requires BOTH:
+#     1. Qualifying culture positivity under the script's operational threshold
+#        (>=10^5 CFU/mL or Beoordeling +++)
+#     2. UTI-related signs/symptoms present
+#
+#   Bacteriuria/culture positivity alone is not classified as UTI.
 #
 # INPUTS:
 #   - results/clinical/intermediate/clinical_merged.rds  (from 00a_)
@@ -65,13 +81,17 @@ sns_12 <- data_list$sns_12
 if (nrow(sym_all_raw) == 0) {
     sym_all_1row <- tibble(Participant_id = character(), Timepoint = character(), Sx_present = logical())
 } else {
+    sym_input_cols <- setdiff(names(sym_all_raw), c("Participant_id", "Timepoint"))
     sym_bool <- sym_all_raw %>%
-        mutate(across(where(is.character), ~ str_to_lower(str_trim(.x)))) %>%
+        mutate(
+            Participant_id = str_trim(as.character(Participant_id)),
+            Timepoint = canon_tp(Timepoint)
+        ) %>%
         mutate(
             across(
-                -c(Participant_id, Timepoint),
+                all_of(sym_input_cols),
                 ~ {
-                    x <- .x
+                    x <- str_to_lower(str_trim(as.character(.x)))
                     num <- suppressWarnings(readr::parse_number(x))
                     dplyr::case_when(
                         !is.na(num) ~ num > 0,
@@ -80,8 +100,7 @@ if (nrow(sym_all_raw) == 0) {
                         TRUE ~ FALSE
                     )
                 }
-            ),
-            Timepoint = canon_tp(Timepoint)
+            )
         )
     sym_cols <- setdiff(names(sym_bool), c("Participant_id", "Timepoint"))
     sym_all_1row <- sym_bool %>%
@@ -95,11 +114,11 @@ if (nrow(sym_all_raw) == 0) {
 meta_plus <- metadata %>%
     left_join(sns_12,
         by = c("Participant_id", "Timepoint", "Batch"),
-        relationship = "many-to-many"
+        relationship = "many-to-one"
     ) %>%
     left_join(sym_all_1row %>% dplyr::rename(Sx_present_sym = Sx_present),
         by = c("Participant_id", "Timepoint"),
-        relationship = "many-to-many"
+        relationship = "many-to-one"
     )
 
 if (!"Sx_present_sym" %in% names(meta_plus)) meta_plus$Sx_present_sym <- NA
@@ -134,10 +153,10 @@ classified <- meta_plus %>%
         # Population-derived S&S (authoritative when determinable, ALL batches)
         sx_present_pop = if ("Population" %in% names(.)) population_to_sns(Population) else as.logical(NA),
 
-        # FINAL S&S decision (Population first)
+        # FINAL S&S decision (Population first, then explicit S&S columns)
         Sx_present_final = case_when(
             !is.na(sx_present_pop) ~ sx_present_pop,
-            Batch %in% c(1L, 2L) & !is.na(Sx_present_sym) ~ Sx_present_sym,
+            !is.na(Sx_present_sym) ~ Sx_present_sym,
             Batch %in% c(1L, 2L) & is.na(Sx_present_sym) &
                 !is.na(SnS_status) ~ case_when(
                 SnS_status == 2L ~ TRUE,
@@ -168,7 +187,7 @@ classified <- meta_plus %>%
         ),
         Status_Provenance = case_when(
             !is.na(sx_present_pop) ~ "Population_field",
-            Batch %in% c(1L, 2L) & !is.na(Sx_present_sym) ~ "SxS_columns",
+            !is.na(Sx_present_sym) ~ "SxS_columns",
             Batch %in% c(1L, 2L) & !is.na(SnS_status) ~ "SnS_status_fallback",
             TRUE ~ "Unknown"
         )
@@ -181,10 +200,17 @@ classified <- meta_plus %>%
 # not the individual isolate or assembly file.
 # Without this step, participants with multiple isolates sequenced at the same
 # timepoint would contribute more heavily to ASB/UTI comparisons, biasing the summaries.
+if (!"Collection_Date" %in% names(classified)) classified$Collection_Date <- NA_character_
+if (!"UTI_Label" %in% names(classified)) classified$UTI_Label <- NA_character_
+if (!"Urine collection method" %in% names(classified)) classified[["Urine collection method"]] <- NA_character_
+
 episode_tbl <- classified %>%
     group_by(Participant_id, Timepoint) %>%
     summarise(
-        Batch = paste(sort(unique(Batch)), collapse = ","),
+        Batch = paste(sort(unique(Batch)), collapse = ";"),
+        Collection_Date = paste(sort(unique(na.omit(as.character(Collection_Date)))), collapse = ";"),
+        UTI_Label = paste(sort(unique(na.omit(as.character(UTI_Label)))), collapse = ";"),
+        Urine_collection_method = paste(sort(unique(na.omit(as.character(`Urine collection method`)))), collapse = ";"),
         culture_pos_epi = any(culture_pos, na.rm = TRUE),
         cfu_recorded_any = any(ifelse(is.na(cfu_recorded), FALSE, cfu_recorded)),
         cfu_ge_1e5_any = any(cfu_cat == ">=1e5", na.rm = TRUE),
@@ -210,6 +236,11 @@ episode_tbl <- classified %>%
     ) %>%
     select(-from_pop, -from_cols, -from_status) %>%
     mutate(
+        Collection_Date = na_if(Collection_Date, ""),
+        UTI_Label = na_if(UTI_Label, ""),
+        Urine_collection_method = na_if(Urine_collection_method, ""),
+        tp_lab = normalise_timepoint_preserve_events(Timepoint),
+        Event_type = episode_event_type(tp_lab),
         Infection_Status = case_when(
             culture_pos_epi & Sx_present_any %in% TRUE ~ "UTI",
             culture_pos_epi & Sx_present_any %in% FALSE ~ "ASB",
@@ -223,52 +254,41 @@ episode_tbl <- classified %>%
             Sx_source_epi %in% c("S&S columns", "SnS_status fallback") & cfu_recorded_any ~ "Medium",
             TRUE ~ "Low"
         )
+    ) %>%
+    mutate(
+        Episode_ID = build_episode_id(., timepoint_col = "tp_lab", event_col = "Event_type",
+                                      date_col = "Collection_Date")
     )
 
 # Save Status Map
 # Save Status Map
 out_status <- file.path(DIR_CLINICAL, "status_map.csv")
+assert_unique_keys(
+    episode_tbl,
+    c("Episode_ID"),
+    context = "status_map Episode_ID",
+    out_path = file.path(DIR_QC, "status_map_duplicate_episode_ids.csv")
+)
+
+assert_unique_keys(
+    episode_tbl,
+    c("Participant_id", "tp_lab"),
+    context = "status_map Participant_id + tp_lab",
+    out_path = file.path(DIR_QC, "status_map_duplicate_episode_keys.csv")
+)
+
 write_csv(episode_tbl, out_status)
 msg("Saved status_map.csv (%d rows) to %s", nrow(episode_tbl), out_status)
 
-# 4. FASTA Discovery & Metrics
-# ------------------------------------------------------------------------------
-# This generates assembly_metadata.csv, linking Isolates to Participants/Timepoints
-# It uses the metadata we just loaded to map Isolate_ID -> Participant_id
+append_denominator_summary(
+    episode_tbl,
+    "00b_classify_episodes.R",
+    "status_map",
+    "clinical_episode",
+    input_rds,
+    "Episode_ID preserves routine, Uricult, and UTI-* event labels; duplicate keys are written to QC if present"
+)
+write_uti_attrition_outputs(out_status)
 
-all_fasta <- list.files(DIR_FASTAS, "\\.fasta$", full.names = TRUE)
-if (length(all_fasta) == 0) {
-    warning("No FASTA files found in ", DIR_FASTAS)
-} else {
-    assembly_tbl <- tibble(full_path = all_fasta) %>%
-        mutate(
-            file_name = basename(full_path),
-            Isolate_ID = str_extract(str_split_fixed(file_name, "_", 4)[, 3], "[0-9A-Za-z]+-[0-9]+"),
-            assembler = case_when(
-                str_detect(file_name, "flye") ~ "flye",
-                str_detect(file_name, "longcycler") ~ "longcycler",
-                TRUE ~ "unknown"
-            )
-        )
-
-    summarise_fasta <- function(fp) {
-        x <- readDNAStringSet(fp)
-        af <- colSums(alphabetFrequency(x, baseOnly = TRUE))
-        tibble(
-            num_contigs = length(x),
-            total_bases = sum(width(x)),
-            gc_content  = round((af["G"] + af["C"]) / sum(af) * 100, 2)
-        )
-    }
-
-    msg("Calculating metrics for %d assemblies...", nrow(assembly_tbl))
-    metrics_tbl <- purrr::map_dfr(assembly_tbl$full_path, summarise_fasta)
-
-    assembly_df <- assembly_tbl %>%
-        select(file_name, full_path, Isolate_ID, assembler) %>%
-        bind_cols(metrics_tbl) %>%
-        left_join(metadata, by = c("Isolate_ID" = "isolate_ID"), relationship = "many-to-many")
-
-    write_csv(assembly_df, "assembly_metadata.csv")
-    msg("Saved assembly_metadata.csv (%d rows)", nrow(assembly_df))
-}
+# (Section removed. FASTA Discovery & Metrics is now handled exclusively by 00_make_assembly_metadata.r)
+msg("✓ Done.")

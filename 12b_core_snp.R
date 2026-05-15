@@ -49,13 +49,91 @@ ensure_dir(DIR_CORE)
 
 log_info("Starting 12b_core_snp.R")
 
-# Check if outputs already exist
 tree_file <- file.path(DIR_CORE, "core_genome.tree")
 dist_file <- file.path(DIR_CORE, "snp_dists.tsv")
+manifest_file <- file.path(DIR_CORE, "core_snp_input_manifest.csv")
+hash_file <- file.path(DIR_CORE, "core_snp_input_manifest.hash")
+stale_report <- file.path(DIR_CORE, "core_snp_staleness_report.txt")
+force_core <- identical(Sys.getenv("FORCE_RERUN_CORE_SNP", "0"), "1")
 
-if (file.exists(tree_file) && file.exists(dist_file)) {
-    log_info("Core genome tree and SNP distances already exist at %s", DIR_CORE)
-    log_info("Skipping Parsnp run to save time. Delete 'results/wgs/core' to force re-run.")
+# 3. Load current selected assembly inputs and fingerprint them before deciding
+# whether an existing core-SNP directory is current.
+canonical_file <- file.path(DIR_QC, "canonical_assembly_selection.csv")
+if (file.exists(canonical_file)) {
+    qc_df <- read_csv(canonical_file, show_col_types = FALSE)
+    selected_df <- qc_df %>%
+        filter(selected_canonical %in% TRUE, QC_PASS %in% TRUE)
+    input_source <- canonical_file
+} else {
+    qc_df <- load_qc_summary()
+    selected_df <- qc_df %>% filter(QC_PASS %in% TRUE)
+    input_source <- file.path(DIR_WGS, "qc_summary.csv")
+    log_warn("Canonical assembly selection not found; using all QC PASS assemblies for fingerprinting.")
+}
+
+if (!"tp_lab" %in% names(selected_df) && "Timepoint" %in% names(selected_df)) {
+    selected_df$tp_lab <- normalise_timepoint_preserve_events(selected_df$Timepoint)
+}
+if (!"Assembly_ID" %in% names(selected_df)) {
+    selected_df$Assembly_ID <- tools::file_path_sans_ext(basename(selected_df$full_path))
+}
+if (!"Assembler" %in% names(selected_df)) {
+    selected_df$Assembler <- if ("assembler" %in% names(selected_df)) selected_df$assembler else detect_assembler(selected_df$full_path)
+}
+
+manifest <- selected_df %>%
+    transmute(
+        Assembly_ID,
+        Participant_id = as.character(Participant_id),
+        tp_lab = normalise_timepoint_preserve_events(tp_lab),
+        Assembler = Assembler,
+        full_path = normalizePath(full_path, winslash = "/", mustWork = FALSE),
+        file_size = ifelse(file.exists(full_path), file.size(full_path), NA_real_),
+        modified_time = ifelse(file.exists(full_path), as.character(file.info(full_path)$mtime), NA_character_)
+    ) %>%
+    arrange(Participant_id, tp_lab, Assembly_ID)
+
+write_csv(manifest, manifest_file)
+current_hash <- hash_input_manifest(manifest)
+previous_hash <- if (file.exists(hash_file)) readLines(hash_file, warn = FALSE)[1] else NA_character_
+outputs_exist <- file.exists(tree_file) && file.exists(dist_file)
+
+writeLines(
+    c(
+        "Core SNP input staleness report",
+        sprintf("Generated: %s", format(Sys.time())),
+        sprintf("Input source: %s", input_source),
+        sprintf("Selected assemblies in current manifest: %d", nrow(manifest)),
+        sprintf("Current manifest hash: %s", current_hash),
+        sprintf("Previous manifest hash: %s", ifelse(is.na(previous_hash), "<none>", previous_hash)),
+        sprintf("Outputs exist: %s", outputs_exist),
+        sprintf("FORCE_RERUN_CORE_SNP: %s", Sys.getenv("FORCE_RERUN_CORE_SNP", "0")),
+        if (outputs_exist && identical(current_hash, previous_hash)) "Status: GREEN - outputs match current input manifest."
+        else if (outputs_exist) "Status: RED - Core SNP outputs are stale relative to current assembly inputs."
+        else "Status: MISSING - core SNP outputs are absent."
+    ),
+    stale_report
+)
+
+append_denominator_summary(
+    manifest,
+    "12b_core_snp.R",
+    "core_snp_input_manifest",
+    "participant_timepoint",
+    manifest_file,
+    "Fingerprint of canonical selected assemblies used to decide whether Parsnp outputs are current"
+)
+
+if (outputs_exist && identical(current_hash, previous_hash)) {
+    log_info("Core genome tree and SNP distances already exist and input manifest hash matches.")
+    log_info("Skipping Parsnp run.")
+    quit(save = "no", status = 0)
+}
+
+if (outputs_exist && !force_core) {
+    log_warn("Core SNP outputs are stale relative to current assembly inputs.")
+    log_warn("Not rerunning Parsnp because FORCE_RERUN_CORE_SNP is not 1.")
+    log_warn("Review ", stale_report, " and rerun with FORCE_RERUN_CORE_SNP=1 when ready.")
     quit(save = "no", status = 0)
 }
 
@@ -65,11 +143,8 @@ has_snp_dists <- check_wgs_tool("snp-dists")
 
 if (!has_parsnp) stop("Parsnp is required for this module.")
 
-# 3. Load QC Data
-# ------------------------------------------------------------------------------
-qc_df <- load_qc_summary()
-valid_genomes <- qc_df %>%
-    filter(QC_PASS) %>%
+valid_genomes <- manifest %>%
+    filter(!is.na(full_path), file.exists(full_path)) %>%
     pull(full_path)
 
 if (length(valid_genomes) < 2) {
@@ -213,6 +288,22 @@ if (file.exists(aln_file) && has_snp_dists) {
     print(table(pairs_classified$call))
 } else {
     log_warn("Skipping snp-dists (Alignment missing or tool not found).")
+}
+
+if (file.exists(tree_file) && file.exists(dist_file)) {
+    writeLines(current_hash, hash_file)
+    writeLines(
+        c(
+            "Core SNP input staleness report",
+            sprintf("Generated: %s", format(Sys.time())),
+            sprintf("Input source: %s", input_source),
+            sprintf("Selected assemblies in current manifest: %d", nrow(manifest)),
+            sprintf("Current manifest hash: %s", current_hash),
+            sprintf("Previous manifest hash: %s", ifelse(is.na(previous_hash), "<none>", previous_hash)),
+            "Status: GREEN - outputs were generated/refreshed for the current input manifest."
+        ),
+        stale_report
+    )
 }
 
 # Cleanup

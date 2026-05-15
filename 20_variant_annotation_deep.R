@@ -63,6 +63,23 @@ target_snps <- snps %>%
 
 msg("Target SNPs: %d", nrow(target_snps))
 
+empty_result <- target_snps %>%
+    slice(0) %>%
+    mutate(
+        Region = character(),
+        Gene = character(),
+        Product = character(),
+        Locus = character()
+    )
+
+out_file <- file.path(DIR_RESULTS, "longitudinal", "variant_annotation_detailed.csv")
+
+if (nrow(target_snps) == 0) {
+    msg("No target SNPs found for the configured candidate participants. Writing empty annotation table and exiting.")
+    write_csv(empty_result, out_file)
+    quit(save = "no", status = 0)
+}
+
 # 2. Helper: Parse GFF Manually
 # ------------------------------------------------------------------------------
 get_gff_data <- function(pid, tp) {
@@ -124,7 +141,7 @@ pairs <- target_snps %>%
 
 msg("Processing %d pairs", nrow(pairs))
 
-for (i in 1:nrow(pairs)) {
+for (i in seq_len(nrow(pairs))) {
     p <- pairs[i, ]
     pid <- p$Participant_id
     t_ref <- p$From_Time
@@ -137,7 +154,7 @@ for (i in 1:nrow(pairs)) {
     pair_snps <- target_snps %>%
         filter(Participant_id == pid, From_Time == t_ref)
 
-    for (j in 1:nrow(pair_snps)) {
+    for (j in seq_len(nrow(pair_snps))) {
         pos <- pair_snps$Pos_Ref[j]
 
         hit <- gff_df %>%
@@ -166,7 +183,9 @@ for (i in 1:nrow(pairs)) {
 }
 
 final_df <- bind_rows(results)
+if (nrow(final_df) == 0) {
+    final_df <- empty_result
+}
 
-out_file <- file.path(DIR_RESULTS, "longitudinal", "variant_annotation_detailed.csv")
 write_csv(final_df, out_file)
 msg("Saved annotated variants to %s", out_file)

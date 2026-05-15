@@ -45,12 +45,12 @@ msg("Starting 17_lineage_analysis.R")
 # 1. Load Data
 # ------------------------------------------------------------------------------
 # Status
-status <- read_csv(file.path(DIR_CLINICAL, "status_map.csv"), show_col_types = FALSE) %>%
+status <- read_csv(FILE_STATUS_MAP, show_col_types = FALSE) %>%
     filter(Infection_Status %in% c("UTI", "ASB"))
 
 # MLST
 # Try mlst_with_meta first, else build it
-mlst_file <- file.path(DIR_MLST, "mlst_with_meta.csv")
+mlst_file <- FILE_MLST_CANONICAL
 if (file.exists(mlst_file)) {
     mlst <- read_csv(mlst_file, show_col_types = FALSE)
 } else {
@@ -85,6 +85,31 @@ status_clean <- status %>%
 
 data_merged <- status_clean %>%
     inner_join(mlst_clean, by = c("Participant_id", "Timepoint"), relationship = "many-to-many")
+
+if (file.exists(FILE_VF_READY)) {
+    vf_ready_lineage <- read_csv(FILE_VF_READY, show_col_types = FALSE) %>%
+        mutate(
+            Participant_id = as.character(Participant_id),
+            Timepoint = normalise_timepoint_preserve_events(tp_lab),
+            Infection_Status = as.character(Infection_Status),
+            ST = as.character(ST)
+        ) %>%
+        filter(Infection_Status %in% c("UTI", "ASB")) %>%
+        filter(!is.na(ST), ST != "") %>%
+        select(any_of(c("Participant_id", "Timepoint", "Episode_ID", "Infection_Status", "ST", "uricult_bridge_applied"))) %>%
+        distinct()
+
+    if (nrow(vf_ready_lineage) > 0) {
+        data_merged <- vf_ready_lineage
+        msg(
+            "Using canonical vf_analysis_ready.csv for lineage risk: %d episodes (%d UTI, %d ASB; %d Uricult-bridged)",
+            nrow(data_merged),
+            sum(data_merged$Infection_Status == "UTI", na.rm = TRUE),
+            sum(data_merged$Infection_Status == "ASB", na.rm = TRUE),
+            if ("uricult_bridge_applied" %in% names(data_merged)) sum(data_merged$uricult_bridge_applied %in% TRUE, na.rm = TRUE) else 0L
+        )
+    }
+}
 
 msg("Linked %d episodes to ST data", nrow(data_merged))
 

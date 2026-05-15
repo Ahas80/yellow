@@ -59,8 +59,8 @@ THREADS <- CORES_USE # From 00_config.R
 msg <- function(...) message(format(Sys.time(), "%H:%M:%S "), ...)
 
 # Check tools
-check_tool("mlst")
-check_tool("blastn")
+invisible(check_tool("mlst"))
+invisible(check_tool("blastn"))
 
 # Output directories
 DIR_MLST <- file.path(DIR_RESULTS, "mlst")
@@ -87,7 +87,7 @@ if (!"full_path" %in% names(assembly_df)) {
 }
 
 # Verify files exist
-assembly_df$found <- file.exists(assembly_df$full_path)
+assembly_df$found <- !is.na(assembly_df$full_path) & file.exists(assembly_df$full_path)
 if (any(!assembly_df$found)) {
   missing_files <- assembly_df$full_path[!assembly_df$found]
   warning("Missing ", length(missing_files), " FASTA files. They will be skipped.")
@@ -128,7 +128,7 @@ run_mlst <- function(fasta, scheme = SCHEME) {
     return(tibble(.status = "failed"))
   }
 
-  dat <- read_csv(cache, col_types = cols(.default = col_character()), na = c("", "?"), progress = FALSE, show_col_types = FALSE) %>%
+  dat <- suppressWarnings(read_csv(cache, col_types = cols(.default = col_character()), na = c("", "?"), progress = FALSE, show_col_types = FALSE)) %>%
     rename_with(tolower) %>%
     mutate(scheme = scheme, .before = 1)
 
@@ -154,7 +154,7 @@ future::plan(future::sequential)
 # 5. Summary & QC
 # ------------------------------------------------------------------------------
 summary_tbl <- mlst_raw %>%
-  count(.status, name = "n") %>%
+  dplyr::count(.status, name = "n") %>%
   mutate(pct = percent(n / sum(n)))
 msg("Run summary:")
 print(summary_tbl)
@@ -178,6 +178,14 @@ if (!"Isolate_ID" %in% names(mlst_tbl)) {
   mlst_tbl$Isolate_ID <- tools::file_path_sans_ext(basename(mlst_tbl$full_path))
 }
 mlst_tbl <- mlst_tbl %>% relocate(Isolate_ID, ST, .before = 1)
+mlst_tbl <- mlst_tbl %>%
+  mutate(
+    Participant_id = if ("Participant_id" %in% names(.)) as.character(Participant_id) else NA_character_,
+    tp_lab = if ("tp_lab" %in% names(.)) normalise_timepoint_preserve_events(tp_lab) else if ("Timepoint" %in% names(.)) normalise_timepoint_preserve_events(Timepoint) else NA_character_,
+    Event_type = if ("Event_type" %in% names(.)) as.character(Event_type) else episode_event_type(tp_lab),
+    Collection_Date = if ("Collection_Date" %in% names(.)) as.character(Collection_Date) else NA_character_,
+    Episode_ID = if ("Episode_ID" %in% names(.)) as.character(Episode_ID) else build_episode_id(., timepoint_col = "tp_lab", event_col = "Event_type", date_col = "Collection_Date")
+  )
 
 # QC Flags
 # We evaluate typing completeness because missing or ambiguous loci can result in
@@ -200,7 +208,7 @@ if (length(locus_cols) > 0) {
     ) %>%
     ungroup()
 
-  mlst_qc <- mlst_tbl %>% count(mlst_complete, has_new_allele, ambiguous_call, name = "n")
+  mlst_qc <- mlst_tbl %>% dplyr::count(mlst_complete, has_new_allele, ambiguous_call, name = "n")
   write_csv(mlst_qc, file.path(DIR_MLST, "mlst_qc_summary.csv"))
 }
 
@@ -208,24 +216,64 @@ if (length(locus_cols) > 0) {
 # ------------------------------------------------------------------------------
 top_STs <- mlst_tbl %>%
   mutate(ST = as.character(ST)) %>%
-  count(ST, sort = TRUE, name = "n_isolates") %>%
+  dplyr::count(ST, sort = TRUE, name = "n_isolates") %>%
   mutate(pct = n_isolates / sum(n_isolates))
 write_csv(top_STs, file.path(DIR_MLST, "top_STs.csv"))
 
+# Canonical participant-timepoint MLST table for downstream episode-level joins.
+mlst_episode_tbl <- mlst_tbl
+canonical_file <- file.path(DIR_QC, "canonical_assembly_selection.csv")
+if (file.exists(canonical_file) && "full_path" %in% names(mlst_episode_tbl)) {
+  canonical_paths <- read_csv(canonical_file, show_col_types = FALSE) %>%
+    filter(selected_canonical %in% TRUE) %>%
+    mutate(full_path = normalizePath(full_path, winslash = "/", mustWork = FALSE)) %>%
+    pull(full_path)
+  mlst_episode_tbl <- mlst_episode_tbl %>%
+    mutate(full_path = normalizePath(full_path, winslash = "/", mustWork = FALSE)) %>%
+    filter(full_path %in% canonical_paths)
+  msg("Canonical MLST table: ", nrow(mlst_episode_tbl), " selected assembly rows.")
+} else {
+  mlst_conflicts <- mlst_episode_tbl %>%
+    group_by(Participant_id, tp_lab) %>%
+    summarise(n_ST = n_distinct(ST[!is.na(ST)]), ST_values = paste(sort(unique(na.omit(ST))), collapse = ";"), .groups = "drop") %>%
+    filter(n_ST > 1)
+  if (nrow(mlst_conflicts) > 0) {
+    write_csv(mlst_conflicts, file.path(DIR_QC, "mlst_duplicate_participant_timepoint_st_conflicts.csv"))
+    msg("WARNING: canonical selection missing; wrote ", nrow(mlst_conflicts), " ST conflict(s).")
+  }
+  mlst_episode_tbl <- mlst_episode_tbl %>%
+    group_by(Participant_id, tp_lab) %>%
+    summarise(across(everything(), ~ first(.x)), .groups = "drop")
+}
+
+append_denominator_summary(
+  mlst_tbl,
+  "06_MLST.R",
+  "mlst_all_assemblies",
+  "assembly",
+  FILE_METADATA,
+  "Assembly-level MLST; assembler alternatives are retained here"
+)
+append_denominator_summary(
+  mlst_episode_tbl,
+  "06_MLST.R",
+  "mlst_canonical_episode_table",
+  "participant_timepoint",
+  FILE_MLST_CANONICAL,
+  "Canonical selected assemblies for episode-level ST joins"
+)
+
 # 7. Persistence (if applicable)
 # ------------------------------------------------------------------------------
-if ("Participant_id" %in% names(mlst_tbl) && "Timepoint" %in% names(mlst_tbl)) {
+if ("Participant_id" %in% names(mlst_episode_tbl) && "tp_lab" %in% names(mlst_episode_tbl)) {
   tp_norm <- function(x) {
-    x <- as.character(x)
-    is_uricult <- str_detect(x, regex("uricult", ignore_case = TRUE))
-    tp_num <- suppressWarnings(as.integer(str_extract(x, "\\d+")))
-    tp_lab <- case_when(is_uricult ~ "Uricult", !is.na(tp_num) ~ paste0("T", tp_num), TRUE ~ "Unscheduled")
-    tibble(tp_lab = factor(tp_lab, levels = c(paste0("T", sort(unique(tp_num[!is.na(tp_num)]))), "Uricult", "Unscheduled")))
+    tp_lab <- normalise_timepoint_preserve_events(x)
+    tp_num <- suppressWarnings(readr::parse_number(tp_lab))
+    tibble(tp_lab = factor(tp_lab, levels = c(paste0("T", sort(unique(tp_num[!is.na(tp_num)]))), "Uricult")))
   }
 
-  st_persist <- mlst_tbl %>%
-    select(Participant_id, Timepoint, ST, mlst_complete) %>%
-    bind_cols(tp_norm(.$Timepoint)) %>%
+  st_persist <- mlst_episode_tbl %>%
+    select(Participant_id, tp_lab, ST, mlst_complete) %>%
     distinct(Participant_id, tp_lab, ST, mlst_complete) %>%
     group_by(Participant_id) %>%
     summarise(
@@ -243,9 +291,8 @@ if ("Participant_id" %in% names(mlst_tbl) && "Timepoint" %in% names(mlst_tbl)) {
   # This is a more rigorous persistence metric than simple "dominant ST".
   # It asks: if we look at adjacent timepoints for the same participant,
   # does the ST change? This defines "strain replacement" vs "persistence".
-  st_concordance <- mlst_tbl %>%
-    select(Participant_id, Timepoint, ST) %>%
-    bind_cols(tp_norm(.$Timepoint)) %>%
+  st_concordance <- mlst_episode_tbl %>%
+    select(Participant_id, tp_lab, ST) %>%
     arrange(Participant_id, tp_lab) %>%
     group_by(Participant_id) %>%
     mutate(
@@ -261,10 +308,10 @@ if ("Participant_id" %in% names(mlst_tbl) && "Timepoint" %in% names(mlst_tbl)) {
       pct_concordance = n_same / n_transitions
     )
 
-  msg(
+  msg(sprintf(
     "Consecutive timepoint ST concordance: %.1f%% (%d/%d transitions)",
     st_concordance$pct_concordance * 100, st_concordance$n_same, st_concordance$n_transitions
-  )
+  ))
 
   write_csv(st_concordance, file.path(DIR_MLST, "ST_consecutive_concordance.csv"))
 
@@ -281,7 +328,10 @@ if ("Participant_id" %in% names(mlst_tbl) && "Timepoint" %in% names(mlst_tbl)) {
 # 8. Write Outputs
 # ------------------------------------------------------------------------------
 write_tsv(mlst_tbl, file.path(DIR_MLST, "mlst_all.tsv"))
-write_csv(mlst_tbl, file.path(DIR_MLST, "mlst_matrix.csv"))
+write_csv(mlst_episode_tbl, FILE_MLST_MATRIX)
+write_csv(mlst_episode_tbl, FILE_MLST_CANONICAL)
 write_csv(summary_tbl, file.path(DIR_MLST, "log_summary.csv"))
+
+write_uti_attrition_outputs()
 
 msg("✓ MLST analysis complete.")

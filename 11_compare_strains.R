@@ -133,8 +133,11 @@ parse_csv_pairs <- function(path) {
 }
 
 parse_participants <- function(participants_str, timepoints_str, between = FALSE) {
+  available_assemblies <- core$assemblies %>%
+    filter(usable_fasta_path(full_path))
+
   if (participants_str == "ALL") {
-    pids <- core$assemblies$Participant_id %>%
+    pids <- available_assemblies$Participant_id %>%
       unique() %>%
       as.character()
   } else {
@@ -143,18 +146,24 @@ parse_participants <- function(participants_str, timepoints_str, between = FALSE
       unique()
   }
   if (length(pids) < 1) stop("No participants parsed from --participants")
-  # if no timepoints supplied, infer from assemblies
+
+  requested_tps <- NULL
   if (is.na(timepoints_str) || timepoints_str == "") {
-    tps <- core$assemblies %>%
-      filter(Participant_id %in% pids) %>%
-      pull(tp_lab) %>%
-      as.character() %>%
-      unique()
+    timestamp_msg("Inferring per-participant timepoints from assemblies with usable FASTA paths.")
   } else {
-    tps <- strsplit(timepoints_str, ",")[[1]] %>% trimws()
+    requested_tps <- strsplit(timepoints_str, ",")[[1]] %>% trimws()
   }
   # within-participant all combinations (unordered)
   within <- map_dfr(pids, function(pid) {
+    tps <- requested_tps
+    if (is.null(tps)) {
+      tps <- available_assemblies %>%
+        filter(Participant_id == pid) %>%
+        pull(tp_lab) %>%
+        as.character() %>%
+        unique()
+    }
+    tps <- tps[!is.na(tps) & nzchar(tps)]
     if (length(tps) < 2) {
       return(tibble())
     }
@@ -172,12 +181,21 @@ parse_participants <- function(participants_str, timepoints_str, between = FALSE
   }
   # between-participant pairs at matching timepoints
   between_df <- tibble()
-  if (length(pids) >= 2 && length(tps) >= 1) {
+  between_tps <- requested_tps
+  if (is.null(between_tps)) {
+    between_tps <- available_assemblies %>%
+      filter(Participant_id %in% pids) %>%
+      pull(tp_lab) %>%
+      as.character() %>%
+      unique()
+  }
+  between_tps <- between_tps[!is.na(between_tps) & nzchar(between_tps)]
+  if (length(pids) >= 2 && length(between_tps) >= 1) {
     pcomb <- t(combn(pids, 2))
     between_df <- map_dfr(seq_len(nrow(pcomb)), function(i) {
       tibble(
-        Participant_id_A = pcomb[i, 1], Timepoint_A = tps,
-        Participant_id_B = pcomb[i, 2], Timepoint_B = tps
+        Participant_id_A = pcomb[i, 1], Timepoint_A = between_tps,
+        Participant_id_B = pcomb[i, 2], Timepoint_B = between_tps
       )
     })
   }
@@ -200,7 +218,7 @@ if (!nrow(pairs)) stop("No pairs to compare after parsing input")
 # ----- prevalence filtering for VF / Inc -------------------------------------
 vf_wide <- core$vf_pa
 vf_meta_cols <- c("Participant_id", "tp_lab", "SampleKey")
-vf_gene_cols <- setdiff(names(vf_wide), vf_meta_cols)
+vf_gene_cols <- canonical_vf_gene_cols(names(vf_wide), vf_pa_file = FILE_VF_PA, required = FALSE)
 if (!is.na(opt$min_vf_prev)) {
   prev <- colMeans((vf_wide[, vf_gene_cols, drop = FALSE] > 0))
   keep <- names(prev)[prev >= opt$min_vf_prev]
@@ -388,6 +406,7 @@ safe_write_csv(by_participant, file.path(outdir, "summary_by_participant.csv"))
 # ----- plots ------------------------------------------------------------------
 plots_dir <- file.path(outdir, "plots")
 dir.create(plots_dir, recursive = TRUE, showWarnings = FALSE)
+pair_heatmap_height <- function(n) min(24, max(4, 0.02 * n))
 
 # Heatmaps
 if (any(!is.na(pair_metrics$VF_Jaccard))) {
@@ -397,7 +416,7 @@ if (any(!is.na(pair_metrics$VF_Jaccard))) {
     labs(title = "Pairwise Virulence Factor Jaccard Similarity", x = NULL, y = "Pair index") +
     theme_minimal(base_size = 11) +
     theme(axis.text.x = element_blank(), axis.ticks.x = element_blank())
-  ggsave_safe(file.path(plots_dir, "heatmap_vf_jaccard.png"), g, width = 4, height = max(3, 0.15 * nrow(pair_metrics)))
+  ggsave_safe(file.path(plots_dir, "heatmap_vf_jaccard.png"), g, width = 4, height = pair_heatmap_height(nrow(pair_metrics)))
 }
 
 if (any(!is.na(pair_metrics$Inc_Jaccard))) {
@@ -407,14 +426,14 @@ if (any(!is.na(pair_metrics$Inc_Jaccard))) {
     labs(title = "Pairwise Plasmid Replicon Jaccard Similarity", x = NULL, y = "Pair index") +
     theme_minimal(base_size = 11) +
     theme(axis.text.x = element_blank(), axis.ticks.x = element_blank())
-  ggsave_safe(file.path(plots_dir, "heatmap_inc_jaccard.png"), g, width = 4, height = max(3, 0.15 * nrow(pair_metrics)))
+  ggsave_safe(file.path(plots_dir, "heatmap_inc_jaccard.png"), g, width = 4, height = pair_heatmap_height(nrow(pair_metrics)))
 }
 
 # Identity vs SNPs
 if (any(!is.na(pair_metrics$AvgIdentity) & !is.na(pair_metrics$TotalSNPs))) {
   g <- ggplot(pair_metrics, aes(AvgIdentity, TotalSNPs, color = Classification, shape = within_participant)) +
     geom_point(size = 2, alpha = 0.8) +
-    scale_y_continuous(trans = "log1p") +
+    scale_y_continuous(transform = "log1p") +
     labs(title = "Genomic Identity vs. SNP Distance", x = "AvgIdentity (%)", y = "Total SNPs (log1p)") +
     theme_minimal(base_size = 11)
   ggsave_safe(file.path(plots_dir, "identity_vs_snps_scatter.png"), g, width = 6, height = 4)

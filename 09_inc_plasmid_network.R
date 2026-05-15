@@ -47,7 +47,7 @@ suppressPackageStartupMessages({
 
 # 2. Configuration
 # ------------------------------------------------------------------------------
-check_tool("abricate")
+invisible(check_tool("abricate"))
 DIR_CACHE <- file.path(DIR_PLASMIDS, "abricate_cache")
 ensure_dir(DIR_CACHE)
 ensure_dir(DIR_PLOTS_PLASMIDS)

@@ -73,8 +73,19 @@ if (!"tp_lab" %in% names(vf)) {
   }
 }
 
-meta_cols <- c("Participant_id", "tp_lab")
-gene_cols <- setdiff(names(vf), meta_cols)
+# Script 02 now keeps provenance columns such as Episode_ID in vf_pa_all.
+# Only numeric binary columns are VF genes; metadata must never enter gene
+# prevalence or heatmap calculations.
+meta_cols <- intersect(c(
+  "Participant_id", "tp_lab", "Timepoint", "Episode_ID", "Assembly_ID",
+  "Assembly_Base_ID", "Isolate_ID", "Event_type", "Batch", "Collection_Date",
+  "UTI_Label", "Urine_collection_method", "Infection_Status", "Status_Confidence_epi",
+  "Sx_source_epi", "ST", "file_name", "full_path", "fasta_path"
+), names(vf))
+gene_cols <- canonical_vf_gene_cols(names(vf), vf_pa_file = FILE_VF_PA)
+if (length(gene_cols) == 0) {
+  stop("No numeric VF gene columns found in ", FILE_VF_PA)
+}
 
 # 4. Tidy Matrix
 # ------------------------------------------------------------------------------
@@ -147,10 +158,17 @@ prev_plot <- ggplot(
   coord_flip() +
   scale_y_continuous(labels = scales::percent) +
   labs(
-    x = NULL, y = "Number of Isolates",
-    title = "Top 40 Most Prevalent Virulence Factor Genes"
+    x = NULL,
+    y = "VF/WGS-linked isolates with gene detected",
+    title = "Most prevalent virulence factor genes among VF/WGS-linked isolates",
+    subtitle = "Selection criterion: top 40 genes by isolate-level prevalence in the canonical VF matrix",
+    caption = sprintf(
+      "Data: %s. Denominator: %d VF/WGS-linked E. coli isolates. This overview is descriptive and is not an ASB-vs-UTI association test.",
+      FILE_VF_PA, nrow(mat)
+    )
   ) +
-  theme_minimal(base_size = 10)
+  theme_bw(base_size = 10) +
+  theme(plot.caption = element_text(hjust = 0, size = 7, colour = "grey35"))
 
 ggsave(file.path(DIR_PLOTS_VF, "gene_prevalence_bar.png"), prev_plot, width = 6, height = 8, dpi = 300)
 
@@ -175,7 +193,7 @@ if (length(variable_genes) > 0) {
     show_rownames  = FALSE,
     fontsize_col   = 5,
     annotation_row = ann_row,
-    main           = "Variable Virulence Gene Presence/Absence",
+    main           = "Variable VF gene presence/absence across VF/WGS-linked isolates",
     filename       = heat_file_png
   )
 

@@ -45,11 +45,11 @@ dump <- function(p, n = 200, m = 80) {
   readr::write_csv(head(x[, cols, drop = FALSE], n), file.path(D, paste0(basename(p), ".head.csv")))
 }
 
-dump("results/vf_pa_all.csv")
+dump(FILE_VF_PA)
 dump("results/mlst/mlst_matrix.csv")
-dump("results/mlst/mlst_all.tsv")
+dump(FILE_MLST_ALL)
 dump("results/plasmidfinder_presence_absence.csv")
-dump("results/status_map.csv")
+dump(FILE_STATUS_MAP)
 
 # list nucmer reports (paths only)
 rp <- list.files("results/nucmer", pattern = "run_dd.report$", recursive = TRUE, full.names = TRUE)

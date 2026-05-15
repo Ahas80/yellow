@@ -45,7 +45,7 @@ suppressPackageStartupMessages({
 })
 
 canon_tp <- function(x) {
-    tp_norm(x)$tp_lab
+    normalise_timepoint_preserve_events(x)
 }
 
 # 2. Load Centralized QC Data (from 12a_wgs_qc.R)
@@ -75,9 +75,40 @@ if (file.exists(FILE_METADATA)) {
 # We map QC_PASS to "Selected" and QC_REASON to "Reason"
 df <- qc_df %>%
     mutate(
+        Assembly_ID = if ("Assembly_ID" %in% names(.)) Assembly_ID else tools::file_path_sans_ext(basename(full_path)),
+        tp_lab = if ("tp_lab" %in% names(.)) normalise_timepoint_preserve_events(tp_lab) else normalise_timepoint_preserve_events(Timepoint),
+        Timepoint = tp_lab,
         Selected = QC_PASS,
-        Reason = ifelse(QC_PASS, "Selected", QC_REASON)
+        Reason = ifelse(QC_PASS, "QC PASS", QC_REASON)
     )
+
+canonical_file <- file.path(DIR_QC, "canonical_assembly_selection.csv")
+if (file.exists(canonical_file)) {
+    canonical <- read_csv(canonical_file, show_col_types = FALSE) %>%
+        select(any_of(c("Assembly_ID", "selected_canonical", "canonical_reason")))
+    df <- df %>%
+        left_join(canonical, by = "Assembly_ID", relationship = "one-to-one") %>%
+        mutate(selected_canonical = coalesce(selected_canonical, FALSE))
+} else {
+    df$selected_canonical <- df$QC_PASS
+    df$canonical_reason <- "canonical selection file absent; using QC_PASS as fallback"
+}
+
+pan_manifest_file <- file.path(DIR_WGS, "pan", "panaroo_input_manifest.csv")
+if (file.exists(pan_manifest_file)) {
+    pan_manifest <- read_csv(pan_manifest_file, show_col_types = FALSE) %>%
+        select(any_of(c("Assembly_ID", "gff_available", "gff_path")))
+    df <- df %>%
+        left_join(pan_manifest, by = "Assembly_ID", relationship = "one-to-one") %>%
+        mutate(
+            gff_available = coalesce(gff_available, FALSE),
+            included_in_current_panaroo = selected_canonical & gff_available
+        )
+} else {
+    df$gff_available <- FALSE
+    df$gff_path <- NA_character_
+    df$included_in_current_panaroo <- FALSE
+}
 
 # If Participant_id/Timepoint are missing in QC summary (depends on 12a implementation), join them.
 # 12a uses assembly_metadata.csv, so it likely has them or can be joined.
@@ -93,8 +124,10 @@ if (!"Timepoint" %in% names(df) && exists("meta")) {
 }
 
 # 3. Summary
-selected_count <- sum(df$Selected)
-message(sprintf("Selected %d out of %d samples for Panaroo.", selected_count, nrow(df)))
+selected_count <- sum(df$selected_canonical, na.rm = TRUE)
+included_count <- sum(df$included_in_current_panaroo, na.rm = TRUE)
+message(sprintf("Canonical selected %d out of %d assemblies; %d have GFFs and are eligible for current Panaroo input.",
+                selected_count, nrow(df), included_count))
 
 # 4. Export List (Optional, as 12a already did it, but keeping for compatibility)
 out_csv <- file.path(DIR_WGS, "panaroo_selection_summary.csv")
@@ -114,7 +147,7 @@ df <- df %>%
 p3 <- ggplot(df, aes(x = Timepoint, y = Participant_id, fill = Reason)) +
     geom_tile(color = "white", linewidth = 0.2) +
     scale_fill_manual(values = c(
-        "Selected" = "dodgerblue",
+        "QC PASS" = "dodgerblue",
         "Size > 7MB" = "firebrick",
         "CDS > 6000" = "orange",
         "Contigs > 500" = "purple",
@@ -156,7 +189,7 @@ overview_df <- df %>%
 # Count how many participants have 0, 1, 2, ... valid isolates
 # Note: n_valid counts ISOLATES (assemblies), not unique biological samples
 overview_counts <- overview_df %>%
-    count(n_valid) %>%
+    dplyr::count(n_valid) %>%
     mutate(label = paste0(n, " participants"))
 
 p4 <- ggplot(overview_counts, aes(x = factor(n_valid), y = n)) +
@@ -189,7 +222,7 @@ PLOTDIR <- DIR_PLOTS_WGS
 # 4.1 Use existing dataframe 'df' which contains all 1552 isolates with metadata
 # We already have Participant_id, Timepoint, and Selected status in 'df'.
 assembly_tp <- df %>%
-    rename(selected_for_panaroo = Selected)
+    mutate(selected_for_panaroo = included_in_current_panaroo)
 
 # 4.4 Collapse to Participant x Timepoint ----
 # Here we decide which "timepoints" (participant x timepoint) survive QC.
@@ -197,11 +230,11 @@ timepoint_df <- assembly_tp %>%
     group_by(Participant_id, Timepoint) %>%
     summarise(
         n_isolates_total = n(),
-        n_isolates_selected = sum(selected_for_panaroo),
+        n_isolates_selected = sum(selected_for_panaroo, na.rm = TRUE),
         status = case_when(
-            n_isolates_selected == 0L ~ "dropped (no isolates kept)",
-            n_isolates_selected == n_isolates_total ~ "kept (all isolates)",
-            TRUE ~ "kept (subset of isolates)"
+            n_isolates_selected == 0L ~ "not included (no GFF-backed canonical assembly)",
+            n_isolates_selected == n_isolates_total ~ "included (all assemblies)",
+            TRUE ~ "included (canonical/GFF subset)"
         ),
         .groups = "drop"
     )
@@ -224,10 +257,10 @@ tp_bar <- timepoint_df %>%
         status_simple = if_else(
             n_isolates_selected > 0L,
             "≥1 isolate kept for Panaroo",
-            "0 isolates kept (timepoint dropped)"
+            "0 isolates included (timepoint absent)"
         )
     ) %>%
-    count(Timepoint, status_simple, name = "n_timepoints")
+    dplyr::count(Timepoint, status_simple, name = "n_timepoints")
 
 p_tp_bar <- ggplot(tp_bar, aes(x = Timepoint, y = n_timepoints, fill = status_simple)) +
     geom_col(position = "stack", colour = "black", linewidth = 0.2) +
@@ -240,7 +273,7 @@ p_tp_bar <- ggplot(tp_bar, aes(x = Timepoint, y = n_timepoints, fill = status_si
     ) +
     scale_fill_manual(values = c(
         "≥1 isolate kept for Panaroo" = "dodgerblue",
-        "0 isolates kept (timepoint dropped)" = "firebrick"
+        "0 isolates included (timepoint absent)" = "firebrick"
     )) +
     theme_bw(base_size = 10) +
     theme(
@@ -265,9 +298,9 @@ p_tp_tile <- ggplot(tp_tile, aes(x = Timepoint, y = Participant_id, fill = statu
     geom_tile(colour = "grey80") +
     scale_y_discrete(guide = "none") +
     scale_fill_manual(values = c(
-        "kept (all isolates)" = "dodgerblue",
-        "kept (subset of isolates)" = "skyblue",
-        "dropped (no isolates kept)" = "firebrick"
+        "included (all assemblies)" = "dodgerblue",
+        "included (canonical/GFF subset)" = "skyblue",
+        "not included (no GFF-backed canonical assembly)" = "firebrick"
     )) +
     labs(
         title = "Panaroo Selection Status Heatmap",
@@ -291,16 +324,16 @@ message("Saved tile plot of timepoint selection to: ", tile_path)
 sample_util_df <- df %>%
     mutate(
         Timepoint = factor(Timepoint, levels = tp_order),
-        Status = if_else(Selected, "Utilized (Passed QC)", "Not Utilized (Failed QC)")
+        Status = if_else(included_in_current_panaroo, "Included in current Panaroo input", "Not included in current Panaroo input")
     ) %>%
-    count(Timepoint, Status)
+    dplyr::count(Timepoint, Status)
 
 p5 <- ggplot(sample_util_df, aes(x = Timepoint, y = n, fill = Status)) +
     geom_col(position = "stack", width = 0.7) +
     geom_text(aes(label = n), position = position_stack(vjust = 0.5), size = 3, color = "white") +
     scale_fill_manual(values = c(
-        "Utilized (Passed QC)" = "dodgerblue",
-        "Not Utilized (Failed QC)" = "grey50"
+        "Included in current Panaroo input" = "dodgerblue",
+        "Not included in current Panaroo input" = "grey50"
     )) +
     labs(
         title = "Sample Utilization for Panaroo by Timepoint",
@@ -329,37 +362,86 @@ status_map_file <- file.path(DIR_CLINICAL, "status_map.csv")
 if (file.exists(status_map_file)) {
     message("\nRunning QC Bias Analysis (QC Pass vs Infection Status)...")
     status_map <- read_csv(status_map_file, show_col_types = FALSE) %>%
-        select(Participant_id, Timepoint, Infection_Status) %>%
+        mutate(
+            Participant_id = as.character(Participant_id),
+            tp_clean = if ("tp_lab" %in% names(.)) canon_tp(tp_lab) else canon_tp(Timepoint)
+        ) %>%
+        select(Participant_id, tp_clean, Infection_Status) %>%
         distinct()
 
-    # Join QC data with Status
-    # Ensure Timepoint format matches
-    qc_status <- df %>%
-        mutate(tp_clean = canon_tp(Timepoint)) %>%
-        inner_join(status_map %>% mutate(tp_clean = canon_tp(Timepoint)),
-            relationship = "many-to-many",
-            by = c("Participant_id", "tp_clean")
+    status_dupes <- assert_unique_keys(
+        status_map,
+        c("Participant_id", "tp_clean"),
+        context = "status_map for Panaroo QC bias",
+        out_path = file.path(DIR_QC, "status_map_duplicate_episode_keys.csv")
+    )
+
+    qc_episode <- df %>%
+        mutate(Participant_id = as.character(Participant_id), tp_clean = canon_tp(Timepoint)) %>%
+        group_by(Participant_id, tp_clean) %>%
+        summarise(
+            qc_pass = any(QC_PASS, na.rm = TRUE),
+            selected_canonical = any(selected_canonical, na.rm = TRUE),
+            gff_available = any(gff_available, na.rm = TRUE),
+            included_in_current_panaroo = any(included_in_current_panaroo, na.rm = TRUE),
+            .groups = "drop"
         )
 
+    qc_status <- if (nrow(status_dupes) == 0) {
+        status_map %>%
+            left_join(qc_episode, by = c("Participant_id", "tp_clean"), relationship = "one-to-one") %>%
+            mutate(
+                qc_pass = coalesce(qc_pass, FALSE),
+                selected_canonical = coalesce(selected_canonical, FALSE),
+                gff_available = coalesce(gff_available, FALSE),
+                included_in_current_panaroo = coalesce(included_in_current_panaroo, FALSE)
+            )
+    } else {
+        tibble()
+    }
+
     if (nrow(qc_status) > 0) {
-        # Create contingency table
-        tbl <- table(qc_status$Selected, qc_status$Infection_Status)
+        tbl <- table(qc_status$qc_pass, qc_status$Infection_Status)
 
         message("QC Pass/Fail by Infection Status:")
         print(tbl)
 
-        # Chi-square test
+        bias_summary <- qc_status %>%
+            dplyr::count(Infection_Status, qc_pass, selected_canonical, gff_available, included_in_current_panaroo, name = "n")
+        write_csv(bias_summary, file.path(DIR_QC, "qc_selection_bias_by_status.csv"))
+
         if (all(dim(tbl) > 1)) {
-            test_res <- chisq.test(tbl)
-            message("\nChi-square test for QC bias:")
+            test_res <- fisher.test(tbl)
+            message("\nFisher exact test for QC bias:")
             print(test_res)
 
-            if (test_res$p.value < 0.05) {
-                message("WARNING: Significant difference in QC pass rates between infection statuses!")
-                message("This may introduce selection bias in pangenome analyses.")
-            } else {
-                message("No significant difference in QC pass rates detected (p > 0.05).")
-            }
+            loss <- qc_status %>%
+                group_by(Infection_Status) %>%
+                summarise(n = n(), n_qc_fail = sum(!qc_pass), pct_qc_fail = n_qc_fail / n, .groups = "drop") %>%
+                arrange(desc(pct_qc_fail))
+            writeLines(
+                c(
+                    "QC selection bias by infection status",
+                    sprintf("Generated: %s", format(Sys.time())),
+                    "",
+                    capture.output(print(tbl)),
+                    "",
+                    sprintf("Fisher exact p-value: %.5g", test_res$p.value),
+                    sprintf("Largest QC loss: %s (%.1f%%, n=%d)",
+                            loss$Infection_Status[1], 100 * loss$pct_qc_fail[1], loss$n_qc_fail[1]),
+                    "Interpretation: sparse status counts require Fisher/exact-style checks. Differences in QC pass by status may bias genomic comparisons."
+                ),
+                file.path(DIR_QC, "qc_selection_bias_report.txt")
+            )
         }
     }
 }
+
+append_denominator_summary(
+    df,
+    "13_visualise_panaroo_selection.R",
+    "panaroo_selection_visualisation",
+    "assembly",
+    qc_file,
+    "Distinguishes QC PASS, canonical selected, GFF available, and included in current Panaroo input"
+)

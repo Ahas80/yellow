@@ -49,8 +49,10 @@
 #   → This script is the definitive statistical test for VF–UTI associations
 # ==============================================================================
 
-Sys.setlocale("LC_ALL", "en_US.UTF-8")
-options(bitmapType = "cairo")
+invisible(Sys.setlocale("LC_ALL", "en_US.UTF-8"))
+if (identical(Sys.info()[["sysname"]], "Darwin")) {
+    options(bitmapType = "quartz")
+}
 
 # 1. Load Configuration & Libraries
 # ------------------------------------------------------------------------------
@@ -115,55 +117,83 @@ msg(
     ifelse(opt$`simple-glm`, "Standard GLM", "Mixed-effects GLMM")
 )
 
+normalize_analysis_timepoint <- function(x) {
+    normalise_timepoint_preserve_events(x)
+}
+
+save_png_device <- function(filename, width, height, dpi = 300, draw_fun) {
+    dir.create(dirname(filename), recursive = TRUE, showWarnings = FALSE)
+    opened <- FALSE
+    tryCatch(
+        {
+            if (requireNamespace("ragg", quietly = TRUE)) {
+                ragg::agg_png(filename, width = width, height = height, units = "in", res = dpi)
+            } else {
+                grDevices::png(filename, width = width, height = height, units = "in", res = dpi)
+            }
+            opened <- TRUE
+            draw_fun()
+        },
+        finally = {
+            if (opened && grDevices::dev.cur() > 1) {
+                grDevices::dev.off()
+            }
+        }
+    )
+}
+
+plot_theme_vf_model <- function(base_size = 11) {
+    theme_bw(base_size = base_size) +
+        theme(
+            plot.caption = element_text(hjust = 0, size = base_size - 3, colour = "grey35"),
+            plot.subtitle = element_text(colour = "grey25"),
+            legend.position = "bottom"
+        )
+}
+
 # 3. Setup Directories
 # ------------------------------------------------------------------------------
 DIR_OUT <- opt$outdir
 DIR_PLOTS <- file.path(DIR_OUT, "plots")
 dir.create(DIR_OUT, recursive = TRUE, showWarnings = FALSE)
 dir.create(DIR_PLOTS, recursive = TRUE, showWarnings = FALSE)
+dir.create(DIR_PLOTS_VF, recursive = TRUE, showWarnings = FALSE)
 
 # 4. Load Data
 # ------------------------------------------------------------------------------
 msg("Loading input datasets...")
 
 # Clinical status
-FILE_STATUS <- file.path(DIR_CLINICAL, "status_map.csv")
+FILE_STATUS <- FILE_STATUS_MAP
 if (!file.exists(FILE_STATUS)) stop("Missing ", FILE_STATUS)
 status <- read_csv(FILE_STATUS, show_col_types = FALSE) %>%
     filter(Infection_Status %in% c("UTI", "ASB")) %>%
-    mutate(Outcome = as.integer(Infection_Status == "UTI"))
+    mutate(
+        Participant_id = as.character(Participant_id),
+        Timepoint = if ("tp_lab" %in% names(.)) normalize_analysis_timepoint(tp_lab) else normalize_analysis_timepoint(Timepoint),
+        Event_type = if ("Event_type" %in% names(.)) as.character(Event_type) else episode_event_type(Timepoint),
+        Collection_Date = if ("Collection_Date" %in% names(.)) as.character(Collection_Date) else NA_character_,
+        Episode_ID = if ("Episode_ID" %in% names(.)) as.character(Episode_ID) else build_episode_id(., timepoint_col = "Timepoint", event_col = "Event_type", date_col = "Collection_Date"),
+        Batch = if ("Batch" %in% names(.)) as.factor(Batch) else NA,
+        Outcome = as.integer(Infection_Status == "UTI")
+    ) %>%
+    select(Participant_id, Timepoint, Episode_ID, Batch, Infection_Status, Outcome)
 
 msg(
     "  Loaded %d samples with UTI/ASB status (%d UTI, %d ASB)",
     nrow(status), sum(status$Outcome == 1), sum(status$Outcome == 0)
 )
 
-# VF/AMR matrix - Use hits file and create presence/absence matrix
-FILE_VF <- file.path(DIR_VF, "vf_hits_all.rds")
-if (!file.exists(FILE_VF)) stop("Missing ", FILE_VF)
-vf_hits <- readRDS(FILE_VF)
-
-# Create presence/absence: 1 if GENE present for that Participant/Timepoint
-# Need to extract participant and timepoint from the hits
-vf_raw <- vf_hits %>%
-    filter(!is.na(Participant_id), !is.na(GENE)) %>%
-    distinct(Participant_id, Timepoint, GENE) %>%
+# VF/AMR matrix - prefer canonical episode-level P/A matrix from script 02.
+if (!file.exists(FILE_VF_PA)) stop("Missing ", FILE_VF_PA, ". Run 02_gene_presence_analysis.R first.")
+vf_raw <- read_csv(FILE_VF_PA, show_col_types = FALSE) %>%
     mutate(
-        present = 1,
-        # Normalize timepoint to match status_map format
-        Timepoint = case_when(
-            str_detect(Timepoint, "(?i)uricult") ~ "Uricult",
-            str_detect(Timepoint, "^T\\d+$") ~ Timepoint,
-            str_detect(Timepoint, "\\d+") ~ paste0("T", str_extract(Timepoint, "\\d+")),
-            TRUE ~ Timepoint
-        )
-    ) %>%
-    pivot_wider(
-        id_cols = c(Participant_id, Timepoint),
-        names_from = GENE,
-        values_from = present,
-        values_fill = 0
+        Participant_id = as.character(Participant_id),
+        Timepoint = normalize_analysis_timepoint(tp_lab)
     )
+vf_gene_cols <- canonical_vf_gene_cols(names(vf_raw), vf_pa_file = FILE_VF_PA)
+vf_raw <- vf_raw %>%
+    select(Participant_id, Timepoint, all_of(vf_gene_cols))
 
 msg(
     "  Loaded VF data: %d participant-timepoints, %d genes",
@@ -182,7 +212,7 @@ if (file.exists(FILE_PLASMID)) {
 }
 
 # MLST
-FILE_MLST <- file.path(DIR_MLST, "mlst_with_meta.csv")
+FILE_MLST <- FILE_MLST_CANONICAL
 mlst <- NULL
 if (file.exists(FILE_MLST)) {
     mlst <- read_csv(FILE_MLST, show_col_types = FALSE) %>%
@@ -195,11 +225,50 @@ if (file.exists(FILE_MLST)) {
 # FILE_METADATA is defined in 00_config.R
 if (!file.exists(FILE_METADATA)) stop("Missing ", FILE_METADATA)
 metadata <- read_csv(FILE_METADATA, show_col_types = FALSE) %>%
-    select(Isolate_ID = file_name, Participant_id, Timepoint) %>%
-    distinct()
+    select(any_of(c("Assembly_ID", "Isolate_ID", "file_name", "Participant_id", "Timepoint", "tp_lab", "full_path", "usable_fasta"))) %>%
+    mutate(
+        Participant_id = as.character(Participant_id),
+        Timepoint = if ("tp_lab" %in% names(.)) normalize_analysis_timepoint(tp_lab) else normalize_analysis_timepoint(Timepoint)
+    )
+
+canonical_file <- file.path(DIR_QC, "canonical_assembly_selection.csv")
+if (file.exists(canonical_file)) {
+    metadata <- read_csv(canonical_file, show_col_types = FALSE) %>%
+        filter(selected_canonical %in% TRUE, QC_PASS %in% TRUE) %>%
+        mutate(
+            Participant_id = as.character(Participant_id),
+            Timepoint = normalize_analysis_timepoint(tp_lab)
+        ) %>%
+        select(any_of(c("Assembly_ID", "Isolate_ID", "file_name", "Participant_id", "Timepoint", "full_path")))
+}
+metadata <- metadata %>% distinct(Participant_id, Timepoint, .keep_all = TRUE)
 
 # ============================= DATA HARMONIZATION =============================
 msg("Harmonizing datasets...")
+
+analysis_keys <- metadata %>%
+    filter(!is.na(full_path), file.exists(full_path)) %>%
+    distinct(Participant_id, Timepoint)
+
+status_without_assembly <- status %>%
+    anti_join(analysis_keys, by = c("Participant_id", "Timepoint"))
+
+if (nrow(status_without_assembly) > 0) {
+    msg(
+        "  Pre-bridge direct-key diagnostic: %d UTI/ASB sample(s) do not match assembly keys directly (%d UTI, %d ASB)",
+        nrow(status_without_assembly),
+        sum(status_without_assembly$Outcome == 1),
+        sum(status_without_assembly$Outcome == 0)
+    )
+}
+
+status <- status %>%
+    inner_join(analysis_keys, by = c("Participant_id", "Timepoint"), relationship = "one-to-one")
+
+msg(
+    "  Direct-key diagnostic retained %d UTI/ASB samples with usable assemblies (%d UTI, %d ASB)",
+    nrow(status), sum(status$Outcome == 1), sum(status$Outcome == 0)
+)
 
 # VF data is already in Participant_id/Timepoint format from pivot above
 vf <- vf_raw %>%
@@ -219,27 +288,30 @@ status <- status %>%
     )
 
 # Join with status
+vf_feature_cols <- vf_gene_cols
 data_vf <- status %>%
-    inner_join(vf, by = c("Participant_id", "Timepoint"), relationship = "many-to-many")
+    left_join(vf, by = c("Participant_id", "Timepoint"), relationship = "one-to-one") %>%
+    mutate(across(all_of(vf_feature_cols), ~ tidyr::replace_na(as.integer(.), 0L)))
 
-msg("  After VF join: %d samples", nrow(data_vf))
+msg("  Direct-key VF join diagnostic: %d samples", nrow(data_vf))
 
 # Plasmid data: Need to link Isolate_ID -> Participant_id/Timepoint
 data_plasmid <- NULL
 if (!is.null(plasmid_raw)) {
     # Link plasmid Isolate_ID to Participant_id/Timepoint via metadata
+    metadata_plasmid <- metadata %>%
+        mutate(plasmid_sample_id = if ("file_name" %in% names(.)) file_name else Isolate_ID) %>%
+        select(plasmid_sample_id, Participant_id, Timepoint, full_path) %>%
+        distinct()
     plasmid_linked <- plasmid_raw %>%
-        inner_join(metadata, by = "Isolate_ID", relationship = "many-to-many") %>%
-        select(-Isolate_ID)
+        rename(plasmid_sample_id = Isolate_ID) %>%
+        inner_join(metadata_plasmid, by = "plasmid_sample_id", relationship = "many-to-one") %>%
+        select(-plasmid_sample_id, -full_path)
 
     # Normalize Timepoint format to match status map
     # Extract timepoint from format like "T0", "T1", "Uricult"
     plasmid_linked <- plasmid_linked %>%
-        mutate(Timepoint = case_when(
-            str_detect(Timepoint, "(?i)uricult") ~ "Uricult",
-            str_detect(Timepoint, "T\\d+") ~ Timepoint,
-            TRUE ~ Timepoint
-        ))
+        mutate(Timepoint = normalize_analysis_timepoint(Timepoint))
 
     # For each Participant_id x Timepoint, take max across isolates (multiple assemblies)
     rep_cols <- setdiff(names(plasmid_linked), c("Participant_id", "Timepoint"))
@@ -250,9 +322,10 @@ if (!is.null(plasmid_raw)) {
 
     # Join with status
     data_plasmid <- status %>%
-        inner_join(plasmid_agg, by = c("Participant_id", "Timepoint"), relationship = "many-to-many")
+        left_join(plasmid_agg, by = c("Participant_id", "Timepoint"), relationship = "one-to-one") %>%
+        mutate(across(all_of(rep_cols), ~ tidyr::replace_na(as.integer(.), 0L)))
 
-    msg("  After plasmid join: %d samples", nrow(data_plasmid))
+    msg("  Direct-key plasmid join diagnostic: %d samples", nrow(data_plasmid))
 }
 
 # Combine VF + Plasmid features
@@ -260,20 +333,78 @@ if (!is.null(data_plasmid)) {
     # Merge on status columns
     data_merged <- data_vf %>%
         left_join(
-            data_plasmid %>% select(-Infection_Status, -Outcome),
-            by = c("Participant_id", "Timepoint")
+            data_plasmid %>% select(Participant_id, Timepoint, all_of(rep_cols)),
+            by = c("Participant_id", "Timepoint"),
+            relationship = "one-to-one"
         )
 } else {
     data_merged <- data_vf
 }
 
+# Prefer the canonical VF-ready episode table from script 22 when available.
+# This table carries the audited Uricult bridge, so Uricult clinical episodes
+# mapped to UTI-N WGS rows are retained by clinical Episode_ID instead of being
+# lost by a raw Participant_id + Timepoint join.
+if (file.exists(FILE_VF_READY)) {
+    if (file.info(FILE_VF_READY)$mtime < file.info(FILE_VF_PA)$mtime) {
+        stop(
+            "vf_analysis_ready.csv is older than vf_pa_all.csv. ",
+            "Run Rscript 22_vf_build_analysis_dataset.R before 14_genotype_phenotype_model.R."
+        )
+    }
+
+    vf_ready_model <- read_csv(FILE_VF_READY, show_col_types = FALSE) %>%
+        mutate(
+            Participant_id = as.character(Participant_id),
+            Timepoint = normalize_analysis_timepoint(tp_lab),
+            Infection_Status = as.character(Infection_Status),
+            Outcome = as.integer(Infection_Status == "UTI"),
+            Batch = if ("Batch" %in% names(.)) as.factor(Batch) else NA
+        ) %>%
+        filter(Infection_Status %in% c("UTI", "ASB"))
+
+    vf_feature_cols <- canonical_vf_gene_cols(names(vf_ready_model), vf_pa_file = FILE_VF_PA)
+    model_meta_cols <- intersect(
+        c(
+            "Participant_id", "Timepoint", "tp_lab", "Episode_ID", "Collection_Date",
+            "Batch", "Infection_Status", "Outcome", "ST", "uricult_bridge_applied"
+        ),
+        names(vf_ready_model)
+    )
+
+    data_merged <- vf_ready_model %>%
+        select(all_of(model_meta_cols), all_of(vf_feature_cols))
+
+    if (exists("plasmid_agg") && exists("rep_cols") && length(rep_cols) > 0) {
+        data_merged <- data_merged %>%
+            left_join(plasmid_agg, by = c("Participant_id", "Timepoint"), relationship = "one-to-one") %>%
+            mutate(across(all_of(rep_cols), ~ tidyr::replace_na(as.integer(.), 0L)))
+    }
+
+    msg(
+        "  Using canonical vf_analysis_ready.csv for modelling: %d samples (%d UTI, %d ASB; %d Uricult-bridged)",
+        nrow(data_merged),
+        sum(data_merged$Outcome == 1, na.rm = TRUE),
+        sum(data_merged$Outcome == 0, na.rm = TRUE),
+        if ("uricult_bridge_applied" %in% names(data_merged)) sum(data_merged$uricult_bridge_applied %in% TRUE, na.rm = TRUE) else 0L
+    )
+}
+
+base_cols <- intersect(
+    c(
+        "Participant_id", "Timepoint", "tp_lab", "Episode_ID", "Collection_Date",
+        "Batch", "Infection_Status", "Outcome", "ST", "uricult_bridge_applied"
+    ),
+    names(data_merged)
+)
+feature_cols <- setdiff(names(data_merged), base_cols)
+
 msg(
     "  Final merged dataset: %d samples, %d features",
-    nrow(data_merged), ncol(data_merged) - 4
+    nrow(data_merged), length(feature_cols)
 )
 
 # Feature filtering: Remove low/high prevalence
-feature_cols <- setdiff(names(data_merged), c("Participant_id", "Timepoint", "Infection_Status", "Outcome"))
 prevalences <- data_merged %>%
     select(all_of(feature_cols)) %>%
     summarise(across(everything(), ~ mean(. > 0, na.rm = TRUE))) %>%
@@ -289,7 +420,37 @@ msg(
 )
 
 data_final <- data_merged %>%
-    select(Participant_id, Timepoint, Infection_Status, Outcome, all_of(features_keep))
+    select(all_of(base_cols), all_of(features_keep))
+
+model_denom <- data_final %>%
+    select(any_of(c("Participant_id", "Timepoint", "Episode_ID", "Batch", "Infection_Status", "Outcome"))) %>%
+    mutate(model_interpretation = case_when(
+        sum(Outcome == 1, na.rm = TRUE) < 10 ~ "not_interpretable_sparse_UTI",
+        sum(Outcome == 1, na.rm = TRUE) < 20 ~ "exploratory_underpowered_UTI",
+        TRUE ~ "standard"
+    ))
+write_csv(model_denom, file.path(DIR_OUT, "model_dataset_denominator.csv"))
+append_denominator_summary(
+    data_final,
+    "14_genotype_phenotype_model.R",
+    "model_dataset",
+    "participant_timepoint",
+    file.path(DIR_OUT, "model_dataset_denominator.csv"),
+    "ASB/UTI model dataset built from canonical vf_analysis_ready.csv so audited Uricult bridge rows are retained"
+)
+
+n_uti_model <- sum(data_final$Outcome == 1, na.rm = TRUE)
+model_warnings <- c(
+    "Genotype-phenotype model interpretation warnings",
+    sprintf("Generated: %s", format(Sys.time())),
+    sprintf("Model dataset: %d samples (%d UTI, %d ASB)", nrow(data_final), n_uti_model, sum(data_final$Outcome == 0, na.rm = TRUE))
+)
+if (n_uti_model < 20) {
+    model_warnings <- c(model_warnings, "WARNING: UTI < 20. Association models are exploratory only and underpowered for definitive UTI inference.")
+}
+if (n_uti_model < 10) {
+    model_warnings <- c(model_warnings, "RED: UTI < 10. Association testing is not interpretable; use descriptive summaries only.")
+}
 
 # ========================= UNIVARIABLE ASSOCIATION ============================
 msg("Running univariable association tests...")
@@ -341,7 +502,8 @@ run_univar <- function(feature, data) {
 plan(multisession, workers = CORES_USE)
 univar_results <- future.apply::future_lapply(features_keep, run_univar,
     data = data_final,
-    future.seed = TRUE
+    future.seed = TRUE,
+    future.packages = c("dplyr", "tibble")
 ) %>%
     bind_rows()
 plan(sequential)
@@ -383,15 +545,14 @@ run_simple_glm <- function(feature, data) {
     tryCatch(
         {
             # Build formula
-            # Include Timepoint if more than one level exists
-            if (n_distinct(data$Timepoint) > 1) {
-                fml <- as.formula(sprintf("Outcome ~ `%s` + Timepoint", feature))
-            } else {
-                fml <- as.formula(sprintf("Outcome ~ `%s`", feature))
-            }
+            covariate_terms <- c()
+            if (n_distinct(data$Timepoint) > 1) covariate_terms <- c(covariate_terms, "Timepoint")
+            if ("Batch" %in% names(data) && n_distinct(data$Batch, na.rm = TRUE) > 1) covariate_terms <- c(covariate_terms, "Batch")
+            fixed_part <- paste(c(paste0("`", feature, "`"), covariate_terms), collapse = " + ")
+            fml <- as.formula(sprintf("Outcome ~ %s", fixed_part))
 
             # Fit model
-            mod <- glm(fml, data = data, family = binomial(link = "logit"))
+            mod <- stats::glm(fml, data = data, family = binomial(link = "logit"))
 
             # Extract coefficients
             tidy_mod <- broom::tidy(mod, conf.int = TRUE) %>%
@@ -429,7 +590,20 @@ run_simple_glm <- function(feature, data) {
 run_glmm <- function(feature, data) {
     # Helper to format result
     format_res <- function(mod, type, converged) {
-        tidy(mod, conf.int = TRUE) %>%
+        tidy_mod <- if (inherits(mod, "merMod")) {
+            broom.mixed::tidy(mod, conf.int = TRUE, effects = "fixed")
+        } else {
+            broom::tidy(mod, conf.int = TRUE)
+        }
+        if (!"p.value" %in% names(tidy_mod)) {
+            tidy_mod <- tidy_mod %>%
+                mutate(p.value = if ("statistic" %in% names(.)) {
+                    2 * pnorm(abs(.data$statistic), lower.tail = FALSE)
+                } else {
+                    NA_real_
+                })
+        }
+        tidy_mod %>%
             filter(term == paste0("`", feature, "`") | term == feature) %>%
             mutate(
                 feature = feature,
@@ -477,12 +651,12 @@ run_glmm <- function(feature, data) {
             # 1. Try GLMM
             fml_glmm <- as.formula(sprintf("Outcome ~ %s + (1 | Participant_id)", fixed_part))
 
-            mod <- glmer(fml_glmm,
+            mod <- lme4::glmer(fml_glmm,
                 data = data, family = binomial(link = "logit"),
-                control = glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 2e5))
+                control = lme4::glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 2e5))
             )
 
-            is_singular <- isSingular(mod)
+            is_singular <- lme4::isSingular(mod)
             if (is_singular) {
                 # Singular fit often means random effect variance is ~0.
                 # We can treat this as converged for practical purposes or fallback.
@@ -497,7 +671,7 @@ run_glmm <- function(feature, data) {
             tryCatch(
                 {
                     fml_glm <- as.formula(sprintf("Outcome ~ %s", fixed_part))
-                    mod_glm <- glm(fml_glm, data = data, family = binomial(link = "logit"))
+                    mod_glm <- stats::glm(fml_glm, data = data, family = binomial(link = "logit"))
                     format_res(mod_glm, "GLM_Fallback", TRUE)
                 },
                 error = function(e2) {
@@ -513,13 +687,15 @@ plan(multisession, workers = CORES_USE)
 if (opt$`simple-glm`) {
     glmm_results <- future.apply::future_lapply(glmm_features, run_simple_glm,
         data = data_final,
-        future.seed = TRUE
+        future.seed = TRUE,
+        future.packages = c("broom", "dplyr", "tibble")
     ) %>%
         bind_rows()
 } else {
     glmm_results <- future.apply::future_lapply(glmm_features, run_glmm,
         data = data_final,
-        future.seed = TRUE
+        future.seed = TRUE,
+        future.packages = c("broom", "broom.mixed", "dplyr", "lme4", "tibble")
     ) %>%
         bind_rows()
 }
@@ -528,8 +704,29 @@ plan(sequential)
 # FDR correction
 glmm_results <- glmm_results %>%
     filter(!is.na(p.value)) %>%
-    mutate(FDR = p.adjust(p.value, method = "BH")) %>%
+    mutate(
+        FDR = p.adjust(p.value, method = "BH"),
+        sparse_data_separation_risk = !is.finite(OR) | !is.finite(OR_lower) | !is.finite(OR_upper) |
+            OR_upper > 100 | OR_lower < 0.01 | std.error > 5,
+        interpretation = case_when(
+            n_uti_model < 10 ~ "not_interpretable_sparse_UTI",
+            n_uti_model < 20 ~ "exploratory_underpowered_UTI",
+            str_detect(model_type, "Singular") ~ "exploratory_singular_fit",
+            sparse_data_separation_risk ~ "exploratory_sparse_data_separation_risk",
+            TRUE ~ "exploratory_screening"
+        )
+    ) %>%
     arrange(p.value)
+
+if (any(str_detect(glmm_results$model_type, "Singular"), na.rm = TRUE)) {
+    model_warnings <- c(model_warnings, sprintf("WARNING: %d GLMM result(s) had singular random-effect fits.",
+                                                sum(str_detect(glmm_results$model_type, "Singular"), na.rm = TRUE)))
+}
+if (any(glmm_results$sparse_data_separation_risk, na.rm = TRUE)) {
+    model_warnings <- c(model_warnings, sprintf("WARNING: %d model result(s) have extreme OR/CI or large SE consistent with sparse-data/separation risk.",
+                                                sum(glmm_results$sparse_data_separation_risk, na.rm = TRUE)))
+}
+writeLines(model_warnings, file.path(DIR_OUT, "model_interpretation_warnings.txt"))
 
 if (opt$`simple-glm`) {
     msg(
@@ -550,7 +747,7 @@ if (opt$`simple-glm`) {
 }
 
 # Save GLMM results
-write_csv(glmm_results, file.path(DIR_MODELS, "gwas_multivariable_glmm.csv"))
+write_csv(glmm_results, file.path(DIR_OUT, "gwas_multivariable_glmm.csv"))
 msg("Generating plots...")
 
 # Volcano plot
@@ -571,8 +768,8 @@ p_volcano <- ggplot(univar_results, aes(log2_OR, neg_log10_p)) +
     ) +
     scale_color_manual(values = c("TRUE" = "red", "FALSE" = "grey40"), labels = c("Not Significant", sprintf("FDR < %.2f", opt$fdr_thresh))) +
     labs(
-        title = "Genotype-Phenotype Association: UTI vs. ASB",
-        subtitle = sprintf("%d features tested (Fisher's exact)", nrow(univar_results)),
+        title = "Exploratory Genotype-Phenotype Association: UTI vs. ASB",
+        subtitle = sprintf("%d features tested (Fisher's exact); UTI n=%d", nrow(univar_results), n_uti_model),
         x = "Log2 Odds Ratio",
         y = "-Log10 P-value",
         color = "Significance"
@@ -588,7 +785,7 @@ ggsave(file.path(DIR_PLOTS, "volcano_plot_UTI_vs_ASB.png"),
 # Forest plot (top GLMM hits)
 top_glmm <- glmm_results %>%
     filter(converged, FDR < 0.2) %>%
-    slice_min(FDR, n = 20)
+    slice_min(FDR, n = 20, with_ties = FALSE)
 
 if (nrow(top_glmm) > 0) {
     p_forest <- ggplot(top_glmm, aes(x = OR, y = reorder(feature, OR))) +
@@ -598,8 +795,8 @@ if (nrow(top_glmm) > 0) {
         geom_text(aes(label = sprintf("%.2f", OR)), hjust = -0.5, size = 3) +
         scale_x_log10() +
         labs(
-            title = "Top GLMM Associations (UTI vs. ASB)",
-            subtitle = sprintf("%d features with FDR < 0.2", nrow(top_glmm)),
+            title = "Exploratory Top GLMM Associations (UTI vs. ASB)",
+            subtitle = sprintf("%d features with FDR < 0.2; sparse data flags retained", nrow(top_glmm)),
             x = "Odds Ratio (95% CI)",
             y = NULL
         ) +
@@ -611,10 +808,135 @@ if (nrow(top_glmm) > 0) {
     )
 }
 
+# VF interpretation bridge: univariable Fisher screening versus participant-aware
+# model output. This deliberately lives in plots/vf because its purpose is to
+# explain VF interpretation, even though it reuses model outputs from this script.
+bridge_top_n <- 12
+bridge_fisher <- univar_results %>%
+    filter(!is.na(p_value)) %>%
+    arrange(p_value) %>%
+    slice_head(n = bridge_top_n) %>%
+    transmute(
+        feature,
+        fisher_OR = OR,
+        fisher_lower = CI_lower,
+        fisher_upper = CI_upper,
+        fisher_p = p_value,
+        fisher_FDR = FDR
+    )
+
+bridge_model <- glmm_results %>%
+    transmute(
+        feature,
+        model_OR = OR,
+        model_lower = OR_lower,
+        model_upper = OR_upper,
+        model_p = p.value,
+        model_FDR = FDR,
+        model_type,
+        sparse_data_separation_risk
+    )
+
+bridge_join <- bridge_fisher %>%
+    left_join(bridge_model, by = "feature") %>%
+    mutate(
+        feature = factor(feature, levels = rev(feature)),
+        model_status = case_when(
+            is.na(model_OR) ~ "Not modelled",
+            sparse_data_separation_risk %in% TRUE ~ "Model sparse/separation risk",
+            !is.na(model_FDR) & model_FDR < opt$fdr_thresh ~ "Model FDR-significant",
+            TRUE ~ "Model not FDR-significant"
+        ),
+        fisher_status = ifelse(fisher_p < 0.05, "Nominal Fisher p < 0.05", "Fisher p >= 0.05")
+    )
+
+bridge_plot_data <- bind_rows(
+    bridge_join %>%
+        transmute(
+            feature,
+            evidence_layer = "Univariable Fisher screen",
+            estimate = fisher_OR,
+            lower = fisher_lower,
+            upper = fisher_upper,
+            status = fisher_status,
+            label = sprintf("p=%.2g; q=%.2g", fisher_p, fisher_FDR)
+        ),
+    bridge_join %>%
+        filter(!is.na(model_OR)) %>%
+        transmute(
+            feature,
+            evidence_layer = "Participant-aware model",
+            estimate = model_OR,
+            lower = model_lower,
+            upper = model_upper,
+            status = model_status,
+            label = sprintf("q=%.2g%s", model_FDR,
+                            ifelse(sparse_data_separation_risk %in% TRUE, "; sparse", ""))
+        )
+) %>%
+    mutate(
+        evidence_layer = factor(evidence_layer,
+                                levels = c("Univariable Fisher screen", "Participant-aware model")),
+        estimate = ifelse(is.finite(estimate) & estimate > 0, estimate, NA_real_),
+        lower = ifelse(is.finite(lower) & lower > 0, lower, NA_real_),
+        upper = ifelse(is.finite(upper) & upper > 0, upper, NA_real_)
+    ) %>%
+    filter(!is.na(estimate))
+
+if (nrow(bridge_plot_data) > 0) {
+    n_model_sig <- sum(glmm_results$FDR < opt$fdr_thresh, na.rm = TRUE)
+    n_sparse <- sum(glmm_results$sparse_data_separation_risk %in% TRUE, na.rm = TRUE)
+    p_bridge <- ggplot(bridge_plot_data,
+                       aes(x = estimate, y = feature, xmin = lower, xmax = upper, colour = status)) +
+        geom_vline(xintercept = 1, linetype = "dashed", colour = "grey50") +
+        geom_errorbarh(height = 0.18, linewidth = 0.45, na.rm = TRUE) +
+        geom_point(size = 2.6, na.rm = TRUE) +
+        geom_text(aes(label = label), hjust = -0.05, size = 2.8, show.legend = FALSE, na.rm = TRUE) +
+        facet_wrap(~evidence_layer, nrow = 1) +
+        scale_x_log10() +
+        coord_cartesian(xlim = c(0.03, 80), clip = "off") +
+        scale_colour_manual(values = c(
+            "Nominal Fisher p < 0.05" = "#D55E00",
+            "Fisher p >= 0.05" = "grey45",
+            "Model FDR-significant" = "#009E73",
+            "Model not FDR-significant" = "#0072B2",
+            "Model sparse/separation risk" = "#CC79A7",
+            "Not modelled" = "grey70"
+        )) +
+        labs(
+            title = "Exploratory VF gene screening versus participant-aware model evidence",
+            subtitle = sprintf(
+                "Top %d Fisher-ranked features; model results have %d FDR-significant hits and %d sparse/separation flags",
+                bridge_top_n, n_model_sig, n_sparse
+            ),
+            x = "Odds ratio on log scale",
+            y = "VF gene / feature",
+            colour = "Evidence status",
+            caption = paste(
+                sprintf("Data: %s and %s.",
+                        file.path(DIR_OUT, "gwas_univariable_stats.csv"),
+                        file.path(DIR_OUT, "gwas_multivariable_glmm.csv")),
+                sprintf("Denominator: ASB/UTI model dataset n=%d, including UTI n=%d.", nrow(data_final), n_uti_model),
+                "Level of analysis: gene/feature-level association screen.",
+                "Fisher tests are exploratory and do not account for repeated resident isolates.",
+                "Participant-aware models include a Participant_id random effect where GLMM fitting is possible, but sparse or singular fits remain underpowered.",
+                "No cross-sectional VF comparison should be interpreted causally without considering ST/lineage, timepoint, batch, and event-type structure."
+            )
+        ) +
+        plot_theme_vf_model(base_size = 10) +
+        theme(
+            plot.margin = margin(5.5, 36, 5.5, 5.5),
+            strip.background = element_rect(fill = "grey92", colour = "grey70")
+        )
+
+    ggsave(file.path(DIR_PLOTS_VF, "vf_gene_screening_vs_model_evidence.png"),
+           p_bridge, width = 11, height = 6.5, dpi = 300)
+}
+
 # Heatmap of top discriminators
 top_features <- glmm_results %>%
     filter(converged, !is.na(FDR)) %>%
-    slice_min(FDR, n = 30) %>%
+    slice_min(FDR, n = 30, with_ties = FALSE) %>%
     pull(feature)
 
 if (length(top_features) > 1) {
@@ -638,18 +960,22 @@ if (length(top_features) > 1) {
         distinct() %>%
         column_to_rownames("Sample_ID")
 
-    pheatmap(
-        t(as.matrix(heatmap_data)),
-        annotation_col = annotation,
-        cluster_rows = TRUE,
-        cluster_cols = FALSE,
-        show_colnames = FALSE,
-        color = c("white", "darkblue"),
-        border_color = NA,
-        main = "Top Discriminatory Features (UTI vs. ASB)",
-        filename = file.path(DIR_PLOTS, "heatmap_top_discriminators.png"),
+    save_png_device(
+        file.path(DIR_PLOTS, "heatmap_top_discriminators.png"),
         width = 10,
-        height = max(6, length(top_features) * 0.2)
+        height = max(6, length(top_features) * 0.2),
+        draw_fun = function() {
+            pheatmap(
+                t(as.matrix(heatmap_data)),
+                annotation_col = annotation,
+                cluster_rows = TRUE,
+                cluster_cols = FALSE,
+                show_colnames = FALSE,
+                color = c("white", "darkblue"),
+                border_color = NA,
+                main = "Exploratory Top Discriminatory Features (UTI vs. ASB)"
+            )
+        }
     )
 }
 
@@ -706,7 +1032,7 @@ msg("")
 msg("Top 10 associations (GLMM):")
 top10 <- glmm_results %>%
     filter(converged) %>%
-    slice_min(FDR, n = 10)
+    slice_min(FDR, n = 10, with_ties = FALSE)
 
 if (nrow(top10) > 0) {
     for (i in 1:nrow(top10)) {
@@ -725,4 +1051,5 @@ if (nrow(top10) > 0) {
     msg("  (No significant associations found)")
 }
 
+write_uti_attrition_outputs()
 msg("Done.")

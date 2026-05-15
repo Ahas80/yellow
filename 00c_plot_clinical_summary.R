@@ -43,11 +43,10 @@ suppressPackageStartupMessages({
 msg("Starting 00c_plot_clinical_summary.R")
 
 # Load Data
-episode_tbl <- read_csv(file.path(DIR_CLINICAL, "status_map.csv"), show_col_types = FALSE)
+episode_tbl <- read_csv(FILE_STATUS_MAP, show_col_types = FALSE)
 assembly_df <- load_metadata() # Use helper from config
 
 msg("Loaded status_map.csv (%d rows) and assembly_metadata.csv (%d rows)", nrow(episode_tbl), nrow(assembly_df))
-cat("DEBUG: After msg(), before Helpers section\n")
 
 # Helpers
 # ------------------------------------------------------------------------------
@@ -71,40 +70,40 @@ safe_pdf_begin <- function(file, width, height) grDevices::pdf(file, width = wid
 tp_norm2 <- function(x) {
     tp_chr <- as.character(x)
     is_uricult <- str_detect(tp_chr, regex("uricult", ignore_case = TRUE))
+    is_uti_event <- str_detect(tp_chr, regex("^UTI[-_ ]*[0-9]+$", ignore_case = TRUE))
     tp_num <- suppressWarnings(as.integer(str_extract(tp_chr, "\\d+")))
+    tp_clean <- normalise_timepoint_preserve_events(tp_chr)
+    routine_levels <- paste0("T", sort(unique(tp_num[!is.na(tp_num) & !is_uricult & !is_uti_event])))
+    uti_levels <- sort(unique(tp_clean[is_uti_event]))
     tp_lab <- case_when(
         is_uricult ~ "Uricult",
-        !is.na(tp_num) ~ paste0("T", tp_num),
+        is_uti_event ~ tp_clean,
+        !is.na(tp_num) ~ tp_clean,
         TRUE ~ "Unscheduled"
     )
     tibble(
         tp_num = tp_num,
         tp_lab = factor(tp_lab,
-            levels = c(
-                paste0("T", sort(unique(tp_num[!is.na(tp_num)]))),
-                "Uricult", "Unscheduled"
-            )
+            levels = c(routine_levels, uti_levels, "Uricult", "Unscheduled")
         )
     )
 }
-cat("DEBUG: After tp_norm2 definition\n")
 
 # Prepare Data for Plotting
 # ------------------------------------------------------------------------------
-cat("DEBUG: Before bind_cols on line 88\n")
-episode_tbl <- episode_tbl %>% bind_cols(tp_norm2(.$Timepoint))
-cat("DEBUG: After bind_cols, tp_lab exists:", "tp_lab" %in% names(episode_tbl), "\n")
+episode_tp_source <- if ("tp_lab" %in% names(episode_tbl)) episode_tbl$tp_lab else episode_tbl$Timepoint
+episode_tbl <- episode_tbl %>%
+    select(-any_of(c("tp_num", "tp_lab"))) %>%
+    bind_cols(tp_norm2(episode_tp_source))
 
 episode_plot <- episode_tbl %>%
     filter(Infection_Status %in% c("Negative", "ASB", "UTI", "Culture-positive, S&S unknown"))
-cat("DEBUG: After creating episode_plot\n")
 
 status_order <- c("UTI", "ASB", "Culture-positive, S&S unknown", "Negative")
 status_levels_story <- c("Negative", "ASB", "UTI", "Culture-positive, S&S unknown")
 
 # 1. Status Distribution
 # ------------------------------------------------------------------------------
-cat("DEBUG: Before status_by_tp creation\n")
 # status_by_tp <- episode_plot %>%
 #     count(tp_lab, Infection_Status, name = "n") %>%
 #     group_by(tp_lab) %>%
@@ -135,7 +134,6 @@ pid_levels <- episode_plot %>%
 plot_df <- episode_plot %>% mutate(Participant_id = factor(Participant_id, levels = pid_levels))
 p_traj <- ggplot(plot_df, aes(tp_lab, Participant_id, fill = Infection_Status)) +
     geom_tile(color = "white") +
-    scale_y_discrete(drop = FALSE) +
     scale_y_discrete(drop = FALSE) +
     scale_fill_infection() +
     labs(
@@ -183,7 +181,6 @@ make_transitions_plot <- function(from_to, status_levels_story, status_cols) {
                     ggalluvial::geom_alluvium(aes(fill = From), width = 0, alpha = 0.9) +
                     ggalluvial::geom_stratum(width = 0.15, fill = "grey85", colour = "grey40") +
                     ggplot2::geom_text(stat = "stratum", aes(label = after_stat(stratum))) +
-                    ggplot2::geom_text(stat = "stratum", aes(label = after_stat(stratum))) +
                     scale_fill_infection(drop = FALSE) +
                     labs(
                         title = "Infection Status Transitions Between Consecutive Timepoints",
@@ -216,13 +213,30 @@ p_transitions_flow <- make_transitions_plot(from_to, status_levels_story, NULL)
 # 4. Assembly Metrics
 # ------------------------------------------------------------------------------
 assembly_norm <- assembly_df %>%
-    transmute(Participant_id, Timepoint, assembler, num_contigs, total_bases, gc_content) %>%
-    bind_cols(tp_norm2(.$Timepoint))
+    transmute(
+        Participant_id = as.character(Participant_id),
+        Timepoint,
+        tp_source = if ("tp_lab" %in% names(assembly_df)) as.character(tp_lab) else as.character(Timepoint),
+        assembler, num_contigs, total_bases, gc_content
+    ) %>%
+    bind_cols(tp_norm2(.$tp_source)) %>%
+    select(-tp_source)
+
+episode_status_keys <- episode_plot %>%
+    transmute(Participant_id = as.character(Participant_id), tp_lab, Infection_Status) %>%
+    distinct()
+
+assert_unique_keys(
+    episode_status_keys,
+    c("Participant_id", "tp_lab"),
+    context = "00c clinical episode status keys",
+    out_path = file.path(DIR_QC, "00c_duplicate_clinical_plot_keys.csv")
+)
 
 assembly_by_status <- episode_plot %>%
-    select(Participant_id, tp_lab, Infection_Status) %>%
+    transmute(Participant_id = as.character(Participant_id), tp_lab, Infection_Status) %>%
     distinct() %>%
-    inner_join(assembly_norm, by = c("Participant_id", "tp_lab"), relationship = "many-to-many") %>%
+    inner_join(assembly_norm, by = c("Participant_id", "tp_lab"), relationship = "one-to-many") %>%
     group_by(tp_lab, Infection_Status) %>%
     summarise(
         n_assemblies = n(),
@@ -237,11 +251,15 @@ assembly_by_status <- episode_plot %>%
 
 write_csv(assembly_by_status, file.path(DIR_CLINICAL, "assembly_metrics_by_status.csv"))
 
-p_asm_contigs <- ggplot(
-    inner_join(episode_plot %>% select(Participant_id, tp_lab, Infection_Status) %>% distinct(),
+assembly_plot_df <- inner_join(
+    episode_status_keys,
         assembly_norm,
-        by = c("Participant_id", "tp_lab"), relationship = "many-to-many"
-    ),
+        by = c("Participant_id", "tp_lab"), relationship = "one-to-many"
+    ) %>%
+    filter(is.finite(num_contigs))
+
+p_asm_contigs <- ggplot(
+    assembly_plot_df,
     aes(Infection_Status, num_contigs)
 ) +
     geom_boxplot(outlier.shape = NA) +

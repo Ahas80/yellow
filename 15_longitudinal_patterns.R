@@ -48,8 +48,8 @@ msg("Starting 15_longitudinal_patterns.R")
 # 1. Load Data
 # ------------------------------------------------------------------------------
 # Clinical Status
-status_file <- file.path(DIR_CLINICAL, "status_map_with_poster_tp.csv")
-if (!file.exists(status_file)) status_file <- file.path(DIR_CLINICAL, "status_map.csv")
+status_file <- FILE_STATUS_MAP_POSTER
+if (!file.exists(status_file)) status_file <- FILE_STATUS_MAP
 status_map <- read_csv(status_file, show_col_types = FALSE)
 msg("Loaded %d episodes from %s", nrow(status_map), basename(status_file))
 
@@ -72,15 +72,35 @@ msg("Assigning Strain IDs based on 'Same' classification...")
 # Filter for "Same" edges
 edges <- pairwise %>%
     filter(Classification == "Same") %>%
-    select(from = SampleKey_A, to = SampleKey_B)
+    transmute(
+        from = as.character(SampleKey_A),
+        to = as.character(SampleKey_B)
+    ) %>%
+    filter(!is.na(from), !is.na(to), nzchar(from), nzchar(to), from != to) %>%
+    distinct()
 
 # Get all unique samples from status_map to ensure singletons are included
 # We need to construct SampleKey for status_map entries to match pairwise
 # SampleKey format: Participant_id__Timepoint (as used in 11_compare_strains.R)
 status_map <- status_map %>%
-    mutate(SampleKey = paste0(Participant_id, "__", Timepoint))
+    mutate(
+        tp_lab = if ("tp_lab" %in% names(.)) normalise_timepoint_preserve_events(tp_lab) else normalise_timepoint_preserve_events(Timepoint),
+        SampleKey = paste0(Participant_id, "__", tp_lab)
+    )
 
-all_nodes <- unique(status_map$SampleKey)
+timeline_nodes <- unique(status_map$SampleKey)
+edge_nodes <- unique(c(edges$from, edges$to))
+edge_only_nodes <- setdiff(edge_nodes, timeline_nodes)
+
+if (length(edge_only_nodes) > 0) {
+    msg(
+        "NOTE: %d same-strain graph node(s) occur in pairwise_metrics.csv but not in the clinical timeline. Including them as graph-only vertices.",
+        length(edge_only_nodes)
+    )
+    msg("First graph-only nodes: %s", paste(head(edge_only_nodes, 10), collapse = ", "))
+}
+
+all_nodes <- unique(c(timeline_nodes, edge_nodes))
 
 # Build graph
 g <- graph_from_data_frame(edges, directed = FALSE, vertices = data.frame(name = all_nodes))
@@ -98,7 +118,7 @@ strain_map <- tibble(
 
 # Join back to status_map
 timeline <- status_map %>%
-    left_join(strain_map, by = "SampleKey", relationship = "many-to-many") %>%
+    left_join(strain_map, by = "SampleKey", relationship = "many-to-one") %>%
     select(-Cluster_ID)
 
 msg("Assigned %d unique Strain IDs across %d episodes", n_distinct(timeline$Strain_ID, na.rm = TRUE), nrow(timeline))
@@ -120,24 +140,27 @@ if (missing_strain > 0) {
 # Let's try to extract numeric time or use a factor level.
 
 parse_time_order <- function(tp) {
+    num <- suppressWarnings(readr::parse_number(tp))
     case_when(
-        tp == "T0" ~ 0,
-        tp == "T1" ~ 1,
-        tp == "T2" ~ 2,
-        tp == "T3" ~ 3,
-        tp == "T4" ~ 4,
-        str_detect(tp, "(?i)uricult") ~ 99, # Put Uricult last or treat as separate
-        TRUE ~ 999
+        str_detect(tp, regex("^T[0-9]+$", ignore_case = TRUE)) ~ as.numeric(num),
+        str_detect(tp, regex("uricult", ignore_case = TRUE)) ~ NA_real_,
+        TRUE ~ NA_real_
     )
 }
 
 timeline <- timeline %>%
     mutate(
-        Time_Order = if ("Plot_TP_Num_Poster" %in% names(.)) {
-            Plot_TP_Num_Poster
-        } else {
-            parse_time_order(Timepoint)
-        },
+        Collection_Date_parsed = if ("Collection_Date" %in% names(.)) suppressWarnings(lubridate::dmy(Collection_Date)) else as.Date(NA),
+        Time_Order_Date = ifelse(!is.na(Collection_Date_parsed),
+                                 as.numeric(Collection_Date_parsed - ave(Collection_Date_parsed, Participant_id, FUN = function(x) min(x, na.rm = TRUE))),
+                                 NA_real_),
+        Time_Order_Fallback = parse_time_order(tp_lab),
+        Time_Order = coalesce(Time_Order_Date, Time_Order_Fallback),
+        Time_Order_Source = case_when(
+            !is.na(Time_Order_Date) ~ "Collection_Date",
+            !is.na(Time_Order_Fallback) ~ "Routine_timepoint_number",
+            TRUE ~ "Unavailable"
+        ),
         # Clean Infection Status for plotting
         Status_Simple = case_when(
             Infection_Status == "UTI" ~ "UTI",
@@ -146,9 +169,9 @@ timeline <- timeline %>%
             TRUE ~ "Other"
         )
     ) %>%
-    # WARNING: Uricults without a Plot_TP_Num_Poster are excluded from ordered analysis
+    # Poster half-step labels are display-only; they are not used as statistical covariates here.
     filter(!is.na(Time_Order)) %>%
-    arrange(Participant_id, Time_Order)
+    arrange(Participant_id, Time_Order, tp_lab)
 
 # Identify Transitions
 transitions <- timeline %>%
@@ -156,7 +179,7 @@ transitions <- timeline %>%
     mutate(
         Prev_Strain = lag(Strain_ID),
         Prev_Status = lag(Status_Simple),
-        Prev_Time = lag(Timepoint),
+        Prev_Time = lag(tp_lab),
 
         # Transition Types
         Is_Consecutive = !is.na(Prev_Strain), # Is there a previous point?
@@ -177,7 +200,7 @@ transitions <- timeline %>%
 switch_events <- transitions %>%
     filter(Event_Type == "Phenotype_Switch") %>%
     select(Participant_id,
-        From_Time = Prev_Time, To_Time = Timepoint,
+        From_Time = Prev_Time, To_Time = tp_lab,
         From_Status = Prev_Status, To_Status = Status_Simple, Strain_ID
     )
 
@@ -210,6 +233,25 @@ write_csv(timeline, file.path(out_dir, "participant_timelines.csv"))
 write_csv(transitions, file.path(out_dir, "transitions.csv"))
 write_csv(switch_events, file.path(out_dir, "phenotype_switch_candidates.csv"))
 write_csv(persistence_stats, file.path(out_dir, "strain_persistence_stats.csv"))
+
+asb_uti_transition_summary <- transitions %>%
+    summarise(
+        clinical_ASB_to_UTI = sum(Prev_Status == "ASB" & Status_Simple == "UTI", na.rm = TRUE),
+        same_strain_ASB_to_UTI = sum(Prev_Status == "ASB" & Status_Simple == "UTI" & Same_Strain %in% TRUE, na.rm = TRUE),
+        uricult_related_ASB_to_UTI = sum(Prev_Status == "ASB" & Status_Simple == "UTI" &
+                                             (str_detect(Prev_Time, regex("uricult", ignore_case = TRUE)) |
+                                                str_detect(tp_lab, regex("uricult", ignore_case = TRUE))), na.rm = TRUE)
+    )
+write_csv(asb_uti_transition_summary, file.path(out_dir, "asb_uti_transition_summary.csv"))
+
+append_denominator_summary(
+    timeline,
+    "15_longitudinal_patterns.R",
+    "participant_timelines",
+    "clinical_episode",
+    file.path(out_dir, "participant_timelines.csv"),
+    "Clinical longitudinal ordering uses Collection_Date where available; poster half-step labels are display-only"
+)
 
 msg("Saved tables to %s", out_dir)
 

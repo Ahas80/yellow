@@ -52,7 +52,7 @@ FILE_MLST_ALL <- FILE_MLST_ALL # From 00_config.R
 DIR_PMLST_LOG <- file.path(DIR_MLST, "pmlst_logs")
 ensure_dir(DIR_PMLST_LOG)
 
-check_tool("mlst")
+invisible(check_tool("mlst"))
 
 # 3. Chromosomal ST Frequencies
 # ------------------------------------------------------------------------------

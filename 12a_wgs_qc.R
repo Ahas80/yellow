@@ -63,7 +63,7 @@ if (!"full_path" %in% names(meta_df)) {
 }
 
 # Filter missing files
-meta_df <- meta_df %>% filter(file.exists(full_path))
+meta_df <- meta_df %>% filter(!is.na(full_path) & file.exists(full_path))
 log_info("Found ", nrow(meta_df), " assemblies to process.")
 
 # 4. Compute Metrics
@@ -160,6 +160,105 @@ log_info("  FAIL: ", fail_count)
 outfile <- file.path(DIR_WGS_OUT, "qc_summary.csv")
 write_csv(qc_res, outfile)
 log_info("Written QC summary to: ", outfile)
+
+# Canonical assembly selection for participant-timepoint analyses.  QC remains
+# assembly-level, but downstream biological episode analyses should use only the
+# selected row per Participant_id x tp_lab.
+canonical_selection <- select_canonical_assemblies(qc_res)
+canonical_file <- file.path(DIR_QC, "canonical_assembly_selection.csv")
+write_csv(canonical_selection, canonical_file)
+log_info("Written canonical assembly selection to: ", canonical_file)
+
+append_denominator_summary(
+    qc_res,
+    "12a_wgs_qc.R",
+    "assembly_qc",
+    "assembly",
+    FILE_METADATA,
+    "Assembly-level QC; assembler alternatives remain explicit rows"
+)
+append_denominator_summary(
+    canonical_selection %>% filter(selected_canonical),
+    "12a_wgs_qc.R",
+    "canonical_selected_assemblies",
+    "participant_timepoint",
+    canonical_file,
+    "One QC PASS selected assembly per Participant_id x tp_lab; longcycler preferred over flye when both pass"
+)
+
+# QC selection bias by infection status.  This uses exact-style Fisher testing
+# because UTI counts are sparse and the chi-square approximation can be invalid.
+status_file <- FILE_STATUS_MAP
+if (file.exists(status_file)) {
+    status <- read_csv(status_file, show_col_types = FALSE) %>%
+        mutate(
+            Participant_id = as.character(Participant_id),
+            tp_lab = if ("tp_lab" %in% names(.)) normalise_timepoint_preserve_events(tp_lab) else normalise_timepoint_preserve_events(Timepoint)
+        )
+    status_dupes <- assert_unique_keys(
+        status,
+        c("Participant_id", "tp_lab"),
+        context = "status_map for QC selection bias",
+        out_path = file.path(DIR_QC, "status_map_duplicate_episode_keys.csv")
+    )
+    if (nrow(status_dupes) == 0) {
+        qc_episode <- canonical_selection %>%
+            group_by(Participant_id, tp_lab) %>%
+            summarise(
+                has_wgs = any(file_exists, na.rm = TRUE),
+                qc_pass = any(QC_PASS, na.rm = TRUE),
+                selected_canonical = any(selected_canonical, na.rm = TRUE),
+                .groups = "drop"
+            )
+
+        bias_df <- status %>%
+            left_join(qc_episode, by = c("Participant_id", "tp_lab"), relationship = "one-to-one") %>%
+            mutate(
+                has_wgs = coalesce(has_wgs, FALSE),
+                qc_pass = coalesce(qc_pass, FALSE),
+                selected_canonical = coalesce(selected_canonical, FALSE)
+            )
+
+        bias_summary <- bias_df %>%
+            dplyr::count(Infection_Status, qc_pass, name = "n") %>%
+            group_by(Infection_Status) %>%
+            mutate(status_total = sum(n), pct = n / status_total) %>%
+            ungroup()
+        write_csv(bias_summary, file.path(DIR_QC, "qc_selection_bias_by_status.csv"))
+
+        tbl <- xtabs(n ~ qc_pass + Infection_Status, data = bias_summary)
+        fisher_res <- tryCatch(fisher.test(tbl), error = function(e) NULL)
+        worst_loss <- bias_summary %>%
+            filter(qc_pass %in% FALSE) %>%
+            arrange(desc(pct), desc(n)) %>%
+            slice_head(n = 1)
+        report <- c(
+            "QC selection bias by infection status",
+            sprintf("Generated: %s", format(Sys.time())),
+            "",
+            capture.output(print(tbl)),
+            "",
+            if (!is.null(fisher_res)) sprintf("Fisher exact p-value: %.5g", fisher_res$p.value) else "Fisher exact test could not be computed.",
+            if (nrow(worst_loss) > 0) sprintf("Largest QC loss proportion: %s (%.1f%%, n=%d)",
+                                             worst_loss$Infection_Status[1], 100 * worst_loss$pct[1], worst_loss$n[1]) else "No QC losses by status.",
+            "Interpretation: if QC pass differs by status, genomic comparisons may be selection-biased and should be described as conditional on available QC-passing WGS."
+        )
+        writeLines(report, file.path(DIR_QC, "qc_selection_bias_report.txt"))
+    } else {
+        writeLines(
+            c(
+                "QC selection bias by infection status",
+                sprintf("Generated: %s", format(Sys.time())),
+                "",
+                "RED: status_map has duplicated Participant_id + tp_lab keys. Bias analysis was not collapsed silently.",
+                "Review results/qc/status_map_duplicate_episode_keys.csv."
+            ),
+            file.path(DIR_QC, "qc_selection_bias_report.txt")
+        )
+    }
+}
+
+write_uti_attrition_outputs()
 
 # Optional: Plot QC metrics
 if (pass_count > 0) {
