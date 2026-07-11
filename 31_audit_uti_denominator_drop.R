@@ -16,6 +16,7 @@ suppressPackageStartupMessages({
 })
 
 source("00_config.R")
+source("R/pipeline_qc_helpers.R")
 
 DIR_AUDIT <- file.path(DIR_RESULTS, "audit")
 ensure_dir(DIR_AUDIT)
@@ -29,6 +30,11 @@ collapse_values <- function(x, sep = "; ") {
   x <- x[!is.na(x) & nzchar(trimws(x))]
   x <- unique(x)
   if (length(x) == 0) NA_character_ else paste(x, collapse = sep)
+}
+
+collapse_col <- function(df, col, sep = "; ") {
+  if (nrow(df) == 0 || !col %in% names(df)) return(NA_character_)
+  collapse_values(df[[col]], sep = sep)
 }
 
 collapse_bool <- function(x) {
@@ -84,16 +90,41 @@ standardise_key_cols <- function(df, tp_candidates = c("tp_lab", "Timepoint")) {
 }
 
 summarise_status_counts <- function(df, status_col = "Infection_Status") {
-  if (nrow(df) == 0 || !status_col %in% names(df)) {
-    return(tibble(n_total = 0L, n_ASB = 0L, n_UTI = 0L, n_Negative = 0L, n_other = 0L))
+  if (nrow(df) == 0 || (!status_col %in% names(df) && !"UTI_Status" %in% names(df))) {
+    return(tibble(
+      n_total = 0L, n_ASB = 0L, n_legacy_UTI = 0L, n_Negative = 0L,
+      n_UTI = 0L, n_Not_UTI = 0L, n_other = 0L
+    ))
   }
-  status <- as.character(df[[status_col]])
+
+  legacy_col <- dplyr::case_when(
+    "Infection_Status_old" %in% names(df) ~ "Infection_Status_old",
+    "Infection_Status_legacy" %in% names(df) ~ "Infection_Status_legacy",
+    status_col %in% names(df) ~ status_col,
+    TRUE ~ NA_character_
+  )
+  legacy_status <- if (!is.na(legacy_col)) as.character(df[[legacy_col]]) else rep(NA_character_, nrow(df))
+
+  primary_status <- if ("UTI_Status" %in% names(df)) {
+    as.character(df$UTI_Status)
+  } else if (status_col %in% names(df)) {
+    dplyr::case_when(
+      as.character(df[[status_col]]) == "UTI" ~ "UTI",
+      as.character(df[[status_col]]) %in% c("ASB", "Negative") ~ "Not_UTI",
+      TRUE ~ NA_character_
+    )
+  } else {
+    rep(NA_character_, nrow(df))
+  }
+
   tibble(
-    n_total = length(status),
-    n_ASB = sum(status == "ASB", na.rm = TRUE),
-    n_UTI = sum(status == "UTI", na.rm = TRUE),
-    n_Negative = sum(status == "Negative", na.rm = TRUE),
-    n_other = sum(is.na(status) | !status %in% c("ASB", "UTI", "Negative"), na.rm = TRUE)
+    n_total = length(primary_status),
+    n_ASB = sum(legacy_status == "ASB", na.rm = TRUE),
+    n_legacy_UTI = sum(legacy_status == "UTI", na.rm = TRUE),
+    n_Negative = sum(legacy_status == "Negative", na.rm = TRUE),
+    n_UTI = sum(primary_status == "UTI", na.rm = TRUE),
+    n_Not_UTI = sum(primary_status == "Not_UTI", na.rm = TRUE),
+    n_other = sum(is.na(primary_status) | !primary_status %in% c("UTI", "Not_UTI"), na.rm = TRUE)
   )
 }
 
@@ -130,14 +161,17 @@ model_path <- first_existing(c(
   file.path(DIR_RESULTS, "13_modelling", "model_dataset_UTI_ASB.csv"),
   file.path(DIR_MODELS, "vf_model_dataset.csv")
 ))
-mlst_path <- first_existing(c(FILE_MLST_ALL, file.path(DIR_ROOT, "mlst_all.tsv")))
+mlst_path <- first_existing(c(FILE_MLST_CANONICAL, FILE_MLST_PROVIDER_PREFERRED_ALL))
 
-legacy_status <- read_csv_optional(legacy_status_path, "legacy clinical status map")
+legacy_status <- read_csv_optional(legacy_status_path, "legacy ASB/UTI/Negative status map")
 legacy_status_full <- read_csv_optional(legacy_status_full_path, "legacy full status map")
 if (nrow(legacy_status_full) == 0) {
   legacy_status_full <- read_csv_optional(legacy_status_full_alt_path, "legacy full status map fallback")
 }
 current_status <- read_csv_optional(current_status_path, "current canonical status_map")
+if (nrow(current_status) > 0) {
+  current_status <- prefer_primary_uti_status(current_status)
+}
 assembly_meta <- read_csv_optional(FILE_METADATA, "assembly_metadata")
 qc_summary <- read_csv_optional(file.path(DIR_WGS, "qc_summary.csv"), "WGS QC")
 old_vf_pa <- read_csv_optional(old_vf_pa_path, "legacy/root VF PA")
@@ -159,14 +193,36 @@ if (file.exists(FILE_VF_HITS)) {
   audit_msg("Optional file missing: %s (VF hits RDS)", FILE_VF_HITS)
 }
 
-mlst_df <- if (!is.na(mlst_path)) read_csv_optional(mlst_path, "MLST", delim = "\t") else tibble()
+mlst_df <- if (!is.na(mlst_path)) {
+  read_csv_optional(mlst_path, "active provider-preferred MLST", delim = if (grepl("\\.tsv$", mlst_path, ignore.case = TRUE)) "\t" else ",")
+} else {
+  tibble()
+}
 
 # ------------------------------------------------------------------------------
 # Build the legacy clinical denominator that reproduces the user-reported 20 UTI.
 # ------------------------------------------------------------------------------
 
+if (nrow(legacy_status) == 0 && nrow(current_status) > 0) {
+  warning(
+    "Legacy status map is missing; falling back to current status_map legacy fields for ",
+    "the historical denominator trace."
+  )
+  tp_source <- if ("Timepoint" %in% names(current_status)) "Timepoint" else "tp_lab"
+  legacy_status <- current_status %>%
+    transmute(
+      Participant_id = as.character(.data$Participant_id),
+      Timepoint = as.character(.data[[tp_source]]),
+      Infection_Status = dplyr::coalesce(
+        as.character(.data$Infection_Status_old),
+        as.character(.data$Infection_Status_legacy),
+        as.character(.data$Infection_Status)
+      )
+    )
+}
 if (nrow(legacy_status) == 0) {
-  stop("Cannot run the requested 20->16 audit because ", legacy_status_path, " is missing.")
+  stop("Cannot run the legacy UTI denominator audit because neither ", legacy_status_path,
+       " nor a current status_map with legacy fields is available.")
 }
 if (!all(c("Participant_id", "Timepoint", "Infection_Status") %in% names(legacy_status))) {
   stop("Legacy status map lacks required columns: Participant_id, Timepoint, Infection_Status")
@@ -291,7 +347,11 @@ current_ready_status <- current_vf_ready %>%
   standardise_key_cols(c("tp_lab", "Timepoint")) %>%
   mutate(
     ST_current = if ("ST" %in% names(.)) as.character(.data$ST) else NA_character_,
-    current_ready_status = if ("Infection_Status" %in% names(.)) as.character(.data$Infection_Status) else NA_character_
+    current_ready_status = dplyr::case_when(
+      "UTI_Status" %in% names(.) ~ as.character(.data$UTI_Status),
+      "Infection_Status" %in% names(.) ~ as.character(.data$Infection_Status),
+      TRUE ~ NA_character_
+    )
   ) %>%
   group_by(.data$Participant_id, .data$tp_lab_norm) %>%
   summarise(
@@ -634,7 +694,77 @@ denominator_cascade <- bind_rows(
     "Current VF-ready output; included to flag stale/conflicting denominator files."
   )
 ) %>%
-  select(stage, n_total, n_ASB, n_UTI, n_Negative, n_other, source_file, script_responsible, notes)
+  select(stage, n_total, n_ASB, n_legacy_UTI, n_Negative, n_UTI, n_Not_UTI, n_other,
+         source_file, script_responsible, notes)
+
+# ------------------------------------------------------------------------------
+# New primary-definition audit: old ASB/UTI/Negative versus UTI/Not_UTI.
+# ------------------------------------------------------------------------------
+
+primary_denominator_summary <- if (nrow(current_status) > 0) {
+  bind_rows(
+    summarise_status_counts(current_status) %>%
+      mutate(
+        stage = "current_canonical_status_map",
+        UTI_definition_version = collapse_col(current_status, "UTI_definition_version"),
+        .before = 1
+      ),
+    summarise_status_counts(current_vf_ready) %>%
+      mutate(
+        stage = "current_vf_analysis_ready",
+        UTI_definition_version = collapse_col(current_vf_ready, "UTI_definition_version"),
+        .before = 1
+      ),
+    summarise_status_counts(model_df) %>%
+      mutate(
+        stage = "available_final_model_dataset",
+        UTI_definition_version = collapse_col(model_df, "UTI_definition_version"),
+        .before = 1
+      )
+  )
+} else {
+  tibble()
+}
+
+old_new_movement <- if (nrow(current_status) > 0) {
+  current_status %>%
+    mutate(
+      Infection_Status_old = dplyr::coalesce(
+        as.character(.data$Infection_Status_old),
+        as.character(.data$Infection_Status_legacy)
+      ),
+      Not_UTI_subgroup = dplyr::if_else(
+        .data$UTI_Status == "UTI",
+        NA_character_,
+        as.character(.data$Not_UTI_subgroup)
+      )
+    ) %>%
+    count(
+      .data$Infection_Status_old,
+      .data$UTI_Status,
+      .data$Not_UTI_subgroup,
+      .data$catheter_rule,
+      .data$symptom_rule_met,
+      name = "n"
+    ) %>%
+    arrange(.data$Infection_Status_old, .data$UTI_Status, desc(.data$n))
+} else {
+  tibble()
+}
+
+primary_rule_audit <- if (nrow(current_status) > 0) {
+  current_status %>%
+    count(
+      .data$UTI_Status,
+      .data$catheter_rule,
+      .data$symptom_rule_met,
+      .data$Not_UTI_subgroup,
+      name = "n"
+    ) %>%
+    arrange(.data$UTI_Status, .data$catheter_rule, .data$symptom_rule_met)
+} else {
+  tibble()
+}
 
 # ------------------------------------------------------------------------------
 # Write audit products.
@@ -644,10 +774,16 @@ uti_audit_path <- file.path(DIR_AUDIT, "uti_denominator_audit.csv")
 cascade_path <- file.path(DIR_AUDIT, "denominator_cascade.csv")
 missing_path <- file.path(DIR_AUDIT, "missing_uti_episodes.csv")
 summary_path <- file.path(DIR_AUDIT, "uti_denominator_audit_summary.md")
+primary_denominator_path <- file.path(DIR_AUDIT, "uti_new_primary_denominator_audit.csv")
+old_new_movement_path <- file.path(DIR_AUDIT, "uti_old_new_reclassification_summary.csv")
+primary_rule_audit_path <- file.path(DIR_AUDIT, "uti_new_primary_rule_audit.csv")
 
 readr::write_csv(uti_audit, uti_audit_path)
 readr::write_csv(denominator_cascade, cascade_path)
 readr::write_csv(missing_uti, missing_path)
+readr::write_csv(primary_denominator_summary, primary_denominator_path)
+readr::write_csv(old_new_movement, old_new_movement_path)
+readr::write_csv(primary_rule_audit, primary_rule_audit_path)
 
 retained_uti <- uti_audit %>% filter(.data$retained_in_vf_ready)
 
@@ -686,7 +822,7 @@ summary_lines <- c(
   paste0("- Legacy clinical denominator reproducing 20 UTI: `", legacy_status_path, "`."),
   paste0("- Legacy/root VF PA reproducing the 20 to 16 drop: `", old_vf_pa_path, "`."),
   paste0("- Legacy VF-ready file reproducing 183 VF-ready rows and 16 UTI: `", old_vf_ready_path, "`."),
-  paste0("- Current clinical status map: `", current_status_path, "`."),
+  paste0("- Current primary UTI status map: `", current_status_path, "`."),
   paste0("- Current assembly metadata: `", FILE_METADATA, "`."),
   paste0("- Current WGS QC: `", file.path(DIR_WGS, "qc_summary.csv"), "`."),
   paste0("- Current VF PA: `", current_vf_pa_path, "`."),
@@ -697,6 +833,20 @@ summary_lines <- c(
   "## Denominator Cascade",
   "",
   make_md_table(denominator_cascade),
+  "",
+  "## New Primary UTI/Not_UTI Definition",
+  "",
+  paste0("Definition: `", UTI_DEFINITION_VERSION, "`. The primary estimand is UTI versus all Not_UTI episodes; legacy ASB/UTI/Negative counts are retained only for comparison."),
+  "",
+  make_md_table(primary_denominator_summary),
+  "",
+  "## Old-to-New Reclassification Summary",
+  "",
+  make_md_table(old_new_movement),
+  "",
+  "## Primary Rule Audit",
+  "",
+  make_md_table(primary_rule_audit),
   "",
   "## Clinical UTI Episodes",
   "",
@@ -746,6 +896,9 @@ writeLines(summary_lines, summary_path)
 audit_msg("Wrote %s", uti_audit_path)
 audit_msg("Wrote %s", cascade_path)
 audit_msg("Wrote %s", missing_path)
+audit_msg("Wrote %s", primary_denominator_path)
+audit_msg("Wrote %s", old_new_movement_path)
+audit_msg("Wrote %s", primary_rule_audit_path)
 audit_msg("Wrote %s", summary_path)
 audit_msg("Done. Legacy retained UTI in VF-ready: %s/%s",
           sum(uti_audit$retained_in_vf_ready), nrow(uti_audit))

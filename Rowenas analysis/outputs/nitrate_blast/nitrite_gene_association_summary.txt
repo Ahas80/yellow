@@ -1,0 +1,20 @@
+Nitrate/nitrite gene presence vs dipstick nitrite exploratory analysis
+Run date: 2026-06-12 16:08:06.775055
+Rows with binary nitrite results: 558
+Nitrite positive: 321
+Nitrite negative: 237
+Selected genes tested: 12
+Top unadjusted gene: NarY p = 0.0807 BH q = 0.887
+Any selected gene BH q < 0.05: FALSE
+Any module BH q < 0.05: FALSE
+
+Copy/paste interpretation blurb:
+We compared presence/absence of the selected nitrate/nitrite pathway genes with binary dipstick nitrite results using Fisher exact tests. Fisher tests were used rather than standard logistic regression because most selected genes were present in nearly all isolates, leaving very small absent groups and potentially unstable model estimates. Benjamini-Hochberg correction was used to account for testing multiple genes. These results should be interpreted as exploratory/descriptive because participants can contribute repeated timepoints.
+In this dataset, no selected nitrate/nitrite gene showed clear evidence of association with dipstick nitrite status after BH correction.
+
+Output files:
+- nitrate_gene_nitrite_joined_for_fisher.csv
+- gene_vs_nitrite_fisher_bh.csv
+- module_vs_nitrite_fisher_bh.csv
+- gene_vs_nitrite_descriptive_counts.csv
+- nitrite_gene_association_summary.txt

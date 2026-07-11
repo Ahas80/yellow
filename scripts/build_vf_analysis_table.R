@@ -12,17 +12,20 @@ suppressPackageStartupMessages({
     library(tidyr)
     library(stringr)
 })
+source("00_config.R")
+source("R/pipeline_qc_helpers.R")
 
 cat("=== build_vf_analysis_table.R ===\n")
 
 # ---- Load ----
-vf_pa <- read_csv("results/vf/vf_pa_all.csv", show_col_types = FALSE) %>%
+vf_pa <- read_csv(FILE_VF_PA, show_col_types = FALSE) %>%
     mutate(Participant_id = as.character(Participant_id), tp_lab = as.character(tp_lab))
-status <- read_csv("status_map.csv", show_col_types = FALSE) %>%
+status <- read_csv(FILE_STATUS_MAP, show_col_types = FALSE) %>%
+    prefer_primary_uti_status() %>%
     mutate(Participant_id = as.character(Participant_id))
-gmap <- read_csv("results/vf/gene_map.csv", show_col_types = FALSE)
+gmap <- read_csv(file.path(DIR_VF, "gene_map.csv"), show_col_types = FALSE)
 
-gene_cols <- setdiff(names(vf_pa), c("Participant_id", "tp_lab"))
+gene_cols <- canonical_vf_gene_cols(names(vf_pa))
 
 # ---- Normalize timepoint keys ----
 status <- status %>%

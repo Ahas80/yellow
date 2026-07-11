@@ -30,6 +30,7 @@
 # 1. Load Configuration & Libraries
 source("00_config.R")
 source("R/wgs_helpers.R")
+source("R/pipeline_qc_helpers.R")
 
 suppressPackageStartupMessages({
     library(dplyr)
@@ -55,12 +56,22 @@ log_info("  Size Range:  ", QC_CONFIG$MIN_GENOME_SIZE, " - ", QC_CONFIG$MAX_GENO
 # 3. Load Metadata
 # ------------------------------------------------------------------------------
 if (!file.exists(FILE_METADATA)) stop("Missing ", FILE_METADATA)
-meta_df <- read_csv(FILE_METADATA, show_col_types = FALSE)
+meta_df <- read_csv(FILE_METADATA, show_col_types = FALSE) %>%
+    apply_manual_sample_curation(context = "wgs_qc_metadata")
 
 # Ensure full_path
 if (!"full_path" %in% names(meta_df)) {
     meta_df$full_path <- file.path(DIR_FASTAS, meta_df$file_name)
 }
+
+curation_excluded <- meta_df %>%
+    filter(!(analysis_include_primary %in% TRUE) | !(genomics_expected_include %in% TRUE))
+if (nrow(curation_excluded) > 0) {
+    write_csv(curation_excluded, file.path(DIR_QC, "wgs_qc_manual_curation_excluded_rows.csv"))
+    log_info("Manual curation excludes ", nrow(curation_excluded), " metadata row(s) from active WGS QC denominators.")
+}
+
+meta_df <- filter_primary_genomics(meta_df)
 
 # Filter missing files
 meta_df <- meta_df %>% filter(!is.na(full_path) & file.exists(full_path))
@@ -186,11 +197,14 @@ append_denominator_summary(
     "One QC PASS selected assembly per Participant_id x tp_lab; longcycler preferred over flye when both pass"
 )
 
-# QC selection bias by infection status.  This uses exact-style Fisher testing
+# QC selection bias by primary UTI status.  This uses exact-style Fisher testing
 # because UTI counts are sparse and the chi-square approximation can be invalid.
 status_file <- FILE_STATUS_MAP
 if (file.exists(status_file)) {
     status <- read_csv(status_file, show_col_types = FALSE) %>%
+        prefer_primary_uti_status() %>%
+        apply_manual_sample_curation(context = "wgs_qc_status_bias") %>%
+        filter_primary_analysis() %>%
         mutate(
             Participant_id = as.character(Participant_id),
             tp_lab = if ("tp_lab" %in% names(.)) normalise_timepoint_preserve_events(tp_lab) else normalise_timepoint_preserve_events(Timepoint)
@@ -233,7 +247,7 @@ if (file.exists(status_file)) {
             arrange(desc(pct), desc(n)) %>%
             slice_head(n = 1)
         report <- c(
-            "QC selection bias by infection status",
+            "QC selection bias by primary UTI status",
             sprintf("Generated: %s", format(Sys.time())),
             "",
             capture.output(print(tbl)),
@@ -241,13 +255,13 @@ if (file.exists(status_file)) {
             if (!is.null(fisher_res)) sprintf("Fisher exact p-value: %.5g", fisher_res$p.value) else "Fisher exact test could not be computed.",
             if (nrow(worst_loss) > 0) sprintf("Largest QC loss proportion: %s (%.1f%%, n=%d)",
                                              worst_loss$Infection_Status[1], 100 * worst_loss$pct[1], worst_loss$n[1]) else "No QC losses by status.",
-            "Interpretation: if QC pass differs by status, genomic comparisons may be selection-biased and should be described as conditional on available QC-passing WGS."
+            "Interpretation: if QC pass differs by primary UTI status, genomic comparisons may be selection-biased and should be described as conditional on available QC-passing WGS."
         )
         writeLines(report, file.path(DIR_QC, "qc_selection_bias_report.txt"))
     } else {
         writeLines(
             c(
-                "QC selection bias by infection status",
+                "QC selection bias by primary UTI status",
                 sprintf("Generated: %s", format(Sys.time())),
                 "",
                 "RED: status_map has duplicated Participant_id + tp_lab keys. Bias analysis was not collapsed silently.",

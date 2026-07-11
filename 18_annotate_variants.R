@@ -5,20 +5,17 @@
 #
 # GOAL:
 #   Parse raw SNP variants (from Nucmer output) between consecutive timepoints
-#   and cross-reference their positions against Prokka GFF annotations to
-#   identify which specific genes (or intergenic regions) contain the variants.
+#   for phenotype-switch candidates.  Script 20 adds Prokka GFF gene context.
 #
 # WHY THIS SCRIPT EXISTS:
-#   Knowing that two sequential strains differ by 5 SNPs is useful for
-#   strain tracking. But knowing *where* those SNPs are (e.g., in a particular
-#   virulence gene, AMR gene, or promoter) is critical for explaining
-#   phenotype switching (e.g., ASB to UTI).
+#   Knowing that two sequential strains differ by 5 SNPs is useful for strain
+#   tracking. The raw position table produced here is the input to the deeper
+#   gene-level annotation in 20_variant_annotation_deep.R.
 #
 # ------------------------------------------------------------------------------
 # Purpose:
 #   - Parse raw .snps files from Nucmer (dnadiff).
-#   - Annotate them with gene information from Prokka GFFs.
-#   - Generate a detailed variant table for phenotype switch candidates.
+#   - Generate a variant position table for phenotype switch candidates.
 #
 # Input:
 #   - results/longitudinal/phenotype_switch_candidates.csv
@@ -44,6 +41,12 @@ msg("Starting 18_annotate_variants.R")
 cand_file <- file.path(DIR_RESULTS, "longitudinal", "phenotype_switch_candidates.csv")
 if (!file.exists(cand_file)) stop("No candidates file found.")
 candidates <- read_csv(cand_file, show_col_types = FALSE)
+candidates <- candidates %>%
+    mutate(
+        Participant_id = as.character(Participant_id),
+        From_Time = normalise_timepoint_preserve_events(From_Time),
+        To_Time = normalise_timepoint_preserve_events(To_Time)
+    )
 
 # 2. Parse .snps Files
 # ------------------------------------------------------------------------------
@@ -98,7 +101,7 @@ parse_snps <- function(snps_file, pid, tA, tB) {
 cache_dir <- file.path(DIR_RESULTS, "longitudinal", "nucmer_cache")
 all_variants <- list()
 
-for (i in 1:nrow(candidates)) {
+for (i in seq_len(nrow(candidates))) {
     row <- candidates[i, ]
     pid <- row$Participant_id
     tA <- row$From_Time
@@ -115,7 +118,18 @@ for (i in 1:nrow(candidates)) {
     }
 }
 
-final_variants <- bind_rows(all_variants)
+empty_variants <- tibble::tibble(
+    Pos_Ref = integer(),
+    Ref_Base = character(),
+    Qry_Base = character(),
+    Pos_Qry = integer(),
+    Participant_id = character(),
+    From_Time = character(),
+    To_Time = character(),
+    Type = character()
+)
+
+final_variants <- if (length(all_variants) > 0) bind_rows(all_variants) else empty_variants
 
 # 4. Save & Report
 # ------------------------------------------------------------------------------

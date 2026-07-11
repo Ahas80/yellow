@@ -17,7 +17,8 @@
 #
 #   It also runs mixed-effects logistic regression (GLMM) on selected
 #   "focus genes" (e.g., fimH, papGII, hlyA, cnf1) to test their association
-#   with UTI vs ASB, accounting for within-participant correlation.
+#   with primary UTI vs Not_UTI status, accounting for within-participant
+#   correlation.
 #
 # INPUTS:
 #   - results/vf/vf_hits_all.rds          (from 02_gene_presence_analysis.R)
@@ -27,7 +28,7 @@
 #   - results/vf/annotated_gene_table.csv       (gene-level annotation)
 #   - results/vf/gene_map.csv                   (Gene → Category mapping)
 #   - results/vf/per_sample_category_counts.csv  (category counts per isolate)
-#   - results/vf/diff_focus_genes_UTI_vs_ASB_glmm.csv  (focus gene GLMM)
+#   - results/vf/diff_focus_genes_UTI_vs_Not_UTI_glmm.csv  (focus gene GLMM)
 #   - plots/vf/                                 (category and gene plots)
 # ==============================================================================
 #
@@ -37,11 +38,12 @@
 # Biological/Statistical purpose:
 #   - Annotates detected genes with functional categories.
 #   - Tests whether specific virulence factors (e.g., adhesins, toxins) are
-#     associated with UTI vs ASB using GLMMs to account for repeated measures.
+#     associated with UTI vs Not_UTI using GLMMs to account for repeated measures.
 # ==============================================================================
 
 # 1. Load Configuration & Libraries
 source("00_config.R")
+source("R/pipeline_qc_helpers.R")
 suppressPackageStartupMessages({
   library(dplyr)
   library(tidyr)
@@ -222,13 +224,16 @@ if (nrow(nitrate_long)) {
 FILE_STATUS_MAP <- file.path(DIR_CLINICAL, "status_map.csv")
 
 if (file.exists(FILE_STATUS_MAP)) {
-  status_map <- read_csv(FILE_STATUS_MAP, show_col_types = FALSE)
+  status_map <- read_csv(FILE_STATUS_MAP, show_col_types = FALSE) %>%
+    prefer_primary_uti_status()
   if (!"tp_lab" %in% names(status_map)) {
     status_map <- bind_cols(status_map, tp_norm(status_map$Timepoint))
   }
   status_map <- status_map %>%
-    select(Participant_id, tp_lab, Infection_Status) %>%
+    select(any_of(c("Participant_id", "tp_lab", "Infection_Status", "UTI_Status",
+                    "UTI_binary", "Not_UTI_subgroup", "Batch"))) %>%
     distinct()
+  if (!"Batch" %in% names(status_map)) status_map$Batch <- NA_character_
 
   # Focus gene list (subset for brevity in example, expand as needed)
   focus_genes <- c("afa/draBC", "hlyA", "cnf1", "iroN", "fyuA", "papA", "papC", "iutA", "kpsM II")
@@ -248,7 +253,7 @@ if (file.exists(FILE_STATUS_MAP)) {
 
     samples_focus <- status_map %>% left_join(focus_pa, by = c("Participant_id", "tp_lab"))
 
-    # GLMM Analysis (UTI vs ASB)
+    # GLMM Analysis (UTI vs Not_UTI)
     focus_cols <- intersect(names(samples_focus), focus_genes)
     if (length(focus_cols) > 0) {
       if (!requireNamespace("lme4", quietly = TRUE)) {
@@ -256,9 +261,9 @@ if (file.exists(FILE_STATUS_MAP)) {
       } else {
         samples_focus <- samples_focus %>%
           mutate(across(all_of(focus_cols), ~ replace_na(., 0L))) %>%
-          filter(Infection_Status %in% c("UTI", "ASB")) %>%
+          filter(UTI_Status %in% c("UTI", "Not_UTI")) %>%
           mutate(
-            Outcome = ifelse(Infection_Status == "UTI", 1, 0),
+            Outcome = as.integer(UTI_binary),
             Participant_id = as.factor(Participant_id),
             # [STAT] Timepoint as numeric for trend test (if defined)
             tp_num = suppressWarnings(as.integer(str_extract(tp_lab, "\\d+"))),
@@ -341,8 +346,8 @@ if (file.exists(FILE_STATUS_MAP)) {
           mutate(p_adj = p.adjust(p, method = "BH")) %>%
           arrange(p_adj)
 
-        write_csv(gene_enrichment, file.path(DIR_VF, "diff_focus_genes_UTI_vs_ASB_glmm.csv"))
-        message("✓ GLMM results written to diff_focus_genes_UTI_vs_ASB_glmm.csv")
+        write_csv(gene_enrichment, file.path(DIR_VF, "diff_focus_genes_UTI_vs_Not_UTI_glmm.csv"))
+        message("✓ GLMM results written to diff_focus_genes_UTI_vs_Not_UTI_glmm.csv")
       }
     }
   }

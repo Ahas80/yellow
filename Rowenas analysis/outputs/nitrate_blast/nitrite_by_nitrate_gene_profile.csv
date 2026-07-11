@@ -1,0 +1,3 @@
+nitrate_profile_01,genes_absent,genes_present,genes_screened,all_12_screened_genes_present,narA_complete,narZ_complete_available_refs,nar_regulators_complete,total_rows,matched_binary_n,positive_n,negative_n,missing_or_unmatched_n,positive_pct_among_matched,distinct_participants,distinct_isolates
+111111111111,,12,12,TRUE,TRUE,TRUE,TRUE,3,3,2,1,0,66.7,3,3
+111111111110,NarZ,11,12,FALSE,TRUE,FALSE,TRUE,2,2,1,1,0,50,2,2

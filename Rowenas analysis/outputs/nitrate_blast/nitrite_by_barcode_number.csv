@@ -1,0 +1,6 @@
+barcode_number,total_rows,matched_binary_n,positive_n,negative_n,missing_or_unmatched_n,positive_pct_among_matched,distinct_participants,distinct_isolates
+20,1,1,1,0,0,100,1,1
+21,1,1,1,0,0,100,1,1
+22,1,1,1,0,0,100,1,1
+01,1,1,0,1,0,0,1,1
+31,1,1,0,1,0,0,1,1

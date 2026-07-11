@@ -6,8 +6,8 @@
 # GOAL:
 #   Construct longitudinal timelines for each participant: assign strain IDs
 #   based on pairwise similarity, track strain persistence duration, and
-#   identify "phenotype-switch" events where the same strain changes clinical
-#   status (e.g., ASB at T0 → UTI at T2).  These switch events are the
+#   identify "phenotype-switch" events where the same strain changes primary
+#   primary UTI status (e.g., Not_UTI at T0 -> UTI at T2). These switch events are the
 #   candidates for deep within-host evolution analysis in script 16.
 #
 # ------------------------------------------------------------------------------
@@ -26,11 +26,12 @@
 # Purpose:
 #   - Assigns global "Strain IDs" to isolates based on pairwise "Same" clusters.
 #   - Tracks persistence duration.
-#   - Identifies specific "Phenotype Switch" events (Same Strain, ASB <-> UTI)
+#   - Identifies specific "Phenotype Switch" events (Same Strain, Not_UTI <-> UTI)
 #     for downstream evolutionary analysis.
 # ==============================================================================
 
 source("00_config.R")
+source("R/pipeline_qc_helpers.R")
 source("R/plot_helpers.R")
 suppressPackageStartupMessages({
     library(dplyr)
@@ -47,10 +48,15 @@ msg("Starting 15_longitudinal_patterns.R")
 
 # 1. Load Data
 # ------------------------------------------------------------------------------
-# Clinical Status
-status_file <- FILE_STATUS_MAP_POSTER
-if (!file.exists(status_file)) status_file <- FILE_STATUS_MAP
-status_map <- read_csv(status_file, show_col_types = FALSE)
+# Clinical Status. Prefer the poster-timepoint file only when it is fresh and
+# already carries the primary UTI_Status columns; otherwise use status_map.csv so
+# stale legacy ASB/UTI/Negative labels cannot re-enter timelines.
+status_map <- read_primary_status_map(
+    prefer_poster = TRUE,
+    require_fresh = TRUE,
+    caller = "15_longitudinal_patterns.R"
+)
+status_file <- attr(status_map, "source_file") %||% FILE_STATUS_MAP
 msg("Loaded %d episodes from %s", nrow(status_map), basename(status_file))
 
 # Pairwise Metrics
@@ -161,11 +167,10 @@ timeline <- timeline %>%
             !is.na(Time_Order_Fallback) ~ "Routine_timepoint_number",
             TRUE ~ "Unavailable"
         ),
-        # Clean Infection Status for plotting
+        # Clean primary UTI status for plotting
         Status_Simple = case_when(
-            Infection_Status == "UTI" ~ "UTI",
-            Infection_Status == "ASB" ~ "ASB",
-            Infection_Status == "Negative" ~ "Negative",
+            UTI_Status == "UTI" ~ "UTI",
+            UTI_Status == "Not_UTI" ~ "Not_UTI",
             TRUE ~ "Other"
         )
     ) %>%
@@ -219,7 +224,7 @@ persistence_stats <- timeline %>%
         timepoints = paste(Timepoint, collapse = "->"),
         statuses = paste(Status_Simple, collapse = "->"),
         has_UTI = any(Status_Simple == "UTI"),
-        has_ASB = any(Status_Simple == "ASB"),
+        has_Not_UTI = any(Status_Simple == "Not_UTI"),
         .groups = "drop"
     ) %>%
     arrange(desc(n_timepoints))
@@ -234,15 +239,15 @@ write_csv(transitions, file.path(out_dir, "transitions.csv"))
 write_csv(switch_events, file.path(out_dir, "phenotype_switch_candidates.csv"))
 write_csv(persistence_stats, file.path(out_dir, "strain_persistence_stats.csv"))
 
-asb_uti_transition_summary <- transitions %>%
+not_uti_uti_transition_summary <- transitions %>%
     summarise(
-        clinical_ASB_to_UTI = sum(Prev_Status == "ASB" & Status_Simple == "UTI", na.rm = TRUE),
-        same_strain_ASB_to_UTI = sum(Prev_Status == "ASB" & Status_Simple == "UTI" & Same_Strain %in% TRUE, na.rm = TRUE),
-        uricult_related_ASB_to_UTI = sum(Prev_Status == "ASB" & Status_Simple == "UTI" &
+        clinical_Not_UTI_to_UTI = sum(Prev_Status == "Not_UTI" & Status_Simple == "UTI", na.rm = TRUE),
+        same_strain_Not_UTI_to_UTI = sum(Prev_Status == "Not_UTI" & Status_Simple == "UTI" & Same_Strain %in% TRUE, na.rm = TRUE),
+        uricult_related_Not_UTI_to_UTI = sum(Prev_Status == "Not_UTI" & Status_Simple == "UTI" &
                                              (str_detect(Prev_Time, regex("uricult", ignore_case = TRUE)) |
                                                 str_detect(tp_lab, regex("uricult", ignore_case = TRUE))), na.rm = TRUE)
     )
-write_csv(asb_uti_transition_summary, file.path(out_dir, "asb_uti_transition_summary.csv"))
+write_csv(not_uti_uti_transition_summary, file.path(out_dir, "not_uti_uti_transition_summary.csv"))
 
 append_denominator_summary(
     timeline,
@@ -277,23 +282,21 @@ if (nrow(plot_data) > 0) {
         geom_line(aes(group = Participant_id), color = "grey80") +
         # Points colored by Status, shaped by Strain (if feasible, or just Status)
         geom_point(aes(color = Status_Simple, shape = Status_Simple), size = 3) +
-        # Add Strain ID labels (optional, might be cluttered)
-        # geom_text(aes(label = Strain_ID), vjust = -0.5, size = 2) +
-        scale_colour_infection() +
+        scale_colour_uti_status(na.value = "grey75") +
         # Use filled shapes so colors are visible (not hollow circles)
         scale_shape_manual(
-            name = "Infection Status",
-            values = c("UTI" = 16, "ASB" = 17, "Negative" = 15), # 16=filled circle, 17=filled triangle, 15=filled square
-            breaks = c("UTI", "ASB", "Negative")
+            name = "Primary UTI status",
+            values = c("UTI" = 16, "Not_UTI" = 17, "Other" = 15),
+            breaks = c("UTI", "Not_UTI", "Other")
         ) +
         theme_minimal() +
         labs(
-            title = "Longitudinal Infection Status (Participants > 1 Timepoint)",
+            title = "Longitudinal Primary UTI Status (Participants > 1 Timepoint)",
             subtitle = "Participants with >1 timepoint",
             x = "Timepoint",
             y = "Participant",
-            color = "Infection Status",
-            shape = "Infection Status"
+            color = "Primary UTI status",
+            shape = "Primary UTI status"
         ) +
         theme(axis.text.y = element_text(size = 6))
 

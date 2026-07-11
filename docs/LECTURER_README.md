@@ -123,16 +123,18 @@ Technical workflow, computational requirements, dependencies
 ### Approach
 1. Longitudinal sampling (T0-T4 + Uricult symptom events)
 2. Whole-genome sequencing (WGS)
-3. SNP-based strain tracking (≤10 SNPs = same strain)
+3. SNP-based strain tracking (0-25 SNPs = strong same strain)
 4. Gene content comparison (VF, plasmids, AMR)
 5. Clinical phenotype association (GWAS)
 
 ### Key Finding
-**Yes!** We identified 6 "phenotype switch" events where:
-- Same bacterial strain (0-12 SNPs)
-- Different clinical phenotype (ASB → UTI or vice versa)
-- **No gene gain/loss** during transition
-- ∴ **Host factors drive symptoms**, not bacterial evolution
+Under the current primary UTI-vs-Not_UTI definition, switch events should be read from the freshly generated `results/longitudinal/phenotype_switch_candidates.csv`.
+
+Candidate switch events are those where:
+- Strong same-strain evidence under the current 0-25 SNP threshold
+- Different primary clinical status (`Not_UTI` → `UTI` or reverse)
+- Gene-content and SNP evidence can then be inspected descriptively
+- ∴ Interpret host-versus-bacterial mechanisms cautiously because the UTI denominator is small
 
 ---
 
@@ -205,7 +207,7 @@ Technical workflow, computational requirements, dependencies
 5. Within-host evolution analysis
 
 **Key Finding:**  
-Yes! We identified "phenotype switch events" where the **same bacterial strain** (≤10 SNPs) caused ASB at one timepoint and UTI at another in the same patient.
+Yes! We identified "phenotype switch events" where the **same bacterial strain** (0-25 SNPs under the current same-strain rule) caused ASB at one timepoint and UTI at another in the same patient.
 
 **Implication:**  
 Symptoms may be driven by **host factors** (catheter status, immune state) rather than bacterial virulence alone.

@@ -4,12 +4,12 @@
 # ==============================================================================
 #
 # GOAL:
-#   Build clinical-first ASB->UTI and phenotype-switch case-study tables. Every
+#   Build clinical-first Not_UTI->UTI and phenotype-switch case-study tables. Every
 #   ordered clinical transition is retained, including cases with missing WGS/VF,
 #   and genomic/VF/module/score evidence is layered on only where available.
 #
 # METHOD:
-#   1. Load ordered clinical status data, canonical VF data, module outputs,
+#   1. Load ordered primary UTI status data, canonical VF data, module outputs,
 #      score outputs, longitudinal outputs, and strain metrics.
 #   2. Build a complete ordered transition index from clinical episodes.
 #   3. Mark WGS/VF/module/score/strain availability for both endpoints.
@@ -49,7 +49,7 @@ msg("Starting 28_vf_transition_case_studies.R")
 ensure_dir(DIR_VF)
 ensure_dir(DIR_PLOTS_VF)
 
-SNP_THRESHOLD <- 50
+SNP_THRESHOLD <- strain_snp_threshold()
 
 # ==============================================================================
 # 1. HELPERS
@@ -135,6 +135,9 @@ if (!file.exists(FILE_VF_READY)) stop("Missing ", FILE_VF_READY)
 stop_if_stale(FILE_VF_READY, FILE_VF_PA, "vf_analysis_ready.csv", "vf_pa_all.csv")
 
 vf <- read_csv(FILE_VF_READY, show_col_types = FALSE) %>%
+  prefer_primary_uti_status() %>%
+  apply_manual_sample_curation(context = "28_vf_ready") %>%
+  filter_primary_genomics() %>%
   mutate(
     Participant_id = as.character(Participant_id),
     tp_lab = normalise_tp_label(tp_lab)
@@ -163,25 +166,25 @@ vf_key_set <- paste(vf$Participant_id, vf$tp_lab, sep = "|")
 meta_cols <- c("Participant_id", "tp_lab", "Episode_ID", "Event_type", "Collection_Date",
                "Infection_Status", "Batch", "ST", "vf_count_total",
                "total_vf_count_all", "total_vf_count_curated",
-               "total_vf_count_upec_candidate", "total_vf_count_unassigned",
-               "low_confidence_count", "n_timepoints")
+               "total_vf_count_unassigned", "low_confidence_count", "n_timepoints")
 cat_cols <- grep("^cat_", names(vf), value = TRUE)
 gene_cols <- canonical_vf_gene_cols(names(vf))
 
-status_poster <- FILE_STATUS_MAP_POSTER
+status_file <- select_primary_status_map(
+  prefer_poster = TRUE,
+  require_fresh = TRUE,
+  caller = "28_vf_transition_case_studies.R"
+)
 status_plain <- FILE_STATUS_MAP
-if (!file.exists(status_plain)) stop("Missing ", status_plain, ". Run 00b_classify_episodes.R first.")
-
-use_poster <- file.exists(status_poster) &&
-  file.info(status_poster)$mtime >= file.info(status_plain)$mtime
-status_file <- if (use_poster) status_poster else status_plain
-if (!use_poster && file.exists(status_poster)) {
-  msg("WARNING: status_map_with_poster_tp.csv is older than status_map.csv; using status_map.csv with fallback ordering.")
-}
 
 clinical_raw <- read_csv(status_file, show_col_types = FALSE)
+clinical_raw <- prefer_primary_uti_status(clinical_raw, allow_legacy_fallback = FALSE) %>%
+  apply_manual_sample_curation(context = "28_clinical_status") %>%
+  filter_primary_analysis()
 if (!"Collection_Date" %in% names(clinical_raw) && file.exists(status_plain)) {
   status_dates <- read_csv(status_plain, show_col_types = FALSE) %>%
+    apply_manual_sample_curation(context = "28_status_dates") %>%
+    filter_primary_analysis() %>%
     mutate(Participant_id = as.character(Participant_id),
            Episode_ID = as.character(Episode_ID)) %>%
     select(any_of(c("Participant_id", "Episode_ID", "Collection_Date")))
@@ -224,7 +227,8 @@ pairwise <- if (file.exists(f_pair)) {
       Participant_id_B = as.character(Participant_id_B),
       Timepoint_A = normalise_tp_label(Timepoint_A),
       Timepoint_B = normalise_tp_label(Timepoint_B)
-    )
+    ) %>%
+    prepare_pairwise_for_strain_context()
 } else NULL
 
 f_switch <- file.path(DIR_RESULTS, "longitudinal", "phenotype_switch_candidates.csv")
@@ -242,6 +246,7 @@ has_mod <- file.exists(f_modmap) && file.exists(f_modep)
 mod_map <- if (has_mod) read_csv(f_modmap, show_col_types = FALSE) else tibble()
 mod_ep <- if (has_mod) {
   read_csv(f_modep, show_col_types = FALSE) %>%
+    prefer_primary_uti_status() %>%
     mutate(Participant_id = as.character(Participant_id), tp_lab = normalise_tp_label(tp_lab))
 } else tibble()
 
@@ -249,6 +254,7 @@ f_scores <- file.path(DIR_VF, "vf_score_table.csv")
 has_scores <- file.exists(f_scores)
 score_tbl <- if (has_scores) {
   read_csv(f_scores, show_col_types = FALSE) %>%
+    prefer_primary_uti_status() %>%
     mutate(Participant_id = as.character(Participant_id), tp_lab = normalise_tp_label(tp_lab))
 } else tibble()
 
@@ -315,7 +321,7 @@ clinical_ordered <- clinical %>%
     transition_type = paste(from_status, to_status, sep = "->"),
     transition_key = paste(Participant_id, from_tp, to_tp, sep = "|"),
     wgs_transition_key = paste(Participant_id, from_vf_tp, to_vf_tp, sep = "|"),
-    is_asb_to_uti = from_status == "ASB" & to_status == "UTI",
+    is_not_uti_to_uti = from_status == "Not_UTI" & to_status == "UTI",
     is_uricult_transition = str_detect(from_tp, regex("uricult", ignore_case = TRUE)) |
       str_detect(to_tp, regex("uricult", ignore_case = TRUE)),
     time_order_source = paste(from_order_source, to_order_source, sep = " -> "),
@@ -339,8 +345,8 @@ clinical_ordered <- clinical %>%
     } else FALSE,
     in_script15_switch_candidates = transition_key %in% switches$switch_key,
     case_priority = case_when(
-      is_asb_to_uti & has_vf_pair ~ "Primary_ASB_to_UTI_WGS_linked",
-      is_asb_to_uti & !has_vf_pair ~ "ASB_to_UTI_missing_genomics",
+      is_not_uti_to_uti & has_vf_pair ~ "Primary_Not_UTI_to_UTI_WGS_linked",
+      is_not_uti_to_uti & !has_vf_pair ~ "Not_UTI_to_UTI_missing_genomics",
       in_script15_switch_candidates ~ "Script15_phenotype_switch_context",
       TRUE ~ "Context_transition"
     )
@@ -361,16 +367,16 @@ clinical_ordered <- clinical %>%
          from_plot_label, to_plot_label,
          from_placement_confidence, to_placement_confidence,
          transition_type, transition_key, wgs_transition_key,
-         is_asb_to_uti, is_consecutive_observed,
+         is_not_uti_to_uti, is_consecutive_observed,
          has_wgs_from, has_wgs_to, has_vf_pair, has_module_pair, has_score_pair,
          is_uricult_transition, timing_caveat,
          in_script15_switch_candidates, case_priority)
 
 case_index <- clinical_ordered
 
-msg("Indexed %d clinical transitions; ASB->UTI=%d; WGS-linked ASB->UTI=%d",
-    nrow(case_index), sum(case_index$is_asb_to_uti, na.rm = TRUE),
-    sum(case_index$is_asb_to_uti & case_index$has_vf_pair, na.rm = TRUE))
+msg("Indexed %d clinical transitions; Not_UTI->UTI=%d; WGS-linked Not_UTI->UTI=%d",
+    nrow(case_index), sum(case_index$is_not_uti_to_uti, na.rm = TRUE),
+    sum(case_index$is_not_uti_to_uti & case_index$has_vf_pair, na.rm = TRUE))
 
 # ==============================================================================
 # 5. STRAIN CONTEXT
@@ -387,78 +393,49 @@ for (i in seq_len(nrow(case_index))) {
   vf_to <- vf %>% filter(Participant_id == pid, tp_lab == tp_t)
   st_from <- if (nrow(vf_from) > 0) normalise_st_label(vf_from$ST[1]) else NA_character_
   st_to <- if (nrow(vf_to) > 0) normalise_st_label(vf_to$ST[1]) else NA_character_
-  st_known_pair <- !is.na(st_from) & !is.na(st_to)
-  same_st <- isTRUE(st_known_pair && st_from == st_to)
-
-  snps <- NA_real_
-  avg_id <- NA_real_
-  classification <- NA_character_
-  rule_used <- NA_character_
-  inc_jaccard <- NA_real_
-  vf_jaccard_pairwise <- NA_real_
-
-  if (!is.null(evol)) {
-    ev <- evol %>% filter(Participant_id == pid, From_Time == tp_f, To_Time == tp_t)
-    if (nrow(ev) == 0) ev <- evol %>% filter(Participant_id == pid, From_Time == tp_t, To_Time == tp_f)
-    if (nrow(ev) > 0) {
-      snps <- ev$SNPs[1]
-      avg_id <- ev$AvgIdentity[1]
-    }
-  }
-
-  if (!is.null(pairwise)) {
-    pw <- pairwise %>% filter(
-      (Participant_id_A == pid & Timepoint_A == tp_f & Participant_id_B == pid & Timepoint_B == tp_t) |
-        (Participant_id_A == pid & Timepoint_A == tp_t & Participant_id_B == pid & Timepoint_B == tp_f)
-    )
-    if (nrow(pw) > 0) {
-      if (is.na(snps)) snps <- pw$TotalSNPs[1]
-      if (is.na(avg_id)) avg_id <- pw$AvgIdentity[1]
-      classification <- pw$Classification[1]
-      rule_used <- pw$RuleUsed[1]
-      inc_jaccard <- pw$Inc_Jaccard[1]
-      vf_jaccard_pairwise <- pw$VF_Jaccard[1]
-    }
-  }
-
-  same_strain_evidence <- case_when(
-    !row$has_vf_pair ~ "Missing WGS/VF endpoint",
-    !is.na(classification) & classification == "Same" & !is.na(snps) & snps <= SNP_THRESHOLD ~ "Strong",
-    same_st & !is.na(snps) & snps <= SNP_THRESHOLD ~ "Strong",
-    !st_known_pair & !is.na(snps) & snps <= SNP_THRESHOLD ~ "Strong (low SNP distance; ST unavailable/non-typable)",
-    !is.na(classification) & classification == "Different" ~ "Replacement likely",
-    st_known_pair & !same_st ~ "Replacement likely",
-    same_st & is.na(snps) ~ "Moderate (known ST match, SNPs unknown)",
-    TRUE ~ "Unknown"
+  ctx <- lookup_strain_context(
+    pairwise = pairwise,
+    pid = pid,
+    tp_from = tp_f,
+    tp_to = tp_t,
+    ST_from = st_from,
+    ST_to = st_to,
+    has_vf_pair = row$has_vf_pair,
+    evol = evol,
+    threshold = SNP_THRESHOLD
   )
 
   strain_ctx <- bind_rows(strain_ctx, tibble(
     case_id = row$case_id,
     Participant_id = pid,
-    ST_from = st_from,
-    ST_to = st_to,
-    same_ST = same_st,
-    SNPs = snps,
-    AvgIdentity = avg_id,
-    Classification = classification,
-    RuleUsed = rule_used,
-    VF_Jaccard_pairwise = vf_jaccard_pairwise,
-    Inc_Jaccard = inc_jaccard,
-    same_strain_evidence = same_strain_evidence,
-    replacement_flag = same_strain_evidence == "Replacement likely",
-    strain_context_note = case_when(
-      !row$has_vf_pair ~ "One or both endpoints lack WGS/VF data",
-      str_detect(same_strain_evidence, "^Strong") ~ "Low-SNP/same-strain evidence supports persistence",
-      same_strain_evidence == "Replacement likely" ~ "Different ST or pairwise classification suggests replacement",
-      TRUE ~ "Strain context uncertain"
-    )
+    from_vf_tp = tp_f,
+    to_vf_tp = tp_t,
+    ST_from = ctx$ST_from,
+    ST_to = ctx$ST_to,
+    same_ST = ctx$same_ST,
+    SNPs = ctx$SNPs,
+    AvgIdentity = ctx$AvgIdentity,
+    Pairwise_Classification = ctx$Pairwise_Classification,
+    Pairwise_RuleUsed = ctx$Pairwise_RuleUsed,
+    Classification = ctx$Classification,
+    RuleUsed = ctx$RuleUsed,
+    VF_Jaccard_pairwise = ctx$VF_Jaccard_pairwise,
+    Inc_Jaccard = ctx$Inc_Jaccard,
+    snp_strain_context = as.character(ctx$snp_strain_context),
+    st_lineage_context = as.character(ctx$st_lineage_context),
+    pair_interpretation = as.character(ctx$pair_interpretation),
+    same_strain_evidence = ctx$same_strain_evidence,
+    strain_context_level = as.character(ctx$strain_context_level),
+    replacement_flag = ctx$replacement_flag,
+    strain_context_note = ctx$strain_context_note,
+    same_strain_snp_threshold = ctx$same_strain_snp_threshold
   ))
 }
 
 case_index <- case_index %>%
-  left_join(strain_ctx %>% select(case_id, has_strain_context = same_strain_evidence),
+  left_join(strain_ctx %>% select(case_id, has_strain_context = pair_interpretation),
             by = "case_id") %>%
-  mutate(has_strain_context = !is.na(has_strain_context) & has_strain_context != "Missing WGS/VF endpoint")
+  mutate(has_strain_context = !is.na(has_strain_context) & has_strain_context != "Missing strain metrics")
 
 # ==============================================================================
 # 6. GENE, MODULE, AND SCORE CHANGES
@@ -470,14 +447,19 @@ case_summary <- tibble()
 
 module_pres_cols <- if (has_mod) grep("^mod_.*_present$", names(mod_ep), value = TRUE) else character()
 score_names <- if (has_scores) {
-  intersect(c("total_vf_count_all", "total_vf_count_curated",
-              "total_vf_count_upec_candidate", "total_vf_count_unassigned",
-              "low_confidence_count", "vf_count_total", "vf_count_curated", "vf_count_unassigned",
-              "upec_gene_score_unweighted", "upec_gene_score",
-              "module_count_present", "n_modules_present",
-              "upec_module_score_unweighted", "n_upec_modules_present",
-              "upec_score_fraction"), names(score_tbl))
+  intersect(c("expec_marker_count", "upec_system_count", "upec_system_fraction",
+              "total_vf_count_all", "total_vf_count_curated",
+              "total_vf_count_unassigned", "low_confidence_count"), names(score_tbl))
 } else character()
+score_label_lookup <- c(
+  expec_marker_count = "ExPEC-like marker count",
+  upec_system_count = "UPEC systems present",
+  upec_system_fraction = "UPEC system fraction",
+  total_vf_count_all = "All VF genes",
+  total_vf_count_curated = "Curated VF genes",
+  total_vf_count_unassigned = "Unassigned VF genes",
+  low_confidence_count = "Low-confidence VF genes"
+)
 
 for (i in seq_len(nrow(case_index))) {
   row <- case_index[i, ]
@@ -498,7 +480,7 @@ for (i in seq_len(nrow(case_index))) {
     to_vf_tp = tp_t,
     from_status = row$From_Status,
     to_status = row$To_Status,
-    is_asb_to_uti = row$is_asb_to_uti,
+    is_not_uti_to_uti = row$is_not_uti_to_uti,
     has_wgs_from = row$has_wgs_from,
     has_wgs_to = row$has_wgs_to,
     has_vf_pair = row$has_vf_pair,
@@ -511,7 +493,17 @@ for (i in seq_len(nrow(case_index))) {
     ST_to = sc$ST_to,
     same_ST = sc$same_ST,
     SNPs = sc$SNPs,
+    AvgIdentity = sc$AvgIdentity,
+    Pairwise_Classification = sc$Pairwise_Classification,
+    Pairwise_RuleUsed = sc$Pairwise_RuleUsed,
+    snp_strain_context = sc$snp_strain_context,
+    st_lineage_context = sc$st_lineage_context,
+    pair_interpretation = sc$pair_interpretation,
     same_strain_evidence = sc$same_strain_evidence,
+    strain_context_level = sc$strain_context_level,
+    replacement_flag = sc$replacement_flag,
+    strain_context_note = sc$strain_context_note,
+    same_strain_snp_threshold = sc$same_strain_snp_threshold,
     vf_count_from = NA_real_,
     vf_count_to = NA_real_,
     n_vf_genes_gained = NA_integer_,
@@ -525,6 +517,9 @@ for (i in seq_len(nrow(case_index))) {
     module_jaccard = NA_real_,
     modules_gained = NA_character_,
     modules_lost = NA_character_,
+    delta_expec_marker_count = NA_real_,
+    delta_upec_system_count = NA_real_,
+    delta_upec_system_fraction = NA_real_,
     delta_total_vf_burden = NA_real_,
     delta_curated_vf_burden = NA_real_,
     delta_upec_module_score = NA_real_,
@@ -664,12 +659,14 @@ for (i in seq_len(nrow(case_index))) {
         case_id = row$case_id,
         Participant_id = pid,
         score_name = score_name,
+        score_label = ifelse(score_name %in% names(score_label_lookup),
+                             unname(score_label_lookup[score_name]), score_name),
         from_value = fv,
         to_value = tv,
         delta = tv - fv,
         absolute_delta = abs(tv - fv),
         direction = case_when(tv > fv ~ "increased", tv < fv ~ "decreased", TRUE ~ "stable"),
-        interpretation = "Descriptive transition-level score change"
+        interpretation = "Descriptive transition-level supplementary endpoint change"
       ))
     }
     get_delta <- function(name_options) {
@@ -679,9 +676,12 @@ for (i in seq_len(nrow(case_index))) {
     }
     summary_row <- summary_row %>%
       mutate(
+        delta_expec_marker_count = get_delta("expec_marker_count"),
+        delta_upec_system_count = get_delta("upec_system_count"),
+        delta_upec_system_fraction = get_delta("upec_system_fraction"),
         delta_total_vf_burden = get_delta(c("total_vf_count_all", "vf_count_total")),
         delta_curated_vf_burden = get_delta(c("total_vf_count_curated", "vf_count_curated")),
-        delta_upec_module_score = get_delta(c("upec_module_score_unweighted", "n_upec_modules_present"))
+        delta_upec_module_score = get_delta("upec_system_count")
       )
   }
 
@@ -697,27 +697,45 @@ for (i in seq_len(nrow(case_index))) {
       ),
       case_class = case_when(
         !has_vf_pair ~ "G: Clinical transition, missing genomic endpoint",
-        same_strain_evidence == "Replacement likely" ~ "D: Strain replacement",
-        str_detect(same_strain_evidence, "^Strong") &
+        pair_interpretation == "Conflict: SNP same-strain but ST differs" ~
+          "H: SNP/ST conflict, manual review",
+        pair_interpretation == "Replacement likely" ~ "D: Strain replacement",
+        snp_strain_context == "Strong same strain" &
           coalesce(n_vf_genes_gained, 0L) == 0 & coalesce(n_vf_genes_lost, 0L) == 0 &
           coalesce(n_modules_gained, 0L) == 0 & coalesce(n_modules_lost, 0L) == 0 ~
           "A: Same strain, stable VF/module profile",
-        str_detect(same_strain_evidence, "^Strong") &
+        snp_strain_context == "Strong same strain" &
           (coalesce(n_modules_gained, 0L) > 0 | coalesce(n_modules_lost, 0L) > 0) ~
           "B: Same strain, module change",
-        str_detect(same_strain_evidence, "^Strong") &
+        snp_strain_context == "Strong same strain" &
           (coalesce(n_vf_genes_gained, 0L) > 0 | coalesce(n_vf_genes_lost, 0L) > 0) ~
           "C: Same strain, gene-level VF change",
-        str_detect(same_strain_evidence, "^Moderate") ~
-          "E: Probable same strain, SNP missing",
-        TRUE ~ "F: Uncertain"
+        pair_interpretation == "Same lineage, not same strain by SNP" ~
+          "E1: Same ST lineage, not same strain by SNP",
+        pair_interpretation == "ST-consistent, SNP missing" ~
+          "E2: ST-consistent, SNP missing",
+        snp_strain_context == "Above same-strain SNP threshold" ~
+          "E3: Above same-strain SNP threshold",
+        pair_interpretation == "Missing strain metrics" ~
+          "F: Missing strain metrics",
+        TRUE ~ "F: Missing or uncertain SNP evidence"
       ),
       interpretation_short = case_when(
         !has_vf_pair ~ "Clinical transition retained, but VF/genomic comparison is unavailable.",
+        case_class == "H: SNP/ST conflict, manual review" ~
+          "SNP distance supports same strain, but ST differs; review typing and pairwise metrics manually.",
         case_class == "A: Same strain, stable VF/module profile" ~
           "Low-SNP/same-strain evidence with stable VF/module profile.",
         case_class == "D: Strain replacement" ~
           "Transition likely reflects strain replacement rather than within-strain VF evolution.",
+        pair_interpretation == "Same lineage, not same strain by SNP" ~
+          "Same ST lineage, but SNP distance exceeds the 25-SNP same-strain rule.",
+        pair_interpretation == "ST-consistent, SNP missing" ~
+          "ST is consistent across endpoints, but SNP evidence is missing and cannot prove same strain.",
+        snp_strain_context == "Above same-strain SNP threshold" ~
+          "SNP evidence does not meet the 25-SNP same-strain rule.",
+        pair_interpretation == "Missing strain metrics" ~
+          "WGS/VF endpoints are present, but pairwise same-strain metrics are unavailable.",
         str_detect(case_class, "change") ~
           "Same-strain evidence with VF/module change; review changed components.",
         TRUE ~ "Transition interpretation is uncertain."
@@ -734,7 +752,10 @@ case_notes <- case_summary %>%
   mutate(
     main_finding = interpretation_short,
     supporting_evidence = case_when(
-      has_vf_pair ~ sprintf("ST %s -> %s; SNPs=%s; VF Jaccard=%s; module Jaccard=%s; VF gained=%s lost=%s",
+      has_vf_pair ~ sprintf("SNP context=%s; ST context=%s; pair interpretation=%s; ST %s -> %s; SNPs=%s; VF Jaccard=%s; module Jaccard=%s; VF gained=%s lost=%s",
+                            coalesce(snp_strain_context, "NA"),
+                            coalesce(st_lineage_context, "NA"),
+                            coalesce(pair_interpretation, "NA"),
                             coalesce(ST_from, "NA"), coalesce(ST_to, "NA"),
                             ifelse(is.na(SNPs), "NA", as.character(SNPs)),
                             ifelse(is.na(vf_jaccard), "NA", sprintf("%.3f", vf_jaccard)),
@@ -745,8 +766,8 @@ case_notes <- case_summary %>%
     ),
     limitations = coalesce(missing_data_note, timing_caveat, "Small case-study denominator; descriptive only"),
     recommended_use = case_when(
-      is_asb_to_uti & has_vf_pair ~ "Primary thesis/manuscript transition case",
-      is_asb_to_uti ~ "Missing-genomics denominator accounting",
+      is_not_uti_to_uti & has_vf_pair ~ "Primary thesis/manuscript transition case",
+      is_not_uti_to_uti ~ "Missing-genomics denominator accounting",
       in_script15_switch_candidates ~ "Supplementary phenotype-switch context",
       TRUE ~ "Background longitudinal context"
     )
@@ -771,19 +792,21 @@ write_csv(case_notes, file.path(DIR_VF, "vf_transition_case_notes.csv"))
 txt <- character()
 ta <- function(...) txt <<- c(txt, sprintf(...))
 
-asb_uti_index <- case_index %>% filter(is_asb_to_uti)
-asb_uti_summary <- case_summary %>% filter(is_asb_to_uti)
+not_uti_uti_index <- case_index %>% filter(is_not_uti_to_uti)
+not_uti_uti_summary <- case_summary %>% filter(is_not_uti_to_uti)
 
 ta("=== VF TRANSITION CASE STUDY SUMMARY ===")
 ta("Timestamp: %s", format(Sys.time()))
 ta("Clinical transition source: %s", basename(status_file))
 ta("Total ordered clinical transitions indexed: %d", nrow(case_index))
-ta("ASB->UTI clinical transitions indexed: %d", nrow(asb_uti_index))
-ta("ASB->UTI with both WGS/VF endpoints: %d", sum(asb_uti_index$has_vf_pair, na.rm = TRUE))
-ta("ASB->UTI with same-strain evidence: %d",
-   sum(asb_uti_summary$has_vf_pair & str_detect(asb_uti_summary$same_strain_evidence, "^Strong|^Moderate"), na.rm = TRUE))
-ta("ASB->UTI missing one or both WGS/VF endpoints: %d", sum(!asb_uti_index$has_vf_pair, na.rm = TRUE))
-ta("Uricult-linked ASB->UTI transitions: %d", sum(asb_uti_index$is_uricult_transition, na.rm = TRUE))
+ta("Not_UTI->UTI clinical transitions indexed: %d", nrow(not_uti_uti_index))
+ta("Not_UTI->UTI with both WGS/VF endpoints: %d", sum(not_uti_uti_index$has_vf_pair, na.rm = TRUE))
+ta("Not_UTI->UTI with SNP-defined strong same-strain evidence: %d",
+   sum(not_uti_uti_summary$has_vf_pair & not_uti_uti_summary$snp_strain_context == "Strong same strain", na.rm = TRUE))
+ta("Not_UTI->UTI missing one or both WGS/VF endpoints: %d", sum(!not_uti_uti_index$has_vf_pair, na.rm = TRUE))
+ta("SNP context rule: Strong same strain = 0-%d SNPs; Above same-strain SNP threshold = >%d SNPs; Missing SNP evidence = SNPs unavailable.", SNP_THRESHOLD, SNP_THRESHOLD)
+ta("ST context rule: Same ST, Different ST, or Missing ST evidence. ST is secondary lineage context and does not prove same strain.")
+ta("Uricult-linked Not_UTI->UTI transitions: %d", sum(not_uti_uti_index$is_uricult_transition, na.rm = TRUE))
 ta("Transitions also present in script 15 phenotype-switch candidates: %d",
    sum(case_index$in_script15_switch_candidates, na.rm = TRUE))
 ta("")
@@ -791,17 +814,20 @@ ta("--- Time-order sources ---")
 order_counts <- case_index %>% dplyr::count(time_order_source, name = "n") %>% arrange(desc(n))
 for (j in seq_len(nrow(order_counts))) ta("  %s: %d", order_counts$time_order_source[j], order_counts$n[j])
 ta("")
-if (nrow(asb_uti_summary) > 0) {
-  ta("--- ASB->UTI case class distribution ---")
-  class_counts <- asb_uti_summary %>% dplyr::count(case_class, name = "n") %>% arrange(desc(n))
+if (nrow(not_uti_uti_summary) > 0) {
+  ta("--- Not_UTI->UTI case class distribution ---")
+  class_counts <- not_uti_uti_summary %>% dplyr::count(case_class, name = "n") %>% arrange(desc(n))
   for (j in seq_len(nrow(class_counts))) ta("  %s: %d", class_counts$case_class[j], class_counts$n[j])
   ta("")
-  ta("--- ASB->UTI WGS-linked details ---")
-  detail_rows <- asb_uti_summary %>% filter(has_vf_pair)
+  ta("--- Not_UTI->UTI WGS-linked details ---")
+  detail_rows <- not_uti_uti_summary %>% filter(has_vf_pair)
   for (j in seq_len(nrow(detail_rows))) {
     r <- detail_rows[j, ]
-    ta("  %s: participant %s %s->%s | ST %s->%s | SNPs=%s | VF Jaccard=%s | modules gained=%s lost=%s | %s",
+    ta("  %s: participant %s %s->%s | SNP context=%s | ST context=%s | interpretation=%s | ST %s->%s | SNPs=%s | VF Jaccard=%s | modules gained=%s lost=%s | %s",
        r$case_id, r$Participant_id, r$from_tp, r$to_tp,
+       coalesce(r$snp_strain_context, "NA"),
+       coalesce(r$st_lineage_context, "NA"),
+       coalesce(r$pair_interpretation, "NA"),
        coalesce(r$ST_from, "NA"), coalesce(r$ST_to, "NA"),
        ifelse(is.na(r$SNPs), "NA", as.character(r$SNPs)),
        ifelse(is.na(r$vf_jaccard), "NA", sprintf("%.3f", r$vf_jaccard)),
@@ -819,10 +845,10 @@ writeLines(txt, file.path(DIR_VF, "vf_transition_case_study_summary.txt"))
 # ==============================================================================
 # 10. FIGURES
 # ==============================================================================
-asb_uti_ids <- asb_uti_index$case_id
+not_uti_uti_ids <- not_uti_uti_index$case_id
 
-# Clinical timeline for participants with ASB->UTI transitions.
-timeline_participants <- asb_uti_index %>% pull(Participant_id) %>% unique()
+# Clinical timeline for participants with Not_UTI->UTI transitions.
+timeline_participants <- not_uti_uti_index %>% pull(Participant_id) %>% unique()
 timeline_plot_data <- clinical %>%
   filter(Participant_id %in% timeline_participants) %>%
   left_join(
@@ -852,14 +878,14 @@ if (nrow(timeline_plot_data) > 0) {
     geom_point(aes(fill = Infection_Status, shape = has_wgs_vf), size = 3, colour = "grey20") +
     scale_shape_manual(values = c("TRUE" = 21, "FALSE" = 4)) +
     labs(
-      title = "Clinical timelines for residents with ASB-to-UTI transitions",
+      title = "Clinical timelines for residents with Not_UTI-to-UTI transitions",
       subtitle = "Point shape indicates whether the clinical episode has linked WGS/VF data",
       x = "Ordered time within participant",
       y = "Participant",
-      fill = "Clinical status",
+      fill = "Primary UTI status",
       shape = "WGS/VF linked",
       caption = sprintf(
-        "Data: %s, %s, and %s. Denominator: %d clinical timeline rows from %d ASB-to-UTI transition participants. Level of analysis: clinical episode timeline with WGS/VF availability overlay. Uricult ordering uses Collection_Date where available; display/fallback ordering is reported in results/vf/vf_transition_case_index.csv.",
+        "Data: %s, %s, and %s. Denominator: %d clinical timeline rows from %d Not_UTI-to-UTI transition participants. Level of analysis: clinical episode timeline with WGS/VF availability overlay. Uricult ordering uses Collection_Date where available; display/fallback ordering is reported in results/vf/vf_transition_case_index.csv.",
         FILE_STATUS_MAP_POSTER, FILE_STATUS_MAP, FILE_VF_READY,
         nrow(timeline_plot_data), n_distinct(timeline_plot_data$Participant_id)
       )
@@ -869,14 +895,11 @@ if (nrow(timeline_plot_data) > 0) {
          p_timeline, width = 11, height = max(5, length(timeline_participants) * 0.25), dpi = 300)
 }
 
-if (nrow(score_changes) > 0 && length(asb_uti_ids) > 0) {
+if (nrow(score_changes) > 0 && length(not_uti_uti_ids) > 0) {
   sc_plot <- score_changes %>%
-    filter(case_id %in% asb_uti_ids) %>%
-    filter(score_name %in% c("total_vf_count_all", "total_vf_count_curated",
-                             "total_vf_count_upec_candidate", "vf_count_total", "vf_count_curated",
-                             "upec_gene_score_unweighted", "upec_gene_score",
-                             "module_count_present", "n_modules_present",
-                             "upec_module_score_unweighted", "n_upec_modules_present"))
+    filter(case_id %in% not_uti_uti_ids) %>%
+    filter(score_name %in% c("expec_marker_count", "upec_system_count",
+                             "upec_system_fraction", "total_vf_count_curated"))
   if (nrow(sc_plot) > 0) {
     sc_long <- sc_plot %>%
       pivot_longer(cols = c(from_value, to_value), names_to = "endpoint", values_to = "value") %>%
@@ -884,15 +907,15 @@ if (nrow(score_changes) > 0 && length(asb_uti_ids) > 0) {
     p_slope <- ggplot(sc_long, aes(x = endpoint, y = value, group = case_id, colour = case_id)) +
       geom_line(linewidth = 0.8) +
       geom_point(size = 2.5) +
-      facet_wrap(~score_name, scales = "free_y") +
+      facet_wrap(~score_label, scales = "free_y") +
       labs(
-        title = "Virulence factor score changes across ASB-to-UTI transitions",
-        subtitle = "Each line is one WGS/VF-linked clinical ASB-to-UTI transition case",
+        title = "Supplementary VF endpoint changes across Not_UTI-to-UTI transitions",
+        subtitle = "Each line is one WGS/VF-linked clinical Not_UTI-to-UTI transition case",
         x = NULL,
-        y = "Score value",
+        y = "Endpoint value",
         colour = "Case",
         caption = sprintf(
-          "Data: %s, script 26 module outputs, and script 27 score outputs. Denominator: %d score-change rows from %d ASB-to-UTI cases. Level of analysis: transition case-study pair. Descriptive only; no p-values are shown, and changes may reflect lineage/strain replacement, assembly differences, or true VF content change.",
+          "Data: %s, script 26 module outputs, and script 27 supplementary endpoint outputs. Denominator: %d endpoint-change rows from %d Not_UTI-to-UTI cases. Level of analysis: transition case-study pair. Descriptive only; no p-values are shown, and changes may reflect lineage/strain replacement, assembly differences, or true VF content change.",
           FILE_VF_READY, nrow(sc_plot), n_distinct(sc_plot$case_id)
         )
       ) +
@@ -903,22 +926,22 @@ if (nrow(score_changes) > 0 && length(asb_uti_ids) > 0) {
   }
 }
 
-if (nrow(module_changes) > 0 && length(asb_uti_ids) > 0) {
+if (nrow(module_changes) > 0 && length(not_uti_uti_ids) > 0) {
   mc_plot <- module_changes %>%
-    filter(case_id %in% asb_uti_ids, change_type != "stable_absent")
+    filter(case_id %in% not_uti_uti_ids, change_type != "stable_absent")
   if (nrow(mc_plot) > 0) {
     p_mod <- ggplot(mc_plot, aes(x = case_id, y = system_name, fill = change_type)) +
       geom_tile(colour = "white") +
       scale_fill_manual(values = c("gained" = "#c0392b", "lost" = "#2c7fb8",
                                    "stable_present" = "#41ab5d")) +
       labs(
-        title = "VF module changes in ASB-to-UTI transition cases",
+        title = "VF module changes in Not_UTI-to-UTI transition cases",
         subtitle = "Modules are descriptive biological groupings, not validated causal virulence scores",
         x = "Case",
         y = "VF module",
         fill = "Change",
         caption = sprintf(
-          "Data: %s and script 26 module definitions. Denominator: %d module-change rows from %d ASB-to-UTI cases. Level of analysis: transition case-study pair. Interpretation should consider ST/SNP evidence and WGS endpoint availability.",
+          "Data: %s and script 26 module definitions. Denominator: %d module-change rows from %d Not_UTI-to-UTI cases. Level of analysis: transition case-study pair. Interpret SNP same-strain context first; ST is secondary lineage context.",
           FILE_VF_READY, nrow(mc_plot), n_distinct(mc_plot$case_id)
         )
       ) +
@@ -929,9 +952,9 @@ if (nrow(module_changes) > 0 && length(asb_uti_ids) > 0) {
   }
 }
 
-if (nrow(gene_changes) > 0 && length(asb_uti_ids) > 0) {
+if (nrow(gene_changes) > 0 && length(not_uti_uti_ids) > 0) {
   gc_plot <- gene_changes %>%
-    filter(case_id %in% asb_uti_ids, change_type %in% c("gained", "lost")) %>%
+    filter(case_id %in% not_uti_uti_ids, change_type %in% c("gained", "lost")) %>%
     group_by(Gene) %>%
     mutate(n_cases_changed = n_distinct(case_id)) %>%
     ungroup() %>%
@@ -942,13 +965,13 @@ if (nrow(gene_changes) > 0 && length(asb_uti_ids) > 0) {
       geom_tile(colour = "white") +
       scale_fill_manual(values = c("gained" = "#c0392b", "lost" = "#2c7fb8")) +
       labs(
-        title = "VF gene gains and losses in ASB-to-UTI transition cases",
+        title = "VF gene gains and losses in Not_UTI-to-UTI transition cases",
         subtitle = "Top changed genes are shown for interpretability; case-study evidence is descriptive",
         x = "Case",
         y = "VF gene",
         fill = "Change",
         caption = sprintf(
-          "Data: %s and results/vf/vf_transition_gene_changes.csv. Denominator: %d changed gene rows from %d ASB-to-UTI cases. Level of analysis: transition case-study pair. Gene gain/loss should be interpreted with ST/SNP context and may reflect strain replacement or technical differences.",
+          "Data: %s and results/vf/vf_transition_gene_changes.csv. Denominator: %d changed gene rows from %d Not_UTI-to-UTI cases. Level of analysis: transition case-study pair. Gene gain/loss should be interpreted after SNP same-strain classification; ST is secondary lineage context.",
           FILE_VF_READY, nrow(gc_plot), n_distinct(gc_plot$case_id)
         )
       ) +
@@ -959,39 +982,40 @@ if (nrow(gene_changes) > 0 && length(asb_uti_ids) > 0) {
   }
 }
 
-asb_uti_context <- asb_uti_summary %>%
+not_uti_uti_context <- not_uti_uti_summary %>%
   left_join(
     strain_ctx %>%
       select(case_id, VF_Jaccard_pairwise, replacement_flag, strain_context_note,
-             strain_evidence_from_context = same_strain_evidence),
+             snp_context_from_strain = snp_strain_context,
+             st_context_from_strain = st_lineage_context,
+             pair_interpretation_from_context = pair_interpretation),
     by = "case_id"
   ) %>%
   mutate(
-    strain_evidence_plot = coalesce(strain_evidence_from_context, same_strain_evidence,
-                                    "Missing strain-context evidence"),
+    snp_context_plot = coalesce(snp_context_from_strain, snp_strain_context,
+                                "Missing SNP evidence"),
+    st_context_plot = coalesce(st_context_from_strain, st_lineage_context,
+                               "Missing ST evidence"),
+    pair_interpretation_plot = coalesce(pair_interpretation_from_context, pair_interpretation,
+                                        "Missing strain metrics"),
     case_class_plot = case_when(
       !has_vf_pair ~ "Missing WGS/VF endpoint",
       is.na(case_class) | case_class == "" ~ "Unclassified WGS/VF pair",
       TRUE ~ case_class
     ),
     total_vf_gene_changes = n_vf_genes_gained + n_vf_genes_lost,
-    snp_distance_plus_one = SNPs + 1,
-    same_ST_plot = case_when(
-      same_ST %in% TRUE ~ "Same ST",
-      same_ST %in% FALSE ~ "Different or missing ST",
-      TRUE ~ "ST unavailable"
-    )
+    snp_distance_plus_one = SNPs + 1
   )
 
-strain_change_plot <- asb_uti_context %>%
+strain_change_plot <- not_uti_uti_context %>%
   filter(has_vf_pair, !is.na(SNPs), !is.na(delta_total_vf_burden))
 
 if (nrow(strain_change_plot) > 0) {
   p_strain_ctx <- ggplot(strain_change_plot,
                          aes(x = snp_distance_plus_one,
                              y = delta_total_vf_burden,
-                             colour = strain_evidence_plot,
-                             shape = same_ST_plot,
+                             colour = snp_context_plot,
+                             shape = st_context_plot,
                              size = total_vf_gene_changes)) +
     geom_hline(yintercept = 0, linetype = "dashed", colour = "grey55") +
     geom_vline(xintercept = SNP_THRESHOLD + 1, linetype = "dotted", colour = "grey40") +
@@ -999,15 +1023,15 @@ if (nrow(strain_change_plot) > 0) {
     scale_x_log10(labels = scales::comma) +
     scale_size_continuous(range = c(2.2, 7), breaks = scales::pretty_breaks(n = 4)) +
     labs(
-      title = "ASB-to-UTI VF changes require strain-context interpretation",
-      subtitle = "Each point is one WGS/VF-linked ASB-to-UTI transition; point size shows total VF gene gains plus losses",
+      title = "Not_UTI-to-UTI VF changes require strain-context interpretation",
+      subtitle = "Colour shows SNP same-strain context; shape shows secondary ST lineage context",
       x = "SNP distance + 1 (log scale)",
-      y = "Change in total VF burden (UTI - ASB)",
-      colour = "Strain evidence",
-      shape = "ST comparison",
+      y = "Change in total VF burden (UTI - prior Not_UTI)",
+      colour = "SNP context",
+      shape = "ST context",
       size = "VF genes gained + lost",
       caption = sprintf(
-        "Data: %s and %s. Denominator: %d WGS/VF-linked ASB-to-UTI transition cases with SNP distance and VF burden change. Level of analysis: transition case-study pair. Dashed horizontal line indicates no total burden change; dotted vertical line marks the SNP threshold (%d) used for strain-context interpretation. VF changes may reflect strain replacement, assembly/calling differences, or true gene-content change and do not establish UTI causality.",
+        "Data: %s and %s. Denominator: %d WGS/VF-linked Not_UTI-to-UTI transition cases with SNP distance and VF burden change. Level of analysis: transition case-study pair. Dashed horizontal line indicates no total burden change; dotted vertical line marks the SNP same-strain threshold (%d). ST is secondary lineage context and does not prove same strain.",
         file.path(DIR_VF, "vf_transition_case_summary.csv"),
         file.path(DIR_VF, "vf_transition_strain_context.csv"),
         nrow(strain_change_plot), SNP_THRESHOLD
@@ -1015,11 +1039,11 @@ if (nrow(strain_change_plot) > 0) {
     ) +
     plot_theme_vf(base_size = 10)
 
-  ggsave(file.path(DIR_PLOTS_VF, "vf_asb_uti_transition_strain_context.png"),
-         p_strain_ctx, width = 9.5, height = 6.5, dpi = 300)
+  strain_context_plot <- file.path(DIR_PLOTS_VF, "vf_not_uti_uti_transition_strain_context.png")
+  ggsave(strain_context_plot, p_strain_ctx, width = 9.5, height = 6.5, dpi = 300)
 }
 
-case_class_counts <- asb_uti_context %>%
+case_class_counts <- not_uti_uti_context %>%
   count(case_class_plot, has_vf_pair, name = "n") %>%
   mutate(
     endpoint_status = ifelse(has_vf_pair, "WGS/VF pair available", "Missing WGS/VF endpoint"),
@@ -1036,38 +1060,39 @@ if (nrow(case_class_counts) > 0) {
     scale_fill_manual(values = c("WGS/VF pair available" = "#0072B2",
                                  "Missing WGS/VF endpoint" = "grey65")) +
     labs(
-      title = "ASB-to-UTI transition case classes and missing genomic endpoints",
+      title = "Not_UTI-to-UTI transition case classes and missing genomic endpoints",
       subtitle = "Class counts keep missing WGS/VF pairs visible in the transition denominator",
       x = NULL,
-      y = "Number of ASB-to-UTI transitions",
+      y = "Number of Not_UTI-to-UTI transitions",
       fill = "Endpoint status",
       caption = sprintf(
-        "Data: %s. Denominator: %d clinical ASB-to-UTI transitions, including %d with WGS/VF-linked endpoints. Level of analysis: transition case classification. Case classes are descriptive and should be interpreted with SNP/ST evidence; they do not test whether VF changes cause UTI.",
+        "Data: %s. Denominator: %d clinical Not_UTI-to-UTI transitions, including %d with WGS/VF-linked endpoints. Level of analysis: transition case classification. Case classes are descriptive and should be interpreted with SNP/ST evidence; they do not test whether VF changes cause UTI.",
         file.path(DIR_VF, "vf_transition_case_summary.csv"),
-        nrow(asb_uti_context), sum(asb_uti_context$has_vf_pair, na.rm = TRUE)
+        nrow(not_uti_uti_context), sum(not_uti_uti_context$has_vf_pair, na.rm = TRUE)
       )
     ) +
     plot_theme_vf(base_size = 10)
 
-  ggsave(file.path(DIR_PLOTS_VF, "vf_asb_uti_transition_case_classes.png"),
-         p_case_classes, width = 9, height = max(5.2, nrow(case_class_counts) * 0.34), dpi = 300)
+  case_class_plot <- file.path(DIR_PLOTS_VF, "vf_not_uti_uti_transition_case_classes.png")
+  ggsave(case_class_plot, p_case_classes,
+         width = 9, height = max(5.2, nrow(case_class_counts) * 0.34), dpi = 300)
 }
 
 snp_plot <- case_summary %>%
-  filter(is_asb_to_uti, has_vf_pair, !is.na(SNPs), !is.na(vf_jaccard))
+  filter(is_not_uti_to_uti, has_vf_pair, !is.na(SNPs), !is.na(vf_jaccard))
 if (nrow(snp_plot) > 0) {
   p_snp <- ggplot(snp_plot, aes(x = SNPs, y = vf_jaccard, colour = case_class, label = case_id)) +
     geom_vline(xintercept = SNP_THRESHOLD, linetype = "dashed", colour = "grey50") +
     geom_point(size = 3) +
     geom_text(nudge_y = 0.02, size = 3, show.legend = FALSE) +
     labs(
-      title = "SNP distance versus VF similarity in ASB-to-UTI transition cases",
+      title = "SNP distance versus VF similarity in Not_UTI-to-UTI transition cases",
       subtitle = sprintf("Dashed line marks SNP threshold %d used by strain interpretation", SNP_THRESHOLD),
       x = "SNP distance",
       y = "VF Jaccard similarity",
       colour = "Case class",
       caption = sprintf(
-        "Data: %s plus pairwise strain metrics. Denominator: %d ASB-to-UTI cases with WGS/VF pair, SNP distance, and VF Jaccard. Level of analysis: transition case-study pair. Low SNP distance plus high VF similarity supports persistence but does not establish VF causality for UTI.",
+        "Data: %s plus pairwise strain metrics. Denominator: %d Not_UTI-to-UTI cases with WGS/VF pair, SNP distance, and VF Jaccard. Level of analysis: transition case-study pair. Low SNP distance plus high VF similarity supports persistence but does not establish VF causality for UTI.",
         FILE_VF_READY, nrow(snp_plot)
       )
     ) +

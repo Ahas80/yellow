@@ -1,9 +1,11 @@
 # Analysis & Outputs Guide
 
 **Date:** 2025-11-30  
-**Pipeline Version:** Yellow RoUTIne / rUTIs (v1.0)
+**Pipeline Version:** Yellow RoUTIne / rUTIs, primary UTI-vs-Not_UTI definition
 
 This guide explains how to use, interpret, and analyze the outputs of the rUTIs pipeline. It is designed for bioinformaticians and clinicians who need to understand the data without reading every line of code.
+
+**Current primary status:** `UTI_Status`, with levels `UTI` and `Not_UTI`. The legacy ASB / UTI / Negative status is retained only in `Infection_Status_legacy` / `Infection_Status_old` for comparability.
 
 ---
 
@@ -11,7 +13,7 @@ This guide explains how to use, interpret, and analyze the outputs of the rUTIs 
 
 If you only have 30 minutes:
 
-1.  **Clinical Context**: Open `results/clinical/status_map.csv`. This is your master table. Every row is a clinical episode (UTI, ASB, or Negative).
+1.  **Clinical Context**: Open `results/clinical/status_map.csv`. This is your master table. Every row is a clinical episode with primary `UTI_Status` (`UTI` or `Not_UTI`) plus legacy comparison fields.
 2.  **Genomic Profile**: Open `results/vf/vf_pa_all.csv` (Virulence) and `results/plasmids/plasmidfinder_presence_absence.csv` (Plasmids). Join these to `status_map.csv` using `Participant_id` and `Timepoint` (or `tp_lab`).
 3.  **Strain Changes**: Look at `results/longitudinal/evolution_events.csv`. This lists every time a patient switched strains or had a significant evolution event.
 4.  **Key Figures**: Browse `plots/publication/`. `Fig1_Swimmer_Plot.png` shows the longitudinal history of every patient.
@@ -24,8 +26,9 @@ If you only have 30 minutes:
 | Script | Inputs | Outputs | Purpose |
 | :--- | :--- | :--- | :--- |
 | `00a_load_clean_clinical.R` | `data/inputs/batch*.csv` | `results/clinical/intermediate/*.rds` | Loads and merges raw clinical Excel/CSV batches. |
-| `00b_classify_episodes.R` | Merged Clinical Data | **`results/clinical/status_map.csv`** | Classifies each sample into UTI, ASB, or Negative based on symptoms and culture. |
-| `00c_plot_clinical_summary.R` | `status_map.csv` | `plots/clinical/*.png` | Visualizes cohort demographics and infection rates. |
+| `00b_classify_episodes.R` | Merged Clinical Data | **`results/clinical/status_map.csv`** | Creates primary UTI vs Not_UTI status using catheter-aware S&S plus >=10^3 CFU support; retains legacy status for comparison. |
+| `00d_derive_plot_timepoints.R` | `status_map.csv` | `status_map_with_poster_tp.csv` | Adds display-only Uricult ordering labels while preserving all primary UTI fields. |
+| `00c_plot_clinical_summary.R` | `status_map.csv` | `plots/clinical/*.png` | Visualizes primary status, reclassification, Not_UTI subgroup composition, CFU provenance, and symptom-rule provenance. |
 
 ### Phase 1: Genomic Characterisation
 | Script | Inputs | Outputs | Purpose |
@@ -33,7 +36,7 @@ If you only have 30 minutes:
 | `02_gene_presence_analysis.R` | Assemblies (`.fasta`) | **`results/vf/vf_pa_all.csv`** | Detects virulence genes (VFDB) using ABRicate. |
 | `06_MLST.R` | Assemblies (`.fasta`) | **`results/mlst/mlst_all.tsv`** | Determines Sequence Type (ST) for each isolate. |
 | `08_core_vs_plasmid.R` | Assemblies (`.fasta`) | **`results/plasmids/plasmidfinder_presence_absence.csv`** | Detects plasmid replicons (PlasmidFinder). |
-| `03_plotting.R` | All of the above | `plots/epidemiology/`, `plots/genomics/` | Generates summary plots (heatmaps, upset plots, burden comparisons). |
+| `03_plotting.R` | All of the above | `plots/epidemiology/`, `plots/genomics/` | Legacy exploratory plotting only; skipped by the main runner unless `RUN_LEGACY_EXPLORATORY_PLOTS=1`. |
 
 ### Phase 2: Comparative Genomics
 | Script | Inputs | Outputs | Purpose |
@@ -45,7 +48,7 @@ If you only have 30 minutes:
 ### Phase 3: Mechanism & Models
 | Script | Inputs | Outputs | Purpose |
 | :--- | :--- | :--- | :--- |
-| `14_genotype_phenotype_model.R` | `vf_pa_all.csv`, `status_map.csv` | **`results/models/gwas_multivariable_glmm.csv`** | GWAS: Identifies genes associated with UTI vs ASB. |
+| `14_genotype_phenotype_model.R` | `vf_analysis_ready.csv`, `status_map.csv` | **`results/models/gwas_multivariable_glmm.csv`** | Exploratory genotype-phenotype model for UTI vs Not_UTI using `UTI_binary`. |
 | `15_longitudinal_patterns.R` | `status_map.csv`, `pairwise_metrics.csv` | `results/longitudinal/swimmer_plot.png` | Reconstructs patient timelines and strain persistence. |
 | `16_within_host_evolution.R` | `pairwise_metrics.csv` | **`results/longitudinal/evolution_events.csv`** | Detects specific gain/loss events in persistent strains. |
 
@@ -60,13 +63,16 @@ If you only have 30 minutes:
 **Key Columns:**
 - `Participant_id`: Unique patient identifier.
 - `Timepoint`: `T0`, `T1`, `T2`, `Uricult` (unscheduled).
-- `Infection_Status`: **The primary outcome**. Levels: `UTI`, `ASB`, `Negative`.
-- `culture_pos_epi`: Boolean, was the culture positive?
-- `Sx_present_any`: Boolean, were symptoms present?
+- `UTI_Status`: **The primary outcome**. Levels: `UTI`, `Not_UTI`.
+- `UTI_binary`: Model-ready outcome, 1 = UTI and 0 = Not_UTI.
+- `Not_UTI_subgroup`: Descriptive subgroup for the heterogeneous non-UTI comparator.
+- `Infection_Status_legacy` / `Infection_Status_old`: Legacy ASB / UTI / Negative status for comparison only.
+- `culture_supports_uti`: Culture support under the primary lower-threshold rule.
+- `symptom_compatible_uti`: Catheter-aware symptom-rule result.
 
 **Analysis Recipe:**
 - **Join Key:** Use `Participant_id` and `Timepoint` to join this with ANY genomic table.
-- **Filter:** Filter for `Infection_Status != "Negative"` when analyzing bacterial traits (since negatives have no bacteria).
+- **Filter:** Use `UTI_Status` for primary analyses. Use `Not_UTI_subgroup` or `Infection_Status_legacy` only for labelled sensitivity/descriptive analyses.
 
 ### 2. `results/vf/vf_pa_all.csv`
 **What it is:** Virulence factor presence/absence matrix.
@@ -81,8 +87,8 @@ If you only have 30 minutes:
 - **0**: Gene not found.
 
 **Recommended Analysis:**
-- **Burden Analysis**: Sum the rows (`rowSums`) to get a "Virulence Score". Test if UTI isolates have higher scores than ASB.
-- **Gene Association**: Use Fisher's Exact Test to see if `papC` is more common in UTI than ASB.
+- **Burden Analysis**: Use canonical outputs from scripts 23 and 27; interpret UTI-vs-Not_UTI tests as exploratory because the UTI denominator is small.
+- **Gene Association**: Use `results/models/` for GLMM outputs and `results/vf/` for descriptive Fisher screens. Do not create new outcomes from legacy `Infection_Status`.
 
 ### 3. `results/strain_compare/pairwise_metrics.csv`
 **What it is:** A table of genetic distances between pairs of isolates.
@@ -92,11 +98,13 @@ If you only have 30 minutes:
 - `TotalSNPs`: Number of core genome SNPs differing between the pair.
 - `MashDistance`: K-mer based distance (0 = identical, >0.05 = different species/lineage).
 - `within_participant`: Boolean, TRUE if both isolates are from the same patient.
-- `Classification`: `Same` (<= 10 SNPs), `Related` (>10 SNPs but same ST), `Different`.
+- `snp_strain_context`: SNP-only same-strain context. `Strong same strain` is 0-25 SNPs, `Above same-strain SNP threshold` is >25 SNPs, and `Missing SNP evidence` means SNPs are unavailable.
+- `st_lineage_context`: ST-only lineage context: `Same ST`, `Different ST`, or `Missing ST evidence`. Same ST does not prove same strain.
+- `pair_interpretation`: readable combined interpretation used for summaries after SNP and ST context are shown separately.
 
 **Recommended Analysis:**
-- **Thresholding**: Plot a histogram of `TotalSNPs` for `within_participant == TRUE`. You should see a bimodal distribution (Same strain < 10 SNPs, Different strain > 1000 SNPs).
-- **Transmission**: Look for `within_participant == FALSE` but `TotalSNPs < 10`. These are potential transmission events between patients.
+- **Thresholding**: Analyze SNP context first. Treat 0-25 SNPs as strong same-strain evidence and >25 SNPs as above the same-strain SNP threshold. Use ST afterward only as lineage/confounding context.
+- **Transmission**: Look for `within_participant == FALSE` but `TotalSNPs <= 25`. These are potential transmission events between patients under the current YELLOW study threshold.
 
 ### 4. `results/models/gwas_multivariable_glmm.csv`
 **What it is:** Results from the GWAS (Genome-Wide Association Study) targeting virulence genes.
@@ -104,7 +112,7 @@ If you only have 30 minutes:
 
 **Key Columns:**
 - `feature`: Gene name.
-- `OR` (Odds Ratio): Effect size. >1 means associated with UTI, <1 means associated with ASB.
+- `OR` (Odds Ratio): Effect size. >1 means associated with UTI relative to Not_UTI; <1 means lower odds in UTI relative to Not_UTI.
 - `p.value`: Raw p-value.
 - `FDR`: False Discovery Rate adjusted p-value. **Use this for significance (e.g., < 0.05).**
 - `converged`: Boolean. If `FALSE`, ignore the result (model failed).
@@ -150,13 +158,16 @@ If you only have 30 minutes:
 1.  **Load** `pairwise_metrics.csv`.
 2.  **Filter** for `within_participant == TRUE`.
 3.  **Classify** pairs:
-    *   `SNPs <= 10`: Persistent infection.
-    *   `SNPs > 1000`: Strain replacement (new infection).
+    *   `SNPs <= 25`: Strong same-strain persistence.
+    *   `SNPs > 25`: Above same-strain SNP threshold.
+    *   Missing SNPs: Missing SNP evidence.
+    *   ST context: Same ST, Different ST, or Missing ST evidence; use this after SNP classification.
+    *   Replacement likely: Different ST or pairwise `Different` when SNPs do not support same strain.
 4.  **Correlate** with time.
     *   *Question:* Are longer intervals (T0 -> T2) more likely to show replacement than short ones (T0 -> T1)?
 
 ### Phase 3: Mechanisms of Pathogenesis
-**Goal:** Why do some strains cause UTI while others cause ASB?
+**Goal:** Why do some strains or episodes meet the primary UTI definition while others are Not_UTI?
 **Script:** `14_genotype_phenotype_model.R`, `16_within_host_evolution.R`
 
 1.  **GWAS Approach (Population Level)**:
@@ -165,7 +176,7 @@ If you only have 30 minutes:
     *   *Hypothesis:* These genes promote symptomatic infection.
 2.  **Evolution Approach (Individual Level)**:
     *   Use `evolution_events.csv`.
-    *   Focus on `ASB -> UTI` transitions.
+    *   Focus on `Not_UTI -> UTI` transitions and inspect `Not_UTI_subgroup` for context.
     *   *Hypothesis:* Small SNP changes or plasmid gains in these specific patients triggered symptoms.
 
 ---

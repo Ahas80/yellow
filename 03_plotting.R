@@ -19,7 +19,7 @@
 #   - results/vf_pa_all.csv
 #   - results/stats_gene_level.csv
 #   - results/status_map.csv (optional)
-#   - results/mlst/mlst_all.tsv
+#   - results/mlst/mlst_provider_preferred.csv
 #   - results/wgs/parsnp/parsnp.tree (optional)
 #   - results/nitrate_presence_matrix.csv (optional)
 #   - results/pairwise_stats.csv (optional)
@@ -31,6 +31,7 @@
 
 # 1. Load Configuration & Libraries
 source("00_config.R")
+source("R/pipeline_qc_helpers.R")
 source("R/plot_helpers.R")
 suppressPackageStartupMessages({
   library(dplyr)
@@ -46,7 +47,7 @@ suppressPackageStartupMessages({
 
 # Standard Color Palette
 # Standard Color Palette
-# Note: Infection colors are now handled by scale_colour_infection() in R/plot_helpers.R
+# Note: primary status colors are handled by scale_colour_uti_status() in R/plot_helpers.R
 rutis_palette <- c(
   `Culture-positive` = "#009E73",
   Other = "#999999",
@@ -347,6 +348,7 @@ if (has_pkg("ComplexUpset")) {
   if (file.exists(FILE_STATUS_MAP)) {
     status_map <- read_csv(FILE_STATUS_MAP, show_col_types = FALSE) %>%
       ensure_tp_lab() %>%
+      prefer_primary_uti_status() %>%
       select(Participant_id, tp_lab, Infection_Status) %>%
       distinct()
 
@@ -373,14 +375,14 @@ if (has_pkg("ComplexUpset")) {
       p <- ComplexUpset::upset(
         gene_status_df,
         intersect = status_sets, min_size = 1,
-        name = "Intersection of Virulence Genes by Infection Status"
+        name = "Intersection of Virulence Genes by Primary UTI Status"
       )
       safe_ggsave("upset_genes_by_status.png", p, width = 10, height = 6)
     }
   }
 }
 
-# 7. Volcano Plot (UTI vs ASB)
+# 7. Legacy volcano plot (old UTI vs ASB sensitivity)
 # ------------------------------------------------------------------------------
 FILE_FISHER <- file.path(DIR_RESULTS, "diff_genes_UTI_vs_ASB_fisher.csv")
 if (file.exists(FILE_FISHER)) {
@@ -413,13 +415,14 @@ if (file.exists(FILE_FISHER)) {
       }
     } +
     labs(
-      title = "Genomic Features Associated with UTI vs. ASB",
+      title = "Legacy ASB-vs-UTI sensitivity volcano",
+      subtitle = "Not a primary UTI-vs-Not_UTI figure; retained only when legacy exploratory plots are explicitly enabled",
       x = "log2(Odds Ratio)",
       y = "-log10(FDR)"
     ) +
     theme_minimal()
 
-  safe_ggsave("volcano_UTI_vs_ASB.png", g, width = 7, height = 5)
+  safe_ggsave("legacy/old_asb_uti_outputs/volcano_UTI_vs_ASB_legacy.png", g, width = 7, height = 5)
 }
 
 # ==============================================================================
@@ -434,7 +437,9 @@ if (file.exists(FILE_TREE) && has_pkg("ape")) {
 
   if (!is.null(tree)) {
     if (file.exists(FILE_STATUS_MAP) && !is.null(meta_map)) {
-      status <- read_csv(FILE_STATUS_MAP, show_col_types = FALSE) %>% ensure_tp_lab()
+      status <- read_csv(FILE_STATUS_MAP, show_col_types = FALSE) %>%
+        ensure_tp_lab() %>%
+        prefer_primary_uti_status()
 
       # Map status to isolate_ID for tree annotation
       # Tree tips are likely isolate_IDs (e.g. 24...) or filenames
@@ -442,7 +447,7 @@ if (file.exists(FILE_TREE) && has_pkg("ape")) {
 
       annot <- meta_map %>%
         inner_join(status, by = c("Participant_id", "Timepoint" = "tp_lab"), relationship = "many-to-many") %>%
-        select(isolate_ID, Infection_Status) %>%
+        transmute(isolate_ID, Infection_Status = UTI_Status) %>%
         distinct()
 
       # Map tree tips to isolate_ID
@@ -471,11 +476,17 @@ if (file.exists(FILE_TREE) && has_pkg("ape")) {
       if (has_pkg("ggtree")) {
         use_pkg("ggtree")
         try({
-          p <- ggtree(tree, layout = "rectangular") %<+% annot +
-            geom_tippoint(aes(color = Infection_Status), size = 2, alpha = 0.8) +
-            scale_colour_infection() +
-            theme_tree2() +
-            labs(title = "Core Genome Phylogeny of E. coli Isolates", color = "Infection Status")
+          if (nrow(annot) > 0) {
+            p <- ggtree(tree, layout = "rectangular") %<+% annot +
+              geom_tippoint(aes(color = Infection_Status), size = 2, alpha = 0.8) +
+              scale_colour_uti_status() +
+              theme_tree2() +
+              labs(title = "Core Genome Phylogeny of E. coli Isolates", color = "Primary UTI status")
+          } else {
+            p <- ggtree(tree, layout = "rectangular") +
+              theme_tree2() +
+              labs(title = "Core Genome Phylogeny of E. coli Isolates")
+          }
           safe_ggsave("phylogeny/core_tree_phenotype.png", p, width = 8, height = 10)
         })
       } else {
@@ -488,25 +499,24 @@ if (file.exists(FILE_TREE) && has_pkg("ape")) {
 }
 
 # ==============================================================================
-# SECTION 1.2: ST Distribution (ASB vs UTI)
+# SECTION 1.2: ST Distribution (UTI vs Not_UTI)
 # ==============================================================================
-if (file.exists(FILE_MLST_ALL) && file.exists(FILE_STATUS_MAP) && !is.null(meta_map)) {
+if (file.exists(FILE_MLST_CANONICAL) && file.exists(FILE_STATUS_MAP)) {
   ensure_dir(file.path(DIR_PLOTS, "epidemiology"))
 
-  mlst <- read_tsv(FILE_MLST_ALL, show_col_types = FALSE)
-  status <- read_csv(FILE_STATUS_MAP, show_col_types = FALSE) %>% ensure_tp_lab()
+  mlst <- read_csv(FILE_MLST_CANONICAL, show_col_types = FALSE)
+  status <- read_csv(FILE_STATUS_MAP, show_col_types = FALSE) %>%
+    ensure_tp_lab() %>%
+    prefer_primary_uti_status()
 
-  # Extract Isolate_ID from filename
-  mlst_parsed <- mlst %>%
-    mutate(extracted_ID = str_extract(file_name, "24[0-9A-Za-z]+-[0-9]+")) %>%
-    select(-any_of(c("Participant_id", "Timepoint"))) # Drop conflicting columns
-
-  # Join MLST -> Meta Map -> Status
-  st_df <- mlst_parsed %>%
-    inner_join(meta_map, by = c("extracted_ID" = "isolate_ID")) %>%
-    inner_join(status, by = c("Participant_id", "Timepoint" = "tp_lab")) %>%
+  st_df <- mlst %>%
+    mutate(
+      Participant_id = as.character(Participant_id),
+      tp_join = if ("tp_lab" %in% names(.)) as.character(tp_lab) else as.character(Timepoint)
+    ) %>%
+    inner_join(status, by = c("Participant_id", "tp_join" = "tp_lab")) %>%
     filter(!is.na(ST), !is.na(Infection_Status)) %>%
-    filter(Infection_Status %in% c("ASB", "UTI"))
+    filter(Infection_Status %in% c("Not_UTI", "UTI"))
 
   if (nrow(st_df) > 0) {
     top_sts <- st_df %>%
@@ -520,7 +530,7 @@ if (file.exists(FILE_MLST_ALL) && file.exists(FILE_STATUS_MAP) && !is.null(meta_
       geom_bar(position = "fill") +
       scale_y_continuous(labels = scales::percent) +
       scale_fill_brewer(palette = "Set3", name = "Sequence Type") +
-      labs(title = "Sequence Type Distribution by Infection Status", x = "Infection Status", y = "Proportion of Isolates") +
+      labs(title = "Sequence Type Distribution by Primary UTI Status", x = "Primary UTI status", y = "Proportion of Isolates") +
       theme_minimal(base_size = 20) +
       theme(
         plot.title = element_text(size = 26, face = "bold", hjust = 0.5),
@@ -535,7 +545,7 @@ if (file.exists(FILE_MLST_ALL) && file.exists(FILE_STATUS_MAP) && !is.null(meta_
 }
 
 # ==============================================================================
-# SECTION 1.3: Virulence Burden (ASB vs UTI)
+# SECTION 1.3: Virulence Burden (legacy quick plot skipped)
 # ==============================================================================
 if (exists("vf_hits_all") && file.exists(FILE_STATUS_MAP)) {
   message("Skipping legacy epidemiology/vf_burden_boxplot.png in 03_plotting.R.")
@@ -547,7 +557,7 @@ if (exists("vf_hits_all") && file.exists(FILE_STATUS_MAP)) {
       "  - plots/vf/vf_burden_by_status.png",
       "  - results/vf/vf_burden_by_status.csv",
       "  - results/vf/vf_cross_sectional_summary.txt",
-      "Rationale: 03_plotting.R uses older quick VF hit counts and is not the canonical VF/WGS-linked ASB-vs-UTI analysis."
+      "Rationale: 03_plotting.R uses older quick VF hit counts and is not the canonical VF/WGS-linked UTI-vs-Not_UTI analysis."
     ),
     file.path(DIR_RESULTS, "stats_vf_burden_wilcox.txt")
   )
@@ -594,23 +604,28 @@ if (file.exists(FILE_PAIR_STATS)) {
 # ==============================================================================
 # SECTION 2.1: Longitudinal Timelines
 # ==============================================================================
-if ((file.exists(FILE_STATUS_MAP) || file.exists(file.path(DIR_CLINICAL, "status_map_with_poster_tp.csv"))) && file.exists(FILE_MLST_ALL) && !is.null(meta_map)) {
+if (file.exists(FILE_STATUS_MAP) && file.exists(FILE_MLST_CANONICAL)) {
   ensure_dir(file.path(DIR_PLOTS, "timelines"))
 
-  status_file <- FILE_STATUS_MAP_POSTER
-  if (!file.exists(status_file)) status_file <- FILE_STATUS_MAP
-  status <- read_csv(status_file, show_col_types = FALSE) %>% ensure_tp_lab()
-  mlst <- read_tsv(FILE_MLST_ALL, show_col_types = FALSE) %>%
-    mutate(extracted_ID = str_extract(file_name, "24[0-9A-Za-z]+-[0-9]+")) %>%
-    select(-any_of(c("Participant_id", "Timepoint")))
+  status <- read_primary_status_map(
+    prefer_poster = TRUE,
+    require_fresh = TRUE,
+    caller = "03_plotting.R"
+  ) %>%
+    ensure_tp_lab()
+  mlst <- read_csv(FILE_MLST_CANONICAL, show_col_types = FALSE) %>%
+    mutate(
+      Participant_id = as.character(Participant_id),
+      tp_join = if ("tp_lab" %in% names(.)) as.character(tp_lab) else as.character(Timepoint)
+    )
 
   timeline_df <- mlst %>%
-    inner_join(meta_map, by = c("extracted_ID" = "isolate_ID")) %>%
-    inner_join(status, by = c("Participant_id", "Timepoint" = "tp_lab")) %>%
+    inner_join(status, by = c("Participant_id", "tp_join" = "tp_lab")) %>%
     mutate(
       ST_Label = ifelse(is.na(ST), "Unknown", paste0("ST", ST)),
-      tp_num = if("Plot_TP_Num_Poster" %in% names(.)) Plot_TP_Num_Poster else tp_norm(Timepoint)$tp_num,
-      Plot_Label = if("Plot_TP_Label_Poster" %in% names(.)) Plot_TP_Label_Poster else Timepoint
+      Infection_Status = UTI_Status,
+      tp_num = if("Plot_TP_Num_Poster" %in% names(.)) Plot_TP_Num_Poster else tp_norm(tp_join)$tp_num,
+      Plot_Label = if("Plot_TP_Label_Poster" %in% names(.)) Plot_TP_Label_Poster else tp_join
     ) %>%
     filter(!is.na(tp_num)) %>%
     arrange(Participant_id, tp_num)
@@ -629,12 +644,12 @@ if ((file.exists(FILE_STATUS_MAP) || file.exists(file.path(DIR_CLINICAL, "status
       aes(x = Plot_Label, y = as.factor(Participant_id))
     ) +
       geom_line(color = "grey80") +
-      geom_point(aes(color = Infection_Status, shape = ST_Label), size = 3) +
-      scale_color_manual(values = rutis_palette) +
+      geom_point(aes(color = Infection_Status), size = 3) +
+      scale_colour_uti_status() +
       labs(
-        title = "Longitudinal Infection Dynamics (Top 20 Participants)",
+        title = "Longitudinal Primary UTI Status Dynamics (Top 20 Participants)",
         x = "Timepoint", y = "Participant",
-        color = "Infection Status", shape = "ST"
+        color = "Primary UTI status"
       ) +
       theme_minimal()
 
@@ -650,7 +665,7 @@ if (file.exists(FILE_PAIR_STATS) && has_pkg("igraph") && has_pkg("ggraph")) {
   use_pkg("ggraph")
 
   pairs <- read_csv(FILE_PAIR_STATS, show_col_types = FALSE)
-  SNP_THRESHOLD <- 10
+  SNP_THRESHOLD <- strain_snp_threshold()
 
   # Check for TotalSnpCnt (or TotalSNPs)
   snp_col <- if ("TotalSnpCnt" %in% names(pairs)) "TotalSnpCnt" else "TotalSNPs"
@@ -680,26 +695,32 @@ if (file.exists(FILE_PAIR_STATS) && has_pkg("igraph") && has_pkg("ggraph")) {
         g_net <- graph_from_data_frame(edges, directed = FALSE)
 
         if (file.exists(FILE_STATUS_MAP) && !is.null(meta_map)) {
-          status <- read_csv(FILE_STATUS_MAP, show_col_types = FALSE) %>% ensure_tp_lab()
+          status <- read_csv(FILE_STATUS_MAP, show_col_types = FALSE) %>%
+            ensure_tp_lab() %>%
+            prefer_primary_uti_status()
 
           # Map SampleID (isolate_ID) -> Infection_Status
           annot <- meta_map %>%
             inner_join(status, by = c("Participant_id", "Timepoint" = "tp_lab")) %>%
-            select(isolate_ID, Infection_Status) %>%
+            transmute(isolate_ID, Infection_Status = UTI_Status) %>%
             distinct()
 
           # Match IDs. The edges use basenames or whatever was in path_A.
           # We might need to clean IDs.
           # For now, try direct match.
           V(g_net)$Phenotype <- annot$Infection_Status[match(V(g_net)$name, annot$isolate_ID)]
+          V(g_net)$Phenotype[is.na(V(g_net)$Phenotype)] <- "Unknown"
+        } else {
+          V(g_net)$Phenotype <- "Unknown"
         }
 
         p <- ggraph(g_net, layout = "fr") +
           geom_edge_link(aes(alpha = 0.5), show.legend = FALSE) +
           geom_node_point(aes(color = Phenotype), size = 3) +
-          scale_color_manual(values = rutis_palette, na.value = "grey80") +
+          scale_colour_uti_status() +
           theme_graph() +
-          labs(title = paste("Transmission Network (SNPs <=", SNP_THRESHOLD, ")"))
+          labs(title = paste("Transmission Network (SNPs <=", SNP_THRESHOLD, ")"),
+               color = "Primary UTI status")
 
         safe_ggsave("epidemiology/transmission_network.png", p, width = 8, height = 8)
       })
@@ -740,11 +761,13 @@ if (file.exists(FILE_NITRATE) && exists("vf_pa_all") && has_pkg("pheatmap")) {
         rownames(mat) <- paste(combined$Participant_id, combined$tp_lab, sep = "_")
 
         if (file.exists(FILE_STATUS_MAP)) {
-          status_map <- read_csv(FILE_STATUS_MAP, show_col_types = FALSE) %>% ensure_tp_lab()
+          status_map <- read_csv(FILE_STATUS_MAP, show_col_types = FALSE) %>%
+            ensure_tp_lab() %>%
+            prefer_primary_uti_status()
           annot_df <- status_map %>%
             mutate(ID = paste(Participant_id, tp_lab, sep = "_")) %>%
             filter(ID %in% rownames(mat)) %>%
-            select(ID, Infection_Status) %>%
+            transmute(ID, Primary_UTI_status = UTI_Status) %>%
             column_to_rownames("ID")
 
           png(file.path(DIR_PLOTS, "genomics", "virulence_nitrate_heatmap.png"), width = 1000, height = 1200, res = 150)

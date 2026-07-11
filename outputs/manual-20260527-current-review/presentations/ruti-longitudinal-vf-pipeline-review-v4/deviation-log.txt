@@ -1,0 +1,17 @@
+# Deviation Log
+
+## Intentional Scientific Reframe
+- Slides 1-10 now present virulence-factor repertoire, curation, and longitudinal stability/change across repeated urinary E. coli isolates.
+- Slides 11-12 introduce UTI versus Not_UTI as exploratory clinical annotation/application.
+- Appendix slides preserve current UTI-transition and AMR context as backup evidence only.
+
+## Media And Diagram Policy
+- Explanatory visuals are rebuilt as native shapes/text.
+- Analytical figures are embedded from current PNG outputs.
+- No SVG, .bin media, or external image relationships are permitted in the final package.
+
+## Guardrails
+- No legacy ASB-vs-UTI conclusion is presented.
+- No significant lpf claim is presented.
+- No global AMR association claim is presented.
+- Stable VF profiles are framed as supportive, not mechanistic proof.

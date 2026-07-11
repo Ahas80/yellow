@@ -1,0 +1,20 @@
+metric,value,source
+current_mixed_episode_rows,556,computed from current generated outputs
+current_mixed_participants,162,computed from current generated outputs
+longcycler_episode_rows,532,computed from current generated outputs
+longcycler_participants,161,computed from current generated outputs
+longcycler_uti,16,computed from current generated outputs
+longcycler_not_uti,516,computed from current generated outputs
+longcycler_legacy_asb,416,computed from current generated outputs
+longcycler_legacy_uti,33,computed from current generated outputs
+longcycler_legacy_negative,83,computed from current generated outputs
+longcycler_st_called,514,computed from current generated outputs
+longcycler_unique_st,80,computed from current generated outputs
+vf_gene_columns,227,computed from current generated outputs
+longcycler_transitions,371,computed from current generated outputs
+longcycler_transition_participants,139,computed from current generated outputs
+longcycler_strict_same_transitions,116,computed from current generated outputs
+longcycler_notuti_to_uti,9,computed from current generated outputs
+longcycler_notuti_to_uti_strict,7,computed from current generated outputs
+longcycler_uti_to_notuti,12,computed from current generated outputs
+longcycler_uti_to_notuti_strict,3,computed from current generated outputs

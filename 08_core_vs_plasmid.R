@@ -13,8 +13,8 @@
 # Role: [Inferential-core] - Compare chromosomal STs with plasmid types.
 #
 # Inputs:
-#   - results/mlst/mlst_all.tsv
-#   - data/assemblies/*.fasta
+#   - results/mlst/mlst_provider_preferred.csv
+#   - results/qc/canonical_assembly_selection.csv
 #
 # Outputs:
 #   - results/mlst/ST_core_freq.csv
@@ -46,22 +46,22 @@ suppressPackageStartupMessages({
 
 # 2. Configuration
 # ------------------------------------------------------------------------------
-# 2. Configuration
-# ------------------------------------------------------------------------------
-FILE_MLST_ALL <- FILE_MLST_ALL # From 00_config.R
 DIR_PMLST_LOG <- file.path(DIR_MLST, "pmlst_logs")
 ensure_dir(DIR_PMLST_LOG)
+ensure_dir(file.path(DIR_MLST, "raw"))
 
 invisible(check_tool("mlst"))
 
 # 3. Chromosomal ST Frequencies
 # ------------------------------------------------------------------------------
-if (file.exists(FILE_MLST_ALL)) {
-  core_tbl <- read_tsv(FILE_MLST_ALL, show_col_types = FALSE)
+if (file.exists(FILE_MLST_CANONICAL)) {
+  core_tbl <- read_csv(FILE_MLST_CANONICAL, show_col_types = FALSE)
 
   if ("ST" %in% names(core_tbl)) {
     core_tbl %>%
-      count(ST, sort = TRUE) %>%
+      mutate(ST_source = if ("ST_source" %in% names(.)) ST_source else NA_character_) %>%
+      filter(!is.na(ST), ST != "") %>%
+      count(ST, ST_source, sort = TRUE) %>%
       mutate(pct = percent(n / sum(n))) %>%
       write_csv(file.path(DIR_MLST, "ST_core_freq.csv"))
   }
@@ -77,8 +77,39 @@ pSchemes <- schemes_out[grepl("inc|plasmid|pmlst", schemes_out, ignore.case = TR
 pSchemes <- sub("\\s.*$", "", trimws(pSchemes))
 pSchemes <- unique(pSchemes[nzchar(pSchemes)])
 
-fasta_files <- dir_ls(DIR_FASTAS, glob = "*.fasta")
-if (length(fasta_files) == 0) fasta_files <- dir_ls(DIR_FASTAS, glob = "*.fa")
+selection_file <- file.path(DIR_QC, "canonical_assembly_selection.csv")
+if (file.exists(selection_file)) {
+  fasta_manifest <- read_csv(selection_file, show_col_types = FALSE) %>%
+    mutate(
+      full_path = if ("full_path" %in% names(.)) as.character(full_path) else as.character(fasta_path),
+      selected_canonical = if ("selected_canonical" %in% names(.)) as_pipeline_bool(selected_canonical) else FALSE,
+      file_exists = if ("file_exists" %in% names(.)) as_pipeline_bool(file_exists, default = file.exists(full_path)) else file.exists(full_path),
+      Isolate_ID = if ("Isolate_ID" %in% names(.)) as.character(Isolate_ID) else tools::file_path_sans_ext(basename(full_path))
+    ) %>%
+    filter(selected_canonical %in% TRUE, file_exists %in% TRUE, !is.na(full_path), file.exists(full_path)) %>%
+    distinct(full_path, .keep_all = TRUE)
+  msg("Using %d canonical selected FASTA(s) for plasmid MLST/replicon screening.", nrow(fasta_manifest))
+} else {
+  warning("Canonical assembly selection not found; falling back to top-level FASTA scan.")
+  fasta_files <- dir_ls(DIR_FASTAS, glob = "*.fasta")
+  if (length(fasta_files) == 0) fasta_files <- dir_ls(DIR_FASTAS, glob = "*.fa")
+  fasta_manifest <- tibble::tibble(
+    full_path = as.character(fasta_files),
+    Isolate_ID = tools::file_path_sans_ext(basename(fasta_files))
+  )
+}
+
+fasta_files <- fasta_manifest$full_path
+fasta_lookup <- fasta_manifest %>%
+  transmute(
+    full_path_norm = normalizePath(full_path, winslash = "/", mustWork = FALSE),
+    Isolate_ID = as.character(Isolate_ID)
+  )
+lookup_isolate_id <- function(fasta) {
+  key <- normalizePath(fasta, winslash = "/", mustWork = FALSE)
+  hit <- fasta_lookup$Isolate_ID[match(key, fasta_lookup$full_path_norm)]
+  if (length(hit) == 1 && !is.na(hit) && nzchar(hit)) hit else tools::file_path_sans_ext(fs::path_file(fasta))
+}
 
 if (length(fasta_files) == 0) stop("No FASTA files found in ", DIR_FASTAS)
 
@@ -100,7 +131,7 @@ if (length(pSchemes) > 0) {
     if (res$status == 0 && grepl(",", res$stdout)) {
       dat <- read_csv(I(res$stdout), show_col_types = FALSE) %>%
         rename_with(tolower) %>%
-        mutate(scheme = scheme, isolate_id = tools::file_path_sans_ext(basename), .before = 1)
+        mutate(scheme = scheme, isolate_id = lookup_isolate_id(fasta), .before = 1)
       write_csv(dat, out_csv)
       return(dat)
     }
@@ -136,7 +167,7 @@ if (length(pSchemes) > 0) {
     }
 
     tab %>%
-      mutate(isolate_id = tools::file_path_sans_ext(fs::path_file(fasta))) %>%
+      mutate(isolate_id = lookup_isolate_id(fasta)) %>%
       select(isolate_id, replicon = GENE, identity = `%IDENTITY`, coverage = `%COVERAGE`)
   }
 

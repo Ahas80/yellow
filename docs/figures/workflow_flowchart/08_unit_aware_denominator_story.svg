@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2600" height="1463" viewBox="0 0 2600 1463" role="img">
+<defs>
+  <marker id="arrowhead" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto" markerUnits="strokeWidth">
+    <path d="M 0 0 L 10 4 L 0 8 z" fill="#94A3B8"/>
+  </marker>
+</defs>
+<rect x="0" y="0" width="2600" height="1463" fill="#FFFFFF"/>
+<text x="117.0" y="113.8" font-family="Arial, Helvetica, sans-serif" font-size="48.0" fill="#0F172A" font-weight="700" text-anchor="start"><tspan x="117.0" dy="0.0">Why the counts change: each stage counts a different thing</tspan></text>
+<text x="117.0" y="162.0" font-family="Arial, Helvetica, sans-serif" font-size="23.0" fill="#64748B" font-weight="400" text-anchor="start"><tspan x="117.0" dy="0.0">Clinical visits expand into assembly candidates for QC, then collapse back to one selected genomic profile per usable visit.</tspan></text>
+<line x1="117.0" y1="212.1" x2="2483.0" y2="212.1" stroke="#CBD5E1" stroke-width="2.2" stroke-linecap="round"/>
+<text x="143.0" y="419.5" font-family="Arial, Helvetica, sans-serif" font-size="23.0" fill="#D55E00" font-weight="700" text-anchor="start"><tspan x="143.0" dy="0.0">1. Clinical curation</tspan></text>
+<rect x="598.0" y="336.5" width="572.0" height="197.5" rx="32.0" fill="#FFF7ED" stroke="#FED7AA" stroke-width="2.4"/>
+<rect x="613.6" y="357.0" width="93.6" height="67.3" rx="8.0" fill="#D55E00" stroke="#D55E00" stroke-width="0.0"/>
+<text x="660.4" y="425.2" font-family="Arial, Helvetica, sans-serif" font-size="17.0" fill="#FFFFFF" font-weight="700" text-anchor="middle"><tspan x="660.4" dy="0.0">1</tspan></text>
+<text x="728.0" y="413.1" font-family="Arial, Helvetica, sans-serif" font-size="21.0" fill="#0F172A" font-weight="700" text-anchor="start"><tspan x="728.0" dy="0.0">Classified clinical</tspan><tspan x="728.0" dy="20.0">visits</tspan></text>
+<text x="650.0" y="547.1" font-family="Arial, Helvetica, sans-serif" font-size="38.0" fill="#D55E00" font-weight="700" text-anchor="start"><tspan x="650.0" dy="0.0">585 visits</tspan></text>
+<text x="650.0" y="602.2" font-family="Arial, Helvetica, sans-serif" font-size="17.0" fill="#64748B" font-weight="400" text-anchor="start"><tspan x="650.0" dy="0.0">participant sample visits</tspan></text>
+<rect x="1443.0" y="336.5" width="624.0" height="197.5" rx="32.0" fill="#FFF7ED" stroke="#FED7AA" stroke-width="2.4"/>
+<rect x="1458.6" y="357.0" width="93.6" height="67.3" rx="8.0" fill="#D55E00" stroke="#D55E00" stroke-width="0.0"/>
+<text x="1505.4" y="425.2" font-family="Arial, Helvetica, sans-serif" font-size="17.0" fill="#FFFFFF" font-weight="700" text-anchor="middle"><tspan x="1505.4" dy="0.0">2</tspan></text>
+<text x="1573.0" y="413.1" font-family="Arial, Helvetica, sans-serif" font-size="21.0" fill="#0F172A" font-weight="700" text-anchor="start"><tspan x="1573.0" dy="0.0">Included clinical</tspan><tspan x="1573.0" dy="20.0">visits</tspan></text>
+<text x="1495.0" y="547.1" font-family="Arial, Helvetica, sans-serif" font-size="38.0" fill="#D55E00" font-weight="700" text-anchor="start"><tspan x="1495.0" dy="0.0">583 visits</tspan></text>
+<text x="1495.0" y="602.2" font-family="Arial, Helvetica, sans-serif" font-size="17.0" fill="#64748B" font-weight="400" text-anchor="start"><tspan x="1495.0" dy="0.0">18 UTI, 565 Not_UTI</tspan></text>
+<line x1="1183.0" y1="431.6" x2="1424.8" y2="431.6" stroke="#94A3B8" stroke-width="4.0" stroke-linecap="round" marker-end="url(#arrowhead)"/>
+<rect x="1183.0" y="358.4" width="286.0" height="58.5" rx="12.0" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.3"/>
+<text x="1209.0" y="403.2" font-family="Arial, Helvetica, sans-serif" font-size="15.5" fill="#475569" font-weight="400" text-anchor="start"><tspan x="1209.0" dy="0.0">-2 manual exclusions</tspan></text>
+<text x="143.0" y="697.4" font-family="Arial, Helvetica, sans-serif" font-size="23.0" fill="#0072B2" font-weight="700" text-anchor="start"><tspan x="143.0" dy="0.0">2. Temporary assembly inventory</tspan></text>
+<rect x="962.0" y="621.8" width="780.0" height="197.5" rx="32.0" fill="#E0F2FE" stroke="#BAE6FD" stroke-width="2.4"/>
+<rect x="977.6" y="642.3" width="93.6" height="67.3" rx="8.0" fill="#0072B2" stroke="#0072B2" stroke-width="0.0"/>
+<text x="1024.4" y="710.5" font-family="Arial, Helvetica, sans-serif" font-size="17.0" fill="#FFFFFF" font-weight="700" text-anchor="middle"><tspan x="1024.4" dy="0.0">3</tspan></text>
+<text x="1092.0" y="698.4" font-family="Arial, Helvetica, sans-serif" font-size="21.0" fill="#0F172A" font-weight="700" text-anchor="start"><tspan x="1092.0" dy="0.0">Assembly candidates /</tspan><tspan x="1092.0" dy="20.0">QC</tspan></text>
+<text x="1014.0" y="832.4" font-family="Arial, Helvetica, sans-serif" font-size="38.0" fill="#0072B2" font-weight="700" text-anchor="start"><tspan x="1014.0" dy="0.0">1,291 candidates</tspan></text>
+<text x="1014.0" y="887.5" font-family="Arial, Helvetica, sans-serif" font-size="17.0" fill="#64748B" font-weight="400" text-anchor="start"><tspan x="1014.0" dy="0.0">genome files, not extra visits</tspan></text>
+<line x1="1755.0" y1="534.0" x2="1755.0" y2="607.1" stroke="#94A3B8" stroke-width="4.0" stroke-linecap="round" marker-end="url(#arrowhead)"/>
+<rect x="1807.0" y="523.8" width="572.0" height="58.5" rx="12.0" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.3"/>
+<text x="1833.0" y="568.5" font-family="Arial, Helvetica, sans-serif" font-size="15.5" fill="#475569" font-weight="400" text-anchor="start"><tspan x="1833.0" dy="0.0">counting changes: visits -&gt; assembly</tspan><tspan x="1833.0" dy="17.4">candidates</tspan></text>
+<text x="143.0" y="946.2" font-family="Arial, Helvetica, sans-serif" font-size="23.0" fill="#009E73" font-weight="700" text-anchor="start"><tspan x="143.0" dy="0.0">3. Return to one profile per visit</tspan></text>
+<rect x="962.0" y="870.5" width="780.0" height="197.5" rx="32.0" fill="#ECFDF5" stroke="#BBF7D0" stroke-width="2.4"/>
+<rect x="977.6" y="891.0" width="93.6" height="67.3" rx="8.0" fill="#009E73" stroke="#009E73" stroke-width="0.0"/>
+<text x="1024.4" y="959.2" font-family="Arial, Helvetica, sans-serif" font-size="17.0" fill="#FFFFFF" font-weight="700" text-anchor="middle"><tspan x="1024.4" dy="0.0">4</tspan></text>
+<text x="1092.0" y="947.1" font-family="Arial, Helvetica, sans-serif" font-size="21.0" fill="#0F172A" font-weight="700" text-anchor="start"><tspan x="1092.0" dy="0.0">Selected genomic</tspan><tspan x="1092.0" dy="20.0">profiles</tspan></text>
+<text x="1014.0" y="1081.1" font-family="Arial, Helvetica, sans-serif" font-size="38.0" fill="#009E73" font-weight="700" text-anchor="start"><tspan x="1014.0" dy="0.0">556 profiles</tspan></text>
+<text x="1014.0" y="1136.2" font-family="Arial, Helvetica, sans-serif" font-size="17.0" fill="#64748B" font-weight="400" text-anchor="start"><tspan x="1014.0" dy="0.0">one profile per usable visit</tspan></text>
+<line x1="1352.0" y1="819.3" x2="1352.0" y2="870.5" stroke="#94A3B8" stroke-width="4.0" stroke-linecap="round" marker-end="url(#arrowhead)"/>
+<rect x="1807.0" y="797.3" width="598.0" height="58.5" rx="12.0" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.3"/>
+<text x="1833.0" y="842.1" font-family="Arial, Helvetica, sans-serif" font-size="15.5" fill="#475569" font-weight="400" text-anchor="start"><tspan x="1833.0" dy="0.0">QC selects one profile per usable visit</tspan></text>
+<text x="143.0" y="1183.2" font-family="Arial, Helvetica, sans-serif" font-size="23.0" fill="#475569" font-weight="700" text-anchor="start"><tspan x="143.0" dy="0.0">4. Analysis-specific layers</tspan></text>
+<rect x="559.0" y="1097.2" width="572.0" height="168.2" rx="32.0" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="2.4"/>
+<rect x="574.6" y="1117.7" width="93.6" height="67.3" rx="8.0" fill="#009E73" stroke="#009E73" stroke-width="0.0"/>
+<text x="621.4" y="1185.9" font-family="Arial, Helvetica, sans-serif" font-size="17.0" fill="#FFFFFF" font-weight="700" text-anchor="middle"><tspan x="621.4" dy="0.0">5A</tspan></text>
+<text x="689.0" y="1173.8" font-family="Arial, Helvetica, sans-serif" font-size="21.0" fill="#0F172A" font-weight="700" text-anchor="start"><tspan x="689.0" dy="0.0">VF/model-ready table</tspan></text>
+<text x="611.0" y="1307.9" font-family="Arial, Helvetica, sans-serif" font-size="38.0" fill="#009E73" font-weight="700" text-anchor="start"><tspan x="611.0" dy="0.0">556 profiles</tspan></text>
+<text x="611.0" y="1363.0" font-family="Arial, Helvetica, sans-serif" font-size="17.0" fill="#64748B" font-weight="400" text-anchor="start"><tspan x="611.0" dy="0.0">17 UTI, 539 Not_UTI</tspan></text>
+<rect x="1235.0" y="1097.2" width="572.0" height="168.2" rx="32.0" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="2.4"/>
+<rect x="1250.6" y="1117.7" width="93.6" height="67.3" rx="8.0" fill="#0072B2" stroke="#0072B2" stroke-width="0.0"/>
+<text x="1297.4" y="1185.9" font-family="Arial, Helvetica, sans-serif" font-size="17.0" fill="#FFFFFF" font-weight="700" text-anchor="middle"><tspan x="1297.4" dy="0.0">5B</tspan></text>
+<text x="1365.0" y="1173.8" font-family="Arial, Helvetica, sans-serif" font-size="21.0" fill="#0F172A" font-weight="700" text-anchor="start"><tspan x="1365.0" dy="0.0">Longitudinal visit</tspan><tspan x="1365.0" dy="20.0">layer</tspan></text>
+<text x="1287.0" y="1307.9" font-family="Arial, Helvetica, sans-serif" font-size="38.0" fill="#0072B2" font-weight="700" text-anchor="start"><tspan x="1287.0" dy="0.0">538 visits</tspan></text>
+<text x="1287.0" y="1363.0" font-family="Arial, Helvetica, sans-serif" font-size="17.0" fill="#64748B" font-weight="400" text-anchor="start"><tspan x="1287.0" dy="0.0">394 consecutive visit pairs</tspan></text>
+<rect x="1911.0" y="1097.2" width="572.0" height="168.2" rx="32.0" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="2.4"/>
+<rect x="1926.6" y="1117.7" width="93.6" height="67.3" rx="8.0" fill="#D55E00" stroke="#D55E00" stroke-width="0.0"/>
+<text x="1973.4" y="1185.9" font-family="Arial, Helvetica, sans-serif" font-size="17.0" fill="#FFFFFF" font-weight="700" text-anchor="middle"><tspan x="1973.4" dy="0.0">5C</tspan></text>
+<text x="2041.0" y="1173.8" font-family="Arial, Helvetica, sans-serif" font-size="21.0" fill="#0F172A" font-weight="700" text-anchor="start"><tspan x="2041.0" dy="0.0">Focused transition</tspan><tspan x="2041.0" dy="20.0">layer</tspan></text>
+<text x="1963.0" y="1307.9" font-family="Arial, Helvetica, sans-serif" font-size="38.0" fill="#D55E00" font-weight="700" text-anchor="start"><tspan x="1963.0" dy="0.0">11 transitions</tspan></text>
+<text x="1963.0" y="1363.0" font-family="Arial, Helvetica, sans-serif" font-size="17.0" fill="#64748B" font-weight="400" text-anchor="start"><tspan x="1963.0" dy="0.0">10 WGS/VF-linked</tspan></text>
+<line x1="1352.0" y1="1068.0" x2="845.0" y2="1094.3" stroke="#94A3B8" stroke-width="4.0" stroke-linecap="round" marker-end="url(#arrowhead)"/>
+<line x1="1352.0" y1="1068.0" x2="1521.0" y2="1094.3" stroke="#94A3B8" stroke-width="4.0" stroke-linecap="round" marker-end="url(#arrowhead)"/>
+<line x1="1352.0" y1="1068.0" x2="2197.0" y2="1094.3" stroke="#94A3B8" stroke-width="4.0" stroke-linecap="round" marker-end="url(#arrowhead)"/>
+<rect x="175.5" y="1324.0" width="2249.0" height="87.8" rx="24.0" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.8"/>
+<text x="221.0" y="1362.0" font-family="Arial, Helvetica, sans-serif" font-size="17.5" fill="#475569" font-weight="400" text-anchor="start"><tspan x="221.0" dy="0.0">Mental model: 585/583 are clinical visits; 1,291 is a temporary list of assembly candidates; 556 is selected genomic profiles; 538,</tspan><tspan x="221.0" dy="19.6">394, 11, and 10 are downstream analysis-specific subsets.</tspan></text>
+<text x="117.0" y="1452.2" font-family="Arial, Helvetica, sans-serif" font-size="15.5" fill="#64748B" font-weight="400" text-anchor="start"><tspan x="117.0" dy="0.0">Sources: pipeline_denominator_summary.csv; table_01_cohort_episode_flow.csv; vf_longitudinal_transitions.csv; vf_transition_case_index.csv</tspan></text>
+</svg>

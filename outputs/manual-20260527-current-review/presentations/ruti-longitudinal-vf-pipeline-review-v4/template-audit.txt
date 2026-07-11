@@ -1,0 +1,26 @@
+# Template Audit
+
+Source PPTX: /Users/Aamir/Desktop/rUTIs/outputs/manual-20260527-current-review/presentations/ruti-current-results-scientific-review-v2/output/rUTI_Current_Results_VF_Focused_Review_2026-05-27.pptx
+Workspace: /Users/Aamir/Desktop/rUTIs/outputs/manual-20260527-current-review/presentations/ruti-longitudinal-vf-pipeline-review-v3
+
+## Source Structure
+- 22-slide media-safe academic report deck.
+- White canvas, slim vertical rail, compact header/footer, and large evidence objects.
+- Packaged media in the source deck are PNG assets; no inherited SVG-in-.bin media should be reused.
+
+## Reuse Contract
+- Output slide count remains 22.
+- Each output slide starts from the corresponding duplicated source slide.
+- Content is intentionally replaced because the narrative centre shifts from recurrent UTI review to longitudinal urinary E. coli VF pipeline analysis.
+- Native editable PowerPoint shapes/text are used for explanatory graphics.
+- Current analytical PNG figures are embedded directly; no external links are allowed.
+
+## Typography And Layout Rules
+- Preserve the v2 report-style hierarchy: concise uppercase section label, strong title, quiet subtitle, evidence label, and footer source line.
+- Avoid dense prose grids in the spoken slides.
+- Keep UTI-specific material as a later clinical annotation/application, not the opening thesis.
+
+## Known Deviations
+- Previous rUTI-led title and early clinical motivation slides are replaced with VF-first framing.
+- Main Figures 2-4 move out of the spoken story except where used as appendices.
+- AMR is restricted to one appendix backup slide.

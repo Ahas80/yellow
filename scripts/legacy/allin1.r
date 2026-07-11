@@ -1,4 +1,14 @@
 #!/usr/bin/env Rscript
+if (!identical(Sys.getenv("RUTIS_ALLOW_OBSOLETE_LEGACY_STATUS"), "1")) {
+  stop(
+    "scripts/legacy/allin1.r uses obsolete ASB/UTI/Negative strict-CFU ",
+    "status logic. Use the numbered pipeline with 00a_load_clean_clinical.R ",
+    "+ 00b_classify_episodes.R for the catheter-aware UTI vs Not_UTI ",
+    "definition, or set RUTIS_ALLOW_OBSOLETE_LEGACY_STATUS=1 to run this ",
+    "legacy script intentionally.",
+    call. = FALSE
+  )
+}
 # =============================================================
 # 01_prepare_assembly_metadata.R — Population-first S&S + strict CFU + QA
 # -------------------------------------------------------------

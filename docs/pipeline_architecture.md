@@ -21,13 +21,13 @@ This document explains how every script in the project relates to each other, wh
 
 ### `00b_classify_episodes.R`
 *   **Role**: The "Judge".
-*   **Why**: We need to decide if a patient has a **UTI**, **ASB**, or is **Negative**. This script applies the clinical rules (Symptoms + CFU count).
+*   **Why**: We need the primary clinical contrast **UTI vs Not_UTI**. This script applies catheter-aware symptom rules plus culture support at the >=10^3 CFU/mL threshold, while preserving legacy ASB / UTI / Negative fields only for comparison.
 *   **Input**: `clinical_merged.rds`.
 *   **Output**: `status_map.csv` (The "Master Key": maps every `Participant_id` + `Timepoint` to a clinical status).
 
 ### `00c_plot_clinical_summary.R`
 *   **Role**: The "Reporter".
-*   **Why**: Visualizes the cohort. How many UTIs? How many ASB?
+*   **Why**: Visualizes the cohort under the primary UTI definition, including reclassification, Not_UTI subgroup composition, CFU provenance, and symptom-rule provenance.
 *   **Input**: `status_map.csv`.
 *   **Output**: `plots/clinical/cohort_summary.png`.
 
@@ -52,8 +52,8 @@ This document explains how every script in the project relates to each other, wh
 *   **Output**: `results/vf/vf_pa_all.csv` (Rows = Isolates, Cols = Genes).
 
 ### `03_plotting.R`
-*   **Role**: The "Visualizer".
-*   **Why**: Creates heatmaps and summary plots of gene presence across samples.
+*   **Role**: Legacy exploratory visualizer.
+*   **Why**: Creates older exploratory plots when explicitly requested. The main runner skips it by default; canonical UTI-vs-Not_UTI VF figures come from scripts 23-30.
 *   **Input**: `vf_pa_all.csv`.
 *   **Output**: Various plots in `plots/vf/`.
 
@@ -72,6 +72,7 @@ This document explains how every script in the project relates to each other, wh
 *   **Role**: The "Detective".
 *   **Why**: Compares every isolate against every other isolate from the same patient.
 *   **How**: Uses ANI (Average Nucleotide Identity), SNP distance, VF Jaccard, Plasmid Jaccard.
+*   **Current same-strain rule**: SNPs are primary: 0-25 SNPs = strong same strain, >25 SNPs = above same-strain SNP threshold, and missing SNPs = missing SNP evidence. ST is reported separately as secondary lineage context and does not prove same strain.
 *   **Input**:
     *   `status_map.csv` (Clinical info).
     *   `mash_distance.csv` (Genomic distance).
@@ -80,8 +81,8 @@ This document explains how every script in the project relates to each other, wh
 
 ### `14_genotype_phenotype_model.R`
 *   **Role**: The "Statistician".
-*   **Why**: Performs GWAS (Genome-Wide Association Study). Tests if specific genes (e.g., *lpfA*) are more common in UTI vs ASB.
-*   **Input**: `status_map.csv` + `vf_pa_all.csv`.
+*   **Why**: Performs exploratory genotype-phenotype modelling for UTI vs Not_UTI using `UTI_binary`. The small UTI denominator means results should be interpreted as exploratory.
+*   **Input**: `status_map.csv` + canonical `vf_analysis_ready.csv`.
 *   **Output**: 
     *   `results/models/volcano_plot.png`.
     *   `gwas_multivariable_glmm.csv` (Statistical results).
@@ -99,13 +100,19 @@ This document explains how every script in the project relates to each other, wh
 
 ### `15_longitudinal_patterns.R`
 *   **Role**: The "Time Traveler".
-*   **Why**: Stitches individual episodes into patient timelines. Identifies "Phenotype Switches" (ASB → UTI).
+*   **Why**: Stitches individual episodes into patient timelines. Identifies primary-status switch candidates, especially Not_UTI → UTI transitions.
 *   **How**: Uses graph-based clustering to assign global "Strain IDs" based on "Same" classification.
 *   **Input**: `pairwise_metrics.csv` (from script 11).
 *   **Output**: 
     *   `results/longitudinal/participant_timelines.csv`.
     *   `phenotype_switch_candidates.csv`.
     *   `swimmer_plot.png`.
+
+### VF longitudinal order of interpretation
+1. Run WGS/core SNP and `11_compare_strains.R`.
+2. Classify repeated isolates by same-strain, related/uncertain, replacement, or missing strain evidence.
+3. Analyze VF stability/change within strong same-strain pairs first.
+4. Use ST analyses afterward as secondary lineage and confounding diagnostics.
 
 ### `16_within_host_evolution.R`
 *   **Role**: The "Microscope".
@@ -158,18 +165,20 @@ This document explains how every script in the project relates to each other, wh
                                       ↓
 3. status_map + Gene Matrices → 11_compare → pairwise_metrics.csv
                                                     ↓
-4. pairwise_metrics → 15_longitudinal → Timelines & phenotype_switch_candidates.csv
+4. pairwise_metrics → same-strain/replacement context → VF longitudinal stability first
                                                     ↓
-5. phenotype_switch_candidates → 16/18/20 → Mechanism (SNPs → Genes → rpoD, lpxL)
+5. pairwise_metrics → 15_longitudinal → Timelines & phenotype_switch_candidates.csv
                                                     ↓
-6. Everything → 21_figures → Publication Figures
+6. phenotype_switch_candidates → 16/18/20 → Mechanism (SNPs → Genes → rpoD, lpxL)
+                                                    ↓
+7. Everything → 21_figures → Publication Figures
 ```
 
 ---
 
 ## **Key Files to Understand the Project**
 
-1.  **`status_map.csv`**: Every participant-timepoint combination and their clinical status (UTI/ASB/Negative).
+1.  **`status_map.csv`**: Every participant-timepoint combination with primary `UTI_Status` (`UTI` or `Not_UTI`) plus legacy comparison fields.
 2.  **`vf_pa_all.csv`**: Every gene and which samples have it (binary matrix).
 3.  **`pairwise_metrics.csv`**: Every pair of samples compared (genomic distance + classification as "Same" or "Different").
 4.  **`participant_timelines.csv`**: Longitudinal view showing how strains persist or switch phenotypes.

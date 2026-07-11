@@ -1,0 +1,567 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/lwval87e",
+    "id": "lwval87e",
+    "slide": 14,
+    "layoutId": "/ppt/slideLayouts/slideLayout2.xml",
+    "layoutName": "Title and Content",
+    "layoutType": "obj",
+    "masterLayoutId": "/ppt/slideMasters/slideMaster1.xml",
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 960,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "Office",
+    "colors": {
+      "accent1": "#4F81BD",
+      "accent2": "#C0504D",
+      "accent3": "#9BBB59",
+      "accent4": "#8064A2",
+      "accent5": "#4BACC6",
+      "accent6": "#F79646",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#1F497D",
+      "lt2": "#EEECE1",
+      "hlink": "#0000FF",
+      "folHlink": "#800080"
+    },
+    "fontScheme": {
+      "name": "Office",
+      "majorFont": {
+        "latinTypeface": "Calibri"
+      },
+      "minorFont": {
+        "latinTypeface": "Calibri"
+      }
+    },
+    "typefaces": [
+      "Calibri"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "/ppt/slideLayouts/slideLayout2.xml",
+      "name": "Title and Content",
+      "type": "obj",
+      "parentLayoutId": "/ppt/slideMasters/slideMaster1.xml",
+      "elements": [
+        {
+          "order": 1,
+          "kind": "shape",
+          "scope": "layout",
+          "aid": "template/layout//ppt/slideLayouts/slideLayout2.xml/2",
+          "id": "2",
+          "name": "Title 1",
+          "bbox": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "order": 2,
+          "kind": "shape",
+          "scope": "layout",
+          "aid": "template/layout//ppt/slideLayouts/slideLayout2.xml/3",
+          "id": "3",
+          "name": "Content Placeholder 2",
+          "bbox": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "order": 3,
+          "kind": "shape",
+          "scope": "layout",
+          "aid": "template/layout//ppt/slideLayouts/slideLayout2.xml/4",
+          "id": "4",
+          "name": "Date Placeholder 3",
+          "bbox": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "order": 4,
+          "kind": "shape",
+          "scope": "layout",
+          "aid": "template/layout//ppt/slideLayouts/slideLayout2.xml/5",
+          "id": "5",
+          "name": "Footer Placeholder 4",
+          "bbox": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "order": 5,
+          "kind": "shape",
+          "scope": "layout",
+          "aid": "template/layout//ppt/slideLayouts/slideLayout2.xml/6",
+          "id": "6",
+          "name": "Slide Number Placeholder 5",
+          "bbox": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "scope": "master",
+      "id": "/ppt/slideMasters/slideMaster1.xml",
+      "type": "master",
+      "elements": [
+        {
+          "order": 1,
+          "kind": "shape",
+          "scope": "master",
+          "aid": "template/master//ppt/slideMasters/slideMaster1.xml/2",
+          "id": "2",
+          "name": "Title Placeholder 1",
+          "bbox": [
+            48,
+            28.83,
+            864,
+            120
+          ],
+          "geometry": "rect",
+          "resolvedTextStyle": {
+            "anchor": 2,
+            "vertical": 1,
+            "verticalAlignment": "middle",
+            "autoFit": "shrinkText",
+            "insets": {
+              "top": 4.8,
+              "right": 9.6,
+              "bottom": 4.8,
+              "left": 9.6
+            }
+          }
+        },
+        {
+          "order": 2,
+          "kind": "shape",
+          "scope": "master",
+          "aid": "template/master//ppt/slideMasters/slideMaster1.xml/3",
+          "id": "3",
+          "name": "Text Placeholder 2",
+          "bbox": [
+            48,
+            168,
+            864,
+            475.17
+          ],
+          "geometry": "rect",
+          "resolvedTextStyle": {
+            "vertical": 1,
+            "autoFit": "shrinkText",
+            "insets": {
+              "top": 4.8,
+              "right": 9.6,
+              "bottom": 4.8,
+              "left": 9.6
+            }
+          }
+        },
+        {
+          "order": 3,
+          "kind": "shape",
+          "scope": "master",
+          "aid": "template/master//ppt/slideMasters/slideMaster1.xml/4",
+          "id": "4",
+          "name": "Date Placeholder 3",
+          "bbox": [
+            48,
+            667.33,
+            224,
+            38.33
+          ],
+          "geometry": "rect",
+          "resolvedTextStyle": {
+            "anchor": 2,
+            "vertical": 1,
+            "verticalAlignment": "middle",
+            "insets": {
+              "top": 4.8,
+              "right": 9.6,
+              "bottom": 4.8,
+              "left": 9.6
+            }
+          }
+        },
+        {
+          "order": 4,
+          "kind": "shape",
+          "scope": "master",
+          "aid": "template/master//ppt/slideMasters/slideMaster1.xml/5",
+          "id": "5",
+          "name": "Footer Placeholder 4",
+          "bbox": [
+            328,
+            667.33,
+            304,
+            38.33
+          ],
+          "geometry": "rect",
+          "resolvedTextStyle": {
+            "anchor": 2,
+            "vertical": 1,
+            "verticalAlignment": "middle",
+            "insets": {
+              "top": 4.8,
+              "right": 9.6,
+              "bottom": 4.8,
+              "left": 9.6
+            }
+          }
+        },
+        {
+          "order": 5,
+          "kind": "shape",
+          "scope": "master",
+          "aid": "template/master//ppt/slideMasters/slideMaster1.xml/6",
+          "id": "6",
+          "name": "Slide Number Placeholder 5",
+          "bbox": [
+            688,
+            667.33,
+            224,
+            38.33
+          ],
+          "geometry": "rect",
+          "resolvedTextStyle": {
+            "anchor": 2,
+            "vertical": 1,
+            "verticalAlignment": "middle",
+            "insets": {
+              "top": 4.8,
+              "right": 9.6,
+              "bottom": 4.8,
+              "left": 9.6
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/l0rqd4vm",
+      "id": "2",
+      "name": "Title 1",
+      "bbox": [
+        48,
+        28.83,
+        864,
+        120
+      ],
+      "text": "Decisions needed to make the next VF analysis publishable",
+      "textPreview": "Decisions needed to make the next VF analysis publishable",
+      "resolvedFontSize": 58.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 58.67,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "center",
+        "verticalAlignment": "middle",
+        "autoFit": "shrinkText",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Decisions needed to make the next"
+          },
+          {
+            "index": 2,
+            "text": "VF analysis publishable"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Decisions needed to make the next VF analysis publishable",
+          "resolvedTextStyle": {
+            "fontSize": 48,
+            "bold": true
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Decisions needed to make the next VF analysis publishable",
+              "fontSize": 48,
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "spaceBefore": 0
+        }
+      ]
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/wfyxobm5",
+      "id": "3",
+      "name": "Content Placeholder 2",
+      "bbox": [
+        48,
+        168,
+        864,
+        475.17
+      ],
+      "text": "1. UTI phenotype: Strict guideline-adherent UTI vs physician-suspected UTI vs sensitivity framework\n2. VF scoring: Total burden vs curated UPEC gene set vs category-weighted score vs PCA/model-derived score\n3. VF categories: Which biological categories should be prioritised: adhesion, iron acquisition, toxins, capsule/surface, invasion/evasion, AMR?\n4. Lineage adjustment: How should ST/lineage be handled in VF models?\n5. Uricult handling: Combine with routine samples or analyse as event-triggered suspected UTI samples?\n6. Missing UTI WGS: Can the 4 missing Uricult Batch 3 UTI episodes be sequenced/recovered?\n\nThe next phase should turn the current VF presence/absence dataset into a biologically interpretable virulence framework.",
+      "textPreview": "1. UTI phenotype: Strict guideline-adherent UTI vs physician-suspected UTI vs sensitivity framework | 2. VF scoring: Total burden vs cura...",
+      "resolvedFontSize": 42.67,
+      "resolvedTextStyle": {
+        "vertical": 1,
+        "fontSize": 42.67,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "autoFit": "shrinkText",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 17,
+        "lines": [
+          {
+            "index": 1,
+            "text": "1. UTI phenotype: Strict guideline-adherent UTI vs"
+          },
+          {
+            "index": 2,
+            "text": "physician-suspected UTI vs sensitivity framework"
+          },
+          {
+            "index": 3,
+            "text": "2. VF scoring: Total burden vs curated UPEC gene set vs"
+          },
+          {
+            "index": 4,
+            "text": "category-weighted score vs PCA/model-derived score"
+          },
+          {
+            "index": 5,
+            "text": "3. VF categories: Which biological categories should be"
+          },
+          {
+            "index": 6,
+            "text": "prioritised: adhesion, iron acquisition, toxins,"
+          },
+          {
+            "index": 7,
+            "text": "capsule/surface, invasion/evasion, AMR?"
+          },
+          {
+            "index": 8,
+            "text": "4. Lineage adjustment: How should ST/lineage be handled"
+          },
+          {
+            "index": 9,
+            "text": "in VF models?"
+          },
+          {
+            "index": 10,
+            "text": "5. Uricult handling: Combine with routine samples or"
+          },
+          {
+            "index": 11,
+            "text": "analyse as event-triggered suspected UTI samples?"
+          },
+          {
+            "index": 12,
+            "text": "6. Missing UTI WGS: Can the 4 missing Uricult Batch 3 UTI"
+          },
+          {
+            "index": 13,
+            "text": "episodes be sequenced/recovered?"
+          },
+          {
+            "index": 14,
+            "text": ""
+          },
+          {
+            "index": 15,
+            "text": "The next phase should turn the current VF"
+          },
+          {
+            "index": 16,
+            "text": "presence/absence dataset into a biologically interpretable"
+          },
+          {
+            "index": 17,
+            "text": "virulence framework."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "1. UTI phenotype: Strict guideline-adherent UTI vs physician-suspected UTI vs sensitivity framework",
+          "resolvedTextStyle": {
+            "fontSize": 32
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "1. UTI phenotype: Strict guideline-adherent UTI vs physician-suspected UTI vs sensitivity framework",
+              "fontSize": 32
+            }
+          ],
+          "bulletCharacter": "•",
+          "marginLeft": 342900,
+          "indent": -342900,
+          "spaceBefore": 0
+        },
+        {
+          "index": 2,
+          "text": "2. VF scoring: Total burden vs curated UPEC gene set vs category-weighted score vs PCA/model-derived score",
+          "resolvedTextStyle": {
+            "fontSize": 32
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "2. VF scoring: Total burden vs curated UPEC gene set vs category-weighted score vs PCA/model-derived score",
+              "fontSize": 32
+            }
+          ],
+          "bulletCharacter": "•",
+          "marginLeft": 342900,
+          "indent": -342900,
+          "spaceBefore": 0
+        },
+        {
+          "index": 3,
+          "text": "3. VF categories: Which biological categories should be prioritised: adhesion, iron acquisition, toxins, capsule/surface, invasion/evasion, AMR?",
+          "resolvedTextStyle": {
+            "fontSize": 32
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "3. VF categories: Which biological categories should be prioritised: adhesion, iron acquisition, toxins, capsule/surface, invasion/evasion, AMR?",
+              "fontSize": 32
+            }
+          ],
+          "bulletCharacter": "•",
+          "marginLeft": 342900,
+          "indent": -342900,
+          "spaceBefore": 0
+        },
+        {
+          "index": 4,
+          "text": "4. Lineage adjustment: How should ST/lineage be handled in VF models?",
+          "resolvedTextStyle": {
+            "fontSize": 32
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "4. Lineage adjustment: How should ST/lineage be handled in VF models?",
+              "fontSize": 32
+            }
+          ],
+          "bulletCharacter": "•",
+          "marginLeft": 342900,
+          "indent": -342900,
+          "spaceBefore": 0
+        },
+        {
+          "index": 5,
+          "text": "5. Uricult handling: Combine with routine samples or analyse as event-triggered suspected UTI samples?",
+          "resolvedTextStyle": {
+            "fontSize": 32
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "5. Uricult handling: Combine with routine samples or analyse as event-triggered suspected UTI samples?",
+              "fontSize": 32
+            }
+          ],
+          "bulletCharacter": "•",
+          "marginLeft": 342900,
+          "indent": -342900,
+          "spaceBefore": 0
+        },
+        {
+          "index": 6,
+          "text": "6. Missing UTI WGS: Can the 4 missing Uricult Batch 3 UTI episodes be sequenced/recovered?",
+          "resolvedTextStyle": {
+            "fontSize": 32
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "6. Missing UTI WGS: Can the 4 missing Uricult Batch 3 UTI episodes be sequenced/recovered?",
+              "fontSize": 32
+            }
+          ],
+          "bulletCharacter": "•",
+          "marginLeft": 342900,
+          "indent": -342900,
+          "spaceBefore": 0
+        },
+        {
+          "index": 8,
+          "text": "The next phase should turn the current VF presence/absence dataset into a biologically interpretable virulence framework.",
+          "resolvedTextStyle": {
+            "fontSize": 32
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "The next phase should turn the current VF presence/absence dataset into a biologically interpretable virulence framework.",
+              "fontSize": 32
+            }
+          ],
+          "bulletCharacter": "•",
+          "marginLeft": 342900,
+          "indent": -342900,
+          "spaceBefore": 0
+        }
+      ]
+    }
+  ],
+  "composeRuns": []
+}

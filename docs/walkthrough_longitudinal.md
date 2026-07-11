@@ -7,7 +7,7 @@
 
 ## 1. Longitudinal Timelines (`15_longitudinal_patterns.R`)
 
-We successfully reconstructed patient timelines by linking isolates into "Strain Lineages" using genomic similarity (ANI >99.9%, SNPs <50).
+We reconstructed patient timelines by linking isolates into strain-lineage context using genomic similarity. Current same-strain-first interpretation uses 0-25 SNPs as strong same-strain evidence, treats >25 SNPs as above the same-strain SNP threshold, and keeps missing SNPs as missing SNP evidence. ST is reported afterward as secondary lineage context (`Same ST`, `Different ST`, or `Missing ST evidence`) and does not prove same strain.
 
 ### Key Findings
 *   **Persistence is Common**: Many participants (`100064`, `110018`, etc.) carry the exact same strain for multiple timepoints (ASB $\to$ ASB).

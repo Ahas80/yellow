@@ -7,7 +7,7 @@
 #   Deep-dive into phenotype-switch pairs (same strain, status changed).
 #   For each pair: compute exact SNP distance and identify VF/plasmid gene
 #   content changes.  This answers: "When the same E. coli lineage causes
-#   ASB and then UTI, what genomic changes accompanied the transition?"
+#   a Not_UTI episode and then UTI, what genomic changes accompanied the transition?"
 #
 # NOTE:
 #   Script 24_vf_longitudinal_dynamics.R complements this by computing VF
@@ -27,7 +27,7 @@
 #   - results/longitudinal/evolution_summary.txt
 #
 # Purpose:
-#   - For each Same-Strain pair that switched status (e.g. ASB -> UTI):
+#   - For each Same-Strain pair that switched primary status (e.g. Not_UTI -> UTI):
 #     1. Calculate precise SNP distance (nucmer).
 #     2. Identify gene content changes (VF gain/loss, Plasmid gain/loss).
 #     3. Report "Chameleon" candidates: 0 SNPs but status change?
@@ -179,10 +179,10 @@ cat("Pairs with 0 SNPs: ", sum(results$SNPs == 0, na.rm = TRUE), "\n")
 cat("Pairs with VF Changes: ", sum(results$VF_Gain_Count > 0 | results$VF_Loss_Count > 0), "\n")
 cat("Pairs with Plasmid Changes: ", sum(results$Plasmid_Gain_Count > 0 | results$Plasmid_Loss_Count > 0), "\n\n")
 
-cat("--- Top Candidates (ASB -> UTI) ---\n")
-asb_uti <- results %>% filter(From_Status == "ASB", To_Status == "UTI")
-if (nrow(asb_uti) > 0) {
-    print(asb_uti)
+cat("--- Top Candidates (Not_UTI -> UTI) ---\n")
+not_uti_uti <- results %>% filter(From_Status == "Not_UTI", To_Status == "UTI")
+if (nrow(not_uti_uti) > 0) {
+    print(not_uti_uti)
 } else {
     cat("None found.\n")
 }

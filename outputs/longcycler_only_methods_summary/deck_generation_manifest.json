@@ -1,0 +1,28 @@
+{
+  "generatedAt": "2026-07-09T15:28:27.542Z",
+  "sourceStarter": "/private/tmp/codex-presentations/longcycler-only-methods-summary/tmp/template-starter.pptx",
+  "outputPptx": "/Users/Aamir/Desktop/rUTIs/outputs/longcycler_only_methods_summary/Longcycler_only_methods_summary.pptx",
+  "previewDir": "/Users/Aamir/Desktop/rUTIs/outputs/longcycler_only_methods_summary/slide_previews",
+  "layoutDir": "/Users/Aamir/Desktop/rUTIs/outputs/longcycler_only_methods_summary/slide_layouts",
+  "countChecks": {
+    "current_mixed_episode_rows": 556,
+    "current_mixed_participants": 162,
+    "longcycler_episode_rows": 532,
+    "longcycler_participants": 161,
+    "longcycler_uti": 16,
+    "longcycler_not_uti": 516,
+    "longcycler_legacy_asb": 416,
+    "longcycler_legacy_uti": 33,
+    "longcycler_legacy_negative": 83,
+    "longcycler_st_called": 514,
+    "longcycler_unique_st": 80,
+    "vf_gene_columns": 227,
+    "longcycler_transitions": 371,
+    "longcycler_transition_participants": 139,
+    "longcycler_strict_same_transitions": 116,
+    "longcycler_notuti_to_uti": 9,
+    "longcycler_notuti_to_uti_strict": 7,
+    "longcycler_uti_to_notuti": 12,
+    "longcycler_uti_to_notuti_strict": 3
+  }
+}

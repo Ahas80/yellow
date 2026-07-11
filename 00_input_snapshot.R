@@ -11,7 +11,7 @@
 # INPUTS:
 #   - 00_config.R
 #   - results/vf_pa_all.csv
-#   - results/mlst/mlst_all.tsv
+#   - results/mlst/mlst_provider_preferred.csv
 #
 # OUTPUTS:
 #   - results/within_person/debug/input_snapshot/
@@ -47,7 +47,8 @@ dump <- function(p, n = 200, m = 80) {
 
 dump(FILE_VF_PA)
 dump("results/mlst/mlst_matrix.csv")
-dump(FILE_MLST_ALL)
+dump(FILE_MLST_CANONICAL)
+dump(FILE_MLST_PROVIDER_PREFERRED_ALL)
 dump("results/plasmidfinder_presence_absence.csv")
 dump(FILE_STATUS_MAP)
 

@@ -10,9 +10,9 @@
 #
 # METHOD:
 #   1. Audit whether true AMR data exist (ResFinder, CARD, AMRFinder, etc.).
-#   2. Load VF scores from script 27 and plasmid replicon data.
+#   2. Load supplementary VF endpoints from script 27 and plasmid replicon data.
 #   3. Build episode-level combined VF + plasmid profiles.
-#   4. Summarise replicon diversity by ST and clinical status.
+#   4. Summarise replicon diversity by ST and primary UTI status.
 #   5. Explore VF-plasmid co-occurrence patterns.
 #
 # OUTPUT:
@@ -36,6 +36,7 @@
 # ==============================================================================
 
 source("00_config.R")
+source("R/plot_helpers.R")
 suppressPackageStartupMessages({
   library(dplyr); library(readr); library(tidyr); library(stringr)
   library(ggplot2); library(tibble)
@@ -142,11 +143,11 @@ ra("plasmidfinder_hits_long.csv: %s (%s)", has_plasmid_long, f_plasmid_long)
 ra("plasmid_replicons_long.csv: %s (%s)", has_replicon_long, f_replicon_long)
 ra("plasmid_replicons_wide.csv: %s (%s)", has_replicon_wide, f_replicon_wide)
 
-# Check VF scores
+# Check supplementary VF endpoints
 f_scores <- file.path(DIR_VF, "vf_score_table.csv")
 has_scores <- file.exists(f_scores)
 ra("")
-ra("--- VF score data ---")
+ra("--- Supplementary VF endpoint data ---")
 ra("vf_score_table.csv: %s", has_scores)
 
 # Check VF analysis ready
@@ -181,10 +182,16 @@ if (file.exists(FILE_VF_PA) && file.info(FILE_VF_READY)$mtime < file.info(FILE_V
 }
 
 vf <- read_csv(FILE_VF_READY, show_col_types = FALSE) %>%
+  prefer_primary_uti_status() %>%
+  apply_manual_sample_curation(context = "29_vf_ready") %>%
+  filter_primary_genomics() %>%
   mutate(Participant_id = as.character(Participant_id))
 
 scores <- if (has_scores) {
   read_csv(f_scores, show_col_types = FALSE) %>%
+    prefer_primary_uti_status() %>%
+    apply_manual_sample_curation(context = "29_vf_scores") %>%
+    filter_primary_genomics() %>%
     mutate(Participant_id = as.character(Participant_id))
 } else NULL
 
@@ -217,6 +224,8 @@ msg("Replicon hits: %d rows, %d unique replicons", nrow(rep_long), n_distinct(re
 meta_file <- file.path(DIR_ROOT, "assembly_metadata.csv")
 if (file.exists(meta_file)) {
   asm_meta <- read_csv(meta_file, show_col_types = FALSE) %>%
+    apply_manual_sample_curation(context = "29_assembly_metadata") %>%
+    filter_primary_genomics() %>%
     mutate(
       Participant_id = as.character(Participant_id),
       tp_lab = if ("tp_lab" %in% names(.)) as.character(tp_lab) else normalise_tp_label(Timepoint),
@@ -308,8 +317,10 @@ combined <- vf %>%
   select(Participant_id, tp_lab, Infection_Status, Batch, ST, vf_count_total)
 
 if (has_scores && !is.null(scores)) {
-  score_cols <- intersect(c("vf_count_curated","upec_gene_score","n_modules_present",
-                            "n_upec_modules_present"), names(scores))
+  score_cols <- intersect(c("total_vf_count_curated", "expec_marker_count",
+                            "upec_system_count", "upec_system_fraction",
+                            "total_vf_count_unassigned", "low_confidence_count"),
+                          names(scores))
   combined <- combined %>%
     left_join(scores %>% select(Participant_id, tp_lab, all_of(score_cols)),
               by = c("Participant_id", "tp_lab"))
@@ -361,10 +372,10 @@ write_csv(rep_by_status, file.path(DIR_VF_AMR, "replicon_summary_by_status.csv")
 
 vf_amr_by_status <- combined %>%
   filter(!is.na(Infection_Status)) %>%
-  select(Infection_Status, any_of(c("vf_count_total", "vf_count_curated",
-                                    "upec_gene_score", "upec_gene_score_unweighted",
-                                    "n_modules_present", "module_count_present",
-                                    "n_upec_modules_present", "upec_module_score_unweighted",
+  select(Infection_Status, any_of(c("vf_count_total", "total_vf_count_curated",
+                                    "expec_marker_count", "upec_system_count",
+                                    "upec_system_fraction", "total_vf_count_unassigned",
+                                    "low_confidence_count",
                                     "n_replicons", "amr_gene_count_total", "amr_class_count"))) %>%
   pivot_longer(-Infection_Status, names_to = "metric", values_to = "value") %>%
   group_by(Infection_Status, metric) %>%
@@ -396,10 +407,10 @@ write_csv(rep_by_st, file.path(DIR_VF_AMR, "replicon_summary_by_ST.csv"))
 
 vf_amr_by_st <- combined %>%
   filter(!is.na(ST)) %>%
-  select(ST, any_of(c("vf_count_total", "vf_count_curated",
-                      "upec_gene_score", "upec_gene_score_unweighted",
-                      "n_modules_present", "module_count_present",
-                      "n_upec_modules_present", "upec_module_score_unweighted",
+  select(ST, any_of(c("vf_count_total", "total_vf_count_curated",
+                      "expec_marker_count", "upec_system_count",
+                      "upec_system_fraction", "total_vf_count_unassigned",
+                      "low_confidence_count",
                       "n_replicons", "amr_gene_count_total", "amr_class_count"))) %>%
   pivot_longer(-ST, names_to = "metric", values_to = "value") %>%
   group_by(ST, metric) %>%
@@ -427,8 +438,9 @@ write_csv(profile_groups, file.path(DIR_VF_AMR, "vf_amr_profile_groups.csv"))
 # 7. VF-PLASMID CORRELATION
 # ==============================================================================
 cor_results <- tibble()
-vf_scores <- intersect(c("vf_count_total","vf_count_curated","upec_gene_score",
-                          "n_modules_present"), names(combined))
+vf_scores <- intersect(c("vf_count_total", "total_vf_count_curated",
+                         "expec_marker_count", "upec_system_count",
+                         "upec_system_fraction"), names(combined))
 for (sc in vf_scores) {
   valid <- combined %>% filter(!is.na(.data[[sc]]), !is.na(n_replicons))
   if (nrow(valid) >= 10) {
@@ -447,16 +459,16 @@ if (nrow(cor_results) > 0) {
 # ==============================================================================
 # 8. PLOTS
 # ==============================================================================
-n_asb <- sum(combined$Infection_Status == "ASB", na.rm = TRUE)
 n_uti <- sum(combined$Infection_Status == "UTI", na.rm = TRUE)
-n_neg <- sum(combined$Infection_Status == "Negative", na.rm = TRUE)
+n_not_uti <- sum(combined$Infection_Status == "Not_UTI", na.rm = TRUE)
 
 # Replicon burden by status
 p1 <- ggplot(combined %>% filter(!is.na(Infection_Status)),
              aes(x = Infection_Status, y = n_replicons, fill = Infection_Status)) +
   geom_boxplot(alpha = 0.7) +
-  labs(title = "Plasmid replicon diversity by clinical status",
-       subtitle = sprintf("ASB n=%d, UTI n=%d, Negative n=%d", n_asb, n_uti, n_neg),
+  scale_fill_uti_status() +
+  labs(title = "Plasmid replicon diversity by primary UTI status",
+       subtitle = sprintf("UTI n=%d, Not_UTI n=%d", n_uti, n_not_uti),
        x = NULL, y = "Number of distinct replicon types") +
   theme_minimal(base_size = 12) + theme(legend.position = "none")
 ggsave(file.path(DIR_PLOTS_VF_AMR, "replicon_burden_by_status.png"), p1, width = 7, height = 5, dpi = 150)
@@ -467,6 +479,7 @@ if ("vf_count_total" %in% names(combined)) {
                aes(x = vf_count_total, y = n_replicons, colour = Infection_Status)) +
     geom_point(alpha = 0.6, size = 2) +
     geom_smooth(method = "lm", se = FALSE, linetype = "dashed", linewidth = 0.5) +
+    scale_colour_uti_status() +
     labs(title = "VF burden vs plasmid replicon diversity",
          x = "Total VF gene count", y = "Number of replicon types") +
     theme_minimal(base_size = 11) + theme(legend.position = "right")

@@ -6,7 +6,7 @@
 # GOAL:
 #   Perform genome-wide association testing (GWAS-style) to identify bacterial
 #   genomic features (VF genes, plasmid replicons, ST lineage) associated with
-#   symptomatic UTI vs asymptomatic bacteriuria (ASB).
+#   primary clinical UTI vs all Not_UTI episodes.
 #
 # WHY THIS SCRIPT EXISTS:
 #   Scripts 03 and 23 provide descriptive and exploratory Fisher-based
@@ -24,7 +24,7 @@
 #   For each genomic feature with prevalence between 5–95%:
 #     1. Univariable Fisher exact test (screening)
 #     2. GLMM: Outcome ~ Feature + (1|Participant_id),
-#        family = binomial, where Outcome = 1 for UTI, 0 for ASB
+#        family = binomial, where Outcome = 1 for UTI, 0 for Not_UTI
 #     3. Benjamini-Hochberg FDR correction across all features
 #   Falls back to standard GLM if GLMM fails to converge (singular fit).
 #
@@ -32,13 +32,13 @@
 #   - results/clinical/status_map.csv
 #   - results/vf/vf_hits_all.rds
 #   - results/plasmids/plasmidfinder_presence_absence.csv
-#   - results/mlst/mlst_with_meta.csv
+#   - results/mlst/mlst_provider_preferred.csv
 #   - assembly_metadata.csv
 #
 # OUTPUTS:
 #   - results/models/gwas_univariable_stats.csv   (Fisher + prevalence)
 #   - results/models/gwas_multivariable_glmm.csv  (GLMM coefficients, FDR)
-#   - results/models/plots/volcano_plot_UTI_vs_ASB.png
+#   - results/models/plots/volcano_plot_UTI_vs_Not_UTI.png
 #   - results/models/plots/forest_plot_top_hits.png
 #   - results/models/plots/heatmap_top_discriminators.png
 #
@@ -111,6 +111,7 @@ msg <- function(fmt, ...) {
 }
 
 msg("Starting genotype-phenotype association analysis")
+analysis_contrast <- "primary_all_not_uti"
 msg(
     "Threads: %d | Min/Max prevalence: %.2f-%.2f | FDR threshold: %.3f | Model: %s",
     CORES_USE, opt$min_prev, opt$max_prev, opt$fdr_thresh,
@@ -163,11 +164,18 @@ dir.create(DIR_PLOTS_VF, recursive = TRUE, showWarnings = FALSE)
 # ------------------------------------------------------------------------------
 msg("Loading input datasets...")
 
-# Clinical status
+# Primary UTI status
 FILE_STATUS <- FILE_STATUS_MAP
 if (!file.exists(FILE_STATUS)) stop("Missing ", FILE_STATUS)
-status <- read_csv(FILE_STATUS, show_col_types = FALSE) %>%
-    filter(Infection_Status %in% c("UTI", "ASB")) %>%
+status_raw <- read_csv(FILE_STATUS, show_col_types = FALSE)
+required_status_cols <- c("UTI_Status", "UTI_binary", "UTI_definition_version")
+missing_status_cols <- setdiff(required_status_cols, names(status_raw))
+if (length(missing_status_cols) > 0) {
+    stop("status_map.csv lacks required primary UTI columns: ",
+         paste(missing_status_cols, collapse = ", "),
+         ". Rerun 00b_classify_episodes.R before modelling.")
+}
+status <- status_raw %>%
     mutate(
         Participant_id = as.character(Participant_id),
         Timepoint = if ("tp_lab" %in% names(.)) normalize_analysis_timepoint(tp_lab) else normalize_analysis_timepoint(Timepoint),
@@ -175,12 +183,28 @@ status <- read_csv(FILE_STATUS, show_col_types = FALSE) %>%
         Collection_Date = if ("Collection_Date" %in% names(.)) as.character(Collection_Date) else NA_character_,
         Episode_ID = if ("Episode_ID" %in% names(.)) as.character(Episode_ID) else build_episode_id(., timepoint_col = "Timepoint", event_col = "Event_type", date_col = "Collection_Date"),
         Batch = if ("Batch" %in% names(.)) as.factor(Batch) else NA,
-        Outcome = as.integer(Infection_Status == "UTI")
+        UTI_Status = as.character(UTI_Status),
+        UTI_binary = as.integer(UTI_binary),
+        Outcome = UTI_binary,
+        Infection_Status_legacy = if ("Infection_Status_legacy" %in% names(.)) as.character(Infection_Status_legacy) else if ("Infection_Status" %in% names(.)) as.character(Infection_Status) else as.character(UTI_Status),
+        Infection_Status = as.character(UTI_Status),
+        Not_UTI_subgroup = if ("Not_UTI_subgroup" %in% names(.)) as.character(Not_UTI_subgroup) else ifelse(UTI_Status == "Not_UTI", "unknown_or_indeterminate", NA_character_),
+        UTI_definition_version = as.character(UTI_definition_version),
+        contrast = analysis_contrast
     ) %>%
-    select(Participant_id, Timepoint, Episode_ID, Batch, Infection_Status, Outcome)
+    apply_manual_sample_curation(context = "model_status_map") %>%
+    filter_primary_analysis() %>%
+    filter(UTI_Status %in% c("UTI", "Not_UTI"), Outcome %in% c(0L, 1L)) %>%
+    select(Participant_id, Timepoint, Episode_ID, Batch, UTI_Status, UTI_binary,
+           Not_UTI_subgroup, Infection_Status, Infection_Status_legacy,
+           UTI_definition_version, contrast, Outcome,
+           analysis_include_primary, analysis_exclusion_reason,
+           duplicate_role, duplicate_of_participant_id, duplicate_of_tp_lab,
+           allow_secondary_duplicate_qc, duplicate_use_note,
+           genomics_expected_include, genomics_exclusion_reason)
 
 msg(
-    "  Loaded %d samples with UTI/ASB status (%d UTI, %d ASB)",
+    "  Loaded %d samples with primary UTI/Not_UTI status (%d UTI, %d Not_UTI)",
     nrow(status), sum(status$Outcome == 1), sum(status$Outcome == 0)
 )
 
@@ -216,7 +240,7 @@ FILE_MLST <- FILE_MLST_CANONICAL
 mlst <- NULL
 if (file.exists(FILE_MLST)) {
     mlst <- read_csv(FILE_MLST, show_col_types = FALSE) %>%
-        select(Isolate_ID, ST) %>%
+        select(any_of(c("Isolate_ID", "ST", "ST_source", "ST_provider", "ST_local", "provider_PercGoodTargets"))) %>%
         distinct()
     msg("  Loaded MLST data: %d isolates", nrow(mlst))
 }
@@ -229,11 +253,19 @@ metadata <- read_csv(FILE_METADATA, show_col_types = FALSE) %>%
     mutate(
         Participant_id = as.character(Participant_id),
         Timepoint = if ("tp_lab" %in% names(.)) normalize_analysis_timepoint(tp_lab) else normalize_analysis_timepoint(Timepoint)
-    )
+    ) %>%
+    apply_manual_sample_curation(context = "model_metadata") %>%
+    filter_primary_genomics()
 
 canonical_file <- file.path(DIR_QC, "canonical_assembly_selection.csv")
 if (file.exists(canonical_file)) {
     metadata <- read_csv(canonical_file, show_col_types = FALSE) %>%
+        apply_manual_sample_curation(context = "model_canonical_selection") %>%
+        filter_primary_genomics() %>%
+        mutate(
+            selected_canonical = if ("selected_canonical" %in% names(.)) as_pipeline_bool(selected_canonical) else FALSE,
+            QC_PASS = if ("QC_PASS" %in% names(.)) as_pipeline_bool(QC_PASS) else FALSE
+        ) %>%
         filter(selected_canonical %in% TRUE, QC_PASS %in% TRUE) %>%
         mutate(
             Participant_id = as.character(Participant_id),
@@ -255,7 +287,7 @@ status_without_assembly <- status %>%
 
 if (nrow(status_without_assembly) > 0) {
     msg(
-        "  Pre-bridge direct-key diagnostic: %d UTI/ASB sample(s) do not match assembly keys directly (%d UTI, %d ASB)",
+        "  Pre-bridge direct-key diagnostic: %d UTI/Not_UTI sample(s) do not match assembly keys directly (%d UTI, %d Not_UTI)",
         nrow(status_without_assembly),
         sum(status_without_assembly$Outcome == 1),
         sum(status_without_assembly$Outcome == 0)
@@ -266,7 +298,7 @@ status <- status %>%
     inner_join(analysis_keys, by = c("Participant_id", "Timepoint"), relationship = "one-to-one")
 
 msg(
-    "  Direct-key diagnostic retained %d UTI/ASB samples with usable assemblies (%d UTI, %d ASB)",
+    "  Direct-key diagnostic retained %d UTI/Not_UTI samples with usable assemblies (%d UTI, %d Not_UTI)",
     nrow(status), sum(status$Outcome == 1), sum(status$Outcome == 0)
 )
 
@@ -300,8 +332,17 @@ data_plasmid <- NULL
 if (!is.null(plasmid_raw)) {
     # Link plasmid Isolate_ID to Participant_id/Timepoint via metadata
     metadata_plasmid <- metadata %>%
-        mutate(plasmid_sample_id = if ("file_name" %in% names(.)) file_name else Isolate_ID) %>%
-        select(plasmid_sample_id, Participant_id, Timepoint, full_path) %>%
+        filter(!is.na(Isolate_ID), nzchar(as.character(Isolate_ID))) %>%
+        transmute(plasmid_sample_id = as.character(Isolate_ID), Participant_id, Timepoint, full_path)
+    if ("file_name" %in% names(metadata)) {
+        metadata_plasmid <- bind_rows(
+            metadata_plasmid,
+            metadata %>%
+                filter(!is.na(file_name), nzchar(as.character(file_name))) %>%
+                transmute(plasmid_sample_id = as.character(file_name), Participant_id, Timepoint, full_path)
+        )
+    }
+    metadata_plasmid <- metadata_plasmid %>%
         distinct()
     plasmid_linked <- plasmid_raw %>%
         rename(plasmid_sample_id = Isolate_ID) %>%
@@ -353,26 +394,47 @@ if (file.exists(FILE_VF_READY)) {
         )
     }
 
-    vf_ready_model <- read_csv(FILE_VF_READY, show_col_types = FALSE) %>%
+    vf_ready_raw <- read_csv(FILE_VF_READY, show_col_types = FALSE)
+    missing_vf_status_cols <- setdiff(c("UTI_Status", "UTI_binary", "UTI_definition_version"), names(vf_ready_raw))
+    if (length(missing_vf_status_cols) > 0) {
+        stop("vf_analysis_ready.csv lacks required primary UTI columns: ",
+             paste(missing_vf_status_cols, collapse = ", "),
+             ". Rerun 22_vf_build_analysis_dataset.R.")
+    }
+    vf_ready_model <- vf_ready_raw %>%
         mutate(
             Participant_id = as.character(Participant_id),
             Timepoint = normalize_analysis_timepoint(tp_lab),
-            Infection_Status = as.character(Infection_Status),
-            Outcome = as.integer(Infection_Status == "UTI"),
+            UTI_Status = as.character(UTI_Status),
+            Infection_Status_legacy = if ("Infection_Status_legacy" %in% names(.)) as.character(Infection_Status_legacy) else if ("Infection_Status" %in% names(.)) as.character(Infection_Status) else as.character(UTI_Status),
+            Infection_Status = as.character(UTI_Status),
+            UTI_binary = as.integer(UTI_binary),
+            Outcome = UTI_binary,
+            Not_UTI_subgroup = if ("Not_UTI_subgroup" %in% names(.)) as.character(Not_UTI_subgroup) else ifelse(UTI_Status == "Not_UTI", "unknown_or_indeterminate", NA_character_),
+            UTI_definition_version = as.character(UTI_definition_version),
+            contrast = analysis_contrast,
             Batch = if ("Batch" %in% names(.)) as.factor(Batch) else NA
         ) %>%
-        filter(Infection_Status %in% c("UTI", "ASB"))
+        filter(UTI_Status %in% c("UTI", "Not_UTI"), Outcome %in% c(0L, 1L))
 
     vf_feature_cols <- canonical_vf_gene_cols(names(vf_ready_model), vf_pa_file = FILE_VF_PA)
     model_meta_cols <- intersect(
         c(
             "Participant_id", "Timepoint", "tp_lab", "Episode_ID", "Collection_Date",
-            "Batch", "Infection_Status", "Outcome", "ST", "uricult_bridge_applied"
+            "Batch", "UTI_Status", "UTI_binary", "Not_UTI_subgroup",
+            "Infection_Status", "Infection_Status_legacy", "UTI_definition_version",
+            "contrast", "Outcome", "ST", "ST_source", "ST_provider", "ST_local",
+            "provider_PercGoodTargets", "uricult_bridge_applied",
+            "analysis_include_primary", "analysis_exclusion_reason",
+            "duplicate_role", "duplicate_of_participant_id", "duplicate_of_tp_lab",
+            "allow_secondary_duplicate_qc", "duplicate_use_note",
+            "genomics_expected_include", "genomics_exclusion_reason"
         ),
         names(vf_ready_model)
     )
 
     data_merged <- vf_ready_model %>%
+        filter_primary_genomics() %>%
         select(all_of(model_meta_cols), all_of(vf_feature_cols))
 
     if (exists("plasmid_agg") && exists("rep_cols") && length(rep_cols) > 0) {
@@ -382,7 +444,7 @@ if (file.exists(FILE_VF_READY)) {
     }
 
     msg(
-        "  Using canonical vf_analysis_ready.csv for modelling: %d samples (%d UTI, %d ASB; %d Uricult-bridged)",
+        "  Using canonical vf_analysis_ready.csv for modelling: %d samples (%d UTI, %d Not_UTI; %d Uricult-bridged)",
         nrow(data_merged),
         sum(data_merged$Outcome == 1, na.rm = TRUE),
         sum(data_merged$Outcome == 0, na.rm = TRUE),
@@ -393,7 +455,14 @@ if (file.exists(FILE_VF_READY)) {
 base_cols <- intersect(
     c(
         "Participant_id", "Timepoint", "tp_lab", "Episode_ID", "Collection_Date",
-        "Batch", "Infection_Status", "Outcome", "ST", "uricult_bridge_applied"
+        "Batch", "UTI_Status", "UTI_binary", "Not_UTI_subgroup",
+        "Infection_Status", "Infection_Status_legacy", "UTI_definition_version",
+        "contrast", "Outcome", "ST", "ST_source", "ST_provider", "ST_local",
+        "provider_PercGoodTargets", "uricult_bridge_applied",
+        "analysis_include_primary", "analysis_exclusion_reason",
+        "duplicate_role", "duplicate_of_participant_id", "duplicate_of_tp_lab",
+        "allow_secondary_duplicate_qc", "duplicate_use_note",
+        "genomics_expected_include", "genomics_exclusion_reason"
     ),
     names(data_merged)
 )
@@ -423,7 +492,14 @@ data_final <- data_merged %>%
     select(all_of(base_cols), all_of(features_keep))
 
 model_denom <- data_final %>%
-    select(any_of(c("Participant_id", "Timepoint", "Episode_ID", "Batch", "Infection_Status", "Outcome"))) %>%
+    select(any_of(c("Participant_id", "Timepoint", "Episode_ID", "Batch",
+                    "UTI_Status", "UTI_binary", "Not_UTI_subgroup",
+                    "Infection_Status", "Infection_Status_legacy",
+                    "UTI_definition_version", "contrast", "Outcome",
+                    "analysis_include_primary", "analysis_exclusion_reason",
+                    "duplicate_role", "duplicate_of_participant_id", "duplicate_of_tp_lab",
+                    "allow_secondary_duplicate_qc", "duplicate_use_note",
+                    "genomics_expected_include", "genomics_exclusion_reason"))) %>%
     mutate(model_interpretation = case_when(
         sum(Outcome == 1, na.rm = TRUE) < 10 ~ "not_interpretable_sparse_UTI",
         sum(Outcome == 1, na.rm = TRUE) < 20 ~ "exploratory_underpowered_UTI",
@@ -436,14 +512,18 @@ append_denominator_summary(
     "model_dataset",
     "participant_timepoint",
     file.path(DIR_OUT, "model_dataset_denominator.csv"),
-    "ASB/UTI model dataset built from canonical vf_analysis_ready.csv so audited Uricult bridge rows are retained"
+    "Primary UTI-vs-Not_UTI model dataset built from canonical vf_analysis_ready.csv so audited Uricult bridge rows are retained"
 )
 
 n_uti_model <- sum(data_final$Outcome == 1, na.rm = TRUE)
+n_not_uti_model <- sum(data_final$Outcome == 0, na.rm = TRUE)
 model_warnings <- c(
     "Genotype-phenotype model interpretation warnings",
     sprintf("Generated: %s", format(Sys.time())),
-    sprintf("Model dataset: %d samples (%d UTI, %d ASB)", nrow(data_final), n_uti_model, sum(data_final$Outcome == 0, na.rm = TRUE))
+    sprintf("Contrast: %s", analysis_contrast),
+    sprintf("UTI definition: %s", paste(unique(na.omit(data_final$UTI_definition_version)), collapse = "; ")),
+    sprintf("Model dataset: %d samples (%d UTI, %d Not_UTI)", nrow(data_final), n_uti_model, n_not_uti_model),
+    "Not_UTI is heterogeneous; subgroup and legacy outputs are retained for sensitivity/comparability."
 )
 if (n_uti_model < 20) {
     model_warnings <- c(model_warnings, "WARNING: UTI < 20. Association models are exploratory only and underpowered for definitive UTI inference.")
@@ -469,12 +549,12 @@ run_univar <- function(feature, data) {
             test <- fisher.test(tab)
 
             # Calculate prevalence in each group
-            prev_asb <- mean(data[[feature]][data$Outcome == 0] > 0, na.rm = TRUE)
+            prev_not_uti <- mean(data[[feature]][data$Outcome == 0] > 0, na.rm = TRUE)
             prev_uti <- mean(data[[feature]][data$Outcome == 1] > 0, na.rm = TRUE)
 
             tibble(
                 feature = feature,
-                prev_ASB = prev_asb,
+                prev_Not_UTI = prev_not_uti,
                 prev_UTI = prev_uti,
                 OR = test$estimate,
                 CI_lower = test$conf.int[1],
@@ -486,7 +566,7 @@ run_univar <- function(feature, data) {
         error = function(e) {
             tibble(
                 feature = feature,
-                prev_ASB = NA_real_,
+                prev_Not_UTI = NA_real_,
                 prev_UTI = NA_real_,
                 OR = NA_real_,
                 CI_lower = NA_real_,
@@ -512,6 +592,8 @@ plan(sequential)
 univar_results <- univar_results %>%
     filter(!is.na(p_value)) %>%
     mutate(
+        contrast = analysis_contrast,
+        UTI_definition_version = paste(unique(na.omit(data_final$UTI_definition_version)), collapse = "; "),
         FDR = p.adjust(p_value, method = "BH"),
         log2_OR = log2(OR),
         neg_log10_p = -log10(p_value)
@@ -705,6 +787,8 @@ plan(sequential)
 glmm_results <- glmm_results %>%
     filter(!is.na(p.value)) %>%
     mutate(
+        contrast = analysis_contrast,
+        UTI_definition_version = paste(unique(na.omit(data_final$UTI_definition_version)), collapse = "; "),
         FDR = p.adjust(p.value, method = "BH"),
         sparse_data_separation_risk = !is.finite(OR) | !is.finite(OR_lower) | !is.finite(OR_upper) |
             OR_upper > 100 | OR_lower < 0.01 | std.error > 5,
@@ -727,6 +811,7 @@ if (any(glmm_results$sparse_data_separation_risk, na.rm = TRUE)) {
                                                 sum(glmm_results$sparse_data_separation_risk, na.rm = TRUE)))
 }
 writeLines(model_warnings, file.path(DIR_OUT, "model_interpretation_warnings.txt"))
+writeLines(model_warnings, FILE_UTI_BINARY_MODEL_WARNINGS)
 
 if (opt$`simple-glm`) {
     msg(
@@ -768,7 +853,7 @@ p_volcano <- ggplot(univar_results, aes(log2_OR, neg_log10_p)) +
     ) +
     scale_color_manual(values = c("TRUE" = "red", "FALSE" = "grey40"), labels = c("Not Significant", sprintf("FDR < %.2f", opt$fdr_thresh))) +
     labs(
-        title = "Exploratory Genotype-Phenotype Association: UTI vs. ASB",
+        title = "Exploratory Genotype-Phenotype Association: UTI vs. Not_UTI",
         subtitle = sprintf("%d features tested (Fisher's exact); UTI n=%d", nrow(univar_results), n_uti_model),
         x = "Log2 Odds Ratio",
         y = "-Log10 P-value",
@@ -777,7 +862,7 @@ p_volcano <- ggplot(univar_results, aes(log2_OR, neg_log10_p)) +
     theme_minimal(base_size = 11) +
     theme(legend.position = "top")
 
-ggsave(file.path(DIR_PLOTS, "volcano_plot_UTI_vs_ASB.png"),
+ggsave(file.path(DIR_PLOTS, "volcano_plot_UTI_vs_Not_UTI.png"),
     p_volcano,
     width = 10, height = 8, dpi = 300
 )
@@ -795,7 +880,7 @@ if (nrow(top_glmm) > 0) {
         geom_text(aes(label = sprintf("%.2f", OR)), hjust = -0.5, size = 3) +
         scale_x_log10() +
         labs(
-            title = "Exploratory Top GLMM Associations (UTI vs. ASB)",
+            title = "Exploratory Top GLMM Associations (UTI vs. Not_UTI)",
             subtitle = sprintf("%d features with FDR < 0.2; sparse data flags retained", nrow(top_glmm)),
             x = "Odds Ratio (95% CI)",
             y = NULL
@@ -916,7 +1001,8 @@ if (nrow(bridge_plot_data) > 0) {
                 sprintf("Data: %s and %s.",
                         file.path(DIR_OUT, "gwas_univariable_stats.csv"),
                         file.path(DIR_OUT, "gwas_multivariable_glmm.csv")),
-                sprintf("Denominator: ASB/UTI model dataset n=%d, including UTI n=%d.", nrow(data_final), n_uti_model),
+                sprintf("Denominator: UTI-vs-Not_UTI model dataset n=%d, including UTI n=%d and Not_UTI n=%d.", nrow(data_final), n_uti_model, n_not_uti_model),
+                "Not_UTI is heterogeneous and includes bacteriuria_not_UTI, culture-negative/below-threshold, and indeterminate episodes where present.",
                 "Level of analysis: gene/feature-level association screen.",
                 "Fisher tests are exploratory and do not account for repeated resident isolates.",
                 "Participant-aware models include a Participant_id random effect where GLMM fitting is possible, but sparse or singular fits remain underpowered.",
@@ -946,17 +1032,17 @@ if (length(top_features) > 1) {
             paste(Participant_id, Timepoint, sep = "_"),
             make.unique(as.character(Participant_id))
         )) %>%
-        select(Sample_ID, Infection_Status, all_of(top_features)) %>%
-        arrange(Infection_Status, Sample_ID) %>%
+        select(Sample_ID, UTI_Status, all_of(top_features)) %>%
+        arrange(UTI_Status, Sample_ID) %>%
         column_to_rownames("Sample_ID") %>%
-        select(-Infection_Status)
+        select(-UTI_Status)
 
     annotation <- data_final %>%
         mutate(Sample_ID = ifelse(!is.na(Timepoint),
             paste(Participant_id, Timepoint, sep = "_"),
             make.unique(as.character(Participant_id))
         )) %>%
-        select(Sample_ID, Infection_Status) %>%
+        select(Sample_ID, UTI_Status) %>%
         distinct() %>%
         column_to_rownames("Sample_ID")
 
@@ -973,7 +1059,7 @@ if (length(top_features) > 1) {
                 show_colnames = FALSE,
                 color = c("white", "darkblue"),
                 border_color = NA,
-                main = "Exploratory Top Discriminatory Features (UTI vs. ASB)"
+                main = "Exploratory Top Discriminatory Features (UTI vs. Not_UTI)"
             )
         }
     )
@@ -986,7 +1072,7 @@ if (opt$run_rf && requireNamespace("randomForest", quietly = TRUE)) {
 
     rf_data <- data_final %>%
         select(Outcome, all_of(features_keep)) %>%
-        mutate(Outcome = factor(Outcome, levels = c(0, 1), labels = c("ASB", "UTI"))) %>%
+        mutate(Outcome = factor(Outcome, levels = c(0, 1), labels = c("Not_UTI", "UTI"))) %>%
         na.omit()
 
     set.seed(42)
@@ -1012,7 +1098,7 @@ msg("Output directory: %s", normalizePath(DIR_OUT))
 msg("")
 msg("Summary:")
 msg(
-    "  Total samples: %d (%d UTI, %d ASB)",
+    "  Total samples: %d (%d UTI, %d Not_UTI)",
     nrow(data_final),
     sum(data_final$Outcome == 1),
     sum(data_final$Outcome == 0)

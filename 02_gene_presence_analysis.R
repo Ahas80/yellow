@@ -12,8 +12,8 @@
 # WHY THIS SCRIPT EXISTS:
 #   Virulence factors are the bacterial genes that enable pathogenesis—
 #   adhesins, toxins, iron acquisition systems, etc.  By profiling every
-#   isolate’s VF repertoire, we can ask: do bacteria causing UTI carry
-#   different VFs from those causing ASB?
+#   isolate’s VF repertoire, we can ask: do bacteria from UTI episodes carry
+#   different VFs from those from Not_UTI episodes?
 #
 # KEY DESIGN DECISIONS:
 #   - Uses UNION logic: a gene is called “present” if detected in EITHER
@@ -35,7 +35,7 @@
 #   - results/vf/abricate/               (per-isolate cache)
 #
 # DOWNSTREAM:
-#   → 22_vf_build_analysis_dataset.R joins vf_pa_all.csv with clinical status
+#   -> 22_vf_build_analysis_dataset.R joins vf_pa_all.csv with primary UTI status
 #   → 14_genotype_phenotype_model.R uses vf_hits_all.rds for GLMM testing
 # ==============================================================================
 
@@ -120,6 +120,15 @@ log_info("VF outputs: hits=", vf_hits_file, "; matrix=", vf_pa_file)
 # 3. Load Metadata
 # ------------------------------------------------------------------------------
 assembly_df <- load_metadata()
+assembly_df <- apply_manual_sample_curation(assembly_df, context = "vf_abricate_metadata")
+
+curation_excluded <- assembly_df %>%
+  filter(!(analysis_include_primary %in% TRUE) | !(genomics_expected_include %in% TRUE))
+if (nrow(curation_excluded) > 0) {
+  write_csv(curation_excluded, file.path(DIR_QC, "vf_abricate_manual_curation_excluded_rows.csv"))
+  log_info("Manual curation excludes ", nrow(curation_excluded), " metadata row(s) from active VF profiling denominators.")
+}
+assembly_df <- filter_primary_genomics(assembly_df)
 
 # Filter out assemblies with missing Participant_id (data quality check)
 n_before <- nrow(assembly_df)
@@ -312,7 +321,7 @@ p1 <- ggplot(top25, aes(GENE, n_participants)) +
     y = "Participants with gene detected",
     x = NULL,
     caption = sprintf(
-      "Data: %s. Denominator: participant-level presence from selected assembly VFDB calls; this plot is not stratified by ASB/UTI status and shows prevalence, not virulence causality.",
+      "Data: %s. Denominator: participant-level presence from selected assembly VFDB calls; this plot is not stratified by UTI/Not_UTI status and shows prevalence, not virulence causality.",
       vf_pa_file
     )
   ) +
@@ -328,7 +337,7 @@ p2 <- ggplot(tbl_gene, aes(n_participants)) +
     x = "Participants with gene detected",
     y = "Number of VFDB genes",
     caption = sprintf(
-      "Data: %s. Denominator: participant-level gene prevalence from selected assembly VFDB calls. This is a descriptive input-QC plot and is not an ASB-vs-UTI association test.",
+      "Data: %s. Denominator: participant-level gene prevalence from selected assembly VFDB calls. This is a descriptive input-QC plot and is not a UTI-vs-Not_UTI association test.",
       vf_pa_file
     )
   ) +

@@ -9,8 +9,8 @@
 #   between the genomic events (from script 18) and the clinical reality.
 #
 # WHY THIS SCRIPT EXISTS:
-#   Even if a strain acquires a new VF gene, the transition to symptomatic
-#   UTI might be driven primarily by a host factor change (e.g., insertion
+#   Even if a strain acquires a new VF gene, the transition to clinically
+#   defined UTI might be driven primarily by a host factor change (e.g., insertion
 #   of a urinary catheter).  We need to review the host context alongside
 #   the genomic context to avoid incorrectly associating genomic changes with
 #   clinical outcomes when a massive host confounder is present.

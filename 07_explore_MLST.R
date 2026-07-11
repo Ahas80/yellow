@@ -4,16 +4,15 @@
 # ==============================================================================
 #
 # GOAL:
-#   Summarise and visualise MLST results: ST frequency distributions, top-20
-#   ST bar chart, and an exploratory assembly-level metadata join.
-#   The canonical episode-level MLST table is produced by 06_MLST.R as
-#   mlst_with_meta.csv; this script must not overwrite it.
+#   Summarise and visualise the active provider-preferred MLST results:
+#   ST frequency distributions, top-20 ST bar chart, and an exploratory
+#   isolate-level metadata join.
 #
 # ------------------------------------------------------------------------------
 # Role: [Descriptive] - Explore and summarize MLST data.
 #
 # Inputs:
-#   - results/mlst/mlst_all.tsv
+#   - results/mlst/mlst_provider_preferred_all.csv
 #   - assembly_metadata.csv
 #
 # Outputs:
@@ -45,7 +44,7 @@ suppressPackageStartupMessages({
 
 # 2. Configuration
 # ------------------------------------------------------------------------------
-FILE_MLST <- FILE_MLST_ALL
+FILE_MLST <- if (file.exists(FILE_MLST_PROVIDER_PREFERRED_ALL)) FILE_MLST_PROVIDER_PREFERRED_ALL else FILE_MLST_CANONICAL
 DIR_DEBUG <- file.path(DIR_LOGS, "debug")
 ensure_dir(DIR_DEBUG)
 ensure_dir(DIR_PLOTS_MLST)
@@ -53,12 +52,18 @@ ensure_dir(DIR_PLOTS_MLST)
 # 3. Load Data
 # ------------------------------------------------------------------------------
 if (!file.exists(FILE_MLST)) stop("Missing ", FILE_MLST)
-mlst <- read_tsv(FILE_MLST, show_col_types = FALSE)
+mlst <- if (grepl("\\.tsv$", FILE_MLST, ignore.case = TRUE)) {
+  read_tsv(FILE_MLST, show_col_types = FALSE)
+} else {
+  read_csv(FILE_MLST, show_col_types = FALSE)
+}
 
 # Ensure ST column
 st_col <- names(mlst)[tolower(names(mlst)) == "st"]
 if (!length(st_col)) stop("No ST column found in MLST results.")
 mlst$ST <- as.character(mlst[[st_col[1]]])
+if (!"n_loci_typed" %in% names(mlst)) mlst$n_loci_typed <- NA_real_
+if (!"mlst_complete" %in% names(mlst)) mlst$mlst_complete <- NA
 
 # Load Metadata
 if (file.exists(FILE_METADATA)) {
@@ -123,9 +128,8 @@ if (!is.null(meta)) {
       warning("Metadata has duplicate Isolate_IDs. See results/debug/meta_duplicates.csv")
     }
 
-    # Exploratory assembly/isolate-level join. Do not overwrite
-    # mlst_with_meta.csv, which 06_MLST.R owns as the canonical
-    # participant-timepoint table for downstream ST joins.
+    # Exploratory assembly/isolate-level join. Do not overwrite either
+    # local mlst_with_meta.csv or the provider-preferred canonical table.
     mlst_with_meta <- mlst_in %>%
       left_join(meta, by = setNames(iso_col, "Isolate_ID"), suffix = c("", "_meta"))
 

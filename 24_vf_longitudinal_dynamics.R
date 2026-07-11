@@ -19,7 +19,7 @@
 #       or strain replacement, which has clinical implications.
 #
 #   The existing script 16_within_host_evolution.R only examines VF changes
-#   for phenotype-switch pairs (same strain, status goes ASB→UTI or vice versa).
+#   for phenotype-switch pairs. This script uses the primary UTI/Not_UTI status.
 #   This is a much narrower question.  This script examines ALL consecutive
 #   timepoint pairs regardless of status change, giving a comprehensive
 #   picture of VF dynamics.
@@ -30,11 +30,13 @@
 #     2. Compute Jaccard similarity = |intersection| / |union|
 #        (1.0 = identical VF profile, 0.0 = completely different)
 #     3. Identify specific genes gained and lost
-#     4. Label the transition type (e.g., ASB→ASB, ASB→UTI)
+#     4. Label the transition type (e.g., Not_UTI→Not_UTI, Not_UTI→UTI)
 #
 # INPUTS:
 #   - results/vf/vf_analysis_ready.csv   (from 22_vf_build_analysis_dataset.R)
 #   - results/vf/gene_map.csv            (for gene metadata)
+#   - results/strain_compare/pairwise_metrics.csv
+#     (same-strain/replacement evidence from 11_compare_strains.R)
 #
 # OUTPUTS (all in results/vf/):
 #   - vf_longitudinal_transitions.csv      One row per consecutive pair
@@ -42,6 +44,10 @@
 #   - vf_transition_summary_by_type.csv    Aggregated by transition type
 #   - vf_transitions_stratified.csv        All pairs, by depth (≥2/≥3/≥4)
 #   - vf_transition_summary_stratified.csv Summaries, by depth
+#   - vf_same_strain_vf_stability_summary.csv
+#   - vf_replacement_vf_change_summary.csv
+#   - vf_strain_context_by_transition_summary.csv
+#   - vf_same_strain_by_ST_summary.csv
 #   - vf_longitudinal_summary.txt          Human-readable summary
 #
 # PLOTS (in plots/vf/):
@@ -58,7 +64,7 @@
 # ==============================================================================
 
 source("00_config.R")
-source("R/plot_helpers.R")  # Canonical infection status colours
+source("R/plot_helpers.R")  # Primary UTI status colours
 suppressPackageStartupMessages({
   library(dplyr)
   library(readr)
@@ -73,12 +79,12 @@ msg("Starting 24_vf_longitudinal_dynamics.R")
 # VF visualisation shared helpers
 # ==============================================================================
 
-STATUS_LEVELS <- c("ASB", "UTI", "Negative", "Culture-positive/S&S unknown", "Unknown")
+STATUS_LEVELS <- c("UTI", "Not_UTI", "Unknown")
 
 status_for_plot <- function(x) {
   x <- as.character(x)
   x[is.na(x) | x == ""] <- "Unknown"
-  x[!x %in% STATUS_LEVELS] <- "Culture-positive/S&S unknown"
+  x[!x %in% STATUS_LEVELS] <- "Unknown"
   factor(x, levels = STATUS_LEVELS)
 }
 
@@ -111,7 +117,8 @@ vf_caption <- function(input_file, data, analysis_unit,
     "Comparisons are consecutive observed isolates within Participant_id; time intervals can vary.",
     p_value_note,
     sprintf("Comparisons involving UTI are limited (n=%d), so transition-specific patterns are underpowered.", n_uti),
-    "Same-ST and different-ST comparisons are diagnostic for lineage/strain replacement, not causal tests.",
+    sprintf("SNP context: 0-%d SNPs = strong same strain; >%d SNPs = above same-strain SNP threshold; missing SNPs remain missing SNP evidence. ST is reported separately as lineage context.",
+            strain_snp_threshold(), strain_snp_threshold()),
     extra_note %||% "",
     sep = " "
   ) %>% str_squish()
@@ -186,6 +193,9 @@ ready_file <- FILE_VF_READY
 if (!file.exists(ready_file)) stop("Missing ", ready_file, ". Run 22_vf_build_analysis_dataset.R first.")
 stop_if_stale(ready_file, FILE_VF_PA, "vf_analysis_ready.csv", "vf_pa_all.csv")
 vf_ready <- read_csv(ready_file, show_col_types = FALSE) %>%
+  prefer_primary_uti_status() %>%
+  apply_manual_sample_curation(context = "24_vf_ready") %>%
+  filter_primary_genomics() %>%
   mutate(Participant_id = as.character(Participant_id),
          ST = if ("ST" %in% names(.)) normalise_st_label(ST) else NA_character_)
 
@@ -202,6 +212,15 @@ gene_cols <- canonical_vf_gene_cols(names(vf_ready))
 msg("Loaded: %d rows, %d gene columns", nrow(vf_ready), length(gene_cols))
 msg("VF-ready denominator by status: %s", status_count_text(vf_ready))
 
+pairwise_file <- file.path(DIR_STRAIN, "pairwise_metrics.csv")
+if (!file.exists(pairwise_file)) {
+  stop("Missing ", pairwise_file, ". Run 11_compare_strains.R before script 24 so VF longitudinal dynamics are interpreted same-strain-first.")
+}
+pairwise <- read_csv(pairwise_file, show_col_types = FALSE) %>%
+  prepare_pairwise_for_strain_context()
+msg("Loaded pairwise strain metrics: %d rows; same-strain SNP threshold <=%d",
+    nrow(pairwise), strain_snp_threshold())
+
 # ==============================================================================
 # 2. TRANSITION-BUILDING FUNCTION
 # ==============================================================================
@@ -210,7 +229,7 @@ msg("VF-ready denominator by status: %s", status_count_text(vf_ready))
 
 build_transitions <- function(data, gene_cols, cohort_label = "all") {
 
-  # Filter to episodes with clinical status, then sort by true collection date
+  # Filter to episodes with primary UTI status, then sort by true collection date
   # where available. Display-only fallback order is used only when dates are
   # unavailable and is explicitly flagged in the output.
   long_data <- data %>%
@@ -282,6 +301,15 @@ build_transitions <- function(data, gene_cols, cohort_label = "all") {
 
       st_from <- if ("ST" %in% names(rf)) normalise_st_label(rf$ST) else NA_character_
       st_to <- if ("ST" %in% names(rt)) normalise_st_label(rt$ST) else NA_character_
+      strain_ctx <- lookup_strain_context(
+        pairwise = pairwise,
+        pid = pid,
+        tp_from = as.character(rf$tp_lab),
+        tp_to = as.character(rt$tp_lab),
+        ST_from = st_from,
+        ST_to = st_to,
+        has_vf_pair = TRUE
+      )
       date_from <- rf$Collection_Date_parsed
       date_to <- rt$Collection_Date_parsed
       days_between <- if (!is.na(date_from) && !is.na(date_to)) {
@@ -306,9 +334,21 @@ build_transitions <- function(data, gene_cols, cohort_label = "all") {
         time_order_to = rt$time_order,
         time_order_source = paste(rf$time_order_source, rt$time_order_source, sep = " -> "),
         comparison_scope = "consecutive observed within-resident pair",
-        ST_from = st_from,
-        ST_to = st_to,
-        same_ST = ifelse(!is.na(st_from) & !is.na(st_to), st_from == st_to, NA),
+        ST_from = strain_ctx$ST_from,
+        ST_to = strain_ctx$ST_to,
+        same_ST = strain_ctx$same_ST,
+        SNPs = strain_ctx$SNPs,
+        AvgIdentity = strain_ctx$AvgIdentity,
+        Pairwise_Classification = strain_ctx$Pairwise_Classification,
+        Pairwise_RuleUsed = strain_ctx$Pairwise_RuleUsed,
+        snp_strain_context = as.character(strain_ctx$snp_strain_context),
+        st_lineage_context = as.character(strain_ctx$st_lineage_context),
+        pair_interpretation = as.character(strain_ctx$pair_interpretation),
+        same_strain_evidence = strain_ctx$same_strain_evidence,
+        strain_context_level = as.character(strain_ctx$strain_context_level),
+        replacement_flag = strain_ctx$replacement_flag,
+        strain_context_note = strain_ctx$strain_context_note,
+        same_strain_snp_threshold = strain_ctx$same_strain_snp_threshold,
         vf_count_from   = rf$vf_count_total,
         vf_count_to     = rt$vf_count_total,
         n_gained        = length(gained),
@@ -327,7 +367,7 @@ build_transitions <- function(data, gene_cols, cohort_label = "all") {
   trans_df <- bind_rows(transitions) %>%
     mutate(cohort = cohort_label)
 
-  # Aggregate by transition type (e.g., ASB→ASB, ASB→UTI, etc.)
+  # Aggregate by transition type (e.g., Not_UTI->Not_UTI, Not_UTI->UTI, etc.)
   # This summary is useful for comparing VF stability across different
   # clinical trajectory types.
   trans_summary <- trans_df %>%
@@ -337,6 +377,13 @@ build_transitions <- function(data, gene_cols, cohort_label = "all") {
       n_participants   = n_distinct(Participant_id),
       n_with_days_between = sum(!is.na(days_between_samples)),
       median_days_between = ifelse(all(is.na(days_between_samples)), NA_real_, median(days_between_samples, na.rm = TRUE)),
+      n_snp_strong_same_strain = sum(snp_strain_context == "Strong same strain", na.rm = TRUE),
+      n_snp_above_same_strain_threshold = sum(snp_strain_context == "Above same-strain SNP threshold", na.rm = TRUE),
+      n_snp_missing = sum(snp_strain_context == "Missing SNP evidence", na.rm = TRUE),
+      n_pair_replacement_likely = sum(pair_interpretation == "Replacement likely", na.rm = TRUE),
+      n_pair_same_lineage_not_same_strain = sum(pair_interpretation == "Same lineage, not same strain by SNP", na.rm = TRUE),
+      n_pair_st_consistent_snp_missing = sum(pair_interpretation == "ST-consistent, SNP missing", na.rm = TRUE),
+      n_pair_missing_strain_metrics = sum(pair_interpretation == "Missing strain metrics", na.rm = TRUE),
       n_same_ST = sum(same_ST %in% TRUE, na.rm = TRUE),
       n_different_ST = sum(same_ST %in% FALSE, na.rm = TRUE),
       median_gained    = median(n_gained),
@@ -388,25 +435,273 @@ write_csv(results[["all"]]$summary,     file.path(DIR_VF, "vf_transition_summary
 # a "cohort" column to distinguish them)
 all_trans <- bind_rows(lapply(results, `[[`, "transitions"))
 all_summ  <- bind_rows(lapply(results, `[[`, "summary"))
+full_trans <- results[["all"]]$transitions
 
 write_csv(all_trans, file.path(DIR_VF, "vf_transitions_stratified.csv"))
 write_csv(all_summ,  file.path(DIR_VF, "vf_transition_summary_stratified.csv"))
+
+vf_stability_summary <- function(data, group_cols) {
+  summary_cols <- c(
+    "n_transitions", "n_participants", "median_vf_jaccard", "q25_vf_jaccard",
+    "q75_vf_jaccard", "pct_no_vf_gene_change", "median_genes_gained",
+    "median_genes_lost", "median_snp", "n_same_ST", "n_different_ST",
+    "same_strain_snp_threshold", "strong_same_strain_snp_range",
+    "above_same_strain_snp_rule", "st_lineage_rule", "replacement_likely_rule",
+    "missing_strain_metrics_rule"
+  )
+  if (nrow(data) == 0) {
+    empty_groups <- setNames(rep(list(character()), length(group_cols)), group_cols)
+    numeric_summary <- setNames(rep(list(numeric()), 12), summary_cols[1:12])
+    character_summary <- setNames(rep(list(character()), length(summary_cols) - 12), summary_cols[-seq_len(12)])
+    return(as_tibble(c(empty_groups, numeric_summary, character_summary)))
+  }
+  data %>%
+    group_by(across(all_of(group_cols))) %>%
+    summarise(
+      n_transitions = n(),
+      n_participants = n_distinct(Participant_id),
+      median_vf_jaccard = median(jaccard_similarity, na.rm = TRUE),
+      q25_vf_jaccard = ifelse(all(is.na(jaccard_similarity)), NA_real_, quantile(jaccard_similarity, 0.25, na.rm = TRUE)),
+      q75_vf_jaccard = ifelse(all(is.na(jaccard_similarity)), NA_real_, quantile(jaccard_similarity, 0.75, na.rm = TRUE)),
+      pct_no_vf_gene_change = round(mean(!any_vf_change, na.rm = TRUE) * 100, 1),
+      median_genes_gained = median(n_gained, na.rm = TRUE),
+      median_genes_lost = median(n_lost, na.rm = TRUE),
+      median_snp = ifelse(all(is.na(SNPs)), NA_real_, median(SNPs, na.rm = TRUE)),
+      n_same_ST = sum(same_ST %in% TRUE, na.rm = TRUE),
+      n_different_ST = sum(same_ST %in% FALSE, na.rm = TRUE),
+      same_strain_snp_threshold = strain_snp_threshold(),
+      strong_same_strain_snp_range = sprintf("0-%d SNPs", strain_snp_threshold()),
+      above_same_strain_snp_rule = sprintf(">%d SNPs = above same-strain SNP threshold", strain_snp_threshold()),
+      st_lineage_rule = "ST is reported separately as Same ST, Different ST, or Missing ST evidence",
+      replacement_likely_rule = "Different ST or pairwise Different when SNPs do not support same strain",
+      missing_strain_metrics_rule = "Missing SNP evidence with no usable ST/pairwise context or missing WGS/VF endpoint",
+      .groups = "drop"
+    ) %>%
+    arrange(desc(n_transitions))
+}
+
+same_strain_trans <- full_trans %>%
+  filter(snp_strain_context == "Strong same strain")
+replacement_trans <- full_trans %>%
+  filter(pair_interpretation == "Replacement likely")
+
+write_csv(
+  vf_stability_summary(same_strain_trans, c("transition_type")),
+  file.path(DIR_VF, "vf_same_strain_vf_stability_summary.csv")
+)
+write_csv(
+  vf_stability_summary(replacement_trans, c("transition_type")),
+  file.path(DIR_VF, "vf_replacement_vf_change_summary.csv")
+)
+write_csv(
+  vf_stability_summary(full_trans, c("transition_type", "snp_strain_context", "pair_interpretation", "st_lineage_context")),
+  file.path(DIR_VF, "vf_strain_context_by_transition_summary.csv")
+)
+write_csv(
+  same_strain_trans %>%
+    mutate(ST_context = ifelse(!is.na(ST_from), paste0("ST", ST_from), "Missing/non-typable ST")) %>%
+    vf_stability_summary(c("ST_context", "transition_type")),
+  file.path(DIR_VF, "vf_same_strain_by_ST_summary.csv")
+)
 
 # ==============================================================================
 # 5. PLOT: JACCARD SIMILARITY BY TRANSITION TYPE
 # ==============================================================================
 # This figure shows how stable VF profiles are within each type of clinical
-# transition (e.g., ASB→ASB vs ASB→UTI). High Jaccard values (close to 1)
+# transition (e.g., Not_UTI→Not_UTI vs Not_UTI→UTI). High Jaccard values (close to 1)
 # indicate the VF profile barely changes between consecutive observed isolates.
 
 ensure_dir(DIR_PLOTS_VF)
 
-full_trans <- results[["all"]]$transitions
 if (nrow(full_trans) > 0) {
-  # Group rare transition types (those with < 3 occurrences) into "Other"
-  # to keep the plot readable
+  full_trans <- full_trans %>%
+    mutate(
+      snp_strain_context = factor(
+        snp_strain_context,
+        levels = c("Strong same strain", "Above same-strain SNP threshold",
+                   "Missing SNP evidence")
+      ),
+      pair_interpretation = factor(
+        pair_interpretation,
+        levels = c("Strong same strain",
+                   "Conflict: SNP same-strain but ST differs",
+                   "Same lineage, not same strain by SNP",
+                   "ST-consistent, SNP missing",
+                   "Above same-strain SNP threshold",
+                   "Missing SNP evidence",
+                   "Replacement likely",
+                   "Missing strain metrics")
+      ),
+      st_lineage_context = factor(
+        st_lineage_context,
+        levels = c("Same ST", "Different ST", "Missing ST evidence")
+      )
+    )
   type_counts <- full_trans %>% count(transition_type, sort = TRUE)
   common_types <- type_counts %>% filter(n >= 3) %>% pull(transition_type)
+
+  if (nrow(same_strain_trans) > 0) {
+    same_plot <- same_strain_trans %>%
+      mutate(plot_type = ifelse(transition_type %in% common_types,
+                                transition_type, "Other"),
+             plot_type = factor(plot_type, levels = c(common_types, "Other")))
+    p_same_jac <- ggplot(same_plot,
+                         aes(x = reorder(plot_type, -jaccard_similarity, FUN = median),
+                             y = jaccard_similarity)) +
+      geom_boxplot(outlier.shape = NA, width = 0.5, fill = "#BFE3D0") +
+      geom_jitter(width = 0.15, alpha = 0.55, size = 1.5, colour = "#2F855A") +
+      geom_hline(yintercept = 1.0, linetype = "dashed", colour = "grey50") +
+      labs(
+        title = "VF stability within strong same-strain repeated isolates",
+        subtitle = sprintf("Same strain defined first by SNP distance <=%d; ST is secondary context",
+                           strain_snp_threshold()),
+        x = "Clinical transition type",
+        y = "Jaccard similarity (1 = identical VF profile)",
+        caption = vf_caption(
+          ready_file, same_plot, "same-strain consecutive within-resident isolate-pair comparison",
+          extra_note = sprintf("Only pairs with strong same-strain evidence under the <=%d SNP threshold are shown.",
+                               strain_snp_threshold())
+        )
+      ) +
+      plot_theme_vf(base_size = 11) +
+      theme(axis.text.x = element_text(angle = 30, hjust = 1))
+
+    ggsave(file.path(DIR_PLOTS_VF, "vf_same_strain_jaccard_by_transition.png"),
+           p_same_jac, width = 8.5, height = 5.8, dpi = 300)
+
+    same_gain_loss <- same_strain_trans %>%
+      select(Participant_id, transition_type, n_gained, n_lost) %>%
+      pivot_longer(cols = c(n_gained, n_lost), names_to = "change_type", values_to = "n_genes") %>%
+      mutate(change_type = recode(change_type,
+                                  "n_gained" = "VF genes gained",
+                                  "n_lost" = "VF genes lost"))
+    p_same_gain_loss <- ggplot(same_gain_loss,
+                               aes(x = change_type, y = n_genes, fill = change_type)) +
+      geom_boxplot(outlier.shape = NA, alpha = 0.65, width = 0.55) +
+      geom_jitter(width = 0.14, alpha = 0.35, size = 1.1) +
+      facet_wrap(~transition_type) +
+      scale_fill_manual(values = c("VF genes gained" = "#D55E00",
+                                   "VF genes lost" = "#0072B2")) +
+      labs(
+        title = "VF gene gains and losses within strong same-strain pairs",
+        subtitle = sprintf("Restricted to repeated isolates with SNP distance <=%d where SNPs are available",
+                           strain_snp_threshold()),
+        x = NULL,
+        y = "Number of VF genes",
+        caption = vf_caption(
+          ready_file, same_strain_trans, "same-strain consecutive within-resident gene gain/loss summary",
+          extra_note = "This same-strain-first view separates within-strain VF stability from strain replacement."
+        )
+      ) +
+      plot_theme_vf(base_size = 10) +
+      theme(axis.text.x = element_text(angle = 20, hjust = 1),
+            legend.position = "none")
+
+    ggsave(file.path(DIR_PLOTS_VF, "vf_same_strain_gene_gain_loss.png"),
+           p_same_gain_loss, width = 10, height = 7, dpi = 300)
+
+    same_st_plot <- same_strain_trans %>%
+      mutate(ST_context = ifelse(!is.na(ST_from), paste0("ST", ST_from), "Missing/non-typable ST")) %>%
+      group_by(ST_context) %>%
+      mutate(n_ST_context = n()) %>%
+      ungroup() %>%
+      filter(n_ST_context >= 2)
+    if (nrow(same_st_plot) > 0) {
+      p_same_st <- ggplot(same_st_plot,
+                          aes(x = reorder(ST_context, -jaccard_similarity, FUN = median),
+                              y = jaccard_similarity)) +
+        geom_boxplot(outlier.shape = NA, fill = "#E6F2EF", width = 0.55) +
+        geom_jitter(width = 0.12, alpha = 0.55, size = 1.3, colour = "#2C7A7B") +
+        labs(
+          title = "Same-strain VF stability by sequence type",
+          subtitle = "ST is shown after SNP-based same-strain filtering",
+          x = "Sequence type",
+          y = "Jaccard similarity",
+          caption = vf_caption(
+            ready_file, same_st_plot, "same-strain pair comparison stratified by ST",
+            extra_note = "Only ST groups with at least two strong same-strain pairs are shown."
+          )
+        ) +
+        plot_theme_vf(base_size = 10) +
+        theme(axis.text.x = element_text(angle = 35, hjust = 1))
+
+      ggsave(file.path(DIR_PLOTS_VF, "vf_same_strain_by_ST.png"),
+             p_same_st, width = 8, height = 5.4, dpi = 300)
+    } else {
+      msg("Skipping same-strain by-ST plot: fewer than two same-strain pairs per ST.")
+    }
+  } else {
+    msg("Skipping same-strain VF plots: no strong same-strain transitions under <=%d SNP threshold.", strain_snp_threshold())
+  }
+
+  p_ctx_jac <- ggplot(full_trans,
+                      aes(x = pair_interpretation, y = jaccard_similarity,
+                          fill = pair_interpretation)) +
+    geom_boxplot(outlier.shape = NA, alpha = 0.7, width = 0.58) +
+    geom_jitter(width = 0.15, alpha = 0.4, size = 1.2) +
+    scale_fill_manual(values = c("Strong same strain" = "#2F855A",
+                                 "Conflict: SNP same-strain but ST differs" = "#6B46C1",
+                                 "Same lineage, not same strain by SNP" = "#B7791F",
+                                 "ST-consistent, SNP missing" = "#6B7280",
+                                 "Above same-strain SNP threshold" = "#D69E2E",
+                                 "Missing SNP evidence" = "grey70",
+                                 "Replacement likely" = "#C05621",
+                                 "Missing strain metrics" = "grey65")) +
+    labs(
+      title = "VF similarity by SNP-defined strain context and secondary lineage interpretation",
+      subtitle = sprintf("SNP context uses <=%d for strong same strain; ST is shown separately as lineage context",
+                         strain_snp_threshold()),
+      x = "Pair interpretation",
+      y = "Jaccard similarity",
+      caption = vf_caption(
+        ready_file, full_trans, "consecutive pair comparison by strain-context tier",
+        extra_note = "SNP-defined same-strain calls drive the VF stability analysis; ST agreement is secondary lineage context and does not prove same strain."
+      )
+    ) +
+    plot_theme_vf(base_size = 10) +
+    theme(axis.text.x = element_text(angle = 25, hjust = 1),
+          legend.position = "none")
+
+  ggsave(file.path(DIR_PLOTS_VF, "vf_jaccard_by_strain_context.png"),
+         p_ctx_jac, width = 8.5, height = 5.6, dpi = 300)
+
+  change_context <- full_trans %>%
+    group_by(pair_interpretation) %>%
+    summarise(
+      n_transitions = n(),
+      pct_any_vf_change = mean(any_vf_change, na.rm = TRUE),
+      median_total_gene_changes = median(n_gained + n_lost, na.rm = TRUE),
+      .groups = "drop"
+    ) %>%
+    filter(pair_interpretation %in% c("Strong same strain", "Replacement likely"))
+  if (nrow(change_context) > 0) {
+    p_change_ctx <- ggplot(change_context,
+                           aes(x = pair_interpretation, y = pct_any_vf_change,
+                               fill = pair_interpretation)) +
+      geom_col(width = 0.62) +
+      geom_text(aes(label = sprintf("%d pairs", n_transitions)), vjust = -0.35, size = 3.4) +
+      scale_y_continuous(labels = scales::percent, expand = expansion(mult = c(0, 0.16))) +
+      scale_fill_manual(values = c("Strong same strain" = "#2F855A",
+                                   "Replacement likely" = "#C05621")) +
+      labs(
+        title = "VF change is separated into same-strain and replacement contexts",
+        subtitle = "Proportion of repeated-isolate pairs with any VF gene gain or loss",
+        x = NULL,
+        y = "Pairs with any VF gene change",
+        caption = vf_caption(
+          ready_file, full_trans, "same-strain versus replacement VF-change diagnostic",
+          extra_note = "This guards against interpreting replacement-driven profile differences as within-strain VF evolution."
+        )
+      ) +
+      plot_theme_vf(base_size = 10) +
+      theme(legend.position = "none")
+
+    ggsave(file.path(DIR_PLOTS_VF, "vf_replacement_vs_same_strain_vf_change.png"),
+           p_change_ctx, width = 7.5, height = 5.3, dpi = 300)
+  }
+
+  # Group rare transition types (those with < 3 occurrences) into "Other"
+  # to keep the plot readable
   plot_trans <- full_trans %>%
     mutate(plot_type = ifelse(transition_type %in% common_types,
                               transition_type, "Other"),
@@ -479,22 +774,21 @@ if (nrow(full_trans) > 0) {
   }
 
   st_plot <- full_trans %>%
-    filter(!is.na(same_ST)) %>%
-    mutate(ST_comparison = ifelse(same_ST, "Same ST", "Different ST"))
-  if (nrow(st_plot) > 0 && n_distinct(st_plot$ST_comparison) >= 1) {
-    p_st <- ggplot(st_plot, aes(x = ST_comparison, y = jaccard_similarity,
-                                fill = ST_comparison)) +
+    filter(st_lineage_context != "Missing ST evidence")
+  if (nrow(st_plot) > 0 && n_distinct(st_plot$st_lineage_context) >= 1) {
+    p_st <- ggplot(st_plot, aes(x = st_lineage_context, y = jaccard_similarity,
+                                fill = st_lineage_context)) +
       geom_boxplot(outlier.shape = NA, alpha = 0.6, width = 0.55) +
       geom_jitter(width = 0.12, alpha = 0.45, size = 1.3) +
       scale_fill_manual(values = c("Same ST" = "#009E73", "Different ST" = "#D55E00")) +
       labs(
-        title = "Within-resident VF similarity by sequence-type consistency",
-        subtitle = "Same-ST comparisons help distinguish persistent lineage from replacement-like changes",
+        title = "Secondary lineage diagnostic: VF similarity by ST context",
+        subtitle = "ST is shown after SNP-defined same-strain interpretation and does not prove same strain",
         x = NULL,
         y = "Jaccard similarity",
         caption = vf_caption(
           ready_file, st_plot, "consecutive within-resident isolate-pair comparison stratified by ST",
-          extra_note = "ST agreement is a lineage diagnostic; it does not prove the same strain without SNP/ANI context."
+          extra_note = "Use this only as lineage/confounding context after reviewing SNP-defined same-strain calls."
         )
       ) +
       plot_theme_vf(base_size = 11) +
@@ -503,7 +797,7 @@ if (nrow(full_trans) > 0) {
     ggsave(file.path(DIR_PLOTS_VF, "vf_jaccard_same_vs_different_st.png"),
            p_st, width = 6.5, height = 5.2, dpi = 300)
   } else {
-    msg("Skipping same-ST vs different-ST Jaccard plot: insufficient ST-labelled pairs.")
+    msg("Skipping secondary ST lineage-context Jaccard plot: insufficient ST-labelled pairs.")
   }
 
   gain_loss <- full_trans %>%
@@ -557,17 +851,17 @@ if (nrow(full_trans) > 0) {
   sl("Median Jaccard: %.3f", median(full_trans$jaccard_similarity, na.rm = TRUE))
   sl("Mean Jaccard: %.3f",   mean(full_trans$jaccard_similarity, na.rm = TRUE))
   sl("%% with zero VF change: %.1f%%", mean(!full_trans$any_vf_change) * 100)
-  sl("Median genes gained: %d", median(full_trans$n_gained))
-  sl("Median genes lost: %d",   median(full_trans$n_lost))
+  sl("Median genes gained: %.0f", median(full_trans$n_gained))
+  sl("Median genes lost: %.0f",   median(full_trans$n_lost))
   sl("")
 
-  # Special focus on ASB→UTI transitions: are specific genes
-  # gained when a participant transitions from ASB to UTI?
-  a2u <- full_trans %>% filter(transition_type == "ASB\u2192UTI")
-  sl("ASB→UTI transitions: %d", nrow(a2u))
+  # Special focus on Not_UTI→UTI transitions: are specific genes
+  # gained when a participant transitions from Not_UTI to UTI?
+  a2u <- full_trans %>% filter(transition_type == "Not_UTI\u2192UTI")
+  sl("Not_UTI→UTI transitions: %d", nrow(a2u))
   if (nrow(a2u) > 0) {
     sl("  Median Jaccard: %.3f", median(a2u$jaccard_similarity, na.rm = TRUE))
-    sl("  Median gained: %d, lost: %d", median(a2u$n_gained), median(a2u$n_lost))
+    sl("  Median gained: %.0f, lost: %.0f", median(a2u$n_gained), median(a2u$n_lost))
     if (any(a2u$n_gained > 0)) {
       top_gained <- a2u %>%
         filter(genes_gained != "") %>%

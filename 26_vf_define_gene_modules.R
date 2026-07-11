@@ -35,6 +35,7 @@
 # ==============================================================================
 
 source("00_config.R")
+source("R/plot_helpers.R")
 suppressPackageStartupMessages({
   library(dplyr)
   library(readr)
@@ -49,12 +50,12 @@ msg("Starting 26_vf_define_gene_modules.R")
 # VF visualisation shared helpers
 # ==============================================================================
 
-STATUS_LEVELS <- c("ASB", "UTI", "Negative", "Culture-positive/S&S unknown", "Unknown")
+STATUS_LEVELS <- c("UTI", "Not_UTI", "Unknown")
 
 status_for_plot <- function(x) {
   x <- as.character(x)
   x[is.na(x) | x == ""] <- "Unknown"
-  x[!x %in% STATUS_LEVELS] <- "Culture-positive/S&S unknown"
+  x[!x %in% STATUS_LEVELS] <- "Unknown"
   factor(x, levels = STATUS_LEVELS)
 }
 
@@ -136,6 +137,9 @@ stop_if_stale <- function(target, upstream, target_label, upstream_label) {
 stop_if_stale(FILE_VF_READY, FILE_VF_PA_RAW, "vf_analysis_ready.csv", "vf_pa_all.csv")
 
 vf_ready <- read_csv(FILE_VF_READY, show_col_types = FALSE) %>%
+  prefer_primary_uti_status() %>%
+  apply_manual_sample_curation(context = "26_vf_ready") %>%
+  filter_primary_genomics() %>%
   mutate(Participant_id = as.character(Participant_id), tp_lab = normalise_timepoint_preserve_events(tp_lab))
 
 gene_map <- read_csv(FILE_GENE_MAP, show_col_types = FALSE) %>%
@@ -150,7 +154,11 @@ meta_cols <- intersect(
     "UTI_Label", "Urine_collection_method", "ST", "vf_count_total",
     "total_vf_count_all", "total_vf_count_curated",
     "total_vf_count_upec_candidate", "total_vf_count_unassigned",
-    "low_confidence_count", "is_ecoli", "n_timepoints"
+    "low_confidence_count", "is_ecoli", "n_timepoints",
+    "analysis_include_primary", "analysis_exclusion_reason",
+    "duplicate_role", "duplicate_of_participant_id", "duplicate_of_tp_lab",
+    "allow_secondary_duplicate_qc", "duplicate_use_note",
+    "genomics_expected_include", "genomics_exclusion_reason"
   ),
   names(vf_ready)
 )
@@ -453,9 +461,8 @@ for (mod in modules_detected) {
     n_genes_in_module = n_genes,
     n_episodes_present = sum(ep_present, na.rm = TRUE),
     pct_episodes_present = round(100 * sum(ep_present, na.rm = TRUE) / nrow(module_ep), 1),
-    n_ASB_present  = sum(ep_present[status_vec == "ASB"], na.rm = TRUE),
+    n_Not_UTI_present = sum(ep_present[status_vec == "Not_UTI"], na.rm = TRUE),
     n_UTI_present  = sum(ep_present[status_vec == "UTI"], na.rm = TRUE),
-    n_Neg_present  = sum(ep_present[status_vec == "Negative"], na.rm = TRUE),
     upec_score_candidate = info$upec_score_candidate,
     assignment_confidence = info$assignment_confidence
   ))
@@ -548,10 +555,9 @@ qc_add("")
 qc_add("--- INPUT ---")
 qc_add("Episodes: %d", nrow(vf_ready))
 qc_add("Participants: %d", n_distinct(vf_ready$Participant_id))
-qc_add("ASB: %d, UTI: %d, Negative: %d",
-       sum(vf_ready$Infection_Status == "ASB", na.rm = TRUE),
+qc_add("UTI: %d, Not_UTI: %d",
        sum(vf_ready$Infection_Status == "UTI", na.rm = TRUE),
-       sum(vf_ready$Infection_Status == "Negative", na.rm = TRUE))
+       sum(vf_ready$Infection_Status == "Not_UTI", na.rm = TRUE))
 qc_add("VF gene columns in matrix: %d", length(gene_cols))
 if (length(raw_gene_cols) > 0) {
   qc_add("Raw VF P/A gene columns: %d", length(raw_gene_cols))
@@ -703,38 +709,35 @@ if (nrow(mod_summary) > 0) {
 # --- Module prevalence by status ---
 if (nrow(mod_summary) > 0) {
   prev_long <- mod_summary %>%
-    select(module_id, system_name, broad_module, n_ASB_present, n_UTI_present, n_Neg_present) %>%
+    select(module_id, system_name, broad_module, n_Not_UTI_present, n_UTI_present) %>%
     pivot_longer(cols = starts_with("n_"), names_to = "status", values_to = "n_present") %>%
     mutate(
       status = case_when(
-        status == "n_ASB_present" ~ "ASB",
+        status == "n_Not_UTI_present" ~ "Not_UTI",
         status == "n_UTI_present" ~ "UTI",
-        status == "n_Neg_present" ~ "Negative"
       ),
       denom = case_when(
-        status == "ASB" ~ sum(vf_ready$Infection_Status == "ASB", na.rm = TRUE),
+        status == "Not_UTI" ~ sum(vf_ready$Infection_Status == "Not_UTI", na.rm = TRUE),
         status == "UTI" ~ sum(vf_ready$Infection_Status == "UTI", na.rm = TRUE),
-        status == "Negative" ~ sum(vf_ready$Infection_Status == "Negative", na.rm = TRUE)
       ),
       pct = round(100 * n_present / denom, 1)
     ) %>%
-    mutate(status = factor(status, levels = c("ASB", "UTI", "Negative")))
+    mutate(status = factor(status, levels = c("UTI", "Not_UTI")))
 
   p2 <- ggplot(prev_long, aes(x = reorder(system_name, pct), y = pct, fill = status)) +
     geom_col(position = "dodge") +
     coord_flip() +
-    scale_fill_manual(values = c("ASB" = "#0072B2", "UTI" = "#D55E00", "Negative" = "#909090")) +
+    scale_fill_uti_status() +
     labs(
-      title = "Virulence factor module prevalence across clinical states",
-      subtitle = sprintf("Presence = at least one detected gene in module; ASB n=%d, UTI n=%d, Negative n=%d",
-                         sum(vf_ready$Infection_Status == "ASB", na.rm = TRUE),
+      title = "Virulence factor module prevalence across primary UTI status",
+      subtitle = sprintf("Presence = at least one detected gene in module; UTI n=%d, Not_UTI n=%d",
                          sum(vf_ready$Infection_Status == "UTI", na.rm = TRUE),
-                         sum(vf_ready$Infection_Status == "Negative", na.rm = TRUE)),
+                         sum(vf_ready$Infection_Status == "Not_UTI", na.rm = TRUE)),
       x = NULL,
       y = "Isolates with module present",
-      fill = "Clinical status",
+      fill = "Primary UTI status",
       caption = sprintf(
-        "Data: %s. Denominator: %d VF/WGS-linked E. coli isolates from %d participants. Level of analysis: isolate-level module presence. Residents may contribute repeated isolates; module prevalence is descriptive and should not be read as causal evidence. UTI n=%d is small and ST/lineage may confound module-status contrasts.",
+        "Data: %s. Denominator: %d VF/WGS-linked E. coli isolates from %d participants. Level of analysis: isolate-level module presence. Residents may contribute repeated isolates; module prevalence is descriptive and should not be read as causal evidence. UTI n=%d is small, Not_UTI is heterogeneous, and ST/lineage may confound module-status contrasts.",
         FILE_VF_READY, nrow(vf_ready), n_distinct(vf_ready$Participant_id),
         sum(vf_ready$Infection_Status == "UTI", na.rm = TRUE)
       )
@@ -748,7 +751,7 @@ if (nrow(mod_summary) > 0) {
 cat_cols_ready <- grep("^cat_", names(vf_ready), value = TRUE)
 if (length(cat_cols_ready) > 0) {
   cat_comp <- vf_ready %>%
-    filter(!is.na(Infection_Status), Infection_Status %in% c("ASB", "UTI", "Negative")) %>%
+    filter(!is.na(Infection_Status), Infection_Status %in% c("UTI", "Not_UTI")) %>%
     mutate(Infection_Status = status_for_plot(Infection_Status)) %>%
     select(Participant_id, Infection_Status, all_of(cat_cols_ready)) %>%
     pivot_longer(cols = all_of(cat_cols_ready),
@@ -776,13 +779,13 @@ if (length(cat_cols_ready) > 0) {
     geom_col(width = 0.65, colour = "white", linewidth = 0.2) +
     scale_y_continuous(labels = scales::percent) +
     labs(
-      title = "Virulence factor category profiles across clinical states",
+      title = "Virulence factor category profiles across primary UTI status",
       subtitle = "Category burden represents the number of detected genes per isolate within each curated VF category",
-      x = "Clinical status",
+      x = "Primary UTI status",
       y = "Share of mean category burden",
       fill = "VF category",
       caption = sprintf(
-        "Data: %s. Denominator: %d VF/WGS-linked E. coli isolates from %d participants. Level of analysis: isolate-level category composition summarized by clinical status. Residents may contribute repeated isolates. Categories are descriptive biological groupings and should not be interpreted as validated causal virulence scores; UTI n=%d is small and ST/lineage may confound interpretation.",
+        "Data: %s. Denominator: %d VF/WGS-linked E. coli isolates from %d participants. Level of analysis: isolate-level category composition summarized by primary UTI status. Residents may contribute repeated isolates. Categories are descriptive biological groupings and should not be interpreted as validated causal virulence scores; UTI n=%d is small and ST/lineage may confound interpretation.",
         FILE_VF_READY, nrow(vf_ready), n_distinct(vf_ready$Participant_id),
         sum(vf_ready$Infection_Status == "UTI", na.rm = TRUE)
       )

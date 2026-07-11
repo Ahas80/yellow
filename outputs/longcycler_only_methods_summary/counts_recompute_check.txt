@@ -1,0 +1,20 @@
+Longcycler-only methods summary recomputation check
+Generated: 2026-07-09 17:29:29.188266
+
+Longcycler-only filter: selected_canonical == TRUE; QC_PASS == TRUE; tolower(assembler) == "longcycler".
+Transitions: retained Longcycler rows are ordered using time_order_from/time_order_to from vf_longitudinal_transitions.csv filtered to cohort == "all", then adjacent pairs are joined to pairwise_metrics.csv by unordered participant/timepoint endpoints.
+
+current_mixed_episode_rows = 556
+current_mixed_participants = 162
+longcycler_episode_rows = 532
+longcycler_participants = 161
+longcycler_uti = 16
+longcycler_not_uti = 516
+longcycler_st_called = 514
+longcycler_unique_st = 80
+vf_gene_columns = 227
+longcycler_transitions = 371
+longcycler_transition_participants = 139
+longcycler_strict_same_transitions = 116
+longcycler_notuti_to_uti = 9
+longcycler_notuti_to_uti_strict = 7

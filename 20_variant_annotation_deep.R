@@ -13,17 +13,18 @@
 #   Script 18_annotate_variants.R detects SNPs between consecutive timepoints
 #   for the same participant, but only reports positions (contig + coordinate).
 #   This script overlays those positions on the GFF annotation to determine
-#   which genes are affected.  For the phenotype-switch candidates (ASB→UTI),
+#   which genes are affected.  For phenotype-switch candidates (Not_UTI -> UTI),
 #   this is critical: if a SNP hits a known virulence gene, it could explain
 #   the clinical transition.
 #
 # CURRENT SCOPE:
-#   Currently focused on two specific participants (40001, 40004) that were
-#   identified as ASB→UTI transition candidates.  Can be extended to all
-#   participants by modifying the 'candidates' vector.
+#   Uses current Not_UTI -> UTI transition tables when available, falling back
+#   to script 15 phenotype-switch candidates.  This avoids hard-coded residents
+#   and keeps the detailed SNP annotation aligned with the primary status logic.
 #
 # INPUTS:
-#   - results/longitudinal/annotated_snps.csv  (from 18_annotate_variants.R)
+#   - results/longitudinal/annotated_snps.csv  (variant positions from 18_)
+#   - results/vf/vf_transition_case_index.csv or phenotype switch candidates
 #   - assembly_metadata.csv
 #   - results/prokka_prefixed_slim/*.gff       (Prokka gene annotations)
 #
@@ -50,18 +51,97 @@ source("00_config.R")
 # ------------------------------------------------------------------------------
 snps_file <- file.path(DIR_RESULTS, "longitudinal", "annotated_snps.csv")
 snps <- read_csv(snps_file, show_col_types = FALSE) %>%
-    mutate(Participant_id = as.character(Participant_id))
+    mutate(
+        Participant_id = as.character(Participant_id),
+        From_Time = normalise_timepoint_preserve_events(From_Time),
+        To_Time = normalise_timepoint_preserve_events(To_Time)
+    )
 
-meta <- read_csv("assembly_metadata.csv", show_col_types = FALSE) %>%
-    mutate(Participant_id = as.character(Participant_id))
+canonical_selection_file <- file.path(DIR_RESULTS, "qc", "canonical_assembly_selection.csv")
+metadata_file <- if (file.exists(canonical_selection_file)) {
+    canonical_selection_file
+} else if (file.exists(FILE_METADATA)) {
+    FILE_METADATA
+} else {
+    "assembly_metadata.csv"
+}
+meta <- read_csv(metadata_file, show_col_types = FALSE) %>%
+    mutate(
+        Participant_id = as.character(Participant_id),
+        tp_lab = if ("tp_lab" %in% names(.)) normalise_timepoint_preserve_events(tp_lab) else normalise_timepoint_preserve_events(Timepoint),
+        selected_canonical = if ("selected_canonical" %in% names(.)) as_pipeline_bool(selected_canonical) else FALSE,
+        assembler = if ("assembler" %in% names(.)) as.character(assembler) else NA_character_,
+        total_bases = if ("total_bases" %in% names(.)) suppressWarnings(as.numeric(total_bases)) else NA_real_
+    )
 
-# Filter for the key candidates (ASB -> UTI)
-candidates <- c("40001", "40004")
+load_transition_candidates <- function() {
+    candidate_sources <- list()
+
+    case_index_file <- file.path(DIR_VF, "vf_transition_case_index.csv")
+    if (file.exists(case_index_file)) {
+        candidate_sources[["vf_transition_case_index"]] <- read_csv(case_index_file, show_col_types = FALSE) %>%
+            mutate(
+                Participant_id = as.character(Participant_id),
+                From_Time = normalise_timepoint_preserve_events(From_Time),
+                To_Time = normalise_timepoint_preserve_events(To_Time),
+                is_not_uti_to_uti = if ("is_not_uti_to_uti" %in% names(.)) as_pipeline_bool(is_not_uti_to_uti) else From_Status == "Not_UTI" & To_Status == "UTI"
+            ) %>%
+            filter(is_not_uti_to_uti %in% TRUE) %>%
+            transmute(Participant_id, From_Time, To_Time, source = "vf_transition_case_index")
+    }
+
+    table10_file <- file.path(DIR_RESULTS, "summary", "table_10_not_uti_uti_transition_cases.csv")
+    if (file.exists(table10_file)) {
+        candidate_sources[["table_10"]] <- read_csv(table10_file, show_col_types = FALSE) %>%
+            mutate(
+                Participant_id = as.character(Participant_id),
+                From_Time = normalise_timepoint_preserve_events(from_tp),
+                To_Time = normalise_timepoint_preserve_events(to_tp)
+            ) %>%
+            filter(from_status == "Not_UTI", to_status == "UTI") %>%
+            transmute(Participant_id, From_Time, To_Time, source = "table_10_not_uti_uti_transition_cases")
+    }
+
+    phen_file <- file.path(DIR_RESULTS, "longitudinal", "phenotype_switch_candidates.csv")
+    if (file.exists(phen_file)) {
+        candidate_sources[["phenotype_switch_candidates"]] <- read_csv(phen_file, show_col_types = FALSE) %>%
+            mutate(
+                Participant_id = as.character(Participant_id),
+                From_Time = normalise_timepoint_preserve_events(From_Time),
+                To_Time = normalise_timepoint_preserve_events(To_Time)
+            ) %>%
+            filter(From_Status == "Not_UTI", To_Status == "UTI") %>%
+            transmute(Participant_id, From_Time, To_Time, source = "phenotype_switch_candidates")
+    }
+
+    if (length(candidate_sources) == 0) {
+        return(tibble::tibble(
+            Participant_id = character(),
+            From_Time = character(),
+            To_Time = character(),
+            source = character()
+        ))
+    }
+
+    bind_rows(candidate_sources) %>%
+        distinct(Participant_id, From_Time, To_Time, .keep_all = TRUE)
+}
+
+candidate_pairs <- load_transition_candidates()
+if (nrow(candidate_pairs) == 0) {
+    warning("No Not_UTI -> UTI transition candidate table found; annotating all SNP pairs from annotated_snps.csv.")
+    candidate_pairs <- snps %>%
+        distinct(Participant_id, From_Time, To_Time) %>%
+        mutate(source = "all_annotated_snp_pairs")
+}
+
 target_snps <- snps %>%
-    filter(Participant_id %in% candidates) %>%
+    inner_join(candidate_pairs %>% select(Participant_id, From_Time, To_Time),
+               by = c("Participant_id", "From_Time", "To_Time")) %>%
     filter(Type == "SNP")
 
-msg("Target SNPs: %d", nrow(target_snps))
+msg("Target SNPs: %d across %d Not_UTI -> UTI candidate pair(s)",
+    nrow(target_snps), nrow(candidate_pairs))
 
 empty_result <- target_snps %>%
     slice(0) %>%
@@ -83,7 +163,19 @@ if (nrow(target_snps) == 0) {
 # 2. Helper: Parse GFF Manually
 # ------------------------------------------------------------------------------
 get_gff_data <- function(pid, tp) {
-    iso_row <- meta %>% filter(Participant_id == pid, Timepoint == tp)
+    tp_norm <- normalise_timepoint_preserve_events(tp)
+    iso_row <- meta %>%
+        filter(Participant_id == pid, tp_lab == tp_norm, !is.na(file_name)) %>%
+        mutate(
+            selected_rank = if_else(selected_canonical %in% TRUE, 0L, 1L),
+            assembler_rank = case_when(
+                tolower(assembler) == "longcycler" ~ 0L,
+                tolower(assembler) == "flye" ~ 1L,
+                TRUE ~ 2L
+            ),
+            size_rank = coalesce(total_bases, 0)
+        ) %>%
+        arrange(selected_rank, assembler_rank, desc(size_rank))
     if (nrow(iso_row) == 0) {
         return(NULL)
     }

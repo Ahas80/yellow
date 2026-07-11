@@ -6,7 +6,7 @@
 # GOAL:
 #   Compute UTI risk per Sequence Type: for each ST with sufficient data,
 #   what proportion of its episodes are UTI?  This identifies STs that are
-#   disproportionately associated with symptomatic infection in this cohort.
+#   disproportionately associated with catheter-aware UTI episodes in this cohort.
 #
 # NOTE:
 #   Script 25_vf_lineage_vf_interaction.R extends this by linking VF burden
@@ -17,7 +17,7 @@
 #
 # Inputs:
 #   - results/clinical/status_map.csv
-#   - results/mlst/mlst_with_meta.csv (or mlst_all.tsv)
+#   - results/mlst/mlst_provider_preferred.csv
 #   - results/models/gwas_multivariable_glmm.csv (to compare hits)
 #
 # Outputs:
@@ -25,12 +25,13 @@
 #   - results/lineage/st_risk_plot.png
 #
 # Purpose:
-#   - Determine if specific STs (e.g. ST131) are inherently more "symptomatic"
-#     than others in this cohort.
+#   - Determine if specific STs (e.g. ST131) are disproportionately represented
+#     among UTI episodes in this cohort.
 #   - Risk stratification of clones.
 # ==============================================================================
 
 source("00_config.R")
+source("R/pipeline_qc_helpers.R")
 source("R/plot_helpers.R")
 suppressPackageStartupMessages({
     library(dplyr)
@@ -46,20 +47,15 @@ msg("Starting 17_lineage_analysis.R")
 # ------------------------------------------------------------------------------
 # Status
 status <- read_csv(FILE_STATUS_MAP, show_col_types = FALSE) %>%
-    filter(Infection_Status %in% c("UTI", "ASB"))
+    prefer_primary_uti_status() %>%
+    filter(UTI_Status %in% c("UTI", "Not_UTI"))
 
 # MLST
-# Try mlst_with_meta first, else build it
 mlst_file <- FILE_MLST_CANONICAL
 if (file.exists(mlst_file)) {
     mlst <- read_csv(mlst_file, show_col_types = FALSE)
 } else {
-    # Fallback to mlst_all.tsv and join with metadata
-    mlst_raw <- read_tsv(file.path(DIR_MLST, "mlst_all.tsv"), show_col_types = FALSE)
-    meta <- read_csv("assembly_metadata.csv", show_col_types = FALSE)
-    mlst <- mlst_raw %>%
-        select(Isolate_ID, ST) %>%
-        inner_join(meta, by = c("Isolate_ID" = "file_name")) # Adjust join if needed
+    stop("Provider-preferred MLST missing: ", mlst_file, ". Run scripts/integrate_provider_mlst.R.")
 }
 
 # 2. Harmonize & Join
@@ -70,7 +66,8 @@ if (file.exists(mlst_file)) {
 
 # Ensure columns match for join
 mlst_clean <- mlst %>%
-    select(Participant_id, Timepoint, ST) %>%
+    mutate(Timepoint = if ("tp_lab" %in% names(.)) tp_lab else Timepoint) %>%
+    select(any_of(c("Participant_id", "Timepoint", "ST", "ST_source", "ST_provider", "ST_local"))) %>%
     distinct() %>%
     mutate(
         Participant_id = as.character(Participant_id),
@@ -88,24 +85,25 @@ data_merged <- status_clean %>%
 
 if (file.exists(FILE_VF_READY)) {
     vf_ready_lineage <- read_csv(FILE_VF_READY, show_col_types = FALSE) %>%
+        prefer_primary_uti_status() %>%
         mutate(
             Participant_id = as.character(Participant_id),
             Timepoint = normalise_timepoint_preserve_events(tp_lab),
-            Infection_Status = as.character(Infection_Status),
+            Infection_Status = as.character(UTI_Status),
             ST = as.character(ST)
         ) %>%
-        filter(Infection_Status %in% c("UTI", "ASB")) %>%
+        filter(Infection_Status %in% c("UTI", "Not_UTI")) %>%
         filter(!is.na(ST), ST != "") %>%
-        select(any_of(c("Participant_id", "Timepoint", "Episode_ID", "Infection_Status", "ST", "uricult_bridge_applied"))) %>%
+        select(any_of(c("Participant_id", "Timepoint", "Episode_ID", "Infection_Status", "ST", "ST_source", "ST_provider", "ST_local", "uricult_bridge_applied"))) %>%
         distinct()
 
     if (nrow(vf_ready_lineage) > 0) {
         data_merged <- vf_ready_lineage
         msg(
-            "Using canonical vf_analysis_ready.csv for lineage risk: %d episodes (%d UTI, %d ASB; %d Uricult-bridged)",
+            "Using canonical vf_analysis_ready.csv for lineage risk: %d episodes (%d UTI, %d Not_UTI; %d Uricult-bridged)",
             nrow(data_merged),
             sum(data_merged$Infection_Status == "UTI", na.rm = TRUE),
-            sum(data_merged$Infection_Status == "ASB", na.rm = TRUE),
+            sum(data_merged$Infection_Status == "Not_UTI", na.rm = TRUE),
             if ("uricult_bridge_applied" %in% names(data_merged)) sum(data_merged$uricult_bridge_applied %in% TRUE, na.rm = TRUE) else 0L
         )
     }
@@ -132,7 +130,7 @@ st_risk <- data_merged %>%
     summarise(
         n_total = n(),
         n_UTI = sum(Infection_Status == "UTI"),
-        n_ASB = sum(Infection_Status == "ASB"),
+        n_Not_UTI = sum(Infection_Status == "Not_UTI"),
         Risk_UTI = n_UTI / n_total,
         .groups = "drop"
     ) %>%
@@ -148,14 +146,14 @@ st_risk <- data_merged %>%
 # over-represented STs, not as formal inference.
 calc_p <- function(st_target, df) {
     # Contingency Table
-    #       UTI  ASB
+    #       UTI  Not_UTI
     # Target  a    b
     # Other   c    d
 
     a <- sum(df$ST == st_target & df$Infection_Status == "UTI")
-    b <- sum(df$ST == st_target & df$Infection_Status == "ASB")
+    b <- sum(df$ST == st_target & df$Infection_Status == "Not_UTI")
     c <- sum(df$ST != st_target & df$Infection_Status == "UTI")
-    d <- sum(df$ST != st_target & df$Infection_Status == "ASB")
+    d <- sum(df$ST != st_target & df$Infection_Status == "Not_UTI")
 
     mat <- matrix(c(a, c, b, d), nrow = 2)
     test <- fisher.test(mat)
@@ -197,10 +195,10 @@ p <- ggplot(final_res, aes(x = reorder(ST, Risk_UTI), y = Risk_UTI, fill = Risk_
     ) +
     geom_text(aes(label = sprintf("n=%d", n_total)), vjust = -0.5, size = 6, fontface = "bold") +
     scale_y_continuous(labels = scales::percent, limits = c(0, 1.1)) +
-    scale_fill_gradient(low = infection_cols[["ASB"]], high = infection_cols[["UTI"]]) +
+    scale_fill_gradient(low = uti_status_cols[["Not_UTI"]], high = uti_status_cols[["UTI"]]) +
     labs(
         title = "UTI Risk by Sequence Type",
-        subtitle = "Proportion of episodes that are Symptomatic UTI (vs ASB)",
+        subtitle = "Proportion of VF/WGS-linked episodes classified as UTI versus Not_UTI",
         x = "Sequence Type",
         y = "UTI Risk (%)"
     ) +

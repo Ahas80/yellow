@@ -36,7 +36,7 @@ rUTIs/
 - **[00_input_snapshot.R](file:///Users/Aamir/Desktop/rUTIs/00_input_snapshot.R)** - Input data snapshot
 - **[00_make_assembly_metadata.r](file:///Users/Aamir/Desktop/rUTIs/00_make_assembly_metadata.r)** - Assembly metadata creation
 - **[00a_load_clean_clinical.R](file:///Users/Aamir/Desktop/rUTIs/00a_load_clean_clinical.R)** - Load and clean clinical data
-- **[00b_classify_episodes.R](file:///Users/Aamir/Desktop/rUTIs/00b_classify_episodes.R)** - Classify UTI vs ASB episodes
+- **[00b_classify_episodes.R](file:///Users/Aamir/Desktop/rUTIs/00b_classify_episodes.R)** - Classify primary UTI vs Not_UTI episodes
 - **[00c_plot_clinical_summary.R](file:///Users/Aamir/Desktop/rUTIs/00c_plot_clinical_summary.R)** - Clinical summary plots
 
 ### Gene Analysis (Phase 1)
@@ -207,7 +207,7 @@ plots/
 - **transitions_alluvial_or_heatmap.png** - UTI/ASB transitions
 
 ### Core Phylogeny in plots/phylogeny/
-- **core_tree_phenotype.png** - Core SNP tree colored by UTI vs ASB
+- **core_tree_phenotype.png** - Core SNP tree colored by primary UTI status where available
 
 ---
 

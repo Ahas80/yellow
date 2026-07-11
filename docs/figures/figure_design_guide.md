@@ -153,7 +153,7 @@ A comprehensive audit and improvement process was conducted to enhance the clari
   - X-axis: Timepoints (T0, T1, T2, etc.)
   - Flows: Width = number of participants
   - Color: By Strain ID (top 5-10 strains + "Other")
-  - Split: Flows split by Infection Status (UTI/ASB/Negative)
+  - Split: Flows split by primary UTI status (`UTI` / `Not_UTI`)
 - **Value**: Shows strain persistence + clinical transitions simultaneously
 
 ### NEW_F052: Antimicrobial Resistance Timeline
@@ -173,7 +173,7 @@ A comprehensive audit and improvement process was conducted to enhance the clari
 - **Design**:
   - X-axis: Total VF genes per isolate
   - Y-axis: Total AMR genes per isolate
-  - Color: Infection Status (UTI/ASB/Negative)
+  - Color: Primary UTI status (`UTI` / `Not_UTI`)
   - Size: Bubble = number of isolates with that profile
   - Quadrants: Reference lines to divide low/high risk zones
 - **Value**: Prioritize strains for further study based on combined threat

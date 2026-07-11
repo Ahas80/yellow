@@ -4,8 +4,8 @@
 # ==============================================================================
 #
 # GOAL:
-#   Determine whether observed VF burden differences between ASB and UTI
-#   are driven by clinical status or by the underlying bacterial lineage (ST).
+#   Determine whether observed VF burden differences between UTI and Not_UTI
+#   are driven by primary UTI status or by the underlying bacterial lineage (ST).
 #
 # WHY THIS SCRIPT IS CRITICAL:
 #   This is the study's most important confounding check.  Consider this
@@ -22,9 +22,9 @@
 #     Q1: Does VF burden vary across STs?
 #         (Kruskal-Wallis test)
 #     Q2: Within each major ST, is there a VF burden difference between
-#         ASB and UTI?
+#         UTI and Not_UTI?
 #         (Within-ST Wilcoxon tests — small sample sizes expected)
-#     Q3: Is ST composition different between ASB and UTI?
+#     Q3: Is ST composition different between UTI and Not_UTI?
 #         (Fisher exact on ST×Status contingency table)
 #
 #   Interpretation:
@@ -53,11 +53,11 @@
 #
 # PLOTS (in plots/vf/):
 #   - vf_burden_by_st.png                  Boxplot of VF burden per top STs
-#   - vf_burden_st_x_status.png            Faceted: ASB vs UTI within each ST
+#   - vf_burden_st_x_status.png            Faceted: UTI vs Not_UTI within each ST
 # ==============================================================================
 
 source("00_config.R")
-source("R/plot_helpers.R")  # Canonical infection status colours
+source("R/plot_helpers.R")  # Primary UTI status colours
 suppressPackageStartupMessages({
   library(dplyr)
   library(readr)
@@ -72,12 +72,12 @@ msg("Starting 25_vf_lineage_vf_interaction.R")
 # VF visualisation shared helpers
 # ==============================================================================
 
-STATUS_LEVELS <- c("ASB", "UTI", "Negative", "Culture-positive/S&S unknown", "Unknown")
+STATUS_LEVELS <- c("UTI", "Not_UTI", "Unknown")
 
 status_for_plot <- function(x) {
   x <- as.character(x)
   x[is.na(x) | x == ""] <- "Unknown"
-  x[!x %in% STATUS_LEVELS] <- "Culture-positive/S&S unknown"
+  x[!x %in% STATUS_LEVELS] <- "Unknown"
   factor(x, levels = STATUS_LEVELS)
 }
 
@@ -173,6 +173,9 @@ ready_file <- FILE_VF_READY
 if (!file.exists(ready_file)) stop("Missing ", ready_file, ". Run 22_vf_build_analysis_dataset.R first.")
 stop_if_stale(ready_file, FILE_VF_PA, "vf_analysis_ready.csv", "vf_pa_all.csv")
 vf_ready <- read_csv(ready_file, show_col_types = FALSE) %>%
+  prefer_primary_uti_status() %>%
+  apply_manual_sample_curation(context = "25_vf_ready") %>%
+  filter_primary_genomics() %>%
   mutate(Participant_id = as.character(Participant_id),
          ST = normalise_st_label(ST),
          Infection_Status = as.character(Infection_Status))
@@ -190,7 +193,7 @@ msg("VF-ready denominator by status: %s", status_count_text(vf_ready))
 # ==============================================================================
 # 2. CHECK ST DATA AVAILABILITY
 # ==============================================================================
-# If MLST data was not joined in 22_ (e.g., mlst_with_meta.csv was missing),
+# If active provider-preferred MLST data was not joined in 22_,
 # this script cannot run.  Fail gracefully with a clear message.
 
 has_st <- vf_ready %>% filter(!is.na(ST), !is.na(Infection_Status))
@@ -263,12 +266,12 @@ for (cc in cat_cols) {
 
 write_csv(burden_by_st, file.path(DIR_VF, "vf_burden_by_st.csv"))
 
-# Compute VF burden per ST × Status (ASB/UTI only).
+# Compute VF burden per ST × Status (UTI/Not_UTI only).
 # This answers Q2: within the same ST, does VF burden differ by status?
-asb_uti_st <- has_st %>%
-  filter(ST %in% top_sts, Infection_Status %in% c("ASB", "UTI"))
+uti_not_uti_st <- has_st %>%
+  filter(ST %in% top_sts, Infection_Status %in% c("Not_UTI", "UTI"))
 
-burden_st_status <- asb_uti_st %>%
+burden_st_status <- uti_not_uti_st %>%
   group_by(ST, Infection_Status) %>%
   summarise(
     n_episodes = n(),
@@ -315,22 +318,22 @@ if (length(top_sts) >= 2) {
 }
 
 # ------------------------------------------------------------------
-# Q2: Within each major ST, does VF burden differ between ASB and UTI?
+# Q2: Within each major ST, does VF burden differ between UTI and Not_UTI?
 # ------------------------------------------------------------------
 # This is the key within-lineage test.  If VF burden is the SAME for
-# ASB and UTI episodes of the same ST, then VF differences observed
+# Not_UTI and UTI episodes of the same ST, then VF differences observed
 # in the overall cohort are likely driven by ST composition, not by
 # VF content per se.
 #
 # NOTE: Small sample sizes within STs are expected.  Many STs will have
 # too few UTI episodes for a valid test.  This is a known limitation.
-sl("Q2: Within each top ST, does VF burden differ between ASB and UTI?")
+sl("Q2: Within each top ST, does VF burden differ between UTI and Not_UTI?")
 for (st in top_sts) {
-  st_data <- asb_uti_st %>% filter(ST == st)
-  n_asb <- sum(st_data$Infection_Status == "ASB")
+  st_data <- uti_not_uti_st %>% filter(ST == st)
+  n_not_uti <- sum(st_data$Infection_Status == "Not_UTI")
   n_uti <- sum(st_data$Infection_Status == "UTI")
 
-  if (n_asb >= 2 && n_uti >= 2) {
+  if (n_not_uti >= 2 && n_uti >= 2) {
     # Wilcoxon rank-sum (Mann-Whitney U) test: non-parametric comparison
     # of two independent groups.
     wt <- tryCatch(
@@ -338,26 +341,26 @@ for (st in top_sts) {
       error = function(e) NULL
     )
     if (!is.null(wt)) {
-      sl("  ST%s (ASB=%d, UTI=%d): Wilcoxon p = %.4f, median ASB=%.0f, UTI=%.0f",
-         st, n_asb, n_uti, wt$p.value,
-         median(st_data$vf_count_total[st_data$Infection_Status == "ASB"]),
+      sl("  ST%s (Not_UTI=%d, UTI=%d): Wilcoxon p = %.4f, median Not_UTI=%.0f, UTI=%.0f",
+         st, n_not_uti, n_uti, wt$p.value,
+         median(st_data$vf_count_total[st_data$Infection_Status == "Not_UTI"]),
          median(st_data$vf_count_total[st_data$Infection_Status == "UTI"]))
     }
   } else {
-    sl("  ST%s (ASB=%d, UTI=%d): Too few in one group for within-ST test.", st, n_asb, n_uti)
+    sl("  ST%s (Not_UTI=%d, UTI=%d): Too few in one group for within-ST test.", st, n_not_uti, n_uti)
   }
 }
 
 # ------------------------------------------------------------------
-# Q3: Does ST composition differ between ASB and UTI?
+# Q3: Does ST composition differ between UTI and Not_UTI?
 # ------------------------------------------------------------------
-# This tests whether certain STs are over-represented in UTI vs ASB.
+# This tests whether certain STs are over-represented in UTI vs Not_UTI.
 # If yes, and Q1 is also yes, then lineage is a LIKELY CONFOUNDER:
 # UTI episodes might have higher VF counts simply because they tend
 # to harbour VF-heavy STs, not because VFs cause UTI.
 sl("")
-sl("Q3: Does ST composition differ between ASB and UTI?")
-st_status_tab <- asb_uti_st %>%
+sl("Q3: Does ST composition differ between UTI and Not_UTI?")
+st_status_tab <- uti_not_uti_st %>%
   filter(ST %in% top_sts) %>%
   count(ST, Infection_Status) %>%
   pivot_wider(names_from = Infection_Status, values_from = n, values_fill = 0)
@@ -370,7 +373,7 @@ if (nrow(st_status_tab) >= 2 && ncol(st_status_tab) >= 3) {
   if (!is.null(ft)) {
     sl("  Fisher exact (simulated): p = %.4f", ft$p.value)
     if (ft$p.value < 0.05) {
-      sl("  → YES: ST composition differs between ASB and UTI.")
+      sl("  → YES: ST composition differs between UTI and Not_UTI.")
       sl("  → Combined with Q1, this means lineage is a LIKELY CONFOUNDER.")
     } else {
       sl("  → NO: ST composition is not significantly different.")
@@ -428,13 +431,13 @@ if (length(top_sts) >= 2) {
          width = max(7, length(top_sts) * 0.8), height = 5.6, dpi = 300)
 }
 
-# PLOT 2: VF burden by ST × Status (ASB vs UTI, faceted)
+# PLOT 2: VF burden by ST × Status (UTI vs Not_UTI, faceted)
 #   This is the visual complement to the Q2 tests above.
-#   For each ST that has both ASB and UTI episodes, show side-by-side
+#   For each ST that has both Not_UTI and UTI episodes, show side-by-side
 #   boxplots.  If boxes overlap heavily within each ST, the VF-status
 #   association is likely an artefact of ST composition.
-if (nrow(asb_uti_st) > 0 && length(top_sts) >= 2) {
-  plot_st_status <- asb_uti_st %>%
+if (nrow(uti_not_uti_st) > 0 && length(top_sts) >= 2) {
+  plot_st_status <- uti_not_uti_st %>%
     mutate(ST_label = paste0("ST", ST))
 
   # Only facet STs that have at least 1 episode of each status
@@ -450,18 +453,18 @@ if (nrow(asb_uti_st) > 0 && length(top_sts) >= 2) {
                         fill = Infection_Status)) +
       geom_boxplot(outlier.shape = NA, width = 0.5, alpha = 0.7) +
       geom_jitter(width = 0.15, alpha = 0.4, size = 1.2) +
-      scale_fill_infection() +
+      scale_fill_uti_status() +
       facet_wrap(~ST_label, scales = "free_x") +
       labs(
-        title = "ASB-UTI VF burden contrasts within E. coli sequence types",
-        subtitle = "Only STs with at least one ASB and one UTI VF-ready isolate are shown",
-        x = "Clinical status",
+        title = "UTI-Not_UTI VF burden contrasts within E. coli sequence types",
+        subtitle = "Only STs with at least one Not_UTI and one UTI VF-ready isolate are shown",
+        x = "Primary UTI status",
         y = "Detected VF genes per isolate",
         caption = vf_caption(
           ready_file, plot_st_status %>% filter(ST_label %in% sts_both),
-          "isolate-level within-ST ASB-UTI diagnostic",
+          "isolate-level within-ST UTI-Not_UTI diagnostic",
           p_value_note = "Within-ST Wilcoxon tests in the summary file are exploratory and often underpowered.",
-          extra_note = "This plot is a confounding diagnostic; overlapping distributions argue against interpreting naive ASB-UTI contrasts as causal."
+          extra_note = "This plot is a confounding diagnostic; overlapping distributions argue against interpreting naive UTI-Not_UTI contrasts as causal."
         )
       ) +
       plot_theme_vf(base_size = 10) +
@@ -480,7 +483,7 @@ if (nrow(asb_uti_st) > 0 && length(top_sts) >= 2) {
 # =============================================================================
 
 status_st_data <- vf_ready %>%
-  filter(!is.na(Infection_Status), Infection_Status %in% c("ASB", "UTI", "Negative")) %>%
+  filter(!is.na(Infection_Status), Infection_Status %in% c("UTI", "Not_UTI")) %>%
   mutate(
     Infection_Status = status_for_plot(Infection_Status),
     ST_group = ifelse(is.na(ST), "Missing/non-typable ST", paste0("ST", ST))
@@ -508,14 +511,14 @@ if (nrow(status_st_data) > 0) {
     geom_col(width = 0.65, colour = "white", linewidth = 0.2) +
     scale_y_continuous(labels = scales::percent) +
     labs(
-      title = "Clinical status distribution across E. coli sequence types",
+      title = "Primary UTI status distribution across E. coli sequence types",
       subtitle = "Top STs are shown individually; sparse STs are grouped as Other STs",
-      x = "Clinical status",
+      x = "Primary UTI status",
       y = "Within-status proportion of VF-ready isolates",
       fill = "Sequence type",
       caption = vf_caption(
         ready_file, status_st_data, "isolate-level ST composition diagnostic",
-        p_value_note = "ST composition tests are exploratory diagnostics and do not establish that lineage causes clinical status.",
+        p_value_note = "ST composition tests are exploratory diagnostics and do not establish that lineage causes primary UTI status.",
         extra_note = "Missing/non-typable STs are shown separately from Other STs."
       )
     ) +
@@ -527,7 +530,7 @@ if (nrow(status_st_data) > 0) {
 
 if ("Batch" %in% names(vf_ready)) {
   batch_data <- vf_ready %>%
-    filter(!is.na(Infection_Status), Infection_Status %in% c("ASB", "UTI", "Negative")) %>%
+    filter(!is.na(Infection_Status), Infection_Status %in% c("UTI", "Not_UTI")) %>%
     mutate(
       Infection_Status = status_for_plot(Infection_Status),
       Batch = ifelse(is.na(Batch) | Batch == "", "Missing batch", paste0("Batch ", Batch))
@@ -541,9 +544,9 @@ if ("Batch" %in% names(vf_ready)) {
     geom_col(width = 0.65, colour = "white", linewidth = 0.2) +
     scale_y_continuous(labels = scales::percent) +
     labs(
-      title = "Batch structure across VF-ready clinical states",
-      subtitle = "Batch imbalance should be considered before interpreting ASB-UTI VF contrasts",
-      x = "Clinical status",
+      title = "Batch structure across VF-ready primary UTI status groups",
+      subtitle = "Batch imbalance should be considered before interpreting UTI-Not_UTI VF contrasts",
+      x = "Primary UTI status",
       y = "Within-status proportion of isolates",
       fill = "Batch",
       caption = vf_caption(
@@ -562,7 +565,7 @@ if ("Batch" %in% names(vf_ready)) {
 
 if ("Event_type" %in% names(vf_ready)) {
   event_data <- vf_ready %>%
-    filter(!is.na(Infection_Status), Infection_Status %in% c("ASB", "UTI", "Negative")) %>%
+    filter(!is.na(Infection_Status), Infection_Status %in% c("UTI", "Not_UTI")) %>%
     mutate(
       Infection_Status = status_for_plot(Infection_Status),
       Event_type = ifelse(is.na(Event_type) | Event_type == "", "Missing event type", Event_type)
@@ -576,9 +579,9 @@ if ("Event_type" %in% names(vf_ready)) {
     geom_col(width = 0.65, colour = "white", linewidth = 0.2) +
     scale_y_continuous(labels = scales::percent) +
     labs(
-      title = "Sampling context across VF-ready clinical states",
+      title = "Sampling context across VF-ready primary UTI status groups",
       subtitle = "Routine and suspected-UTI event sampling are not interchangeable denominators",
-      x = "Clinical status",
+      x = "Primary UTI status",
       y = "Within-status proportion of isolates",
       fill = "Event type",
       caption = vf_caption(
@@ -598,7 +601,7 @@ if ("Event_type" %in% names(vf_ready)) {
 if (all(c("tp_lab", "Event_type", "Infection_Status") %in% names(vf_ready))) {
   tp_levels <- timepoint_display_order(vf_ready$tp_lab)
   status_tp_event <- vf_ready %>%
-    filter(!is.na(Infection_Status), Infection_Status %in% c("ASB", "UTI", "Negative")) %>%
+    filter(!is.na(Infection_Status), Infection_Status %in% c("UTI", "Not_UTI")) %>%
     mutate(
       Infection_Status = status_for_plot(Infection_Status),
       tp_lab = factor(ifelse(is.na(tp_lab) | tp_lab == "", "Missing timepoint", tp_lab),
@@ -615,10 +618,10 @@ if (all(c("tp_lab", "Event_type", "Infection_Status") %in% names(vf_ready))) {
       facet_wrap(~Event_type, ncol = 1, scales = "free_x") +
       scale_fill_gradient(low = "white", high = "#0072B2") +
       labs(
-        title = "Clinical status, timepoint, and event context in VF-ready isolates",
+        title = "Primary UTI status, timepoint, and event context in VF-ready isolates",
         subtitle = "UTI-labelled VF/WGS rows are concentrated in event-driven timepoint labels rather than routine sampling labels",
         x = "Categorical timepoint / WGS event label",
-        y = "Clinical status",
+        y = "Primary UTI status",
         fill = "n isolates",
         caption = vf_caption(
           ready_file,
@@ -647,7 +650,8 @@ if (file.exists(qc_bias_file)) {
 
   if (length(selection_flags) > 0 && all(c("Infection_Status", "n") %in% names(qc_bias))) {
     qc_rates <- qc_bias %>%
-      filter(!is.na(Infection_Status), Infection_Status %in% c("ASB", "UTI", "Negative")) %>%
+      prefer_primary_uti_status() %>%
+      filter(!is.na(Infection_Status), Infection_Status %in% c("UTI", "Not_UTI")) %>%
       mutate(Infection_Status = status_for_plot(Infection_Status)) %>%
       pivot_longer(all_of(selection_flags), names_to = "selection_step", values_to = "included") %>%
       group_by(Infection_Status, selection_step) %>%
@@ -677,16 +681,16 @@ if (file.exists(qc_bias_file)) {
         scale_fill_gradient(labels = scales::percent, low = "white", high = "#009E73",
                             na.value = "grey90", limits = c(0, 1)) +
         labs(
-          title = "WGS/QC selection structure by clinical status",
-          subtitle = "Status-specific inclusion rates help assess selection bias before interpreting VF associations",
+          title = "WGS/QC selection structure by primary UTI status",
+          subtitle = "Primary-status-specific inclusion rates help assess selection bias before interpreting VF associations",
           x = "Selection / availability step",
-          y = "Clinical status",
+          y = "Primary UTI status",
           fill = "Included",
           caption = paste(
             sprintf("Data: %s.", qc_bias_file),
-            "Level of analysis: QC and selection-bias diagnostic by clinical status.",
+            "Level of analysis: QC and selection-bias diagnostic by primary UTI status.",
             "The figure shows weighted inclusion counts from the QC selection table, not a biological VF association.",
-            "Unequal inclusion across status groups can affect VF-ready denominators and downstream ASB-UTI interpretation."
+            "Unequal inclusion across status groups can affect VF-ready denominators and downstream UTI-Not_UTI interpretation."
           )
         ) +
         plot_theme_vf(base_size = 11) +
@@ -704,6 +708,7 @@ if (file.exists(qc_bias_file)) {
 
 status_map <- if (file.exists(FILE_STATUS_MAP)) {
   read_csv(FILE_STATUS_MAP, show_col_types = FALSE) %>%
+    prefer_primary_uti_status() %>%
     mutate(Participant_id = as.character(Participant_id))
 } else {
   NULL
@@ -719,20 +724,20 @@ flow_rows <- bind_rows(
   if (!is.null(status_map)) {
     status_map %>%
       filter(!is.na(Infection_Status)) %>%
-      count(stage = "Clinical status map", Infection_Status, name = "n")
+      count(stage = "Primary UTI status map", Infection_Status, name = "n")
   },
   if (!is.null(vf_pa)) {
     tibble(stage = "Raw VF P/A matrix", Infection_Status = "All VF rows before clinical join", n = nrow(vf_pa))
   },
   vf_ready %>%
-    mutate(Infection_Status = ifelse(is.na(Infection_Status), "Missing clinical status", Infection_Status)) %>%
+    mutate(Infection_Status = ifelse(is.na(Infection_Status), "Missing primary UTI status", Infection_Status)) %>%
     count(stage = "Canonical VF-ready table", Infection_Status, name = "n"),
   vf_ready %>%
-    filter(Infection_Status %in% c("ASB", "UTI")) %>%
-    count(stage = "ASB/UTI VF subset", Infection_Status, name = "n")
+    filter(Infection_Status %in% c("UTI", "Not_UTI")) %>%
+    count(stage = "UTI/Not_UTI VF subset", Infection_Status, name = "n")
 ) %>%
-  mutate(stage = factor(stage, levels = c("Clinical status map", "Raw VF P/A matrix",
-                                          "Canonical VF-ready table", "ASB/UTI VF subset")))
+  mutate(stage = factor(stage, levels = c("Primary UTI status map", "Raw VF P/A matrix",
+                                          "Canonical VF-ready table", "UTI/Not_UTI VF subset")))
 
 if (nrow(flow_rows) > 0) {
   p_flow <- ggplot(flow_rows, aes(x = stage, y = n, fill = Infection_Status)) +
@@ -741,14 +746,14 @@ if (nrow(flow_rows) > 0) {
               size = 3, colour = "white", check_overlap = TRUE) +
     labs(
       title = "Clinical-to-genomic denominator flow for VF analysis",
-      subtitle = "Attrition from clinical episodes to VF-ready and ASB/UTI analysis denominators is shown explicitly",
+      subtitle = "Attrition from clinical episodes to VF-ready and UTI/Not_UTI analysis denominators is shown explicitly",
       x = NULL,
       y = "Rows / episodes",
       fill = "Status or layer",
       caption = paste(
         sprintf("Data: %s, %s, and %s.", FILE_STATUS_MAP, FILE_VF_PA, ready_file),
         "Level of analysis: denominator-flow diagnostic.",
-        "Do not hide denominator attrition when interpreting ASB-UTI VF analyses.",
+        "Do not hide denominator attrition when interpreting UTI-Not_UTI VF analyses.",
         "Clinical UTI rows may require Uricult-to-UTI-N harmonisation before becoming VF-ready rows."
       )
     ) +

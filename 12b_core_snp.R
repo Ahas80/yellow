@@ -265,14 +265,15 @@ if (file.exists(aln_file) && has_snp_dists) {
     # Load Genome Sizes for normalization (optional, but good for SNPs/Mb)
     # We'll use a fixed threshold for now based on standard E. coli (5Mb)
     # Heuristic:
-    #   Same Strain: <= 20 SNPs (approx 4 SNPs/Mb)
+    #   Same Strain: <= configured YELLOW study SNP threshold
     #   Related:     <= 1000 SNPs
     #   Different:   > 1000 SNPs
+    same_strain_snp_threshold <- strain_snp_threshold()
 
     pairs_classified <- pairs_long %>%
         mutate(
             call = case_when(
-                snps <= 20 ~ "Same",
+                snps <= same_strain_snp_threshold ~ "Same",
                 snps <= 1000 ~ "Related",
                 TRUE ~ "Different"
             )

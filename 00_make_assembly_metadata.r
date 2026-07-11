@@ -3,7 +3,7 @@
 # 00_make_assembly_metadata.r
 # ------------------------------------------------------------------------------
 # Build the authoritative assembly-level metadata table from:
-#   1. OVERVIEW E.coli batch 1-6 - CLEAN.xlsx (expected isolate universe)
+#   1. OVERVIEW E.coli batch 1-6 - CLEAN_RC.xlsx (expected isolate universe)
 #   2. data/inputs/batch1.csv ... batch6.csv (metadata supplements only)
 #   3. ont-yellow-routine-fastas/ (canonical FASTA discovery helper)
 #
@@ -43,6 +43,12 @@ expected_df <- overview %>%
     overview_row_number = row_number()
   ) %>%
   filter(!is.na(Isolate_ID), Isolate_ID != "")
+
+expected_df <- apply_manual_sample_curation(
+  expected_df,
+  context = "expected_overview_isolates",
+  write_audit = TRUE
+)
 
 msg("Loaded %d expected E. coli isolates from overview spreadsheet.", nrow(expected_df))
 
@@ -288,15 +294,28 @@ meta <- expected_df %>%
                                   date_col = "Collection_Date")
   )
 
-missing_expected <- meta %>% filter(!found)
+quarantined_genomics_expected <- meta %>%
+  filter(!(genomics_expected_include %in% TRUE))
+missing_expected <- meta %>%
+  filter(!found, genomics_expected_include %in% TRUE)
+missing_expected_all <- meta %>% filter(!found)
 
 msg("")
 msg("=== Validation Summary ===")
 msg("Total expected isolates: %d", nrow(expected_df))
+msg("Active expected isolates after genomics quarantine: %d", sum(expected_df$genomics_expected_include %in% TRUE, na.rm = TRUE))
 msg("Candidate FASTAs found: %d", nrow(candidate_fastas))
 msg("Successfully matched assemblies: %d", sum(meta$found))
-msg("Expected isolate rows without FASTA: %d", nrow(missing_expected))
+msg("Active expected isolate rows without FASTA: %d", nrow(missing_expected))
+msg("Quarantined failed/not-expected sequence rows: %d", nrow(quarantined_genomics_expected))
 msg("Unexpected/unlinked candidate FASTAs: %d", nrow(found_unexpected))
+
+if (nrow(quarantined_genomics_expected) > 0) {
+  write_csv(quarantined_genomics_expected, FILE_QUARANTINED_FASTA_EXPECTATIONS)
+  msg("Wrote quarantined failed/not-expected sequence report to: %s", FILE_QUARANTINED_FASTA_EXPECTATIONS)
+} else {
+  write_csv(quarantined_genomics_expected, FILE_QUARANTINED_FASTA_EXPECTATIONS)
+}
 
 if (nrow(missing_expected) > 0) {
   missing_file <- file.path(DIR_QC, "00_missing_expected_assemblies.csv")
@@ -308,6 +327,8 @@ if (nrow(missing_expected) > 0) {
   for (i in seq_len(nrow(batch_summary))) {
     msg("  Batch %s: %d missing", as.character(batch_summary$Batch[i]), batch_summary$Missing_Count[i])
   }
+} else {
+  write_csv(missing_expected, file.path(DIR_QC, "00_missing_expected_assemblies.csv"))
 }
 
 if (nrow(found_unexpected) > 0) {
@@ -348,6 +369,11 @@ out_meta <- meta %>%
     Assembly_ID, Assembly_Base_ID, Isolate_ID, Participant_id, tp_lab, Timepoint, Event_type,
     Episode_ID, Batch, Assembler, assembler, file_name, full_path, fasta_path,
     file_exists, usable_fasta, found, metadata_source_status,
+    analysis_include_primary, analysis_exclusion_reason,
+    duplicate_role, duplicate_of_participant_id, duplicate_of_tp_lab,
+    allow_secondary_duplicate_qc, duplicate_use_note,
+    genomics_expected_include, genomics_exclusion_reason,
+    manual_curation_applied, manual_curation_note, manual_curation_source,
     Collection_Date, UTI_Label, Clinical_Beoord, Clinical_CFU_Count,
     Clinical_Organism, Urine_collection_method, Population, Spec, Obj,
     Archive, UWI_number, Organism, Beoordeling, Kiemgetal,
@@ -370,6 +396,9 @@ write_csv(out_meta, FILE_ASSEMBLY_META_ALL)
 append_denominator_summary(expected_df, "00_make_assembly_metadata.r", "expected_overview",
                            "isolate", FILE_OVERVIEW_XLSX,
                            "Overview spreadsheet is authoritative expected-isolate universe")
+append_denominator_summary(filter_primary_genomics(expected_df), "00_make_assembly_metadata.r", "expected_overview_primary_genomics_included",
+                           "isolate", FILE_OVERVIEW_XLSX,
+                           "Expected isolate universe after manual primary/genomics curation exclusions")
 append_denominator_summary(out_meta, "00_make_assembly_metadata.r", "assembly_metadata",
                            "assembly", FILE_METADATA,
                            "Assembly-level rows; flye/longcycler alternatives are not independent biological episodes")
@@ -378,4 +407,5 @@ append_denominator_summary(found_unexpected, "00_make_assembly_metadata.r", "une
                            "Unlinked candidate FASTAs excluded from episode-level analyses")
 
 msg("✓ Master metadata generated: %s", FILE_METADATA)
-msg("✓ Pipeline is ready. Downstream scripts will gracefully skip the %d missing expected isolate rows.", nrow(missing_expected))
+msg("✓ Pipeline is ready. Downstream scripts will gracefully skip the %d active missing expected isolate rows; %d failed/not-expected sequence rows are quarantined separately.",
+    nrow(missing_expected), nrow(quarantined_genomics_expected))

@@ -12,8 +12,8 @@
 #   Understanding which VF genes are universally carried (core) vs sporadically
 #   present (variable) is biologically important.  Core genes (e.g., fimH)
 #   are likely essential for colonisation regardless of clinical outcome.
-#   Variable genes are the candidates most likely to differ between ASB and
-#   UTI — they are the features worth testing in the GLMM (script 14).
+#   Variable genes are the candidates most likely to differ between UTI and
+#   Not_UTI — they are the features worth testing in the GLMM (script 14).
 #
 # INPUTS:
 #   - results/vf/vf_pa_all.csv           (from 02_gene_presence_analysis.R)
@@ -92,6 +92,12 @@ if (length(gene_cols) == 0) {
 vf[gene_cols] <- vf[gene_cols] |>
   mutate(across(everything(), ~ replace_na(as.numeric(.x), 0)))
 
+vf <- vf |>
+  mutate(
+    Participant_id = as.character(Participant_id),
+    tp_lab = as.character(tp_lab)
+  )
+
 # Maximize per participant-timepoint (handle duplicates/assemblers)
 vf <- vf |>
   group_by(across(all_of(meta_cols))) |>
@@ -131,12 +137,12 @@ variable_genes <- names(which(gene_sums > 0 & gene_sums < n_iso))
 write_lines(core_genes, file.path(DIR_VF, "core_gene_list.txt"))
 write_lines(variable_genes, file.path(DIR_VF, "variable_gene_list.txt"))
 
-message("Core genes (100%): ", length(core_genes))
-message("Variable genes (<100% & >0%): ", length(variable_genes))
+message("Core genes (>=95%): ", length(core_genes))
+message("Variable genes (<95% & >0%): ", length(variable_genes))
 message("Absent genes (0%): ", length(which(gene_sums == 0)))
 
 if (length(variable_genes) == 0 && n_genes > 0) {
-  message("⚠ No variable genes found. This implies all genes are either Core (100%) or Absent (0%).")
+  message("⚠ No variable genes found. This implies all genes are either high-prevalence (>=95%) or absent.")
   message("  Check if the input matrix is binary (0/1) and correctly parsed.")
   # Diagnostic: print first few rows/cols
   print(mat[1:min(5, n_iso), 1:min(5, n_genes)])
@@ -163,7 +169,7 @@ prev_plot <- ggplot(
     title = "Most prevalent virulence factor genes among VF/WGS-linked isolates",
     subtitle = "Selection criterion: top 40 genes by isolate-level prevalence in the canonical VF matrix",
     caption = sprintf(
-      "Data: %s. Denominator: %d VF/WGS-linked E. coli isolates. This overview is descriptive and is not an ASB-vs-UTI association test.",
+      "Data: %s. Denominator: %d VF/WGS-linked E. coli isolates. This overview is descriptive and is not a UTI-vs-Not_UTI association test.",
       FILE_VF_PA, nrow(mat)
     )
   ) +
@@ -180,8 +186,18 @@ if (length(variable_genes) > 0) {
 
   ann_row <- vf |>
     unite(row_id, Participant_id, tp_lab, sep = "_", remove = FALSE) |>
-    select(row_id, Participant_id, Timepoint = tp_lab) |>
+    mutate(Timepoint = factor(tp_lab)) |>
+    select(row_id, Timepoint) |>
     column_to_rownames("row_id")
+
+  row_labels <- rownames(var_mat)
+  heat_width <- max(9, 0.08 * ncol(var_mat) + 3.5)
+  heat_height <- max(10, 0.05 * nrow(var_mat) + 2)
+  gene_status_colours <- c("#f2f2f2", "#005aa0")
+  gene_status_breaks <- c(-0.01, 0.5, 1.01)
+  gene_status_legend_breaks <- c(0, 1)
+  gene_status_legend_labels <- c("Absent (light grey)", "Present (blue)")
+  heat_title <- "Variable VF gene presence/absence across VF/WGS-linked isolates\nLight grey = absent gene; blue = present gene"
 
   heat_file_png <- file.path(DIR_PLOTS_VF, "variable_gene_heatmap.png")
   heat_file_pdf <- file.path(DIR_PLOTS_VF, "variable_gene_heatmap.pdf")
@@ -190,21 +206,37 @@ if (length(variable_genes) > 0) {
   pheatmap(var_mat,
     cluster_rows   = FALSE,
     cluster_cols   = TRUE,
-    show_rownames  = FALSE,
+    show_rownames  = TRUE,
+    labels_row     = row_labels,
+    fontsize       = 8,
+    fontsize_row   = 3,
     fontsize_col   = 5,
     annotation_row = ann_row,
-    main           = "Variable VF gene presence/absence across VF/WGS-linked isolates",
-    filename       = heat_file_png
+    color          = gene_status_colours,
+    breaks         = gene_status_breaks,
+    legend_breaks  = gene_status_legend_breaks,
+    legend_labels  = gene_status_legend_labels,
+    main           = heat_title,
+    filename       = heat_file_png,
+    width          = heat_width,
+    height         = heat_height
   )
 
   # PDF
-  pdf(heat_file_pdf, width = 0.18 * ncol(var_mat) + 2, height = 8)
+  pdf(heat_file_pdf, width = heat_width, height = heat_height)
   pheatmap(var_mat,
     cluster_rows   = FALSE,
     cluster_cols   = TRUE,
-    show_rownames  = FALSE,
+    show_rownames  = TRUE,
+    labels_row     = row_labels,
+    fontsize       = 8,
+    fontsize_row   = 3,
     fontsize_col   = 6,
-    main           = "Variable Virulence Gene Presence/Absence",
+    color          = gene_status_colours,
+    breaks         = gene_status_breaks,
+    legend_breaks  = gene_status_legend_breaks,
+    legend_labels  = gene_status_legend_labels,
+    main           = heat_title,
     annotation_row = ann_row
   )
   dev.off()

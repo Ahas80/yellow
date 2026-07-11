@@ -5,13 +5,13 @@
 #
 # GOAL:
 #   Cross-sectional comparison of virulence factor (VF) profiles between
-#   clinical states: ASB vs UTI.  Produces burden summaries, gene-level
+#   primary UTI status groups: UTI vs Not_UTI. Produces burden summaries, gene-level
 #   prevalence tables, category-level enrichment, and exploratory Fisher
 #   exact tests.
 #
 # WHY THIS SCRIPT EXISTS:
 #   The project's central question is whether bacteria causing UTI carry
-#   a different VF arsenal from those causing ASB in elderly nursing home
+#   a different VF arsenal from all Not_UTI episodes in elderly nursing home
 #   residents.  This script provides the core descriptive and exploratory
 #   statistical tables needed to answer that question.
 #
@@ -45,7 +45,7 @@
 #   - vf_cross_sectional_summary.txt       Human-readable abstract-ready summary
 #
 # PLOTS (in plots/vf/):
-#   - vf_burden_boxplot.png                Boxplot of VF burden (ASB vs UTI)
+#   - vf_burden_boxplot.png                Boxplot of VF burden (UTI vs Not_UTI)
 #   - vf_category_barplot.png              Median category counts by status
 #
 # DEPTH STRATIFICATION:
@@ -62,7 +62,7 @@
 # ==============================================================================
 
 source("00_config.R")
-source("R/plot_helpers.R")  # Canonical infection status colours
+source("R/plot_helpers.R")  # Primary UTI status colours
 suppressPackageStartupMessages({
   library(dplyr)
   library(readr)
@@ -78,12 +78,12 @@ msg("Starting 23_vf_cross_sectional.R")
 # VF visualisation shared helpers
 # ==============================================================================
 
-STATUS_LEVELS <- c("ASB", "UTI", "Negative", "Culture-positive/S&S unknown", "Unknown")
+STATUS_LEVELS <- c("UTI", "Not_UTI", "Unknown")
 
 status_for_plot <- function(x) {
   x <- as.character(x)
   x[is.na(x) | x == ""] <- "Unknown"
-  x[!x %in% STATUS_LEVELS] <- "Culture-positive/S&S unknown"
+  x[!x %in% STATUS_LEVELS] <- "Unknown"
   factor(x, levels = STATUS_LEVELS)
 }
 
@@ -118,7 +118,8 @@ vf_caption <- function(input_file, data, analysis_unit,
     if (repeated) "Residents may contribute repeated isolates; isolate-level tests can be pseudoreplicated." else "Each participant contributes one plotted value.",
     p_value_note,
     multiple_testing_note %||% "",
-    sprintf("UTI denominator is small (n=%d), so ASB-UTI contrasts are underpowered.", n_uti),
+    sprintf("UTI denominator is small (n=%d), so UTI-vs-Not_UTI contrasts are underpowered.", n_uti),
+    "Not_UTI is heterogeneous; subgroup/legacy outputs should be used for sensitivity interpretation.",
     "ST/lineage, batch, timepoint, and event-driven sampling may confound apparent VF-status associations.",
     extra_note %||% "",
     sep = " "
@@ -182,6 +183,9 @@ ready_file <- FILE_VF_READY
 if (!file.exists(ready_file)) stop("Missing ", ready_file, ". Run 22_vf_build_analysis_dataset.R first.")
 stop_if_stale(ready_file, FILE_VF_PA, "vf_analysis_ready.csv", "vf_pa_all.csv")
 vf_ready <- read_csv(ready_file, show_col_types = FALSE) %>%
+  prefer_primary_uti_status() %>%
+  apply_manual_sample_curation(context = "23_vf_ready") %>%
+  filter_primary_genomics() %>%
   mutate(Participant_id = as.character(Participant_id),
          Infection_Status_plot = status_for_plot(Infection_Status))
 
@@ -210,15 +214,15 @@ msg("Repeated-measures warning: %d/%d participants contribute >1 VF-ready isolat
 
 compute_cross_sectional <- function(data, cohort_label, gene_cols, gene_map) {
 
-  # Filter to episodes that have a clinical status assignment
+  # Filter to episodes that have a primary UTI status assignment
   with_status <- data %>% filter(!is.na(Infection_Status))
 
   # ------------------------------------------------------------------
   # C1: VF BURDEN BY STATUS
   # ------------------------------------------------------------------
-  # For each clinical status (ASB, UTI, Negative), compute descriptive
+  # For each primary UTI status (UTI, Not_UTI), compute descriptive
   # statistics for total VF gene count.  These are the core numbers
-  # reported in the abstract (e.g., "median VF burden was 80 in ASB
+  # reported in the abstract (e.g., "median VF burden was 80 in Not_UTI
   # vs 80.5 in UTI").
   burden <- with_status %>%
     group_by(Infection_Status) %>%
@@ -240,12 +244,12 @@ compute_cross_sectional <- function(data, cohort_label, gene_cols, gene_map) {
   # C2: GENE-LEVEL PREVALENCE
   # ------------------------------------------------------------------
   # For each VF gene, compute the percentage of episodes where it is
-  # present, separately for ASB, UTI, and Negative.
-  # The delta (UTI% - ASB%) highlights genes that are differentially
-  # prevalent between symptomatic and asymptomatic infections.
-  asb_uti <- with_status %>% filter(Infection_Status %in% c("ASB", "UTI"))
-  n_asb <- sum(asb_uti$Infection_Status == "ASB")
-  n_uti <- sum(asb_uti$Infection_Status == "UTI")
+  # present, separately for UTI and Not_UTI.
+  # The delta (UTI% - Not_UTI%) highlights genes that are differentially
+  # prevalent in the new primary clinical contrast.
+  uti_not_uti <- with_status %>% filter(Infection_Status %in% c("Not_UTI", "UTI"))
+  n_not_uti <- sum(uti_not_uti$Infection_Status == "Not_UTI")
+  n_uti <- sum(uti_not_uti$Infection_Status == "UTI")
 
   gene_prev <- lapply(gene_cols, function(g) {
     df <- with_status %>%
@@ -263,26 +267,24 @@ compute_cross_sectional <- function(data, cohort_label, gene_cols, gene_map) {
 
     tibble(
       gene = g,
-      ASB_n = get_val("ASB", "n_present"), ASB_N = get_val("ASB", "n_total"),
-      ASB_pct = get_val("ASB", "pct"),
+      Not_UTI_n = get_val("Not_UTI", "n_present"), Not_UTI_N = get_val("Not_UTI", "n_total"),
+      Not_UTI_pct = get_val("Not_UTI", "pct"),
       UTI_n = get_val("UTI", "n_present"), UTI_N = get_val("UTI", "n_total"),
-      UTI_pct = get_val("UTI", "pct"),
-      Neg_n = get_val("Negative", "n_present"), Neg_N = get_val("Negative", "n_total"),
-      Neg_pct = get_val("Negative", "pct")
+      UTI_pct = get_val("UTI", "pct")
     )
   }) %>%
     bind_rows() %>%
-    mutate(delta_UTI_minus_ASB = round(UTI_pct - ASB_pct, 1)) %>%
+    mutate(delta_UTI_minus_Not_UTI = round(UTI_pct - Not_UTI_pct, 1)) %>%
     left_join(gene_map %>% select(Gene, Category), by = c("gene" = "Gene")) %>%
     mutate(Category = coalesce(Category, "Unassigned"),
            cohort = cohort_label) %>%
-    arrange(desc(abs(delta_UTI_minus_ASB)))
+    arrange(desc(abs(delta_UTI_minus_Not_UTI)))
 
   # ------------------------------------------------------------------
-  # C3: EXPLORATORY FISHER EXACT TESTS (UTI vs ASB)
+  # C3: EXPLORATORY FISHER EXACT TESTS (UTI vs Not_UTI)
   # ------------------------------------------------------------------
   # For each gene, test whether its prevalence differs significantly
-  # between UTI and ASB episodes using Fisher's exact test.
+  # between UTI and Not_UTI episodes using Fisher's exact test.
   #
   # ⚠ These tests assume independent observations.  Since participants
   # contribute multiple episodes, this assumption is VIOLATED.  These
@@ -291,8 +293,8 @@ compute_cross_sectional <- function(data, cohort_label, gene_cols, gene_map) {
   enrichment <- NULL
   if (n_uti >= 2) {
     enrichment <- lapply(gene_cols, function(g) {
-      tab <- table(gene_present = asb_uti[[g]] > 0,
-                   is_uti       = asb_uti$Infection_Status == "UTI")
+      tab <- table(gene_present = uti_not_uti[[g]] > 0,
+                   is_uti       = uti_not_uti$Infection_Status == "UTI")
       # Need a proper 2×2 table (gene must have variation)
       if (nrow(tab) < 2 || ncol(tab) < 2) return(NULL)
       ft <- tryCatch(fisher.test(tab), error = function(e) NULL)
@@ -346,20 +348,20 @@ names(results) <- names(cohorts)
 # 4. CATEGORY-LEVEL ENRICHMENT (full cohort only)
 # ==============================================================================
 # In addition to testing individual genes, we test whether VF *categories*
-# (e.g., "Iron acquisition" as a group) are enriched in UTI vs ASB.
+# (e.g., "Iron acquisition" as a group) are enriched in UTI vs Not_UTI.
 # This increases statistical power by grouping functionally related genes,
 # and is more biologically interpretable.
 
 cat_cols_ready <- grep("^cat_", names(vf_ready), value = TRUE)
-asb_uti_full   <- vf_ready %>%
-  filter(!is.na(Infection_Status), Infection_Status %in% c("ASB", "UTI"))
+uti_not_uti_full   <- vf_ready %>%
+  filter(!is.na(Infection_Status), Infection_Status %in% c("Not_UTI", "UTI"))
 
 cat_enrichment <- NULL
-if (length(cat_cols_ready) > 0 && sum(asb_uti_full$Infection_Status == "UTI") >= 2) {
+if (length(cat_cols_ready) > 0 && sum(uti_not_uti_full$Infection_Status == "UTI") >= 2) {
   cat_enrichment <- lapply(cat_cols_ready, function(cc) {
     # Binarise: does this episode have ≥1 gene from this category?
-    asb_uti_full$cat_present <- asb_uti_full[[cc]] > 0
-    tab <- table(asb_uti_full$cat_present, asb_uti_full$Infection_Status == "UTI")
+    uti_not_uti_full$cat_present <- uti_not_uti_full[[cc]] > 0
+    tab <- table(uti_not_uti_full$cat_present, uti_not_uti_full$Infection_Status == "UTI")
     if (nrow(tab) < 2 || ncol(tab) < 2) return(NULL)
     ft <- tryCatch(fisher.test(tab), error = function(e) NULL)
     if (is.null(ft)) return(NULL)
@@ -368,7 +370,7 @@ if (length(cat_cols_ready) > 0 && sum(asb_uti_full$Infection_Status == "UTI") >=
     # to test whether the NUMBER of genes in this category differs by status.
     wt <- tryCatch(
       wilcox.test(as.formula(paste0("`", cc, "` ~ Infection_Status")),
-                  data = asb_uti_full),
+                  data = uti_not_uti_full),
       error = function(e) NULL
     )
 
@@ -377,8 +379,8 @@ if (length(cat_cols_ready) > 0 && sum(asb_uti_full$Infection_Status == "UTI") >=
       fisher_OR    = round(ft$estimate, 3),
       fisher_p     = round(ft$p.value, 4),
       wilcox_p     = if (!is.null(wt)) round(wt$p.value, 4) else NA_real_,
-      median_ASB   = median(asb_uti_full[[cc]][asb_uti_full$Infection_Status == "ASB"]),
-      median_UTI   = median(asb_uti_full[[cc]][asb_uti_full$Infection_Status == "UTI"])
+      median_Not_UTI = median(uti_not_uti_full[[cc]][uti_not_uti_full$Infection_Status == "Not_UTI"]),
+      median_UTI   = median(uti_not_uti_full[[cc]][uti_not_uti_full$Infection_Status == "UTI"])
     )
   }) %>% bind_rows()
 
@@ -393,7 +395,7 @@ if (length(cat_cols_ready) > 0 && sum(asb_uti_full$Infection_Status == "UTI") >=
 # ==============================================================================
 # 5. CATEGORY-LEVEL BURDEN TABLE
 # ==============================================================================
-# Descriptive summary: for each clinical status, what is the median and mean
+# Descriptive summary: for each primary UTI status, what is the median and mean
 # count of genes in each VF category?  This feeds directly into category
 # barplots and manuscript Table 2-style summaries.
 
@@ -422,24 +424,24 @@ if (!is.null(results[["all"]]$enrichment) && nrow(results[["all"]]$enrichment) >
   gene_tests <- results[["all"]]$enrichment %>%
     left_join(
       results[["all"]]$gene_prev %>%
-        select(gene, ASB_n, ASB_N, UTI_n, UTI_N),
+        select(gene, Not_UTI_n, Not_UTI_N, UTI_n, UTI_N),
       by = "gene"
     ) %>%
     transmute(
       gene,
       Category,
-      test = "Fisher exact test, UTI vs ASB",
+      test = "Fisher exact test, UTI vs Not_UTI",
       OR,
       CI_lower,
       CI_upper,
       p_value,
       q_value_BH = p_adj_BH,
-      ASB_n,
-      ASB_N,
+      Not_UTI_n,
+      Not_UTI_N,
       UTI_n,
       UTI_N,
       exploratory_or_confirmatory = "Exploratory",
-      interpretation_limitations = "Repeated resident isolates are not accounted for; rare genes produce unstable odds ratios; ST/lineage and event-driven sampling may confound ASB-UTI contrasts.",
+      interpretation_limitations = "Repeated resident isolates are not accounted for; rare genes produce unstable odds ratios; ST/lineage and event-driven sampling may confound UTI-vs-Not_UTI contrasts. Not_UTI is heterogeneous.",
       input_data = ready_file
     )
   write_csv(gene_tests, file.path(DIR_VF, "vf_gene_prevalence_tests.csv"))
@@ -473,7 +475,7 @@ ensure_dir(DIR_PLOTS_VF)
 # =============================================================================
 
 plot_data <- vf_ready %>%
-  filter(!is.na(Infection_Status), Infection_Status %in% c("ASB", "UTI", "Negative")) %>%
+  filter(!is.na(Infection_Status), Infection_Status %in% c("UTI", "Not_UTI")) %>%
   mutate(Infection_Status = status_for_plot(Infection_Status))
 
 if (nrow(plot_data) > 0) {
@@ -489,18 +491,18 @@ if (nrow(plot_data) > 0) {
     geom_jitter(aes(colour = Infection_Status), width = 0.15, alpha = 0.35, size = 1.4) +
     geom_text(data = status_n, aes(x = Infection_Status, y = y, label = label),
               inherit.aes = FALSE, size = 3.2, fontface = "italic") +
-    scale_fill_infection() +
-    scale_colour_infection() +
+    scale_fill_uti_status() +
+    scale_colour_uti_status() +
     scale_y_continuous(expand = expansion(mult = c(0.04, 0.12))) +
     labs(
-      title = "Distribution of E. coli virulence factor burden by clinical status",
+      title = "Distribution of E. coli virulence factor burden by primary UTI status",
       subtitle = "VF burden = number of detected virulence factor genes per VF/WGS-linked isolate",
-      x = "Clinical status",
+      x = "Primary UTI status",
       y = "Detected VF genes per isolate",
       caption = vf_caption(
         ready_file, plot_data, "isolate-level",
-        p_value_note = "No inferential p-value is shown on this plot; isolate-level ASB-UTI tests in this script are exploratory.",
-        extra_note = "Negative isolates are shown to preserve the full status denominator."
+        p_value_note = "No inferential p-value is shown on this plot; isolate-level UTI-vs-Not_UTI tests in this script are exploratory.",
+        extra_note = "Not_UTI subgroups are retained in the dataset for sensitivity interpretation."
       )
     ) +
     plot_theme_vf(base_size = 12) +
@@ -522,14 +524,14 @@ if (nrow(plot_data) > 0) {
     geom_boxplot(outlier.shape = NA, alpha = 0.55, width = 0.5) +
     geom_jitter(aes(size = n_isolates, colour = Infection_Status),
                 width = 0.15, alpha = 0.45) +
-    scale_fill_infection() +
-    scale_colour_infection() +
+    scale_fill_uti_status() +
+    scale_colour_uti_status() +
     scale_size_continuous(range = c(1.2, 3.5), breaks = c(1, 2, 4, 6, 8),
                           name = "Isolates in\nparticipant-status mean") +
     labs(
-      title = "Participant-level summary of E. coli VF burden by clinical status",
+      title = "Participant-level summary of E. coli VF burden by primary UTI status",
       subtitle = "Each point is one participant-status mean, reducing repeated-isolate weighting",
-      x = "Clinical status",
+      x = "Primary UTI status",
       y = "Mean detected VF genes per participant-status",
       caption = vf_caption(
         ready_file, participant_burden, "participant-status summary",
@@ -543,39 +545,39 @@ if (nrow(plot_data) > 0) {
          p_participant, width = 7, height = 5.6, dpi = 300)
 
   paired_burden <- participant_burden %>%
-    filter(Infection_Status %in% c("ASB", "UTI")) %>%
+    filter(Infection_Status %in% c("Not_UTI", "UTI")) %>%
     group_by(Participant_id) %>%
     filter(n_distinct(Infection_Status) == 2) %>%
     ungroup()
 
   if (n_distinct(paired_burden$Participant_id) >= 2) {
-    msg("Plotting paired ASB-UTI burden for %d participants.",
+    msg("Plotting paired UTI-Not_UTI burden for %d participants.",
         n_distinct(paired_burden$Participant_id))
     p_paired <- ggplot(paired_burden,
                        aes(x = Infection_Status, y = mean_vf_burden,
                            group = Participant_id)) +
       geom_line(alpha = 0.35, colour = "grey40", linewidth = 0.4) +
       geom_point(aes(colour = Infection_Status), size = 2.2, alpha = 0.8) +
-      scale_colour_infection() +
+      scale_colour_uti_status() +
       labs(
-        title = "Paired participant-level VF burden in residents with ASB and UTI isolates",
-        subtitle = sprintf("Each line connects ASB and UTI participant-status means for n=%d residents",
+        title = "Paired participant-level VF burden in residents with UTI and Not_UTI isolates",
+        subtitle = sprintf("Each line connects Not_UTI and UTI participant-status means for n=%d residents",
                            n_distinct(paired_burden$Participant_id)),
-        x = "Clinical status",
+        x = "Primary UTI status",
         y = "Mean detected VF genes per participant-status",
         caption = vf_caption(
-          ready_file, paired_burden, "paired participant-level ASB-UTI comparison",
+          ready_file, paired_burden, "paired participant-level UTI-Not_UTI comparison",
           p_value_note = "No p-value is shown; this companion plot is descriptive and does not model within-resident clustering.",
-          extra_note = "The UTI denominator is restricted to residents who also contributed ASB isolates."
+          extra_note = "The UTI denominator is restricted to residents who also contributed Not_UTI isolates."
         )
       ) +
       plot_theme_vf(base_size = 11) +
       theme(legend.position = "none")
 
-    ggsave(file.path(DIR_PLOTS_VF, "vf_burden_paired_asb_uti.png"),
+    ggsave(file.path(DIR_PLOTS_VF, "vf_burden_paired_uti_not_uti.png"),
            p_paired, width = 6, height = 5.2, dpi = 300)
   } else {
-    msg("Skipping paired ASB-UTI burden plot: fewer than two paired participants.")
+    msg("Skipping paired UTI-Not_UTI burden plot: fewer than two paired participants.")
   }
 }
 
@@ -587,8 +589,8 @@ gene_prev_all <- results[["all"]]$gene_prev
 if (nrow(gene_prev_all) > 0) {
   gene_prev_plot <- gene_prev_all %>%
     mutate(
-      overall_n = coalesce(ASB_n, 0) + coalesce(UTI_n, 0) + coalesce(Neg_n, 0),
-      overall_N = coalesce(ASB_N, 0) + coalesce(UTI_N, 0) + coalesce(Neg_N, 0),
+      overall_n = coalesce(Not_UTI_n, 0) + coalesce(UTI_n, 0),
+      overall_N = coalesce(Not_UTI_N, 0) + coalesce(UTI_N, 0),
       overall_pct = if_else(overall_N > 0, round(100 * overall_n / overall_N, 1), NA_real_),
       Category = coalesce(Category, "Unassigned")
     )
@@ -604,7 +606,7 @@ if (nrow(gene_prev_all) > 0) {
                        expand = expansion(mult = c(0, 0.18))) +
     labs(
       title = "Most prevalent virulence factor genes among VF/WGS-linked E. coli isolates",
-      subtitle = "Selection criterion: top 40 genes by prevalence across ASB, UTI, and Negative VF-ready isolates",
+      subtitle = "Selection criterion: top 40 genes by prevalence across UTI and Not_UTI VF-ready isolates",
       x = "Isolates with gene detected",
       y = NULL,
       fill = "VF category",
@@ -620,36 +622,36 @@ if (nrow(gene_prev_all) > 0) {
          p_top_gene, width = 8, height = 9, dpi = 300)
 
   diff_top <- gene_prev_plot %>%
-    filter(!is.na(delta_UTI_minus_ASB), !is.na(ASB_N), !is.na(UTI_N), UTI_N > 0, ASB_N > 0) %>%
-    slice_max(abs(delta_UTI_minus_ASB), n = 30, with_ties = FALSE) %>%
+    filter(!is.na(delta_UTI_minus_Not_UTI), !is.na(Not_UTI_N), !is.na(UTI_N), UTI_N > 0, Not_UTI_N > 0) %>%
+    slice_max(abs(delta_UTI_minus_Not_UTI), n = 30, with_ties = FALSE) %>%
     mutate(
-      gene = factor(gene, levels = gene[order(delta_UTI_minus_ASB)]),
-      direction = if_else(delta_UTI_minus_ASB >= 0, "Higher in UTI", "Higher in ASB")
+      gene = factor(gene, levels = gene[order(delta_UTI_minus_Not_UTI)]),
+      direction = if_else(delta_UTI_minus_Not_UTI >= 0, "Higher in UTI", "Higher in Not_UTI")
     )
 
   if (nrow(diff_top) > 0) {
-    p_diff <- ggplot(diff_top, aes(x = delta_UTI_minus_ASB, y = gene, fill = direction)) +
+    p_diff <- ggplot(diff_top, aes(x = delta_UTI_minus_Not_UTI, y = gene, fill = direction)) +
       geom_col(width = 0.65, alpha = 0.85) +
       geom_vline(xintercept = 0, linewidth = 0.4, colour = "grey45") +
       geom_text(
-        aes(label = sprintf("UTI %d/%d; ASB %d/%d", UTI_n, UTI_N, ASB_n, ASB_N),
-            x = ifelse(delta_UTI_minus_ASB >= 0,
-                       delta_UTI_minus_ASB + 1.5,
-                       delta_UTI_minus_ASB - 1.5)),
-        hjust = ifelse(diff_top$delta_UTI_minus_ASB >= 0, 0, 1),
+        aes(label = sprintf("UTI %d/%d; Not_UTI %d/%d", UTI_n, UTI_N, Not_UTI_n, Not_UTI_N),
+            x = ifelse(delta_UTI_minus_Not_UTI >= 0,
+                       delta_UTI_minus_Not_UTI + 1.5,
+                       delta_UTI_minus_Not_UTI - 1.5)),
+        hjust = ifelse(diff_top$delta_UTI_minus_Not_UTI >= 0, 0, 1),
         size = 2.25
       ) +
-      scale_fill_manual(values = c("Higher in UTI" = "#D55E00", "Higher in ASB" = "#0072B2")) +
+      scale_fill_manual(values = c("Higher in UTI" = "#D55E00", "Higher in Not_UTI" = "#0072B2")) +
       scale_x_continuous(labels = function(x) paste0(x, " pp"),
                          expand = expansion(mult = c(0.2, 0.2))) +
       labs(
-        title = "Virulence factor genes with largest ASB-UTI prevalence differences",
-        subtitle = "Selection criterion: top 30 genes by absolute UTI minus ASB prevalence difference",
-        x = "Prevalence difference (UTI minus ASB, percentage points)",
+        title = "Virulence factor genes with largest UTI-Not_UTI prevalence differences",
+        subtitle = "Selection criterion: top 30 genes by absolute UTI minus Not_UTI prevalence difference",
+        x = "Prevalence difference (UTI minus Not_UTI, percentage points)",
         y = NULL,
         fill = NULL,
         caption = vf_caption(
-          ready_file, asb_uti_full, "isolate-level ASB-UTI gene prevalence difference",
+          ready_file, uti_not_uti_full, "isolate-level UTI-Not_UTI gene prevalence difference",
           p_value_note = "Differences are descriptive; gene-level Fisher tests are exploratory because residents may contribute repeated isolates.",
           multiple_testing_note = "Multiple testing is addressed in results/vf/vf_gene_prevalence_tests.csv using BH/FDR q-values.",
           extra_note = "Rare genes can produce unstable contrasts and should be interpreted with gene counts."
@@ -657,7 +659,7 @@ if (nrow(gene_prev_all) > 0) {
       ) +
       plot_theme_vf(base_size = 10)
 
-    ggsave(file.path(DIR_PLOTS_VF, "vf_gene_prevalence_difference_asb_uti.png"),
+    ggsave(file.path(DIR_PLOTS_VF, "vf_gene_prevalence_difference_uti_not_uti.png"),
            p_diff, width = 9, height = 8, dpi = 300)
   }
 
@@ -666,14 +668,13 @@ if (nrow(gene_prev_all) > 0) {
     pull(gene)
   heat_df <- gene_prev_plot %>%
     filter(gene %in% heat_genes) %>%
-    select(gene, Category, ASB_pct, UTI_pct, Neg_pct) %>%
-    pivot_longer(cols = c(ASB_pct, UTI_pct, Neg_pct),
+    select(gene, Category, Not_UTI_pct, UTI_pct) %>%
+    pivot_longer(cols = c(Not_UTI_pct, UTI_pct),
                  names_to = "Infection_Status", values_to = "prevalence_pct") %>%
     mutate(
       Infection_Status = recode(Infection_Status,
-                                "ASB_pct" = "ASB", "UTI_pct" = "UTI",
-                                "Neg_pct" = "Negative"),
-      Infection_Status = factor(Infection_Status, levels = c("ASB", "UTI", "Negative")),
+                                "Not_UTI_pct" = "Not_UTI", "UTI_pct" = "UTI"),
+      Infection_Status = factor(Infection_Status, levels = c("UTI", "Not_UTI")),
       gene = factor(gene, levels = rev(heat_genes))
     )
 
@@ -684,15 +685,15 @@ if (nrow(gene_prev_all) > 0) {
     scale_fill_gradient(low = "white", high = "#0072B2", na.value = "grey90",
                         labels = function(x) paste0(x, "%")) +
     labs(
-      title = "VF gene prevalence heatmap across clinical states",
+      title = "VF gene prevalence heatmap across primary UTI status",
       subtitle = "Selection criterion: top 50 genes by overall prevalence in VF-ready isolates",
-      x = "Clinical status",
+      x = "Primary UTI status",
       y = NULL,
       fill = "Prevalence",
       caption = vf_caption(
         ready_file, plot_data, "isolate-level gene prevalence heatmap",
         p_value_note = "No p-values are shown; heatmap is descriptive.",
-        extra_note = "Percentages are calculated within each clinical status denominator."
+        extra_note = "Percentages are calculated within each primary UTI status denominator."
       )
     ) +
     plot_theme_vf(base_size = 9)
@@ -707,7 +708,7 @@ if (nrow(gene_prev_all) > 0) {
 
 if (length(cat_cols_ready) > 0) {
   cat_long <- vf_ready %>%
-    filter(!is.na(Infection_Status), Infection_Status %in% c("ASB", "UTI", "Negative")) %>%
+    filter(!is.na(Infection_Status), Infection_Status %in% c("UTI", "Not_UTI")) %>%
     mutate(Infection_Status = status_for_plot(Infection_Status)) %>%
     select(Participant_id, Infection_Status, all_of(cat_cols_ready)) %>%
     pivot_longer(cols = all_of(cat_cols_ready),
@@ -725,12 +726,12 @@ if (length(cat_cols_ready) > 0) {
     geom_boxplot(outlier.shape = NA, alpha = 0.55, width = 0.55) +
     geom_jitter(aes(colour = Infection_Status), width = 0.12, alpha = 0.25, size = 0.8) +
     facet_wrap(~Category, scales = "free_y", ncol = 3) +
-    scale_fill_infection() +
-    scale_colour_infection() +
+    scale_fill_uti_status() +
+    scale_colour_uti_status() +
     labs(
-      title = "Virulence factor category burden across clinical states",
+      title = "Virulence factor category burden across primary UTI status",
       subtitle = "Category burden = number of detected genes per isolate within each curated VF category",
-      x = "Clinical status",
+      x = "Primary UTI status",
       y = "Detected genes in category",
       caption = vf_caption(
         ready_file, vf_ready, "isolate-level category burden",
@@ -776,7 +777,7 @@ for (i in seq_len(nrow(b))) {
 enr <- results[["all"]]$enrichment
 if (!is.null(enr) && nrow(enr) > 0) {
   sl("")
-  sl("EXPLORATORY Fisher exact (UTI vs ASB, full cohort):")
+  sl("EXPLORATORY Fisher exact (UTI vs Not_UTI, full cohort):")
   sl("  Genes with p < 0.05: %d", sum(enr$p_value < 0.05, na.rm = TRUE))
   sl("  Genes with p_adj(BH) < 0.05: %d", sum(enr$p_adj_BH < 0.05, na.rm = TRUE))
   top5 <- head(enr, 5)

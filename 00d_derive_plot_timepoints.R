@@ -322,8 +322,14 @@ for (j in seq_len(nrow(label_counts))) {
 }
 
 # Placed vs excluded
-n_placed   <- sum(!is.na(uricult_rows$Plot_TP_Num_Poster))
-n_excluded <- sum(is.na(uricult_rows$Plot_TP_Num_Poster))
+n_placed   <- as.integer(sum(!is.na(uricult_rows$Plot_TP_Num_Poster)))
+n_excluded <- as.integer(sum(is.na(uricult_rows$Plot_TP_Num_Poster)))
+pct_uricult <- function(n) {
+    if (nrow(uricult_rows) == 0) {
+        return(0L)
+    }
+    as.integer(round(n / nrow(uricult_rows) * 100))
+}
 unplaced_uricult <- uricult_rows %>%
     filter(is.na(Plot_TP_Num_Poster) | Placement_Confidence == "Excluded")
 write_csv(unplaced_uricult, file.path(DIR_CLINICAL, "unplaced_uricult_rows.csv"))
@@ -333,8 +339,8 @@ display_only_uricult <- uricult_rows %>%
 write_csv(display_only_uricult, file.path(DIR_CLINICAL, "display_only_uricult_rows.csv"))
 msg("Wrote display-only Uricult placements to %s", file.path(DIR_CLINICAL, "display_only_uricult_rows.csv"))
 msg("")
-msg("Placed:   %d Uricult rows (%d%%)", n_placed, round(n_placed / nrow(uricult_rows) * 100))
-msg("Excluded: %d Uricult rows (%d%%)", n_excluded, round(n_excluded / nrow(uricult_rows) * 100))
+msg("Placed:   %d Uricult rows (%d%%)", n_placed, pct_uricult(n_placed))
+msg("Excluded: %d Uricult rows (%d%%)", n_excluded, pct_uricult(n_excluded))
 
 # Confidence breakdown
 conf_counts <- uricult_rows %>% dplyr::count(Placement_Confidence, name = "n")

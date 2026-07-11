@@ -262,10 +262,12 @@ To determine if we are seeing the same strain persisting or new strains entering
 1.  **Genomic Distance (SNPs)**:
     *   **Source:** `results/strain_compare/pairwise_metrics.csv`
     *   **Method:** Filter for `within_participant == TRUE`.
-    *   **Thresholds:** TBD
-        *   **< 10 SNPs**: Likely the **same strain** (persistent infection)? 
-        *   **> 1000 SNPs**: Likely a **different strain** (re-infection/replacement)?
-        *   **10-100 SNPs**: Grey area (potential within-host evolution)?
+    *   **Current same-strain-first thresholds:**
+        *   **0-25 SNPs**: **Strong same strain** under the prior YELLOW study threshold.
+        *   **>25 SNPs**: **Above same-strain SNP threshold**.
+        *   Missing SNPs: **Missing SNP evidence**.
+    *   **Secondary lineage context:** ST is reported separately as `Same ST`, `Different ST`, or `Missing ST evidence`; same ST does not prove same strain.
+    *   **Combined interpretation:** Replacement is likely when SNPs do not support same strain and ST differs or pairwise classification is `Different`.
 
 2.  **Gene Content (Pangenome)**:
     *   **Source:** `results/wgs/pan/gene_data.csv` (or `presence_absence.Rtab`)
@@ -278,4 +280,4 @@ To determine if we are seeing the same strain persisting or new strains entering
 
 **Next Steps:**
 - [ ] Create a boxplot of "Pairwise SNP Distance" for all within-patient pairs.
-- [ ] Flag any patient with >0 but <50 SNPs for manual review (evolution candidates).
+- [ ] Review strong same-strain pairs first (0-25 SNPs), then use ST summaries as secondary lineage/confounding context.

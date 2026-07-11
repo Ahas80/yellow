@@ -1,0 +1,505 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/5wjudg7a",
+    "id": "5wjudg7a",
+    "slide": 23,
+    "layoutId": "/ppt/slideLayouts/slideLayout2.xml",
+    "layoutName": "Title and Content",
+    "layoutType": "obj",
+    "masterLayoutId": "/ppt/slideMasters/slideMaster1.xml",
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 960,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "Office",
+    "colors": {
+      "accent1": "#4F81BD",
+      "accent2": "#C0504D",
+      "accent3": "#9BBB59",
+      "accent4": "#8064A2",
+      "accent5": "#4BACC6",
+      "accent6": "#F79646",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#1F497D",
+      "lt2": "#EEECE1",
+      "hlink": "#0000FF",
+      "folHlink": "#800080"
+    },
+    "fontScheme": {
+      "name": "Office",
+      "majorFont": {
+        "latinTypeface": "Calibri"
+      },
+      "minorFont": {
+        "latinTypeface": "Calibri"
+      }
+    },
+    "typefaces": [
+      "Calibri"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "/ppt/slideLayouts/slideLayout2.xml",
+      "name": "Title and Content",
+      "type": "obj",
+      "parentLayoutId": "/ppt/slideMasters/slideMaster1.xml",
+      "elements": [
+        {
+          "order": 1,
+          "kind": "shape",
+          "scope": "layout",
+          "aid": "template/layout//ppt/slideLayouts/slideLayout2.xml/2",
+          "id": "2",
+          "name": "Title 1",
+          "bbox": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "order": 2,
+          "kind": "shape",
+          "scope": "layout",
+          "aid": "template/layout//ppt/slideLayouts/slideLayout2.xml/3",
+          "id": "3",
+          "name": "Content Placeholder 2",
+          "bbox": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "order": 3,
+          "kind": "shape",
+          "scope": "layout",
+          "aid": "template/layout//ppt/slideLayouts/slideLayout2.xml/4",
+          "id": "4",
+          "name": "Date Placeholder 3",
+          "bbox": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "order": 4,
+          "kind": "shape",
+          "scope": "layout",
+          "aid": "template/layout//ppt/slideLayouts/slideLayout2.xml/5",
+          "id": "5",
+          "name": "Footer Placeholder 4",
+          "bbox": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "order": 5,
+          "kind": "shape",
+          "scope": "layout",
+          "aid": "template/layout//ppt/slideLayouts/slideLayout2.xml/6",
+          "id": "6",
+          "name": "Slide Number Placeholder 5",
+          "bbox": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "scope": "master",
+      "id": "/ppt/slideMasters/slideMaster1.xml",
+      "type": "master",
+      "elements": [
+        {
+          "order": 1,
+          "kind": "shape",
+          "scope": "master",
+          "aid": "template/master//ppt/slideMasters/slideMaster1.xml/2",
+          "id": "2",
+          "name": "Title Placeholder 1",
+          "bbox": [
+            48,
+            28.83,
+            864,
+            120
+          ],
+          "geometry": "rect",
+          "resolvedTextStyle": {
+            "anchor": 2,
+            "vertical": 1,
+            "verticalAlignment": "middle",
+            "autoFit": "shrinkText",
+            "insets": {
+              "top": 4.8,
+              "right": 9.6,
+              "bottom": 4.8,
+              "left": 9.6
+            }
+          }
+        },
+        {
+          "order": 2,
+          "kind": "shape",
+          "scope": "master",
+          "aid": "template/master//ppt/slideMasters/slideMaster1.xml/3",
+          "id": "3",
+          "name": "Text Placeholder 2",
+          "bbox": [
+            48,
+            168,
+            864,
+            475.17
+          ],
+          "geometry": "rect",
+          "resolvedTextStyle": {
+            "vertical": 1,
+            "autoFit": "shrinkText",
+            "insets": {
+              "top": 4.8,
+              "right": 9.6,
+              "bottom": 4.8,
+              "left": 9.6
+            }
+          }
+        },
+        {
+          "order": 3,
+          "kind": "shape",
+          "scope": "master",
+          "aid": "template/master//ppt/slideMasters/slideMaster1.xml/4",
+          "id": "4",
+          "name": "Date Placeholder 3",
+          "bbox": [
+            48,
+            667.33,
+            224,
+            38.33
+          ],
+          "geometry": "rect",
+          "resolvedTextStyle": {
+            "anchor": 2,
+            "vertical": 1,
+            "verticalAlignment": "middle",
+            "insets": {
+              "top": 4.8,
+              "right": 9.6,
+              "bottom": 4.8,
+              "left": 9.6
+            }
+          }
+        },
+        {
+          "order": 4,
+          "kind": "shape",
+          "scope": "master",
+          "aid": "template/master//ppt/slideMasters/slideMaster1.xml/5",
+          "id": "5",
+          "name": "Footer Placeholder 4",
+          "bbox": [
+            328,
+            667.33,
+            304,
+            38.33
+          ],
+          "geometry": "rect",
+          "resolvedTextStyle": {
+            "anchor": 2,
+            "vertical": 1,
+            "verticalAlignment": "middle",
+            "insets": {
+              "top": 4.8,
+              "right": 9.6,
+              "bottom": 4.8,
+              "left": 9.6
+            }
+          }
+        },
+        {
+          "order": 5,
+          "kind": "shape",
+          "scope": "master",
+          "aid": "template/master//ppt/slideMasters/slideMaster1.xml/6",
+          "id": "6",
+          "name": "Slide Number Placeholder 5",
+          "bbox": [
+            688,
+            667.33,
+            224,
+            38.33
+          ],
+          "geometry": "rect",
+          "resolvedTextStyle": {
+            "anchor": 2,
+            "vertical": 1,
+            "verticalAlignment": "middle",
+            "insets": {
+              "top": 4.8,
+              "right": 9.6,
+              "bottom": 4.8,
+              "left": 9.6
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/5o7qpg3e",
+      "id": "2",
+      "name": "Title 1",
+      "bbox": [
+        48,
+        28.83,
+        864,
+        120
+      ],
+      "text": "Appendix 9: Possible VF modelling strategies",
+      "textPreview": "Appendix 9: Possible VF modelling strategies",
+      "resolvedFontSize": 58.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 58.67,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "center",
+        "verticalAlignment": "middle",
+        "autoFit": "shrinkText",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Appendix 9: Possible VF modelling"
+          },
+          {
+            "index": 2,
+            "text": "strategies"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Appendix 9: Possible VF modelling strategies",
+          "resolvedTextStyle": {
+            "fontSize": 48,
+            "bold": true
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Appendix 9: Possible VF modelling strategies",
+              "fontSize": 48,
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "spaceBefore": 0
+        }
+      ]
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/g3ex0nux",
+      "id": "3",
+      "name": "Content Placeholder 2",
+      "bbox": [
+        48,
+        168,
+        864,
+        475.17
+      ],
+      "text": "GLMM: UTI ~ VF_score + ST + (1|Participant_id)\nGEE\nwithin-person ASB→UTI paired analysis\ncategory-weighted VF score\ncurated UPEC VF score\nsensitivity analyses using different UTI definitions",
+      "textPreview": "GLMM: UTI ~ VF_score + ST + (1|Participant_id) | GEE | within-person ASB→UTI paired analysis | category-weighted VF score | curated UPEC ...",
+      "resolvedFontSize": 42.67,
+      "resolvedTextStyle": {
+        "vertical": 1,
+        "fontSize": 42.67,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "autoFit": "shrinkText",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 6,
+        "lines": [
+          {
+            "index": 1,
+            "text": "GLMM: UTI ~ VF_score + ST + (1|Participant_id)"
+          },
+          {
+            "index": 2,
+            "text": "GEE"
+          },
+          {
+            "index": 3,
+            "text": "within-person ASB→UTI paired analysis"
+          },
+          {
+            "index": 4,
+            "text": "category-weighted VF score"
+          },
+          {
+            "index": 5,
+            "text": "curated UPEC VF score"
+          },
+          {
+            "index": 6,
+            "text": "sensitivity analyses using different UTI definitions"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "GLMM: UTI ~ VF_score + ST + (1|Participant_id)",
+          "resolvedTextStyle": {
+            "fontSize": 32
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "GLMM: UTI ~ VF_score + ST + (1|Participant_id)",
+              "fontSize": 32
+            }
+          ],
+          "bulletCharacter": "•",
+          "marginLeft": 342900,
+          "indent": -342900,
+          "spaceBefore": 0
+        },
+        {
+          "index": 2,
+          "text": "GEE",
+          "resolvedTextStyle": {
+            "fontSize": 32
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "GEE",
+              "fontSize": 32
+            }
+          ],
+          "bulletCharacter": "•",
+          "marginLeft": 342900,
+          "indent": -342900,
+          "spaceBefore": 0
+        },
+        {
+          "index": 3,
+          "text": "within-person ASB→UTI paired analysis",
+          "resolvedTextStyle": {
+            "fontSize": 32
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "within-person ASB→UTI paired analysis",
+              "fontSize": 32
+            }
+          ],
+          "bulletCharacter": "•",
+          "marginLeft": 342900,
+          "indent": -342900,
+          "spaceBefore": 0
+        },
+        {
+          "index": 4,
+          "text": "category-weighted VF score",
+          "resolvedTextStyle": {
+            "fontSize": 32
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "category-weighted VF score",
+              "fontSize": 32
+            }
+          ],
+          "bulletCharacter": "•",
+          "marginLeft": 342900,
+          "indent": -342900,
+          "spaceBefore": 0
+        },
+        {
+          "index": 5,
+          "text": "curated UPEC VF score",
+          "resolvedTextStyle": {
+            "fontSize": 32
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "curated UPEC VF score",
+              "fontSize": 32
+            }
+          ],
+          "bulletCharacter": "•",
+          "marginLeft": 342900,
+          "indent": -342900,
+          "spaceBefore": 0
+        },
+        {
+          "index": 6,
+          "text": "sensitivity analyses using different UTI definitions",
+          "resolvedTextStyle": {
+            "fontSize": 32
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "sensitivity analyses using different UTI definitions",
+              "fontSize": 32
+            }
+          ],
+          "bulletCharacter": "•",
+          "marginLeft": 342900,
+          "indent": -342900,
+          "spaceBefore": 0
+        }
+      ]
+    }
+  ],
+  "composeRuns": []
+}

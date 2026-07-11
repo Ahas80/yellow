@@ -37,6 +37,7 @@
 # 1. Load Configuration & Libraries
 source("00_config.R")
 source("R/wgs_helpers.R")
+source("R/pipeline_qc_helpers.R")
 
 suppressPackageStartupMessages({
     library(tidyverse)
@@ -352,16 +353,17 @@ plot_file5 <- file.path(PLOTDIR, "panaroo_selection_samples_per_timepoint.png")
 ggsave(plot_file5, p5, width = 10, height = 6, bg = "white", dpi = 300)
 message(sprintf("Sample Utilization Plot saved to %s", plot_file5))
 
-# 5. QC Bias Analysis (Infection Status)
+# 5. QC Bias Analysis (Primary UTI Status)
 # ------------------------------------------------------------------------------
-# [STAT] Check if QC failure rate differs by Infection Status
-# (e.g., Are UTI samples more likely to fail QC than ASB?)
+# [STAT] Check if QC failure rate differs by primary UTI status
+# (e.g., are UTI samples more likely to fail QC than Not_UTI?)
 
 status_map_file <- file.path(DIR_CLINICAL, "status_map.csv")
 
 if (file.exists(status_map_file)) {
-    message("\nRunning QC Bias Analysis (QC Pass vs Infection Status)...")
+    message("\nRunning QC Bias Analysis (QC Pass vs primary UTI status)...")
     status_map <- read_csv(status_map_file, show_col_types = FALSE) %>%
+        prefer_primary_uti_status() %>%
         mutate(
             Participant_id = as.character(Participant_id),
             tp_clean = if ("tp_lab" %in% names(.)) canon_tp(tp_lab) else canon_tp(Timepoint)
@@ -403,7 +405,7 @@ if (file.exists(status_map_file)) {
     if (nrow(qc_status) > 0) {
         tbl <- table(qc_status$qc_pass, qc_status$Infection_Status)
 
-        message("QC Pass/Fail by Infection Status:")
+        message("QC Pass/Fail by primary UTI status:")
         print(tbl)
 
         bias_summary <- qc_status %>%
@@ -421,7 +423,7 @@ if (file.exists(status_map_file)) {
                 arrange(desc(pct_qc_fail))
             writeLines(
                 c(
-                    "QC selection bias by infection status",
+                    "QC selection bias by primary UTI status",
                     sprintf("Generated: %s", format(Sys.time())),
                     "",
                     capture.output(print(tbl)),
@@ -429,7 +431,7 @@ if (file.exists(status_map_file)) {
                     sprintf("Fisher exact p-value: %.5g", test_res$p.value),
                     sprintf("Largest QC loss: %s (%.1f%%, n=%d)",
                             loss$Infection_Status[1], 100 * loss$pct_qc_fail[1], loss$n_qc_fail[1]),
-                    "Interpretation: sparse status counts require Fisher/exact-style checks. Differences in QC pass by status may bias genomic comparisons."
+                    "Interpretation: sparse primary-status counts require Fisher/exact-style checks. Differences in QC pass by status may bias genomic comparisons."
                 ),
                 file.path(DIR_QC, "qc_selection_bias_report.txt")
             )

@@ -1,0 +1,82 @@
+{"kind":"slide","id":"sl/2x4nap4r","slide":2,"title":"YELLOW RoUTIne: Virulence-Factor Analysis of Longitudinal Urinary E. coli","textShapes":2}
+{"kind":"textbox","id":"sh/cvixczed","slide":2,"textChars":73,"textLines":1}
+{"kind":"textbox","id":"sh/5gbq1ory","slide":2,"textChars":97,"textLines":1}
+{"kind":"slide","id":"sl/pg3ex0nu","slide":3,"title":"Why virulence factors matter in ASB vs UTI","textShapes":2}
+{"kind":"textbox","id":"sh/5o7qpg3e","slide":3,"textChars":42,"textLines":1}
+{"kind":"textbox","id":"sh/g3ex0nux","slide":3,"textChars":482,"textLines":5}
+{"kind":"slide","id":"sl/s72x4nap","slide":4,"title":"Longitudinal urine sampling with event-triggered Uricult samples","textShapes":2}
+{"kind":"textbox","id":"sh/o7qpg3ex","slide":4,"textChars":64,"textLines":1}
+{"kind":"textbox","id":"sh/dsji5sne","slide":4,"textChars":148,"textLines":4}
+{"kind":"slide","id":"sl/val87ed8","slide":5,"title":"From clinical episodes to VF/WGS-ready episodes","textShapes":2}
+{"kind":"textbox","id":"sh/qtcj6tov","slide":5,"textChars":47,"textLines":1}
+{"kind":"textbox","id":"sh/je9cvixc","slide":5,"textChars":333,"textLines":7}
+{"kind":"slide","id":"sl/mlkjm1cf","slide":6,"title":"How ASB and UTI were defined before VF analysis","textShapes":2}
+{"kind":"textbox","id":"sh/ovahoza1","slide":6,"textChars":47,"textLines":1}
+{"kind":"textbox","id":"sh/dg7adsji","slide":6,"textChars":420,"textLines":7}
+{"kind":"slide","id":"sl/58z25kb6","slide":7,"title":"How virulence factors were detected and summarised","textShapes":2}
+{"kind":"textbox","id":"sh/ylc7u54z","slide":7,"textChars":50,"textLines":1}
+{"kind":"textbox","id":"sh/r65wjudg","slide":7,"textChars":344,"textLines":3}
+{"kind":"slide","id":"sl/0z61032l","slide":8,"title":"The current VF dataset","textShapes":2}
+{"kind":"textbox","id":"sh/x4nap4r6","slide":8,"textChars":22,"textLines":1}
+{"kind":"textbox","id":"sh/8jqh0fep","slide":8,"textChars":260,"textLines":6}
+{"kind":"slide","id":"sl/fu18jqh0","slide":9,"title":"Total VF burden is similar in ASB and UTI","textShapes":2}
+{"kind":"textbox","id":"sh/u9knih4b","slide":9,"textChars":41,"textLines":1}
+{"kind":"shape","id":"sh/judg7ads","slide":9,"name":"Content Placeholder 2","bbox":[0,0,0,0]}
+{"kind":"textbox","id":"sh/1orytsvu","slide":9,"textChars":164,"textLines":4}
+{"kind":"image","id":"im/nqxs72x4","slide":9,"name":"Picture 3","bbox":[96,144,768,768]}
+{"kind":"slide","id":"sl/qh0fepkz","slide":10,"title":"Are particular VF categories more informative than total burden?","textShapes":2}
+{"kind":"textbox","id":"sh/ovahoza1","slide":10,"textChars":64,"textLines":1}
+{"kind":"shape","id":"sh/dg7adsji","slide":10,"name":"Content Placeholder 2","bbox":[0,0,0,0]}
+{"kind":"textbox","id":"sh/z25kb6xk","slide":10,"textChars":165,"textLines":1}
+{"kind":"image","id":"im/pg3ex0nu","slide":10,"name":"Picture 3","bbox":[96,144,768,548.57]}
+{"kind":"slide","id":"sl/29gr2p8n","slide":11,"title":"No individual VF gene is currently definitive","textShapes":2}
+{"kind":"textbox","id":"sh/9gr2p8nq","slide":11,"textChars":45,"textLines":1}
+{"kind":"shape","id":"sh/gvy90je9","slide":11,"name":"Content Placeholder 2","bbox":[0,0,0,0]}
+{"kind":"textbox","id":"sh/2hwfyxob","slide":11,"textChars":170,"textLines":2}
+{"kind":"image","id":"im/wfyxobm5","slide":11,"name":"Picture 3","bbox":[96,144,768,576]}
+{"kind":"slide","id":"sl/re1w7mp0","slide":12,"title":"VF profiles are highly stable within hosts","textShapes":2}
+{"kind":"textbox","id":"sh/6tovahoz","slide":12,"textChars":42,"textLines":1}
+{"kind":"shape","id":"sh/vahoza1g","slide":12,"name":"Content Placeholder 2","bbox":[0,0,0,0]}
+{"kind":"textbox","id":"sh/d8v6psfi","slide":12,"textChars":126,"textLines":3}
+{"kind":"image","id":"im/32lszqtc","slide":12,"name":"Picture 3","bbox":[96,144,768,480]}
+{"kind":"slide","id":"sl/4fu18jqh","slide":13,"title":"VF content is lineage-linked","textShapes":2}
+{"kind":"textbox","id":"sh/s72x4nap","slide":13,"textChars":28,"textLines":1}
+{"kind":"shape","id":"sh/lszqtcj6","slide":13,"name":"Content Placeholder 2","bbox":[0,0,0,0]}
+{"kind":"textbox","id":"sh/sji5snel","slide":13,"textChars":136,"textLines":2}
+{"kind":"image","id":"im/kb6xkf6d","slide":13,"name":"Picture 3","bbox":[48,144,432,225]}
+{"kind":"image","id":"im/r2p8nqxs","slide":13,"name":"Picture 4","bbox":[480,144,432,172.8]}
+{"kind":"slide","id":"sl/lwval87e","slide":14,"title":"Decisions needed to make the next VF analysis publishable","textShapes":2}
+{"kind":"textbox","id":"sh/l0rqd4vm","slide":14,"textChars":57,"textLines":1}
+{"kind":"textbox","id":"sh/wfyxobm5","slide":14,"textChars":738,"textLines":8}
+{"kind":"slide","id":"sl/25kb6xkf","slide":15,"title":"Appendix 1: Full pipeline map","textShapes":2}
+{"kind":"textbox","id":"sh/kre1w7mp","slide":15,"textChars":29,"textLines":1}
+{"kind":"textbox","id":"sh/dcbulwva","slide":15,"textChars":46,"textLines":1}
+{"kind":"slide","id":"sl/7y1kre1w","slide":16,"title":"Appendix 2: WGS QC","textShapes":1}
+{"kind":"textbox","id":"sh/yd0z6103","slide":16,"textChars":18,"textLines":1}
+{"kind":"shape","id":"sh/rytsvu9k","slide":16,"name":"Content Placeholder 2","bbox":[0,0,0,0]}
+{"kind":"image","id":"im/psfil0rq","slide":16,"name":"Picture 3","bbox":[96,144,768,548.57]}
+{"kind":"slide","id":"sl/8z25kb6x","slide":17,"title":"Appendix 3: MLST diversity","textShapes":1}
+{"kind":"textbox","id":"sh/pg3ex0nu","slide":17,"textChars":26,"textLines":1}
+{"kind":"shape","id":"sh/wval87ed","slide":17,"name":"Content Placeholder 2","bbox":[0,0,0,0]}
+{"kind":"image","id":"im/il0rqd4v","slide":17,"name":"Picture 3","bbox":[96,144,768,548.57]}
+{"kind":"slide","id":"sl/54zidony","slide":18,"title":"Appendix 4: Within-host lineage stability","textShapes":1}
+{"kind":"textbox","id":"sh/x0nuxc3y","slide":18,"textChars":41,"textLines":1}
+{"kind":"shape","id":"sh/4fu18jqh","slide":18,"name":"Content Placeholder 2","bbox":[0,0,0,0]}
+{"kind":"image","id":"im/mhk3q5o7","slide":18,"name":"Picture 3","bbox":[96,144,768,877.71]}
+{"kind":"slide","id":"sl/m58z25kb","slide":19,"title":"Appendix 5: Longitudinal participant trajectories","textShapes":1}
+{"kind":"textbox","id":"sh/t83itgfm","slide":19,"textChars":49,"textLines":1}
+{"kind":"shape","id":"sh/4nap4r65","slide":19,"name":"Content Placeholder 2","bbox":[0,0,0,0]}
+{"kind":"image","id":"im/i5sneloj","slide":19,"name":"Picture 3","bbox":[96,144,768,960]}
+{"kind":"slide","id":"sl/bat47y1k","slide":20,"title":"Appendix 6: KEY_FINDINGS.md superseded warning","textShapes":2}
+{"kind":"textbox","id":"sh/qtcj6tov","slide":20,"textChars":46,"textLines":1}
+{"kind":"textbox","id":"sh/je9cvixc","slide":20,"textChars":46,"textLines":1}
+{"kind":"slide","id":"sl/j2t83itg","slide":21,"title":"Appendix 7: Missing UTI episode table","textShapes":2}
+{"kind":"textbox","id":"sh/mhk3q5o7","slide":21,"textChars":37,"textLines":1}
+{"kind":"textbox","id":"sh/b2hwfyxo","slide":21,"textChars":162,"textLines":4}
+{"kind":"slide","id":"sl/mhk3q5o7","slide":22,"title":"Appendix 8: Limitations table","textShapes":2}
+{"kind":"textbox","id":"sh/onyd0z61","slide":22,"textChars":29,"textLines":1}
+{"kind":"textbox","id":"sh/d8v6psfi","slide":22,"textChars":172,"textLines":7}
+{"kind":"slide","id":"sl/5wjudg7a","slide":23,"title":"Appendix 9: Possible VF modelling strategies","textShapes":2}
+{"kind":"textbox","id":"sh/5o7qpg3e","slide":23,"textChars":44,"textLines":1}
+{"kind":"textbox","id":"sh/g3ex0nux","slide":23,"textChars":190,"textLines":6}
+{"kind":"notice","message":"Truncated: omitted 0 lines. Increase maxChars or narrow target."}

@@ -13,7 +13,7 @@
 #
 # WHY THIS SCRIPT EXISTS:
 #   Before this script, every downstream VF analysis independently re-derived
-#   the same join of VF data + clinical status.  Different scripts used
+#   the same join of VF data + primary UTI status. Different scripts used
 #   slightly different join logic, leading to subtle inconsistencies in
 #   denominators and status assignments.  This script centralises that join
 #   into a single, validated artifact.
@@ -25,10 +25,10 @@
 #   - results/vf/vf_pa_all.csv             Participant × timepoint gene matrix
 #                                           (binary 0/1 per VF gene)
 #   - results/clinical/status_map.csv       Clinical episode classification
-#                                           (ASB / UTI / Negative per episode)
+#                                           (primary UTI / Not_UTI plus legacy status per episode)
 #   - results/vf/gene_map.csv              Gene-to-category mapping
 #                                           (e.g., fimH → Adhesion/Fimbriae)
-#   - results/mlst/mlst_with_meta.csv       MLST typing results (optional)
+#   - results/mlst/mlst_provider_preferred.csv  Active provider-preferred MLST typing results (optional)
 #                                           (Sequence Type per isolate)
 #
 # OUTPUTS:
@@ -135,15 +135,18 @@ msg("Loaded VF P/A matrix: %d rows × %d gene columns, %d participants",
 
 # --- Anchor 2: Clinical Status Map ---
 #   Produced by 00b_classify_episodes.R
-#   Maps each participant × timepoint to an Infection_Status:
-#     ASB      = Asymptomatic Bacteriuria (culture-positive, no symptoms)
-#     UTI      = Urinary Tract Infection (culture-positive + symptoms)
-#     Negative = Culture-negative episode
+#   Maps each participant × timepoint to the primary UTI_Status:
+#     UTI      = catheter-aware S&S + culture support at >=10^3 CFU/mL
+#     Not_UTI  = all non-UTI episodes, with Not_UTI_subgroup retained
+#   Infection_Status is normalised to the primary UTI/Not_UTI status here.
+#   Legacy ASB / UTI / Negative labels are retained only in explicit legacy
+#   columns for audit and sensitivity checks.
 #   Also contains Batch (recruitment batch) which is useful as a covariate.
 status_file <- FILE_STATUS_MAP
 if (!file.exists(status_file)) stop("Missing ", status_file, ". Run 00b_classify_episodes.R first.")
 status_map <- read_csv(status_file, show_col_types = FALSE) %>%
-  mutate(Participant_id = as.character(Participant_id))
+  mutate(Participant_id = as.character(Participant_id)) %>%
+  apply_manual_sample_curation(context = "vf_ready_status_map")
 
 status_map <- status_map %>%
   mutate(
@@ -151,14 +154,29 @@ status_map <- status_map %>%
     Event_type = if ("Event_type" %in% names(.)) as.character(Event_type) else episode_event_type(tp_lab),
     Collection_Date = if ("Collection_Date" %in% names(.)) as.character(Collection_Date) else NA_character_
   )
+if (!"UTI_Status" %in% names(status_map)) {
+  stop("status_map lacks UTI_Status. Rerun 00b_classify_episodes.R; refusing legacy ASB/UTI/Negative fallback for primary VF dataset.")
+}
+if (!"UTI_binary" %in% names(status_map)) status_map$UTI_binary <- as.integer(status_map$UTI_Status == "UTI")
+if (!"Infection_Status_legacy" %in% names(status_map) && "Infection_Status" %in% names(status_map)) {
+  status_map$Infection_Status_legacy <- status_map$Infection_Status
+}
+if (!"Infection_Status_old" %in% names(status_map) && "Infection_Status_legacy" %in% names(status_map)) {
+  status_map$Infection_Status_old <- status_map$Infection_Status_legacy
+}
+status_map <- prefer_primary_uti_status(status_map, allow_legacy_fallback = FALSE)
 if (!"Episode_ID" %in% names(status_map)) {
   status_map$Episode_ID <- build_episode_id(status_map, timepoint_col = "tp_lab",
                                             event_col = "Event_type",
                                             date_col = "Collection_Date")
 }
 
-msg("Loaded status_map: %d rows. Status breakdown:", nrow(status_map))
-print(table(status_map$Infection_Status, useNA = "ifany"))
+msg("Loaded status_map: %d rows. Primary status breakdown:", nrow(status_map))
+print(table(status_map$UTI_Status, useNA = "ifany"))
+msg("Loaded status_map primary-included breakdown:")
+print(table(filter_primary_analysis(status_map)$UTI_Status, useNA = "ifany"))
+msg("Legacy status breakdown:")
+print(table(status_map$Infection_Status_legacy, useNA = "ifany"))
 
 # --- Anchor 3: Gene Category Map ---
 #   Produced by 04_gene_breakdown.R
@@ -180,7 +198,7 @@ msg("Loaded gene_map: %d genes across %d categories",
 #   Produced by 06_MLST.R
 #   Provides the Sequence Type (ST) for each isolate.  ST is critical for
 #   the lineage confounding analysis in 25_vf_lineage_vf_interaction.R:
-#   we need to know whether VF differences between ASB and UTI are genuine
+#   we need to know whether VF differences between UTI and Not_UTI are genuine
 #   or simply reflect different STs carrying different VF arsenals.
 #   If this file is missing, the pipeline continues but the ST column is NA.
 mlst_file <- FILE_MLST_CANONICAL
@@ -190,7 +208,11 @@ if (mlst_available) {
     mutate(Participant_id = as.character(Participant_id),
            tp_lab = if ("tp_lab" %in% names(.)) normalise_timepoint_preserve_events(tp_lab) else normalise_timepoint_preserve_events(Timepoint),
            ST = as.character(ST)) %>%
-    select(any_of(c("Participant_id", "tp_lab", "ST", "full_path", "file_name", "assembler", "Assembler")))
+    select(any_of(c(
+      "Participant_id", "tp_lab", "ST", "ST_source", "ST_provider", "ST_local",
+      "provider_PercGoodTargets", "provider_file", "provider_batch_match",
+      "provider_assembler", "full_path", "file_name", "assembler", "Assembler"
+    )))
 
   selection_file <- opt$selection_file
   if (file.exists(selection_file) && "full_path" %in% names(mlst)) {
@@ -216,8 +238,27 @@ if (mlst_available) {
     msg("WARNING: %d participant-timepoints have conflicting ST calls; ST set to NA for those keys.", nrow(mlst_conflicts))
   }
   mlst <- mlst %>%
+    mutate(
+      ST_source = if ("ST_source" %in% names(.)) as.character(ST_source) else NA_character_,
+      ST_provider = if ("ST_provider" %in% names(.)) as.character(ST_provider) else NA_character_,
+      ST_local = if ("ST_local" %in% names(.)) as.character(ST_local) else NA_character_,
+      provider_PercGoodTargets = if ("provider_PercGoodTargets" %in% names(.)) as.numeric(provider_PercGoodTargets) else NA_real_,
+      provider_file = if ("provider_file" %in% names(.)) as.character(provider_file) else NA_character_,
+      provider_batch_match = if ("provider_batch_match" %in% names(.)) as.character(provider_batch_match) else NA_character_,
+      provider_assembler = if ("provider_assembler" %in% names(.)) as.character(provider_assembler) else NA_character_
+    ) %>%
     group_by(Participant_id, tp_lab) %>%
-    summarise(ST = if (n_distinct(ST[!is.na(ST)]) == 1) first(na.omit(ST)) else NA_character_, .groups = "drop")
+    summarise(
+      ST = if (n_distinct(ST[!is.na(ST)]) == 1) first(na.omit(ST)) else NA_character_,
+      ST_source = { vals <- na.omit(ST_source); if (length(vals)) vals[1] else NA_character_ },
+      ST_provider = { vals <- na.omit(ST_provider); if (length(vals)) vals[1] else NA_character_ },
+      ST_local = { vals <- na.omit(ST_local); if (length(vals)) vals[1] else NA_character_ },
+      provider_PercGoodTargets = { vals <- na.omit(provider_PercGoodTargets); if (length(vals)) vals[1] else NA_real_ },
+      provider_file = { vals <- na.omit(provider_file); if (length(vals)) vals[1] else NA_character_ },
+      provider_batch_match = { vals <- na.omit(provider_batch_match); if (length(vals)) vals[1] else NA_character_ },
+      provider_assembler = { vals <- na.omit(provider_assembler); if (length(vals)) vals[1] else NA_character_ },
+      .groups = "drop"
+    )
   msg("Loaded MLST: %d rows", nrow(mlst))
 } else {
   msg("WARNING: MLST file not found (%s). ST column will be NA.", mlst_file)
@@ -261,12 +302,12 @@ if (nrow(status_dupes) > 0) {
 }
 
 # CHECK 2: Anti-join diagnostics
-#   Which VF rows have no matching clinical status? (Should be zero if
+#   Which VF rows have no matching primary UTI status? (Should be zero if
 #   every sequenced isolate has been clinically classified.)
 #   Which status rows have no VF data? (Expected: episodes where bacteria
 #   were not sequenced, or culture-negative episodes.)
 vf_not_in_status <- vf_pa %>% anti_join(status_map, by = c("Participant_id", "tp_lab"))
-status_not_in_vf <- status_map %>% anti_join(vf_pa, by = c("Participant_id", "tp_lab"))
+status_not_in_vf <- filter_primary_analysis(status_map) %>% anti_join(vf_pa, by = c("Participant_id", "tp_lab"))
 write_csv(vf_not_in_status, file.path(vf_diag_dir, "vf_without_status_rows.csv"))
 write_csv(status_not_in_vf, file.path(vf_diag_dir, "status_without_vf_rows.csv"))
 write_csv(
@@ -288,7 +329,7 @@ log_diag("Status rows NOT in VF: %d (episodes without sequenced VF data)", nrow(
 # 3. BUILD ANALYSIS-READY DATASET
 # ==============================================================================
 # This is the core of the script: merge all inputs into a single table where
-# each row = one episode and columns include VF genes, clinical status, ST,
+# each row = one episode and columns include VF genes, primary UTI status, ST,
 # total VF burden, and category-level VF counts.
 
 msg("Building analysis-ready dataset...")
@@ -309,18 +350,40 @@ msg("Building analysis-ready dataset...")
 #     2. Participant-only match   →  lowest UTI-N number.
 #   All alternative (non-selected) UTI-N rows are written to a sensitivity
 #   audit table so they can be used in supplementary analyses.
-#   A single clinical Uricult episode must NOT inflate multiple UTI rows in
-#   the primary ASB-vs-UTI comparison.
+#   A single clinical Uricult episode must NOT inflate multiple rows in the
+#   primary UTI-vs-Not_UTI comparison.
 # ==============================================================================
 
 status_join_cols <- c("Participant_id", "tp_lab", "Episode_ID", "Collection_Date",
-                      "Infection_Status", "Batch", "Status_Confidence_epi",
-                      "Sx_source_epi", "UTI_Label", "Urine_collection_method")
+                      "UTI_Status", "UTI_binary", "Not_UTI_subgroup",
+                      "Infection_Status", "Infection_Status_legacy",
+                      "Infection_Status_old", "UTI_definition_version",
+                      "UTI_classification_confidence", "UTI_classification_reason",
+                      "Batch", "Status_Confidence_epi", "Sx_source_epi",
+                      "UTI_Label", "Urine_collection_method",
+                      "urine_collection_method_raw", "urine_collection_method_norm",
+                      "catheter_rule", "symptom_compatible_uti", "symptom_rule_met",
+                      "local_urinary_symptom_any", "systemic_symptom_any",
+                      "flankpain_present", "dysuria_present", "urgency_present",
+                      "frequency_present", "incontinence_present", "pus_present",
+                      "fever_present", "rigors_present", "delirium_present",
+                      "suprapubic_pain_present", "other_sxs_present",
+                      "cfu_raw", "cfu_raw_parsed", "cfu_ge_1e3", "cfu_ge_1e4",
+                      "cfu_ge_1e5", "culture_supports_uti",
+                      "cfu_threshold_used_for_uti", "cfu_threshold_source",
+                      "beoord_cat",
+                      "analysis_include_primary", "analysis_exclusion_reason",
+                      "duplicate_role", "duplicate_of_participant_id",
+                      "duplicate_of_tp_lab", "allow_secondary_duplicate_qc",
+                      "duplicate_use_note", "genomics_expected_include",
+                      "genomics_exclusion_reason", "manual_curation_applied",
+                      "manual_curation_note", "manual_curation_source")
 status_for_join <- status_map %>% select(any_of(status_join_cols))
 
 # --- Uricult clinical rows (exclude unsafe/unlinked participants) ---
 uricult_clinical <- status_for_join %>%
   filter(tp_lab == "Uricult") %>%
+  filter(analysis_include_primary %in% TRUE) %>%
   filter(!Participant_id %in% c("Still to be linked", "Niet te koppelen", "UNKNOWN"))
 
 # --- UTI-N rows in vf_pa that have NO direct clinical match ---
@@ -368,7 +431,11 @@ if (nrow(uricult_clinical) > 0 && nrow(vf_uti_n_unmatched) > 0) {
       Participant_id_clinical  = Participant_id,
       Episode_ID_clinical      = Episode_ID,
       tp_lab_clinical          = tp_lab.x,
+      UTI_Status,
+      UTI_binary,
+      Not_UTI_subgroup,
       Infection_Status,
+      Infection_Status_legacy,
       UTI_Label,
       Collection_Date_clinical = Collection_Date,
       mapped_tp_lab            = tp_lab.y,
@@ -427,19 +494,9 @@ if (nrow(uricult_clinical) > 0 && nrow(vf_uti_n_unmatched) > 0) {
 
   # --- Build expanded status map ---
   bridged_rows <- bridge_selected %>%
-    transmute(
-      Participant_id,
-      tp_lab                = tp_lab.y,
-      Episode_ID,
-      Collection_Date,
-      Infection_Status,
-      Batch,
-      Status_Confidence_epi,
-      Sx_source_epi,
-      UTI_Label,
-      Urine_collection_method,
-      uricult_bridge_applied = TRUE
-    )
+    mutate(tp_lab = tp_lab.y) %>%
+    select(any_of(status_join_cols)) %>%
+    mutate(uricult_bridge_applied = TRUE)
 
   status_map_expanded <- bind_rows(
     status_for_join %>% mutate(uricult_bridge_applied = FALSE),
@@ -461,15 +518,41 @@ if (nrow(uricult_clinical) > 0 && nrow(vf_uti_n_unmatched) > 0) {
 } else {
   msg("No Uricult bridge rows needed (uricult=%d, unmatched UTI-N=%d).",
       nrow(uricult_clinical), nrow(vf_uti_n_unmatched))
+  empty_bridge_audit <- tibble(
+    Participant_id_clinical = character(),
+    Episode_ID_clinical = character(),
+    tp_lab_clinical = character(),
+    UTI_Status = character(),
+    UTI_binary = integer(),
+    Not_UTI_subgroup = character(),
+    Infection_Status = character(),
+    Infection_Status_legacy = character(),
+    UTI_Label = character(),
+    Collection_Date_clinical = character(),
+    mapped_tp_lab = character(),
+    mapped_uti_n_num = integer(),
+    Episode_ID_wgs = character(),
+    wgs_date = character(),
+    date_match = logical(),
+    match_basis = character(),
+    selected = logical(),
+    selection_reason = character()
+  )
+  write_csv(empty_bridge_audit, file.path(qc_diag_dir, "uricult_bridge_audit.csv"))
+  write_csv(
+    empty_bridge_audit %>%
+      mutate(reason_excluded = character()),
+    file.path(qc_diag_dir, "uricult_bridge_sensitivity_alternatives.csv")
+  )
   status_map_expanded <- status_for_join %>%
     mutate(uricult_bridge_applied = FALSE)
 }
 
 # ==============================================================================
-# STEP 3a: Join VF P/A with clinical status (using expanded status map)
+# STEP 3a: Join VF P/A with primary UTI status (using expanded status map)
 # ==============================================================================
-#   left_join keeps all VF rows.  Episodes without clinical status get NA
-#   for Infection_Status — this is expected and logged above.
+#   left_join keeps all VF rows. Episodes without primary UTI status get NA
+#   for UTI_Status / Infection_Status — this is expected and logged above.
 vf_ready <- vf_pa %>%
   left_join(
     status_map_expanded,
@@ -482,6 +565,16 @@ if (all(c("Episode_ID.x", "Episode_ID.y") %in% names(vf_ready))) {
     mutate(Episode_ID = coalesce(Episode_ID.y, Episode_ID.x)) %>%
     select(-Episode_ID.x, -Episode_ID.y)
 }
+
+vf_ready <- curation_default_columns(vf_ready)
+vf_ready_excluded <- vf_ready %>%
+  filter(!(analysis_include_primary %in% TRUE) | !(genomics_expected_include %in% TRUE))
+if (nrow(vf_ready_excluded) > 0) {
+  write_csv(vf_ready_excluded, file.path(qc_diag_dir, "vf_ready_manual_curation_excluded_rows.csv"))
+  msg("Manual curation excludes %d VF-ready row(s) from the primary VF/model denominator.", nrow(vf_ready_excluded))
+}
+vf_ready <- vf_ready %>%
+  filter(analysis_include_primary %in% TRUE, genomics_expected_include %in% TRUE)
 
 # ==============================================================================
 # STEP 3a-post: Duplicate safety checks
@@ -497,7 +590,7 @@ if (nrow(vf_key_dupes) > 0) {
 }
 # Check 2: unique clinical Episode_ID among status-stratified rows
 vf_ep_dupes <- vf_ready %>%
-  filter(!is.na(Infection_Status), !is.na(Episode_ID)) %>%
+  filter(!is.na(UTI_Status), !is.na(Episode_ID)) %>%
   count(Episode_ID) %>% filter(n > 1)
 if (nrow(vf_ep_dupes) > 0) {
   write_csv(
@@ -508,20 +601,21 @@ if (nrow(vf_ep_dupes) > 0) {
 }
 
 # Post-bridge summary
-n_uti_vf <- sum(vf_ready$Infection_Status == "UTI", na.rm = TRUE)
+n_uti_vf <- sum(vf_ready$UTI_Status == "UTI", na.rm = TRUE)
+n_not_uti_vf <- sum(vf_ready$UTI_Status == "Not_UTI", na.rm = TRUE)
 n_bridged_vf <- sum(vf_ready$uricult_bridge_applied %in% TRUE, na.rm = TRUE)
-n_bridged_uti_vf <- sum(vf_ready$Infection_Status == "UTI" & vf_ready$uricult_bridge_applied %in% TRUE, na.rm = TRUE)
+n_bridged_uti_vf <- sum(vf_ready$UTI_Status == "UTI" & vf_ready$uricult_bridge_applied %in% TRUE, na.rm = TRUE)
 log_diag(
-  "Post-bridge UTI rows: %d (of which %d via Uricult bridge; %d total bridged rows)",
-  n_uti_vf, n_bridged_uti_vf, n_bridged_vf
+  "Post-bridge primary status rows: %d UTI, %d Not_UTI (UTI via Uricult bridge: %d; total bridged rows: %d)",
+  n_uti_vf, n_not_uti_vf, n_bridged_uti_vf, n_bridged_vf
 )
 if (n_uti_vf < 20) {
-  msg("WARNING: UTI count (%d) < 20. Uricult bridge may not have matched all expected rows.", n_uti_vf)
+  msg("WARNING: Primary UTI count in VF-ready data is %d (<20). Downstream association models are exploratory and may be unstable; this does not by itself indicate Uricult bridge failure.", n_uti_vf)
 }
 
 # STEP 3b: Add MLST Sequence Type if available
 #   ST is needed by 25_vf_lineage_vf_interaction.R to check whether VF
-#   differences are driven by lineage rather than clinical status.
+#   differences are driven by lineage rather than primary UTI status.
 if (!is.null(mlst)) {
   vf_ready <- vf_ready %>%
     left_join(mlst, by = c("Participant_id", "tp_lab"), relationship = "many-to-one")
@@ -529,6 +623,10 @@ if (!is.null(mlst)) {
            sum(!is.na(vf_ready$ST)), sum(is.na(vf_ready$ST)))
 } else {
   vf_ready$ST <- NA_character_
+  vf_ready$ST_source <- NA_character_
+  vf_ready$ST_provider <- NA_character_
+  vf_ready$ST_local <- NA_character_
+  vf_ready$provider_PercGoodTargets <- NA_real_
 }
 
 # STEP 3c: Compute total VF burden per episode
@@ -621,22 +719,52 @@ writeLines(
 
 # STEP 3f: Compute timepoint depth per participant
 #   This counts how many distinct timepoints each participant contributed
-#   (among episodes with clinical status).  Used by 23_ and 24_ to stratify
+#   (among episodes with primary UTI status). Used by 23_ and 24_ to stratify
 #   analyses by ≥2, ≥3, ≥4 timepoints — important because participants with
 #   more timepoints provide more information about longitudinal stability.
 tp_depth <- vf_ready %>%
-  filter(!is.na(Infection_Status)) %>%
+  filter(!is.na(UTI_Status)) %>%
   group_by(Participant_id) %>%
   summarise(n_timepoints = n_distinct(tp_lab), .groups = "drop")
 
 vf_ready <- vf_ready %>%
   left_join(tp_depth, by = "Participant_id")
 
+uti_vf_inspection <- vf_ready %>%
+  filter(UTI_Status == "UTI") %>%
+  select(any_of(c(
+    "Participant_id", "tp_lab", "Episode_ID", "Timepoint", "Batch",
+    "UTI_definition_version", "UTI_Status", "UTI_binary",
+    "Not_UTI_subgroup", "uricult_bridge_applied", "mapped_tp_lab",
+    "catheter_rule", "symptom_rule_met", "symptom_compatible_uti",
+    "culture_supports_uti", "cfu_raw", "cfu_raw_parsed",
+    "cfu_ge_1e3", "cfu_ge_1e5", "cfu_threshold_source",
+    "UTI_classification_confidence", "UTI_classification_reason",
+    "vf_count_total", "ST", "n_timepoints"
+  ))) %>%
+  arrange(Participant_id, tp_lab)
+write_csv(uti_vf_inspection, file.path(DIR_VF, "uti_vf_episode_inspection.csv"))
+
 # ==============================================================================
 # 4. WRITE OUTPUTS
 # ==============================================================================
 
+vf_ready <- vf_ready %>%
+  mutate(
+    Infection_Status_legacy = if ("Infection_Status_legacy" %in% names(.)) as.character(Infection_Status_legacy) else as.character(Infection_Status),
+    Infection_Status_old = if ("Infection_Status_old" %in% names(.)) as.character(Infection_Status_old) else Infection_Status_legacy,
+    Infection_Status = as.character(UTI_Status),
+    Primary_Status = as.character(UTI_Status)
+  )
+
 write_csv(vf_ready, out_file)
+
+if (is_primary_run) {
+  vf_binary_ready <- vf_ready %>%
+    filter(!is.na(UTI_binary), UTI_Status %in% c("UTI", "Not_UTI"))
+  write_csv(vf_binary_ready, FILE_VF_BINARY_UTI_READY)
+  msg("Saved binary UTI-ready VF dataset (%d rows) to %s", nrow(vf_binary_ready), FILE_VF_BINARY_UTI_READY)
+}
 
 # Log a comprehensive summary of what was produced
 log_diag("")
@@ -645,11 +773,18 @@ log_diag("File: %s", out_file)
 log_diag("Rows: %d", nrow(vf_ready))
 log_diag("Participants: %d", n_distinct(vf_ready$Participant_id))
 log_diag("Gene columns: %d", length(gene_cols))
-log_diag("With Infection_Status: %d", sum(!is.na(vf_ready$Infection_Status)))
-log_diag("Without Infection_Status: %d", sum(is.na(vf_ready$Infection_Status)))
-log_diag("ASB: %d", sum(vf_ready$Infection_Status == "ASB", na.rm = TRUE))
-log_diag("UTI: %d", sum(vf_ready$Infection_Status == "UTI", na.rm = TRUE))
-log_diag("Negative: %d", sum(vf_ready$Infection_Status == "Negative", na.rm = TRUE))
+log_diag("With UTI_Status: %d", sum(!is.na(vf_ready$UTI_Status)))
+log_diag("Without UTI_Status: %d", sum(is.na(vf_ready$UTI_Status)))
+log_diag("Primary UTI: %d", sum(vf_ready$UTI_Status == "UTI", na.rm = TRUE))
+log_diag("Primary Not_UTI: %d", sum(vf_ready$UTI_Status == "Not_UTI", na.rm = TRUE))
+legacy_status_vec <- if ("Infection_Status_legacy" %in% names(vf_ready)) {
+  vf_ready$Infection_Status_legacy
+} else {
+  vf_ready$Infection_Status
+}
+log_diag("Legacy ASB: %d", sum(legacy_status_vec == "ASB", na.rm = TRUE))
+log_diag("Legacy UTI: %d", sum(legacy_status_vec == "UTI", na.rm = TRUE))
+log_diag("Legacy Negative: %d", sum(legacy_status_vec == "Negative", na.rm = TRUE))
 log_diag("Mean vf_count_total: %.1f", mean(vf_ready$vf_count_total))
 log_diag("Median vf_count_total: %.0f", median(vf_ready$vf_count_total))
 if (mlst_available) {

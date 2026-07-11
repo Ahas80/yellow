@@ -5,7 +5,7 @@
 # Role: [Meta] - Generate an index of all scripts and their functions.
 #
 # Inputs:
-#   - scripts/*.R (scans the current directory for 00-21*.R)
+#   - Root numbered R scripts and non-legacy helper scripts under scripts/
 #
 # Outputs:
 #   - results/meta/script_and_figure_index.csv
@@ -41,8 +41,24 @@ msg("Starting 99_script_and_figure_index.R")
 
 # 1. Identify Scripts
 # ------------------------------------------------------------------------------
-# Look for scripts starting with numbers 00-99 in the root directory
-scripts <- dir_ls(root_dir, regex = "/[0-9]{2}.*\\.R$")
+# Look for active root pipeline scripts and non-legacy scripts/ utilities.
+# Use list.files here because fs::dir_ls regex matching differs for "." and ".."
+# paths and previously produced an empty/stale index when run from the repo root.
+root_scripts <- list.files(root_dir, pattern = "^[0-9]{2}.*\\.[Rr]$", full.names = TRUE)
+scripts_dir <- file.path(root_dir, "scripts")
+utility_scripts <- if (dir.exists(scripts_dir)) {
+    list.files(
+        scripts_dir,
+        pattern = "\\.(R|r|sh|awk)$",
+        full.names = TRUE,
+        recursive = FALSE,
+        ignore.case = TRUE
+    )
+} else {
+    character()
+}
+
+scripts <- sort(unique(c(root_scripts, utility_scripts)))
 msg("Found %d scripts to index.", length(scripts))
 
 # 2. Parse Headers
@@ -87,7 +103,12 @@ parse_script <- function(f) {
 
 # 3. Build Index
 # ------------------------------------------------------------------------------
-index <- purrr::map_dfr(scripts, parse_script)
+index <- if (length(scripts) > 0) {
+    purrr::map_dfr(scripts, parse_script)
+} else {
+    tibble(Script = character(), Role = character(), Inputs = character(),
+           Outputs = character(), Purpose = character())
+}
 
 # Clean up fields
 index <- index %>%

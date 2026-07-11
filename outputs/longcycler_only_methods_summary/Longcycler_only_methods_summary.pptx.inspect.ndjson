@@ -1,0 +1,136 @@
+{"kind":"deck","id":"pr/ci16sj","name":"Deck"}
+{"kind":"layout","layoutId":"/ppt/slideMasters/slideMaster1.xml","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"/ppt/slideLayouts/slideLayout1.xml","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/2x4nap4r","slide":1,"title":"METHODS CHOICE","textShapes":15}
+{"kind":"shape","id":"sh/nap4r65w","slide":1,"name":"paper","bbox":[0,0,1280,720]}
+{"kind":"shape","id":"sh/cvixczed","slide":1,"name":"rail","bbox":[0,0,12,720]}
+{"kind":"textbox","id":"sh/5gbq1ory","slide":1,"text":"METHODS CHOICE","textPreview":"METHODS CHOICE","textChars":14,"textLines":1,"bbox":[54,26,520,18]}
+{"kind":"textbox","id":"sh/udg7adsj","slide":1,"text":"Longcycler-only is the clean primary denominator","textPreview":"Longcycler-only is the clean primary denominator","textChars":48,"textLines":1,"bbox":[54,52,1110,48]}
+{"kind":"shape","id":"sh/nyd0z610","slide":1,"bbox":[54,104,1172,1]}
+{"kind":"textbox","id":"sh/cj6tovah","slide":1,"text":"The analysis keeps one assembler for strain, lineage, and VF summaries; the 556-row mixed canonical set remains context.","textPreview":"The analysis keeps one assembler for strain, lineage, and VF summaries; the 556-row mixed canonical set remains context.","textChars":120,"textLines":1,"bbox":[54,118,1160,32]}
+{"kind":"shape","id":"sh/54zidony","slide":1,"bbox":[54,674,1172,1]}
+{"kind":"textbox","id":"sh/u9knih4b","slide":1,"text":"Longcycler-only methods summary  |  supervisor discussion  |  9 July 2026","textPreview":"Longcycler-only methods summary  |  supervisor discussion  |  9 July 2026","textChars":73,"textLines":1,"bbox":[54,686,900,14]}
+{"kind":"textbox","id":"sh/judg7ads","slide":1,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[1186,684,32,18]}
+{"kind":"shape","id":"sh/nyd0z610","slide":1,"bbox":[66,192,348,340]}
+{"kind":"shape","id":"sh/udg7adsj","slide":1,"bbox":[66,192,348,7]}
+{"kind":"textbox","id":"sh/54zidony","slide":1,"text":"WHY THIS HELPS","textPreview":"WHY THIS HELPS","textChars":14,"textLines":1,"bbox":[91,224,250,20]}
+{"kind":"textbox","id":"sh/cj6tovah","slide":1,"text":"Single-assembler denominator reduces technical variation from assembly choice.","textPreview":"Single-assembler denominator reduces technical variation from assembly choice.","textChars":78,"textLines":1,"bbox":[91,274,292,72]}
+{"kind":"shape","id":"sh/nap4r65w","slide":1,"bbox":[91,372,292,1]}
+{"kind":"textbox","id":"sh/upwb2hwf","slide":1,"text":"It avoids defending equivalence between assemblers for small distance thresholds.","textPreview":"It avoids defending equivalence between assemblers for small distance thresholds.","textChars":81,"textLines":1,"bbox":[91,404,292,72]}
+{"kind":"shape","id":"sh/5gbq1ory","slide":1,"bbox":[443,192,348,340]}
+{"kind":"shape","id":"sh/cvixczed","slide":1,"bbox":[443,192,348,7]}
+{"kind":"textbox","id":"sh/jm1cfa9w","slide":1,"text":"WHAT CHANGES","textPreview":"WHAT CHANGES","textChars":12,"textLines":1,"bbox":[468,224,250,20]}
+{"kind":"textbox","id":"sh/u18jqh0f","slide":1,"text":"Primary genomic denominator becomes 532 Longcycler rows from 161 participants.","textPreview":"Primary genomic denominator becomes 532 Longcycler rows from 161 participants.","textChars":78,"textLines":1,"bbox":[468,274,292,72]}
+{"kind":"shape","id":"sh/25kb6xkf","slide":1,"bbox":[468,372,292,1]}
+{"kind":"textbox","id":"sh/rqd4vmtw","slide":1,"text":"The 24 Flye fallback rows are excluded rather than treated as interchangeable.","textPreview":"The 24 Flye fallback rows are excluded rather than treated as interchangeable.","textChars":78,"textLines":1,"bbox":[468,404,292,72]}
+{"kind":"shape","id":"sh/kb6xkf6d","slide":1,"bbox":[820,192,348,340]}
+{"kind":"shape","id":"sh/9w3m94fu","slide":1,"bbox":[820,192,348,7]}
+{"kind":"textbox","id":"sh/2t83itgf","slide":1,"text":"WHAT DOES NOT CHANGE","textPreview":"WHAT DOES NOT CHANGE","textChars":20,"textLines":1,"bbox":[845,224,250,20]}
+{"kind":"textbox","id":"sh/re1w7mp0","slide":1,"text":"Clinical UTI labels are unchanged and applied independently of assembler choice.","textPreview":"Clinical UTI labels are unchanged and applied independently of assembler choice.","textChars":80,"textLines":1,"bbox":[845,274,292,72]}
+{"kind":"shape","id":"sh/kzupwb2h","slide":1,"bbox":[845,372,292,1]}
+{"kind":"textbox","id":"sh/9knih4by","slide":1,"text":"ST remains lineage context; ≤25 SNPs remains the strict same-strain rule.","textPreview":"ST remains lineage context; ≤25 SNPs remains the strict same-strain rule.","textChars":73,"textLines":1,"bbox":[845,404,292,72]}
+{"kind":"textbox","id":"sh/2p8nqxs7","slide":1,"text":"Discussion framing: conservative methods decision, not a claim that Flye assemblies are unusable.","textPreview":"Discussion framing: conservative methods decision, not a claim that Flye assemblies are unusable.","textChars":97,"textLines":1,"bbox":[70,570,1100,50]}
+{"kind":"notes","id":"nt/2x4nap4r","slide":1,"text":""}
+{"kind":"slide","id":"sl/pg3ex0nu","slide":2,"title":"LONGCYCLER-ONLY COUNTS","textShapes":49}
+{"kind":"shape","id":"sh/yxobm58z","slide":2,"name":"paper","bbox":[0,0,1280,720]}
+{"kind":"shape","id":"sh/5o7qpg3e","slide":2,"name":"rail","bbox":[0,0,12,720]}
+{"kind":"textbox","id":"sh/g3ex0nux","slide":2,"text":"LONGCYCLER-ONLY COUNTS","textPreview":"LONGCYCLER-ONLY COUNTS","textChars":22,"textLines":1,"bbox":[54,26,520,18]}
+{"kind":"textbox","id":"sh/r65wjudg","slide":2,"text":"The single-assembler analysis retains 532 genome-linked episodes","textPreview":"The single-assembler analysis retains 532 genome-linked episodes","textChars":64,"textLines":1,"bbox":[54,52,1110,48]}
+{"kind":"shape","id":"sh/ylc7u54z","slide":2,"bbox":[54,104,1172,1]}
+{"kind":"textbox","id":"sh/9cvixcze","slide":2,"text":"Counts are reported at the correct unit: clinical row, selected assembly, VF feature, or within-resident transition.","textPreview":"Counts are reported at the correct unit: clinical row, selected assembly, VF feature, or within-resident transition.","textChars":116,"textLines":1,"bbox":[54,118,850,32]}
+{"kind":"shape","id":"sh/gr2p8nqx","slide":2,"bbox":[928,120,282,24]}
+{"kind":"textbox","id":"sh/rytsvu9k","slide":2,"text":"NUMBERED PROCESS MAP","textPreview":"NUMBERED PROCESS MAP","textChars":20,"textLines":1,"bbox":[938,121,262,22]}
+{"kind":"shape","id":"sh/yd0z6103","slide":2,"bbox":[54,674,1172,1]}
+{"kind":"textbox","id":"sh/wb2hwfyx","slide":2,"text":"Longcycler-only methods summary  |  supervisor discussion  |  9 July 2026","textPreview":"Longcycler-only methods summary  |  supervisor discussion  |  9 July 2026","textChars":73,"textLines":1,"bbox":[54,686,900,14]}
+{"kind":"textbox","id":"sh/lwval87e","slide":2,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[1186,684,32,18]}
+{"kind":"textbox","id":"sh/e9cvixcz","slide":2,"text":"SELECTION RULE","textPreview":"SELECTION RULE","textChars":14,"textLines":1,"bbox":[64,171,130,17]}
+{"kind":"shape","id":"sh/3q5o7qpg","slide":2,"bbox":[64,198,258,132]}
+{"kind":"shape","id":"sh/w3m94fu1","slide":2,"bbox":[64,198,5,132]}
+{"kind":"textbox","id":"sh/loj2t83i","slide":2,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[80,211,38,22]}
+{"kind":"textbox","id":"sh/ex0nuxc3","slide":2,"text":"Raw canonical set","textPreview":"Raw canonical set","textChars":17,"textLines":1,"bbox":[124,211,186,23]}
+{"kind":"textbox","id":"sh/3itgfmlk","slide":2,"text":"556","textPreview":"556","textChars":3,"textLines":1,"bbox":[82,245,226,31]}
+{"kind":"textbox","id":"sh/szqtcj6t","slide":2,"text":"Longcycler-preferred + Flye fallback","textPreview":"Longcycler-preferred + Flye fallback","textChars":36,"textLines":1,"bbox":[82,282,224,18]}
+{"kind":"textbox","id":"sh/lkjm1cfa","slide":2,"text":"current generated canonical analysis","textPreview":"current generated canonical analysis","textChars":36,"textLines":1,"bbox":[82,308,228,15]}
+{"kind":"shape","id":"sh/lc7u54zi","slide":2,"bbox":[344,198,303,132]}
+{"kind":"shape","id":"sh/wra5gbq1","slide":2,"bbox":[344,198,5,132]}
+{"kind":"textbox","id":"sh/36hcrmhk","slide":2,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[360,211,38,22]}
+{"kind":"textbox","id":"sh/eloj2t83","slide":2,"text":"Longcycler-only set","textPreview":"Longcycler-only set","textChars":19,"textLines":1,"bbox":[404,211,231,23]}
+{"kind":"textbox","id":"sh/l0rqd4vm","slide":2,"text":"532","textPreview":"532","textChars":3,"textLines":1,"bbox":[362,245,271,31]}
+{"kind":"textbox","id":"sh/wfyxobm5","slide":2,"text":"QC-passing selected Longcycler rows; 24 Flye fallback rows excluded","textPreview":"QC-passing selected Longcycler rows; 24 Flye fallback rows excluded","textChars":67,"textLines":1,"bbox":[362,282,269,18]}
+{"kind":"textbox","id":"sh/7u54zido","slide":2,"text":"canonical_assembly_selection.csv","textPreview":"canonical_assembly_selection.csv","textChars":32,"textLines":1,"bbox":[362,308,273,15]}
+{"kind":"textbox","id":"sh/ed8bat47","slide":2,"text":"EPISODE AND LINEAGE DENOMINATOR","textPreview":"EPISODE AND LINEAGE DENOMINATOR","textChars":31,"textLines":1,"bbox":[683,171,190,17]}
+{"kind":"shape","id":"sh/psfil0rq","slide":2,"bbox":[683,198,258,132]}
+{"kind":"shape","id":"sh/w7mp0bi9","slide":2,"bbox":[683,198,5,132]}
+{"kind":"textbox","id":"sh/65wjudg7","slide":2,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[699,211,38,22]}
+{"kind":"textbox","id":"sh/zqtcj6to","slide":2,"text":"Participants","textPreview":"Participants","textChars":12,"textLines":1,"bbox":[743,211,186,23]}
+{"kind":"textbox","id":"sh/obm58z25","slide":2,"text":"161","textPreview":"161","textChars":3,"textLines":1,"bbox":[701,245,226,31]}
+{"kind":"textbox","id":"sh/hwfyxobm","slide":2,"text":"retained Longcycler-linked participants","textPreview":"retained Longcycler-linked participants","textChars":39,"textLines":1,"bbox":[701,282,224,18]}
+{"kind":"textbox","id":"sh/6xkf6dcb","slide":2,"text":"vf_analysis_ready.csv","textPreview":"vf_analysis_ready.csv","textChars":21,"textLines":1,"bbox":[701,308,228,15]}
+{"kind":"shape","id":"sh/zed8v6ps","slide":2,"bbox":[963,198,252,132]}
+{"kind":"shape","id":"sh/oza1gvy9","slide":2,"bbox":[963,198,5,132]}
+{"kind":"textbox","id":"sh/hk3q5o7q","slide":2,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[979,211,38,22]}
+{"kind":"textbox","id":"sh/al87ed8b","slide":2,"text":"Clinical status","textPreview":"Clinical status","textChars":15,"textLines":1,"bbox":[1023,211,180,23]}
+{"kind":"textbox","id":"sh/z61032ls","slide":2,"text":"16 | 516","textPreview":"16 | 516","textChars":8,"textLines":1,"bbox":[981,245,220,31]}
+{"kind":"textbox","id":"sh/fa9w3m94","slide":2,"text":"UTI | Not_UTI using primary status","textPreview":"UTI | Not_UTI using primary status","textChars":34,"textLines":1,"bbox":[981,282,218,18]}
+{"kind":"textbox","id":"sh/qpg3ex0n","slide":2,"text":"status joined to Longcycler rows","textPreview":"status joined to Longcycler rows","textChars":32,"textLines":1,"bbox":[981,308,222,15]}
+{"kind":"shape","id":"sh/xczed8v6","slide":2,"bbox":[64,350,1150,1]}
+{"kind":"textbox","id":"sh/8v6psfil","slide":2,"text":"DOWNSTREAM ANALYSIS UNITS","textPreview":"DOWNSTREAM ANALYSIS UNITS","textChars":25,"textLines":1,"bbox":[64,372,410,17]}
+{"kind":"shape","id":"sh/fyxobm58","slide":2,"bbox":[64,404,260,179]}
+{"kind":"shape","id":"sh/qd4vmtwr","slide":2,"bbox":[64,404,5,179]}
+{"kind":"textbox","id":"sh/x4nap4r6","slide":2,"text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[80,417,38,22]}
+{"kind":"textbox","id":"sh/8jqh0fep","slide":2,"text":"VF feature space","textPreview":"VF feature space","textChars":16,"textLines":1,"bbox":[124,417,188,23]}
+{"kind":"textbox","id":"sh/fmlkjm1c","slide":2,"text":"227","textPreview":"227","textChars":3,"textLines":1,"bbox":[82,451,228,31]}
+{"kind":"textbox","id":"sh/q1orytsv","slide":2,"text":"binary VF gene columns retained","textPreview":"binary VF gene columns retained","textChars":31,"textLines":1,"bbox":[82,488,226,18]}
+{"kind":"textbox","id":"sh/kjm1cfa9","slide":2,"text":"vf_analysis_ready.csv","textPreview":"vf_analysis_ready.csv","textChars":21,"textLines":1,"bbox":[82,561,230,15]}
+{"kind":"shape","id":"sh/94fu18jq","slide":2,"bbox":[344,404,286,179]}
+{"kind":"shape","id":"sh/2hwfyxob","slide":2,"bbox":[344,404,5,179]}
+{"kind":"textbox","id":"sh/r2p8nqxs","slide":2,"text":"06","textPreview":"06","textChars":2,"textLines":1,"bbox":[360,417,38,22]}
+{"kind":"textbox","id":"sh/gvy90je9","slide":2,"text":"MLST lineage","textPreview":"MLST lineage","textChars":12,"textLines":1,"bbox":[404,417,214,23]}
+{"kind":"textbox","id":"sh/9gr2p8nq","slide":2,"text":"514 | 80","textPreview":"514 | 80","textChars":8,"textLines":1,"bbox":[362,451,254,31]}
+{"kind":"textbox","id":"sh/2p8nqxs7","slide":2,"text":"typed rows | distinct STs; lineage context only","textPreview":"typed rows | distinct STs; lineage context only","textChars":47,"textLines":1,"bbox":[362,488,252,35]}
+{"kind":"textbox","id":"sh/ra5gbq1o","slide":2,"text":"mlst_provider_preferred.csv","textPreview":"mlst_provider_preferred.csv","textChars":27,"textLines":1,"bbox":[362,561,256,15]}
+{"kind":"shape","id":"sh/kzupwb2h","slide":2,"bbox":[650,404,265,179]}
+{"kind":"shape","id":"sh/9knih4by","slide":2,"bbox":[650,404,5,179]}
+{"kind":"textbox","id":"sh/d8v6psfi","slide":2,"text":"07","textPreview":"07","textChars":2,"textLines":1,"bbox":[666,417,38,22]}
+{"kind":"textbox","id":"sh/onyd0z61","slide":2,"text":"Longitudinal pairs","textPreview":"Longitudinal pairs","textChars":18,"textLines":1,"bbox":[710,417,193,23]}
+{"kind":"textbox","id":"sh/z25kb6xk","slide":2,"text":"371","textPreview":"371","textChars":3,"textLines":1,"bbox":[668,451,233,31]}
+{"kind":"textbox","id":"sh/6hcrmhk3","slide":2,"text":"rebuilt in pipeline time order\nfrom 139 participants","textPreview":"rebuilt in pipeline time order | from 139 participants","textChars":52,"textLines":2,"bbox":[668,488,231,35]}
+{"kind":"textbox","id":"sh/dg7adsji","slide":2,"text":"vf_longitudinal_transitions.csv","textPreview":"vf_longitudinal_transitions.csv","textChars":31,"textLines":1,"bbox":[668,561,235,15]}
+{"kind":"shape","id":"sh/ovahoza1","slide":2,"bbox":[935,404,280,179]}
+{"kind":"shape","id":"sh/vahoza1g","slide":2,"bbox":[935,404,5,179]}
+{"kind":"textbox","id":"sh/6tovahoz","slide":2,"text":"08","textPreview":"08","textChars":2,"textLines":1,"bbox":[951,417,38,22]}
+{"kind":"textbox","id":"sh/dsji5sne","slide":2,"text":"Strict SNP evidence","textPreview":"Strict SNP evidence","textChars":19,"textLines":1,"bbox":[995,417,208,23]}
+{"kind":"textbox","id":"sh/o7qpg3ex","slide":2,"text":"116","textPreview":"116","textChars":3,"textLines":1,"bbox":[953,451,248,31]}
+{"kind":"textbox","id":"sh/y1kre1w7","slide":2,"text":"≤25 SNP among rebuilt pairs\n7/9 Not_UTI -> UTI strict","textPreview":"≤25 SNP among rebuilt pairs | 7/9 Not_UTI -> UTI strict","textChars":53,"textLines":2,"bbox":[953,488,246,35]}
+{"kind":"textbox","id":"sh/rmhk3q5o","slide":2,"text":"pairwise_metrics.csv","textPreview":"pairwise_metrics.csv","textChars":20,"textLines":1,"bbox":[953,561,250,15]}
+{"kind":"notes","id":"nt/pg3ex0nu","slide":2,"text":""}
+{"kind":"slide","id":"sl/s72x4nap","slide":3,"title":"METHODS BOUNDARY","textShapes":15}
+{"kind":"shape","id":"sh/vmtwra5g","slide":3,"name":"paper","bbox":[0,0,1280,720]}
+{"kind":"shape","id":"sh/o7qpg3ex","slide":3,"name":"rail","bbox":[0,0,12,720]}
+{"kind":"textbox","id":"sh/dsji5sne","slide":3,"text":"METHODS BOUNDARY","textPreview":"METHODS BOUNDARY","textChars":16,"textLines":1,"bbox":[54,26,520,18]}
+{"kind":"textbox","id":"sh/6dcbulwv","slide":3,"text":"Longcycler-only supports reproducible methods","textPreview":"Longcycler-only supports reproducible methods","textChars":45,"textLines":1,"bbox":[54,52,1110,48]}
+{"kind":"shape","id":"sh/vy90je9c","slide":3,"bbox":[54,104,1172,1]}
+{"kind":"textbox","id":"sh/oj2t83it","slide":3,"text":"Boundary: reproducibility choices are separate from biological interpretation.","textPreview":"Boundary: reproducibility choices are separate from biological interpretation.","textChars":78,"textLines":1,"bbox":[54,118,1160,32]}
+{"kind":"shape","id":"sh/d4vmtwra","slide":3,"bbox":[54,674,1172,1]}
+{"kind":"textbox","id":"sh/6hcrmhk3","slide":3,"text":"Longcycler-only methods summary  |  supervisor discussion  |  9 July 2026","textPreview":"Longcycler-only methods summary  |  supervisor discussion  |  9 July 2026","textChars":73,"textLines":1,"bbox":[54,686,900,14]}
+{"kind":"textbox","id":"sh/z25kb6xk","slide":3,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[1186,684,32,18]}
+{"kind":"shape","id":"sh/vy90je9c","slide":3,"bbox":[66,192,348,340]}
+{"kind":"shape","id":"sh/6dcbulwv","slide":3,"bbox":[66,192,348,7]}
+{"kind":"textbox","id":"sh/d4vmtwra","slide":3,"text":"SUPPORTED","textPreview":"SUPPORTED","textChars":9,"textLines":1,"bbox":[91,224,250,20]}
+{"kind":"textbox","id":"sh/oj2t83it","slide":3,"text":"VF presence/absence, MLST lineage context, core SNP strain context, and longitudinal transitions.","textPreview":"VF presence/absence, MLST lineage context, core SNP strain context, and longitudinal transitions.","textChars":97,"textLines":1,"bbox":[91,274,292,72]}
+{"kind":"shape","id":"sh/vmtwra5g","slide":3,"bbox":[91,372,292,1]}
+{"kind":"textbox","id":"sh/61032lsz","slide":3,"text":"Strict persistence is reported with SNP evidence, not ST agreement alone.","textPreview":"Strict persistence is reported with SNP evidence, not ST agreement alone.","textChars":73,"textLines":1,"bbox":[91,404,292,72]}
+{"kind":"shape","id":"sh/dsji5sne","slide":3,"bbox":[443,192,348,340]}
+{"kind":"shape","id":"sh/o7qpg3ex","slide":3,"bbox":[443,192,348,7]}
+{"kind":"textbox","id":"sh/vahoza1g","slide":3,"text":"NOT RECALCULATED","textPreview":"NOT RECALCULATED","textChars":16,"textLines":1,"bbox":[468,224,250,20]}
+{"kind":"textbox","id":"sh/6tovahoz","slide":3,"text":"No antibiotic, demographic, host-factor, or wgMLST allele claims are inferred from proxies.","textPreview":"No antibiotic, demographic, host-factor, or wgMLST allele claims are inferred from proxies.","textChars":91,"textLines":1,"bbox":[468,274,292,72]}
+{"kind":"shape","id":"sh/epkzupwb","slide":3,"bbox":[468,372,292,1]}
+{"kind":"textbox","id":"sh/7adsji5s","slide":3,"text":"The summary does not treat SNP and wgMLST distances as interchangeable.","textPreview":"The summary does not treat SNP and wgMLST distances as interchangeable.","textChars":71,"textLines":1,"bbox":[468,404,292,72]}
+{"kind":"shape","id":"sh/wval87ed","slide":3,"bbox":[820,192,348,340]}
+{"kind":"shape","id":"sh/pg3ex0nu","slide":3,"bbox":[820,192,348,7]}
+{"kind":"textbox","id":"sh/e1w7mp0b","slide":3,"text":"SUPERVISOR ASK","textPreview":"SUPERVISOR ASK","textChars":14,"textLines":1,"bbox":[845,224,250,20]}
+{"kind":"textbox","id":"sh/7mp0bi9s","slide":3,"text":"Use Longcycler-only as the primary defensible methods denominator.","textPreview":"Use Longcycler-only as the primary defensible methods denominator.","textChars":66,"textLines":1,"bbox":[845,274,292,72]}
+{"kind":"shape","id":"sh/w7mp0bi9","slide":3,"bbox":[845,372,292,1]}
+{"kind":"textbox","id":"sh/psfil0rq","slide":3,"text":"Keep the 556-row mixed canonical analysis only as context or sensitivity, if needed.","textPreview":"Keep the 556-row mixed canonical analysis only as context or sensitivity, if needed.","textChars":84,"textLines":1,"bbox":[845,404,292,72]}
+{"kind":"textbox","id":"sh/ed8bat47","slide":3,"text":"Suggested wording: primary genomic analyses were restricted to QC-passing Longcycler assemblies to minimise assembler-induced technical heterogeneity.","textPreview":"Suggested wording: primary genomic analyses were restricted to QC-passing Longcycler assemblies to minimise assembler-induced technical h...","textChars":150,"textLines":1,"bbox":[70,570,1100,50]}
+{"kind":"notes","id":"nt/s72x4nap","slide":3,"text":""}

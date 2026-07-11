@@ -4,19 +4,23 @@
 # ==============================================================================
 #
 # GOAL:
-#   Compare multiple VF scoring approaches: total burden, curated burden,
-#   module count, UPEC-associated scores, and exploratory PCA/ordination.
+#   Build supplementary, defensible VF summary endpoints: descriptive burden,
+#   a literature-aligned ExPEC-like marker classifier, UPEC-associated system
+#   counts, and exploratory ordination.
 #
 # METHOD:
 #   1. Load canonical VF dataset (script 22) and module outputs (script 26).
-#   2. Calculate score variants per episode.
-#   3. Summarise by Infection_Status and ST.
+#   2. Calculate supplementary marker/system endpoints per episode.
+#   3. Summarise by primary UTI_Status and ST.
 #   4. Run exploratory comparisons and PCA.
 #
 # OUTPUT:
 #   - results/vf/vf_score_table.csv
 #   - results/vf/vf_module_score_table.csv
-#   - results/vf/vf_upec_score_components.csv
+#   - results/vf/vf_upec_score_components.csv [legacy compatibility]
+#   - results/vf/vf_expec_marker_definitions.csv
+#   - results/vf/vf_expec_marker_summary_by_status.csv
+#   - results/vf/vf_expec_marker_tests.csv
 #   - results/vf/vf_score_summary_by_status.csv
 #   - results/vf/vf_score_summary_by_ST.csv
 #   - results/vf/vf_score_summary_by_status_within_ST.csv
@@ -28,16 +32,19 @@
 #   - results/vf/vf_score_framework_summary.txt
 #   - plots/vf/vf_scores_by_status.png
 #   - plots/vf/vf_scores_by_ST.png
+#   - plots/vf/vf_expec_marker_prevalence_by_status.png
 #   - plots/vf/vf_score_correlation_heatmap.png
 #   - plots/vf/vf_pca_status.png
 #   - plots/vf/vf_pca_ST.png
 #
 # CAUTION:
 #   UTI count is small (~16). All comparisons are exploratory/descriptive.
-#   Do not interpret as validated predictive scores.
+#   Do not interpret supplementary marker/system endpoints as validated
+#   predictive scores.
 # ==============================================================================
 
 source("00_config.R")
+source("R/plot_helpers.R")
 suppressPackageStartupMessages({
   library(dplyr); library(readr); library(tidyr); library(stringr)
   library(ggplot2); library(tibble)
@@ -107,11 +114,17 @@ stop_if_stale(FILE_VF_READY, FILE_VF_PA_RAW, "vf_analysis_ready.csv", "vf_pa_all
 stop_if_stale(FILE_MODULE_EP, FILE_VF_READY, "vf_module_presence_by_episode.csv", "vf_analysis_ready.csv")
 
 vf <- read_csv(FILE_VF_READY, show_col_types = FALSE) %>%
+  prefer_primary_uti_status() %>%
+  apply_manual_sample_curation(context = "27_vf_ready") %>%
+  filter_primary_genomics() %>%
   mutate(Participant_id = as.character(Participant_id),
          tp_lab = normalise_timepoint_preserve_events(tp_lab),
          ST = if ("ST" %in% names(.)) normalise_st_label(ST) else NA_character_)
 mod_map <- read_csv(FILE_MODULE_MAP, show_col_types = FALSE)
 mod_ep  <- read_csv(FILE_MODULE_EP, show_col_types = FALSE) %>%
+  prefer_primary_uti_status() %>%
+  apply_manual_sample_curation(context = "27_module_episode") %>%
+  filter_primary_genomics() %>%
   mutate(Participant_id = as.character(Participant_id))
 
 gene_cols <- canonical_vf_gene_cols(names(vf), vf_pa_file = FILE_VF_PA_RAW)
@@ -122,16 +135,19 @@ meta_cols <- intersect(
     "UTI_Label", "Urine_collection_method", "ST", "vf_count_total",
     "total_vf_count_all", "total_vf_count_curated",
     "total_vf_count_upec_candidate", "total_vf_count_unassigned",
-    "low_confidence_count", "is_ecoli", "n_timepoints"
+    "low_confidence_count", "is_ecoli", "n_timepoints",
+    "analysis_include_primary", "analysis_exclusion_reason",
+    "duplicate_role", "duplicate_of_participant_id", "duplicate_of_tp_lab",
+    "allow_secondary_duplicate_qc", "duplicate_use_note",
+    "genomics_expected_include", "genomics_exclusion_reason"
   ),
   names(vf)
 )
 
-n_asb <- sum(vf$Infection_Status == "ASB", na.rm = TRUE)
+n_not_uti <- sum(vf$Infection_Status == "Not_UTI", na.rm = TRUE)
 n_uti <- sum(vf$Infection_Status == "UTI", na.rm = TRUE)
-n_neg <- sum(vf$Infection_Status == "Negative", na.rm = TRUE)
-msg("Loaded: %d episodes (ASB=%d, UTI=%d, Neg=%d), %d gene cols",
-    nrow(vf), n_asb, n_uti, n_neg, length(gene_cols))
+msg("Loaded: %d episodes (UTI=%d, Not_UTI=%d), %d gene cols",
+    nrow(vf), n_uti, n_not_uti, length(gene_cols))
 
 # ==============================================================================
 # 3. CALCULATE SCORES
@@ -167,11 +183,98 @@ pres_cols <- grep("_present$", names(mod_ep), value = TRUE)
 
 # UPEC modules
 upec_modules <- mod_map %>%
-  filter(upec_score_candidate, module_id != "unassigned",
+  filter(in_vf_matrix, primary_assignment, upec_score_candidate,
+         module_id != "unassigned",
          assignment_confidence %in% c("High","Moderate")) %>%
-  pull(module_id) %>% unique()
+  pull(module_id) %>% unique() %>% sort()
 upec_pres_cols <- paste0("mod_", upec_modules, "_present")
 upec_pres_cols <- intersect(upec_pres_cols, names(mod_ep))
+
+# ExPEC-like marker groups. These are supplementary marker endpoints, not a
+# validated UTI prediction score. kpsM is retained as a proxy because the
+# current VFDB call does not resolve kpsM group II subtype.
+marker_specs <- tribble(
+  ~marker, ~marker_label, ~marker_rule, ~requested_genes, ~missing_gene_basis_note, ~interpretation_note,
+  "expec_pap", "P fimbriae marker", "papA OR papC", "papA;papC", "",
+  "Classic ExPEC adhesin marker group.",
+  "expec_sfa_foc", "S/F1C fimbriae marker", "sfaD OR sfaE OR focD OR focE", "sfaD;sfaE;focD;focE", "",
+  "Classic ExPEC adhesin marker group.",
+  "expec_afa_dra", "Afa/Dr adhesin marker", "any afaB* OR afaC* OR draB OR draC", "afaB*;afaC*;draB;draC",
+  "Pattern markers use all available afaB*/afaC* columns; draB/draC are recorded if absent.",
+  "Classic ExPEC adhesin marker group.",
+  "expec_iutA", "Aerobactin receptor marker", "iutA", "iutA", "",
+  "Classic ExPEC iron-acquisition marker.",
+  "expec_kpsM", "Capsule marker (kpsM proxy)", "kpsM", "kpsM",
+  "Current VFDB call is kpsM; do not overstate as kpsM II unless subtype is confirmed.",
+  "Classic ExPEC capsule marker proxy."
+)
+
+marker_gene_sets <- list(
+  expec_pap = intersect(c("papA", "papC"), gene_cols),
+  expec_sfa_foc = intersect(c("sfaD", "sfaE", "focD", "focE"), gene_cols),
+  expec_afa_dra = gene_cols[str_detect(gene_cols, regex("^(afaB|afaC).*|^draB$|^draC$", ignore_case = TRUE))],
+  expec_iutA = intersect("iutA", gene_cols),
+  expec_kpsM = intersect("kpsM", gene_cols)
+)
+marker_expected_genes <- list(
+  expec_pap = c("papA", "papC"),
+  expec_sfa_foc = c("sfaD", "sfaE", "focD", "focE"),
+  expec_afa_dra = c("draB", "draC"),
+  expec_iutA = "iutA",
+  expec_kpsM = "kpsM"
+)
+marker_group_cols <- names(marker_gene_sets)
+
+marker_definitions <- marker_specs
+marker_definitions$available_genes <- vapply(
+  marker_definitions$marker,
+  function(m) paste(sort(marker_gene_sets[[m]]), collapse = ";"),
+  character(1)
+)
+marker_definitions$missing_expected_genes <- vapply(
+  marker_definitions$marker,
+  function(m) paste(setdiff(marker_expected_genes[[m]], gene_cols), collapse = ";"),
+  character(1)
+)
+marker_definitions$n_available_genes <- vapply(
+  marker_definitions$marker,
+  function(m) length(marker_gene_sets[[m]]),
+  integer(1)
+)
+
+marker_presence <- function(df, genes) {
+  if (length(genes) == 0) return(rep.int(0L, nrow(df)))
+  as.integer(rowSums(df[, genes, drop = FALSE], na.rm = TRUE) > 0)
+}
+
+expec_marker_table <- vf %>%
+  select(Participant_id, tp_lab)
+for (marker in marker_group_cols) {
+  expec_marker_table[[marker]] <- marker_presence(vf, marker_gene_sets[[marker]])
+}
+expec_marker_table <- expec_marker_table %>%
+  mutate(
+    expec_marker_count = rowSums(across(all_of(marker_group_cols)), na.rm = TRUE),
+    expec_like = as.integer(expec_marker_count >= 2)
+  )
+
+marker_catalog <- bind_rows(
+  marker_definitions %>%
+    select(marker, marker_label, marker_rule, requested_genes, available_genes,
+           missing_expected_genes, n_available_genes, missing_gene_basis_note,
+           interpretation_note),
+  tibble(
+    marker = "expec_like",
+    marker_label = "ExPEC-like (>=2 marker groups)",
+    marker_rule = "expec_marker_count >= 2",
+    requested_genes = paste(marker_group_cols, collapse = ";"),
+    available_genes = paste(marker_group_cols, collapse = ";"),
+    missing_expected_genes = "",
+    n_available_genes = length(marker_group_cols),
+    missing_gene_basis_note = "Composite endpoint based on marker-group presence, not individual gene count.",
+    interpretation_note = "Supplementary ExPEC-like classifier; not a validated UTI predictor in this cohort."
+  )
+)
 
 scores <- vf %>%
   select(any_of(meta_cols)) %>%
@@ -191,19 +294,25 @@ scores <- vf %>%
                       n_modules_present, n_upec_modules_present),
     by = c("Participant_id", "tp_lab")
   ) %>%
+  left_join(expec_marker_table, by = c("Participant_id", "tp_lab")) %>%
   mutate(
     upec_n_possible_genes = length(upec_genes),
     upec_gene_fraction = ifelse(upec_n_possible_genes > 0,
                                 round(upec_gene_score / upec_n_possible_genes, 3), NA_real_),
-    upec_n_possible_modules = length(upec_modules),
-    upec_module_fraction = ifelse(upec_n_possible_modules > 0,
-                                  round(n_upec_modules_present / upec_n_possible_modules, 3), NA_real_),
-    # Compatibility names used by later scripts and thesis tables.
+    upec_n_possible_systems = length(upec_modules),
+    upec_system_count = n_upec_modules_present,
+    upec_system_fraction = ifelse(upec_n_possible_systems > 0,
+                                  round(upec_system_count / upec_n_possible_systems, 3), NA_real_),
+    # Compatibility names used by later scripts and legacy thesis tables.
+    # These are retained as descriptive legacy burden fields, not headline
+    # scientific score endpoints.
+    upec_n_possible_modules = upec_n_possible_systems,
+    upec_module_fraction = upec_system_fraction,
     upec_gene_score_unweighted = upec_gene_score,
-    upec_module_score_unweighted = n_upec_modules_present,
+    upec_module_score_unweighted = upec_system_count,
     module_count_present = n_modules_present,
     module_count_curated = n_modules_present,
-    upec_score_fraction = upec_module_fraction
+    upec_score_fraction = upec_system_fraction
   )
 
 msg("Score table: %d rows × %d columns", nrow(scores), ncol(scores))
@@ -217,7 +326,12 @@ module_scores <- mod_ep %>%
          n_modules_present, n_upec_modules_present) %>%
   mutate(
     module_count_present = n_modules_present,
-    upec_module_score_unweighted = n_upec_modules_present
+    upec_system_count = n_upec_modules_present,
+    upec_n_possible_systems = length(upec_modules),
+    upec_system_fraction = ifelse(upec_n_possible_systems > 0,
+                                  round(upec_system_count / upec_n_possible_systems, 3), NA_real_),
+    upec_module_score_unweighted = upec_system_count,
+    upec_score_fraction = upec_system_fraction
   )
 
 module_lookup <- mod_map %>%
@@ -254,12 +368,74 @@ upec_components <- mod_map %>%
 # ==============================================================================
 # 5. SUMMARISE SCORES BY STATUS
 # ==============================================================================
-score_names <- c("total_vf_count_all", "total_vf_count_curated",
-                 "total_vf_count_upec_candidate", "total_vf_count_unassigned",
-                 "low_confidence_count", "vf_count_total", "vf_count_curated",
-                 "vf_count_unassigned", "upec_gene_score_unweighted",
-                 "module_count_present", "upec_module_score_unweighted",
-                 "upec_score_fraction")
+score_catalog <- tribble(
+  ~score_name, ~score_label, ~endpoint_group, ~endpoint_role,
+  "expec_marker_count", "ExPEC-like marker count", "ExPEC marker framework",
+  "Supplementary marker-count endpoint; not a validated UTI predictor.",
+  "upec_system_count", "UPEC systems present", "UPEC system framework",
+  "Supplementary one-point-per-system endpoint; avoids operon-size weighting.",
+  "upec_system_fraction", "UPEC system fraction", "UPEC system framework",
+  "Supplementary system fraction: UPEC systems present divided by possible systems.",
+  "total_vf_count_all", "All VFDB genes (descriptive burden)", "Descriptive burden",
+  "Descriptive burden only; not a scientific score endpoint.",
+  "total_vf_count_curated", "Curated VF genes (descriptive burden)", "Descriptive burden",
+  "Descriptive curated burden only; not a scientific score endpoint.",
+  "total_vf_count_unassigned", "Unassigned VFDB genes (QC burden)", "QC burden",
+  "Annotation/QC context; not a scientific score endpoint.",
+  "low_confidence_count", "Low-confidence VF genes (QC burden)", "QC burden",
+  "Annotation/QC context; not a scientific score endpoint."
+)
+score_names <- intersect(score_catalog$score_name, names(scores))
+score_catalog <- score_catalog %>% filter(score_name %in% score_names)
+score_label_lookup <- setNames(score_catalog$score_label, score_catalog$score_name)
+
+marker_summary_cols <- c(marker_group_cols, "expec_like")
+expec_marker_summary <- scores %>%
+  filter(Infection_Status %in% c("Not_UTI", "UTI")) %>%
+  select(Participant_id, Infection_Status, all_of(marker_summary_cols)) %>%
+  pivot_longer(cols = all_of(marker_summary_cols), names_to = "marker", values_to = "present") %>%
+  left_join(marker_catalog %>% select(marker, marker_label, marker_rule, interpretation_note),
+            by = "marker") %>%
+  group_by(marker, marker_label, marker_rule, interpretation_note, Infection_Status) %>%
+  summarise(
+    n_episodes = n(),
+    n_present = sum(present %in% 1L, na.rm = TRUE),
+    pct_present = round(100 * n_present / n_episodes, 1),
+    n_participants = n_distinct(Participant_id),
+    n_participants_present = n_distinct(Participant_id[present %in% 1L]),
+    .groups = "drop"
+  ) %>%
+  arrange(match(marker, marker_summary_cols), Infection_Status)
+
+expec_marker_tests <- tibble()
+for (marker in marker_summary_cols) {
+  dat <- scores %>% filter(Infection_Status %in% c("Not_UTI", "UTI"))
+  n_uti_present <- sum(dat[[marker]][dat$Infection_Status == "UTI"] %in% 1L, na.rm = TRUE)
+  n_uti_absent <- sum(!(dat[[marker]][dat$Infection_Status == "UTI"] %in% 1L), na.rm = TRUE)
+  n_not_present <- sum(dat[[marker]][dat$Infection_Status == "Not_UTI"] %in% 1L, na.rm = TRUE)
+  n_not_absent <- sum(!(dat[[marker]][dat$Infection_Status == "Not_UTI"] %in% 1L), na.rm = TRUE)
+  mat <- matrix(c(n_uti_present, n_uti_absent, n_not_present, n_not_absent),
+                nrow = 2, byrow = TRUE,
+                dimnames = list(c("UTI", "Not_UTI"), c("present", "absent")))
+  ft <- tryCatch(fisher.test(mat), error = function(e) NULL)
+  expec_marker_tests <- bind_rows(expec_marker_tests, tibble(
+    marker = marker,
+    marker_label = marker_catalog$marker_label[match(marker, marker_catalog$marker)],
+    comparison = "UTI vs Not_UTI",
+    test = "Fisher exact",
+    n_UTI_present = n_uti_present,
+    n_UTI_absent = n_uti_absent,
+    n_Not_UTI_present = n_not_present,
+    n_Not_UTI_absent = n_not_absent,
+    odds_ratio = if (!is.null(ft) && length(ft$estimate) > 0) unname(ft$estimate) else NA_real_,
+    p_value = if (!is.null(ft)) ft$p.value else NA_real_,
+    note = "Exploratory marker prevalence; repeated residents, sparse UTI count, lineage, and event context are not modelled."
+  ))
+}
+if (nrow(expec_marker_tests) > 0) {
+  expec_marker_tests <- expec_marker_tests %>%
+    mutate(p_adj_BH = p.adjust(p_value, method = "BH"))
+}
 score_names <- intersect(score_names, names(scores))
 
 summarise_scores <- function(df, group_col) {
@@ -270,6 +446,7 @@ summarise_scores <- function(df, group_col) {
       group_by(.data[[group_col]]) %>%
       summarise(
         score_name = sc,
+        score_label = score_label_lookup[[sc]],
         n_episodes = n(),
         n_participants = n_distinct(Participant_id),
         median = median(.data[[sc]], na.rm = TRUE),
@@ -297,11 +474,11 @@ common_sts_for_status <- scores %>%
   summarise(
     n_episodes = sum(n_status),
     n_statuses = n_distinct(Infection_Status),
-    has_ASB = any(Infection_Status == "ASB"),
+    has_Not_UTI = any(Infection_Status == "Not_UTI"),
     has_UTI = any(Infection_Status == "UTI"),
     .groups = "drop"
   ) %>%
-  filter(n_episodes >= 5, has_ASB, has_UTI) %>%
+  filter(n_episodes >= 5, has_Not_UTI, has_UTI) %>%
   pull(ST)
 
 by_status_within_st <- tibble()
@@ -310,8 +487,10 @@ if (length(common_sts_for_status) > 0) {
     filter(ST %in% common_sts_for_status, !is.na(Infection_Status)) %>%
     select(Participant_id, ST, Infection_Status, all_of(score_names)) %>%
     pivot_longer(cols = all_of(score_names), names_to = "score_name", values_to = "value") %>%
+    mutate(score_label = score_label_lookup[score_name]) %>%
     group_by(ST, Infection_Status, score_name) %>%
     summarise(
+      score_label = first(score_label),
       n_episodes = n(),
       n_participants = n_distinct(Participant_id),
       median = median(value, na.rm = TRUE),
@@ -326,25 +505,26 @@ if (length(common_sts_for_status) > 0) {
 }
 
 # ==============================================================================
-# 6. EXPLORATORY TESTS (ASB vs UTI)
+# 6. EXPLORATORY TESTS (UTI vs Not_UTI)
 # ==============================================================================
 test_results <- tibble()
-asb_uti <- scores %>% filter(Infection_Status %in% c("ASB", "UTI"))
+uti_not_uti <- scores %>% filter(Infection_Status %in% c("Not_UTI", "UTI"))
 
 for (sc in score_names) {
-  x_asb <- asb_uti %>% filter(Infection_Status == "ASB") %>% pull(!!sym(sc))
-  x_uti <- asb_uti %>% filter(Infection_Status == "UTI") %>% pull(!!sym(sc))
-  if (length(x_asb) >= 3 && length(x_uti) >= 3) {
-    wt <- tryCatch(wilcox.test(x_uti, x_asb, exact = FALSE), error = function(e) NULL)
+  x_not_uti <- uti_not_uti %>% filter(Infection_Status == "Not_UTI") %>% pull(!!sym(sc))
+  x_uti <- uti_not_uti %>% filter(Infection_Status == "UTI") %>% pull(!!sym(sc))
+  if (length(x_not_uti) >= 3 && length(x_uti) >= 3) {
+    wt <- tryCatch(wilcox.test(x_uti, x_not_uti, exact = FALSE), error = function(e) NULL)
     test_results <- bind_rows(test_results, tibble(
-      comparison = "UTI vs ASB",
+      comparison = "UTI vs Not_UTI",
       score_name = sc,
+      score_label = score_label_lookup[[sc]],
       test = "Wilcoxon rank-sum",
-      n_ASB = length(x_asb), n_UTI = length(x_uti),
-      median_ASB = median(x_asb, na.rm = TRUE),
+      n_Not_UTI = length(x_not_uti), n_UTI = length(x_uti),
+      median_Not_UTI = median(x_not_uti, na.rm = TRUE),
       median_UTI = median(x_uti, na.rm = TRUE),
       p_value = if (!is.null(wt)) wt$p.value else NA_real_,
-      note = "Exploratory; repeated measures not accounted for"
+      note = "Supplementary/descriptive; repeated measures, lineage, event context, and Not_UTI heterogeneity are not modelled."
     ))
   }
 }
@@ -358,25 +538,31 @@ if (nrow(test_results) > 0) {
 # ==============================================================================
 score_mat <- scores[, score_names, drop = FALSE]
 cor_results <- tibble()
-pairs <- combn(score_names, 2, simplify = FALSE)
-for (pr in pairs) {
-  valid <- is.finite(score_mat[[pr[1]]]) & is.finite(score_mat[[pr[2]]])
-  x <- score_mat[[pr[1]]][valid]
-  y <- score_mat[[pr[2]]][valid]
-  if (length(x) < 3 || length(unique(x)) < 2 || length(unique(y)) < 2) {
+if (length(score_names) >= 2) {
+  pairs <- combn(score_names, 2, simplify = FALSE)
+  for (pr in pairs) {
+    valid <- is.finite(score_mat[[pr[1]]]) & is.finite(score_mat[[pr[2]]])
+    x <- score_mat[[pr[1]]][valid]
+    y <- score_mat[[pr[2]]][valid]
+    if (length(x) < 3 || length(unique(x)) < 2 || length(unique(y)) < 2) {
+      cor_results <- bind_rows(cor_results, tibble(
+        score_x = pr[1], score_y = pr[2],
+        score_x_label = score_label_lookup[[pr[1]]],
+        score_y_label = score_label_lookup[[pr[2]]],
+        method = "Spearman", rho = NA_real_, p_value = NA_real_,
+        n = length(x), note = "Skipped: insufficient variation"
+      ))
+      next
+    }
+    ct <- cor.test(x, y, method = "spearman", exact = FALSE)
     cor_results <- bind_rows(cor_results, tibble(
       score_x = pr[1], score_y = pr[2],
-      method = "Spearman", rho = NA_real_, p_value = NA_real_,
-      n = length(x), note = "Skipped: insufficient variation"
+      score_x_label = score_label_lookup[[pr[1]]],
+      score_y_label = score_label_lookup[[pr[2]]],
+      method = "Spearman", rho = round(ct$estimate, 3),
+      p_value = ct$p.value, n = length(x), note = "Supplementary/descriptive"
     ))
-    next
   }
-  ct <- cor.test(x, y, method = "spearman", exact = FALSE)
-  cor_results <- bind_rows(cor_results, tibble(
-    score_x = pr[1], score_y = pr[2],
-    method = "Spearman", rho = round(ct$estimate, 3),
-    p_value = ct$p.value, n = length(x), note = "Exploratory"
-  ))
 }
 if (nrow(cor_results) > 0) {
   cor_results <- cor_results %>%
@@ -463,6 +649,10 @@ if (!pcoa_ok) msg("Jaccard PCoA skipped: insufficient variable modules")
 write_csv(scores, file.path(DIR_VF, "vf_score_table.csv"))
 write_csv(module_scores, file.path(DIR_VF, "vf_module_score_table.csv"))
 write_csv(upec_components, file.path(DIR_VF, "vf_upec_score_components.csv"))
+write_csv(score_catalog, file.path(DIR_VF, "vf_score_endpoint_catalog.csv"))
+write_csv(marker_catalog, file.path(DIR_VF, "vf_expec_marker_definitions.csv"))
+write_csv(expec_marker_summary, file.path(DIR_VF, "vf_expec_marker_summary_by_status.csv"))
+write_csv(expec_marker_tests, file.path(DIR_VF, "vf_expec_marker_tests.csv"))
 write_csv(by_status, file.path(DIR_VF, "vf_score_summary_by_status.csv"))
 write_csv(by_st, file.path(DIR_VF, "vf_score_summary_by_ST.csv"))
 write_csv(by_status_within_st, file.path(DIR_VF, "vf_score_summary_by_status_within_ST.csv"))
@@ -477,34 +667,58 @@ summ <- character()
 sa <- function(...) summ <<- c(summ, sprintf(...))
 sa("=== VF SCORE FRAMEWORK SUMMARY ===")
 sa("Timestamp: %s", format(Sys.time()))
-sa("Episodes: %d (ASB=%d, UTI=%d, Neg=%d)", nrow(scores), n_asb, n_uti, n_neg)
-sa("Curated genes: %d, UPEC genes: %d", length(curated_genes), length(upec_genes))
+sa("Episodes: %d (UTI=%d, Not_UTI=%d)", nrow(scores), n_uti, n_not_uti)
+sa("Curated genes: %d, legacy UPEC-candidate genes retained for compatibility: %d", length(curated_genes), length(upec_genes))
 sa("Unassigned genes: %d, low-confidence genes: %d", length(unassigned_genes), length(low_conf_genes))
-sa("UPEC modules: %d", length(upec_modules))
-sa("Within-ST status summaries: %d STs with >=5 episodes and both ASB/UTI",
+sa("UPEC systems/modules: %d", length(upec_modules))
+sa("ExPEC-like marker groups available: %d/%d", sum(marker_definitions$n_available_genes > 0), nrow(marker_definitions))
+sa("ExPEC-like classifier: expec_marker_count >= 2 of pap, sfa/foc, afa/dra, iutA, and kpsM proxy marker groups")
+sa("Within-ST status summaries: %d STs with >=5 episodes and both UTI/Not_UTI",
    length(common_sts_for_status))
 sa("PCA performed: %s", pca_ok)
 sa("Jaccard PCoA performed: %s", pcoa_ok)
 sa("")
-sa("--- Score medians by status ---")
+fmt_score_value <- function(score_name, value) {
+  if (is.na(value)) return("NA")
+  if (str_detect(score_name, "fraction")) sprintf("%.3f", value) else sprintf("%.1f", value)
+}
+
+sa("--- Supplementary endpoint medians by status ---")
 for (sc in score_names) {
-  row_asb <- by_status %>% filter(Infection_Status == "ASB", score_name == sc)
+  row_not_uti <- by_status %>% filter(Infection_Status == "Not_UTI", score_name == sc)
   row_uti <- by_status %>% filter(Infection_Status == "UTI", score_name == sc)
-  if (nrow(row_asb) > 0 && nrow(row_uti) > 0) {
-    sa("  %s: ASB median=%.0f, UTI median=%.0f", sc, row_asb$median, row_uti$median)
+  if (nrow(row_not_uti) > 0 && nrow(row_uti) > 0) {
+    sa("  %s: Not_UTI median=%s, UTI median=%s",
+       score_label_lookup[[sc]],
+       fmt_score_value(sc, row_not_uti$median),
+       fmt_score_value(sc, row_uti$median))
   }
 }
 sa("")
-sa("CAUTION: UTI n=%d. All comparisons are exploratory.", n_uti)
+sa("--- ExPEC-like marker prevalence by status ---")
+for (marker in marker_summary_cols) {
+  row_not_uti <- expec_marker_summary %>% filter(Infection_Status == "Not_UTI", .data$marker == !!marker)
+  row_uti <- expec_marker_summary %>% filter(Infection_Status == "UTI", .data$marker == !!marker)
+  if (nrow(row_not_uti) > 0 && nrow(row_uti) > 0) {
+    marker_label <- marker_catalog$marker_label[match(marker, marker_catalog$marker)]
+    sa("  %s: Not_UTI %.1f%% (%d/%d), UTI %.1f%% (%d/%d)",
+       marker_label,
+       row_not_uti$pct_present, row_not_uti$n_present, row_not_uti$n_episodes,
+       row_uti$pct_present, row_uti$n_present, row_uti$n_episodes)
+  }
+}
+sa("")
+sa("CAUTION: UTI n=%d. All marker/system comparisons are supplementary and exploratory.", n_uti)
+sa("Because no validated UTI-specific VF score exists for this cohort, composite measures are supplementary; primary biological interpretation should use prespecified marker groups, module-level VF repertoire patterns, lineage context, and longitudinal VF stability.")
 if (length(unassigned_genes) / max(1, length(gene_cols)) > 0.25) {
-  sa("WARNING: Unassigned genes are %.1f%% of the VF matrix; interpret total burden separately from curated/UPEC-candidate scores.",
+  sa("WARNING: Unassigned genes are %.1f%% of the VF matrix; interpret total burden separately from marker/system endpoints.",
      100 * length(unassigned_genes) / max(1, length(gene_cols)))
 }
 sa("Repeated measures from same participants are not adjusted.")
 writeLines(summ, file.path(DIR_VF, "vf_score_framework_summary.txt"))
 
 cat(
-  sprintf("\nScore warning: unassigned genes represent %.1f%% of the VF matrix; curated/UPEC candidate scores are separated from total counts.\n",
+  sprintf("\nScore warning: unassigned genes represent %.1f%% of the VF matrix; ExPEC-like marker and UPEC-system endpoints are separated from descriptive gene burden counts.\n",
           100 * length(unassigned_genes) / max(1, length(gene_cols))),
   file = file.path(DIR_VF, "vf_gene_annotation_gap_report.txt"),
   append = TRUE
@@ -516,90 +730,125 @@ append_denominator_summary(
   "vf_score_table",
   "participant_timepoint",
   file.path(DIR_VF, "vf_score_table.csv"),
-  "Score table separates all, curated, UPEC-candidate, unassigned, and low-confidence VF burden"
+  "Supplementary score table separates ExPEC-like marker groups, UPEC system counts, descriptive VF burden, and legacy compatibility fields"
 )
 
 # ==============================================================================
 # 10. PLOTS
 # ==============================================================================
-# Scores by status
+# Supplementary endpoints by status
 score_long <- scores %>%
-  filter(Infection_Status %in% c("ASB","UTI","Negative")) %>%
-  pivot_longer(cols = all_of(score_names), names_to = "score", values_to = "value")
+  filter(Infection_Status %in% c("UTI","Not_UTI")) %>%
+  pivot_longer(cols = all_of(score_names), names_to = "score", values_to = "value") %>%
+  mutate(score_label = factor(score_label_lookup[score], levels = score_label_lookup[score_names]))
 
 p1 <- ggplot(score_long, aes(x = Infection_Status, y = value, fill = Infection_Status)) +
   geom_boxplot(outlier.size = 0.8, alpha = 0.7) +
-  facet_wrap(~score, scales = "free_y") +
+  facet_wrap(~score_label, scales = "free_y") +
   labs(
-    title = "Exploratory VF score distributions by clinical status",
-    subtitle = sprintf("ASB n=%d, UTI n=%d, Negative n=%d; scores are descriptive, not validated predictors", n_asb, n_uti, n_neg),
-    x = "Clinical status",
-    y = "Score value",
+    title = "Supplementary VF marker, system, and burden summaries by primary UTI status",
+    subtitle = sprintf("UTI n=%d, Not_UTI n=%d; endpoints are supplementary, not validated predictors", n_uti, n_not_uti),
+    x = "Primary UTI status",
+    y = "Endpoint value",
     caption = sprintf(
-      "Data: %s and module outputs from script 26. Denominator: %d VF/WGS-linked E. coli isolates from %d participants. Level of analysis: isolate-level score summary. Residents may contribute repeated isolates; score comparisons are exploratory unless modelled with Participant_id clustering. UTI n=%d is small and ST/lineage may confound score-status differences.",
+      "Data: %s and module outputs from script 26. Denominator: %d VF/WGS-linked E. coli isolates from %d participants. Level of analysis: isolate-level supplementary endpoint summary. Residents may contribute repeated isolates; comparisons are exploratory unless modelled with Participant_id clustering. UTI n=%d is small, Not_UTI is heterogeneous, and ST/lineage may confound marker/system-status differences.",
       FILE_VF_READY, nrow(vf), n_distinct(vf$Participant_id), n_uti
     )
   ) +
+  scale_fill_uti_status() +
   plot_theme_vf(base_size = 11) + theme(legend.position = "none")
 ggsave(file.path(DIR_PLOTS_VF, "vf_scores_by_status.png"), p1, width = 12, height = 8.5, dpi = 300)
 
 score_effects <- test_results %>%
-  filter(comparison == "UTI vs ASB") %>%
+  filter(comparison == "UTI vs Not_UTI") %>%
   mutate(
-    median_difference_UTI_minus_ASB = median_UTI - median_ASB,
-    score_label = str_replace_all(score_name, "_", " "),
+    median_difference_UTI_minus_Not_UTI = median_UTI - median_Not_UTI,
     q_label = sprintf("q=%.2g", p_adj_BH),
     result_status = ifelse(!is.na(p_adj_BH) & p_adj_BH < 0.05,
                            "BH q < 0.05", "Not BH-significant")
   ) %>%
-  arrange(median_difference_UTI_minus_ASB)
+  arrange(median_difference_UTI_minus_Not_UTI)
 
 if (nrow(score_effects) > 0) {
   p_score_effect <- ggplot(score_effects,
-                           aes(x = median_difference_UTI_minus_ASB,
-                               y = reorder(score_label, median_difference_UTI_minus_ASB),
+                           aes(x = median_difference_UTI_minus_Not_UTI,
+                               y = reorder(score_label, median_difference_UTI_minus_Not_UTI),
                                fill = result_status)) +
     geom_vline(xintercept = 0, linetype = "dashed", colour = "grey45") +
     geom_col(width = 0.68, colour = "white", linewidth = 0.2) +
     geom_text(aes(label = q_label),
-              hjust = ifelse(score_effects$median_difference_UTI_minus_ASB >= 0, -0.08, 1.08),
+              hjust = ifelse(score_effects$median_difference_UTI_minus_Not_UTI >= 0, -0.08, 1.08),
               size = 3, colour = "grey20") +
     scale_fill_manual(values = c("BH q < 0.05" = "#D55E00", "Not BH-significant" = "grey55")) +
     labs(
-      title = "Exploratory ASB-UTI VF score differences",
-      subtitle = sprintf("Median UTI minus ASB score differences; ASB n=%d, UTI n=%d", n_asb, n_uti),
-      x = "Median difference (UTI - ASB)",
-      y = "VF score",
+      title = "Supplementary UTI-Not_UTI VF endpoint differences",
+      subtitle = sprintf("Median UTI minus Not_UTI differences; Not_UTI n=%d, UTI n=%d", n_not_uti, n_uti),
+      x = "Median difference (UTI - Not_UTI)",
+      y = "Supplementary VF endpoint",
       fill = "Adjusted result",
       caption = sprintf(
-        "Data: %s. Denominator: ASB n=%d and UTI n=%d VF/WGS-linked isolates. Level of analysis: isolate-level score comparison. Wilcoxon tests and BH-adjusted q-values are exploratory because residents may contribute repeated isolates and ST/lineage, timepoint, batch, and event-type structure are not modelled here. Scores are descriptive summaries, not validated UTI predictors.",
-        file.path(DIR_VF, "vf_score_tests_exploratory.csv"), n_asb, n_uti
+        "Data: %s. Denominator: Not_UTI n=%d and UTI n=%d VF/WGS-linked isolates. Level of analysis: isolate-level supplementary endpoint comparison. Wilcoxon tests and BH-adjusted q-values are exploratory because residents may contribute repeated isolates and ST/lineage, timepoint, batch, and event-type structure are not modelled here. Not_UTI is heterogeneous. Composite endpoints are supplementary, not validated UTI predictors.",
+        file.path(DIR_VF, "vf_score_tests_exploratory.csv"), n_not_uti, n_uti
       )
     ) +
     plot_theme_vf(base_size = 11) +
     theme(legend.position = "bottom")
 
-  ggsave(file.path(DIR_PLOTS_VF, "vf_score_effect_summary_asb_uti.png"),
+  ggsave(file.path(DIR_PLOTS_VF, "vf_score_effect_summary_uti_not_uti.png"),
          p_score_effect, width = 8.8, height = max(5.2, nrow(score_effects) * 0.34), dpi = 300)
 }
 
-# Scores by top STs
+# ExPEC-like marker prevalence by status
+marker_plot_data <- expec_marker_summary %>%
+  mutate(
+    marker_label = factor(marker_label, levels = rev(marker_catalog$marker_label)),
+    Infection_Status = factor(Infection_Status, levels = c("Not_UTI", "UTI"))
+  )
+if (nrow(marker_plot_data) > 0) {
+  p_marker <- ggplot(marker_plot_data,
+                     aes(x = pct_present, y = marker_label, fill = Infection_Status)) +
+    geom_col(position = position_dodge(width = 0.74), width = 0.68, colour = "white", linewidth = 0.2) +
+    geom_text(aes(label = sprintf("%d/%d", n_present, n_episodes)),
+              position = position_dodge(width = 0.74), hjust = -0.08, size = 3) +
+    scale_fill_uti_status(drop = FALSE) +
+    scale_x_continuous(limits = c(0, max(100, max(marker_plot_data$pct_present, na.rm = TRUE) * 1.12)),
+                       expand = expansion(mult = c(0, 0.04))) +
+    labs(
+      title = "ExPEC-like marker prevalence by primary UTI status",
+      subtitle = "Classic marker groups are reported separately; kpsM is a proxy marker, not confirmed kpsM II subtype",
+      x = "Episodes with marker present (%)",
+      y = NULL,
+      fill = "Primary status",
+      caption = sprintf(
+        "Data: %s and %s. Denominator: Not_UTI n=%d and UTI n=%d VF/WGS-linked isolates. Fisher tests are exploratory; repeated residents, ST/lineage, and event context are not modelled.",
+        file.path(DIR_VF, "vf_expec_marker_summary_by_status.csv"),
+        file.path(DIR_VF, "vf_expec_marker_tests.csv"),
+        n_not_uti, n_uti
+      )
+    ) +
+    plot_theme_vf(base_size = 11)
+  ggsave(file.path(DIR_PLOTS_VF, "vf_expec_marker_prevalence_by_status.png"),
+         p_marker, width = 10, height = 5.8, dpi = 300)
+}
+
+# Supplementary endpoints by top STs
 top_sts <- scores %>% dplyr::count(ST) %>% filter(n >= 5) %>% pull(ST)
 if (length(top_sts) >= 3) {
   st_long <- scores %>%
     filter(ST %in% top_sts) %>%
-    pivot_longer(cols = all_of(score_names), names_to = "score", values_to = "value")
+    pivot_longer(cols = all_of(score_names), names_to = "score", values_to = "value") %>%
+    mutate(score_label = factor(score_label_lookup[score], levels = score_label_lookup[score_names]))
   p2 <- ggplot(st_long, aes(x = reorder(ST, value, FUN = median), y = value)) +
     geom_boxplot(fill = "steelblue", alpha = 0.6, outlier.size = 0.5) +
-    facet_wrap(~score, scales = "free_y") +
+    facet_wrap(~score_label, scales = "free_y") +
     coord_flip() +
     labs(
-      title = "Exploratory VF score distributions by E. coli sequence type",
+      title = "Supplementary VF marker/system summaries by E. coli sequence type",
       subtitle = "STs with at least five VF-ready isolates are shown",
       x = "Sequence type",
-      y = "Score value",
+      y = "Endpoint value",
       caption = sprintf(
-        "Data: %s. Denominator: common STs among %d VF-ready isolates. Level of analysis: isolate-level lineage diagnostic. Residents may contribute repeated isolates; ST-associated score differences are expected because VF content is lineage structured.",
+        "Data: %s. Denominator: common STs among %d VF-ready isolates. Level of analysis: isolate-level lineage diagnostic. Residents may contribute repeated isolates; ST-associated endpoint differences are expected because VF content is lineage structured.",
         FILE_VF_READY, nrow(vf)
       )
     ) +
@@ -611,19 +860,19 @@ if (length(top_sts) >= 3) {
 if (nrow(cor_results) > 0) {
   all_scores <- unique(c(cor_results$score_x, cor_results$score_y))
   cor_full <- bind_rows(
-    cor_results %>% select(score_x, score_y, rho),
-    cor_results %>% transmute(score_x = score_y, score_y = score_x, rho),
-    tibble(score_x = all_scores, score_y = all_scores, rho = 1.0)
+    cor_results %>% transmute(score_x = score_x_label, score_y = score_y_label, rho),
+    cor_results %>% transmute(score_x = score_y_label, score_y = score_x_label, rho),
+    tibble(score_x = score_label_lookup[all_scores], score_y = score_label_lookup[all_scores], rho = 1.0)
   )
   p3 <- ggplot(cor_full, aes(x = score_x, y = score_y, fill = rho)) +
     geom_tile() + geom_text(aes(label = rho), size = 3) +
     scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0) +
     labs(
-      title = "Spearman correlations among exploratory VF scores",
-      subtitle = "Correlation reflects shared gene/module content and should not be interpreted as clinical prediction",
+      title = "Spearman correlations among supplementary VF endpoints",
+      subtitle = "Correlation reflects shared marker/module content and should not be interpreted as clinical prediction",
       x = NULL,
       y = NULL,
-      caption = sprintf("Data: %s. Level of analysis: score-score correlation across VF-ready isolates; repeated residents and lineage structure are not modelled.", FILE_VF_READY)
+      caption = sprintf("Data: %s. Level of analysis: endpoint correlation across VF-ready isolates; repeated residents and lineage structure are not modelled.", FILE_VF_READY)
     ) +
     plot_theme_vf(base_size = 9) +
     theme(axis.text.x = element_text(angle = 45, hjust = 1))
@@ -635,7 +884,7 @@ if (pca_ok && nrow(pca_coords) > 0) {
   p4 <- ggplot(pca_coords, aes(x = PC1, y = PC2, colour = Infection_Status)) +
     geom_point(alpha = 0.7, size = 2) +
     labs(
-      title = "Exploratory PCA of VF module profiles by clinical status",
+      title = "Exploratory PCA of VF module profiles by primary UTI status",
       subtitle = "Ordination is descriptive and does not adjust for repeated residents or ST/lineage",
       x = sprintf("PC1 (%.1f%%)", pca_coords$var_PC1[1]),
       y = sprintf("PC2 (%.1f%%)", pca_coords$var_PC2[1]),
@@ -663,7 +912,7 @@ if (pcoa_ok && nrow(pcoa_coords) > 0) {
   p6 <- ggplot(pcoa_coords, aes(x = Axis1, y = Axis2, colour = Infection_Status)) +
     geom_point(alpha = 0.7, size = 2) +
     labs(
-      title = "Exploratory Jaccard PCoA of VF module profiles by clinical status",
+      title = "Exploratory Jaccard PCoA of VF module profiles by primary UTI status",
       subtitle = "Binary module-profile ordination; descriptive only",
       x = sprintf("Axis 1 (%.1f%%)", pcoa_coords$var_Axis1[1]),
       y = sprintf("Axis 2 (%.1f%%)", pcoa_coords$var_Axis2[1]),

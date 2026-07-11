@@ -35,7 +35,7 @@
 #
 # DOWNSTREAM:
 #   → 00b_classify_episodes.R reads clinical_merged.rds to assign
-#     Infection_Status (UTI/ASB/Negative) to each episode.
+#     primary UTI_Status (UTI/Not_UTI) plus legacy Infection_Status.
 # ==============================================================================
 
 source("00_config.R")
@@ -183,28 +183,51 @@ symptom_cols2 <- function(df) {
         return(NULL)
     }
 
-    df %>%
+    df_std <- df %>%
         rename(Participant_id = all_of(id_col), Timepoint = all_of(tp_col)) %>%
         mutate(
             Participant_id = as.character(Participant_id),
             Timepoint = canon_tp(Timepoint)
-        ) %>%
-        select(
-            Participant_id, Timepoint,
-            matches(
-                "s\\s*&\\s*s|sympt|dysur|urg|urge|frequen|fever|koorts|pijn|pain|burn|incontin|pus|flank|suprapub|rilling|chill|delir|other|anders",
-                ignore.case = TRUE
-            ),
-            -matches(
-                "status|sns.*status|signs.*symptoms.*status|^no\\s+s\\s*&\\s*s$|^geen\\s+s\\s*&\\s*s$",
-                ignore.case = TRUE
-            )
-        ) %>%
+        )
+
+    detected <- detect_symptom_columns(df_std)
+    symptom_cols <- unique(detected$raw_column)
+    status_like <- names(df_std)[grepl(
+        "status|sns.*status|signs.*symptoms.*status|^no\\s+s\\s*&\\s*s$|^geen\\s+s\\s*&\\s*s$",
+        names(df_std),
+        ignore.case = TRUE
+    )]
+    symptom_cols <- setdiff(symptom_cols, status_like)
+
+    if (length(symptom_cols) == 0) {
+        return(df_std %>% select(Participant_id, Timepoint))
+    }
+
+    df_std %>%
+        select(Participant_id, Timepoint, all_of(symptom_cols)) %>%
         mutate(across(-c(Participant_id, Timepoint), as.character))
 }
 
 sym_list <- lapply(batch_data, symptom_cols2)
 sym_all_raw <- bind_rows(sym_list[!vapply(sym_list, is.null, logical(1))])
+
+detected_symptom_columns <- bind_rows(lapply(names(batch_data), function(bid_str) {
+    df <- batch_data[[bid_str]]
+    detected <- detect_symptom_columns(df)
+    if (nrow(detected) == 0) {
+        tibble(
+            Batch = as.integer(bid_str),
+            raw_column = NA_character_,
+            symptom = NA_character_,
+            used_for_uti_rule = NA,
+            rule_role = "no_usable_symptom_columns_detected"
+        )
+    } else {
+        detected %>% mutate(Batch = as.integer(bid_str), .before = raw_column)
+    }
+}))
+write_csv(detected_symptom_columns, FILE_UTI_DETECTED_COLUMN_MAP)
+msg("Wrote detected S&S column map to %s", FILE_UTI_DETECTED_COLUMN_MAP)
 
 # ==============================================================================
 # 4. Extract SnS Status (Fallback for B1/B2)

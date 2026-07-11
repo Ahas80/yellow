@@ -1,0 +1,6 @@
+Isolate_ID,Participant_id,tp_lab,Timepoint,Event_type,Assembly_ID,Assembler,file_name,sequencing_run,sequencing_barcode,UTI_Label,Clinical_Beoord,Clinical_CFU_Count,Urine_collection_method,gene_CsgD,gene_NarG,gene_NarH,gene_NarI,gene_NarJ,gene_NarL,gene_NarP,gene_NarQ,gene_NarV,gene_NarX,gene_NarY,gene_NarZ
+24100219501-1,40012,T0,T0,routine,PR0048_barcode01_24100219501-1-longcycler__fasta,longcycler,PR0048_barcode01_24100219501-1-longcycler.fasta,PR0048,01,NA,+++,meer dan 100.000 bact/ml,Inco,1,1,1,1,1,1,1,1,1,1,1,1
+24100219701-1,40022,T0,T0,routine,PR0022_barcode31_24100219701-1-longcycler__fasta,longcycler,PR0022_barcode31_24100219701-1-longcycler.fasta,PR0022,31,NA,++,10.000-100.000 bact/ml,Inco,1,1,1,1,1,1,1,1,1,1,1,0
+24100220001-1,40001,T0,T0,routine,PR0010_barcode20_24100220001-1_longcycler__fasta,longcycler,PR0010_barcode20_24100220001-1_longcycler.fasta,PR0010,20,NA,+++,NA,Inco,1,1,1,1,1,1,1,1,1,1,1,1
+24100220101-1,40021,T0,T0,routine,PR0010_barcode22_24100220101-1_longcycler__fasta,longcycler,PR0010_barcode22_24100220101-1_longcycler.fasta,PR0010,22,NA,+++,NA,Spontaan geloosd,1,1,1,1,1,1,1,1,1,1,1,0
+24100220201-1,40005,T0,T0,routine,PR0010_barcode21_24100220201-1_longcycler__fasta,longcycler,PR0010_barcode21_24100220201-1_longcycler.fasta,PR0010,21,NA,+++,NA,Spontaan geloosd,1,1,1,1,1,1,1,1,1,1,1,1

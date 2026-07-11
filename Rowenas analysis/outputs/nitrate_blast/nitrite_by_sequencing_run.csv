@@ -1,0 +1,4 @@
+sequencing_run,total_rows,matched_binary_n,positive_n,negative_n,missing_or_unmatched_n,positive_pct_among_matched,distinct_participants,distinct_isolates
+PR0010,3,3,3,0,0,100,3,3
+PR0022,1,1,0,1,0,0,1,1
+PR0048,1,1,0,1,0,0,1,1

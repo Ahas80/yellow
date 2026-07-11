@@ -13,7 +13,7 @@
 #
 # Inputs:
 #   - results/plasmids/plasmidfinder_presence_absence.csv
-#   - results/mlst/mlst_all.tsv
+#   - results/mlst/mlst_provider_preferred.csv
 #
 # Outputs:
 #   - plots/plasmids/replicon_heatmap.pdf
@@ -45,8 +45,8 @@ option_list <- list(
     help = "Input plasmid presence/absence CSV [default: %default]"
   ),
   make_option(c("-m", "--mlst"),
-    type = "character", default = file.path(DIR_MLST, "mlst_all.tsv"),
-    help = "Input MLST TSV file [default: %default]"
+    type = "character", default = FILE_MLST_CANONICAL,
+    help = "Input active provider-preferred MLST file [default: %default]"
   ),
   make_option(c("-o", "--outdir"),
     type = "character", default = DIR_PLOTS_PLASMIDS,
@@ -111,7 +111,11 @@ st_vec <- rep("Unknown", nrow(mat))
 names(st_vec) <- rownames(mat)
 
 if (file.exists(FILE_MLST)) {
-  mlst <- read_tsv(FILE_MLST, show_col_types = FALSE)
+  mlst <- if (grepl("\\.tsv$", FILE_MLST, ignore.case = TRUE)) {
+    read_tsv(FILE_MLST, show_col_types = FALSE)
+  } else {
+    read_csv(FILE_MLST, show_col_types = FALSE)
+  }
   if ("ST" %in% names(mlst)) {
     # Ensure Isolate_ID matching
     match_idx <- match(rownames(mat), mlst$Isolate_ID)

@@ -20,7 +20,7 @@
 #   - FILE_METADATA
 #   - FILE_ASSEMBLIES
 #   - results/wgs/qc_summary.csv or equivalent QC locations
-#   - FILE_MLST_ALL
+#   - FILE_MLST_CANONICAL
 #   - FILE_VF_HITS
 #   - FILE_VF_PA
 #
@@ -345,6 +345,14 @@ safe_read_tsv <- function(path) {
            })
 }
 
+safe_read_delim_auto <- function(path) {
+  if (grepl("\\.tsv$", path, ignore.case = TRUE)) {
+    safe_read_tsv(path)
+  } else {
+    safe_read_csv(path)
+  }
+}
+
 safe_read_rds <- function(path) {
   tryCatch(readRDS(path),
            error = function(e) {
@@ -538,9 +546,9 @@ mlst_duplicate_ids <- tibble(normalised_isolate_id = character(), n_records = in
 mlst_id_cols <- c("Isolate_ID", "isolate_ID", "isolate_id", "IsolateID", "SampleID", "Sample_ID")
 mlst_file_cols <- c("full_path", "file_name", "FILE", "file", "filename", "assembly", "fasta", "path", "#FILE")
 
-if (file.exists(FILE_MLST_ALL)) {
-  log_audit("Reading MLST: %s", FILE_MLST_ALL)
-  mlst_df <- safe_read_tsv(FILE_MLST_ALL)
+if (file.exists(FILE_MLST_CANONICAL)) {
+  log_audit("Reading active provider-preferred MLST: %s", FILE_MLST_CANONICAL)
+  mlst_df <- safe_read_delim_auto(FILE_MLST_CANONICAL)
   mlst_evidence <- build_source_evidence(mlst_df, "mlst", mlst_id_cols, mlst_file_cols)
   mlst_missing_rows <- source_rows_without_fasta(mlst_evidence, fasta_scan)
 
@@ -550,7 +558,7 @@ if (file.exists(FILE_MLST_ALL)) {
     filter(n_records > 1) %>%
     arrange(desc(n_records), normalised_isolate_id)
 } else {
-  warning("MLST output not available: ", FILE_MLST_ALL)
+  warning("Active provider-preferred MLST output not available: ", FILE_MLST_CANONICAL)
 }
 
 # ------------------------------------------------------------------------------
@@ -891,12 +899,12 @@ problem_tbl <- audit_tbl %>%
 
 availability <- tibble(
   check = c("assembly_metadata", "assemblies.list", "wgs_qc", "mlst", "vf_hits", "vf_pa"),
-  path = c(FILE_METADATA, FILE_ASSEMBLIES, qc_file %||% NA_character_, FILE_MLST_ALL, FILE_VF_HITS, FILE_VF_PA),
+  path = c(FILE_METADATA, FILE_ASSEMBLIES, qc_file %||% NA_character_, FILE_MLST_CANONICAL, FILE_VF_HITS, FILE_VF_PA),
   available = c(
     file.exists(FILE_METADATA),
     file.exists(FILE_ASSEMBLIES),
     !is.na(qc_file),
-    file.exists(FILE_MLST_ALL),
+    file.exists(FILE_MLST_CANONICAL),
     file.exists(FILE_VF_HITS),
     file.exists(FILE_VF_PA)
   ),

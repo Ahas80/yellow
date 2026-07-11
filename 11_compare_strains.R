@@ -6,22 +6,22 @@
 # GOAL:
 #   Compute pairwise strain similarity between all within-participant
 #   isolates using multiple metrics (ST match, VF Jaccard, plasmid Jaccard,
-#   core SNP distance).  This is the foundation for longitudinal strain
+#   assembly-to-assembly dnadiff SNP differences).  This is the foundation for longitudinal strain
 #   tracking: are participants colonised by the same or different strains
 #   at each timepoint?
 #
 # WHY THIS SCRIPT EXISTS:
 #   A central question of this project is whether the same bacterial strain
-#   persists within a host over time.  If the same ST131 causes both ASB
-#   at T0 and UTI at T2, that is biologically very different from a new
+#   persists within a host over time.  If the same ST131 is present during
+#   a Not_UTI episode at T0 and UTI at T2, that is biologically very different from a new
 #   ST73 arriving to cause UTI.  This script produces the pairwise_metrics
 #   table that scripts 15 and 16 use to define strain persistence and
 #   phenotype-switch events.
 #
 # INPUTS:
-#   - assembly_metadata.csv
+#   - results/qc/canonical_assembly_selection.csv
 #   - results/clinical/status_map.csv
-#   - results/mlst/mlst_all.tsv
+#   - results/mlst/mlst_provider_preferred.csv
 #   - results/vf/vf_pa_all.csv
 #   - results/plasmids/plasmidfinder_presence_absence.csv
 #
@@ -63,6 +63,13 @@ if (!requireNamespace("optparse", quietly = TRUE)) {
 
 source("11_compare_strains_helpers.R")
 
+detected_physical_cores <- suppressWarnings(parallel::detectCores(logical = FALSE))
+default_pair_workers <- if (length(detected_physical_cores) != 1L || is.na(detected_physical_cores)) {
+  1L
+} else {
+  max(1L, min(8L, as.integer(detected_physical_cores) - 1L))
+}
+
 opt_list <- list(
   optparse::make_option(c("--pairs_csv"),
     type = "character", default = NA,
@@ -79,10 +86,6 @@ opt_list <- list(
   optparse::make_option(c("--between"),
     action = "store_true", default = FALSE,
     help = "Include between-participant pairs at matching timepoints"
-  ),
-  optparse::make_option(c("--prefer_assembler"),
-    type = "character", default = "flye",
-    help = "Assembler priority (default: flye)"
   ),
   optparse::make_option(c("--min_vf_prev"),
     type = "double", default = NA,
@@ -101,8 +104,12 @@ opt_list <- list(
     help = "Identity threshold for 'Same' (default: 99.9)"
   ),
   optparse::make_option(c("--snp_thresh"),
-    type = "integer", default = 50,
-    help = "SNP threshold for 'Same' (default: 50)"
+    type = "integer", default = SAME_STRAIN_SNP_THRESHOLD,
+    help = sprintf("Operational SNP threshold for 'Same' (default: %d; requires study-specific calibration)", SAME_STRAIN_SNP_THRESHOLD)
+  ),
+  optparse::make_option(c("--workers"),
+    type = "integer", default = default_pair_workers,
+    help = "Parallel pair workers on macOS/Linux (default: min(physical cores - 1, 8)); Windows uses one worker"
   )
 )
 
@@ -110,7 +117,11 @@ opt <- optparse::parse_args(optparse::OptionParser(option_list = opt_list))
 
 outdir <- opt$outdir
 safe_dir_create(outdir)
-cache_dir <- file.path(outdir, "nucmer_cache")
+archive_dir <- archive_legacy_strain_outputs(outdir)
+if (!is.null(archive_dir)) timestamp_msg("Archived pre-provenance outputs in ", archive_dir)
+# Keep the legacy key-only nucmer_cache untouched.  This versioned directory is
+# the only cache read by the SHA-256 provenance workflow.
+cache_dir <- file.path(outdir, "dnadiff_cache_sha256_v1")
 safe_dir_create(cache_dir)
 
 timestamp_msg("Loading core tables …")
@@ -134,7 +145,11 @@ parse_csv_pairs <- function(path) {
 
 parse_participants <- function(participants_str, timepoints_str, between = FALSE) {
   available_assemblies <- core$assemblies %>%
-    filter(usable_fasta_path(full_path))
+    filter(
+      selected_canonical %in% TRUE,
+      QC_PASS %in% TRUE,
+      usable_fasta_path(full_path)
+    )
 
   if (participants_str == "ALL") {
     pids <- available_assemblies$Participant_id %>%
@@ -214,6 +229,7 @@ if (!is.na(opt$pairs_csv)) {
 }
 
 if (!nrow(pairs)) stop("No pairs to compare after parsing input")
+pairs <- pairs %>% distinct()
 
 # ----- prevalence filtering for VF / Inc -------------------------------------
 vf_wide <- core$vf_pa
@@ -231,7 +247,7 @@ inc_pa <- core$inc_pa
 # ----- resolve a per-sample row for each side ---------------------------------
 resolve_side <- function(pid, tp) {
   tp_chr <- as.character(tp)
-  row <- resolve_sample(pid, tp_chr, core$assemblies, prefer_assembler = opt$prefer_assembler)
+  row <- resolve_sample(pid, tp_chr, core$assemblies)
   if (is.null(row)) {
     return(NULL)
   }
@@ -253,15 +269,34 @@ compute_pair <- function(pidA, tpA, pidB, tpB) {
   B <- as_tibble(B)
 
   # MLST
-  st_A <- core$mlst$ST[match(A$Isolate_ID, core$mlst$Isolate_ID)]
-  st_B <- core$mlst$ST[match(B$Isolate_ID, core$mlst$Isolate_ID)]
+  mlst_idx_A <- match(A$Isolate_ID, core$mlst$Isolate_ID)
+  mlst_idx_B <- match(B$Isolate_ID, core$mlst$Isolate_ID)
+  st_A <- core$mlst$ST[mlst_idx_A]
+  st_B <- core$mlst$ST[mlst_idx_B]
+  st_source_A <- if ("ST_source" %in% names(core$mlst)) core$mlst$ST_source[mlst_idx_A] else NA_character_
+  st_source_B <- if ("ST_source" %in% names(core$mlst)) core$mlst$ST_source[mlst_idx_B] else NA_character_
+  st_provider_A <- if ("ST_provider" %in% names(core$mlst)) core$mlst$ST_provider[mlst_idx_A] else NA_character_
+  st_provider_B <- if ("ST_provider" %in% names(core$mlst)) core$mlst$ST_provider[mlst_idx_B] else NA_character_
+  st_local_A <- if ("ST_local" %in% names(core$mlst)) core$mlst$ST_local[mlst_idx_A] else NA_character_
+  st_local_B <- if ("ST_local" %in% names(core$mlst)) core$mlst$ST_local[mlst_idx_B] else NA_character_
   ST_equal <- !is.na(st_A) && !is.na(st_B) && st_A == st_B
 
   # dnadiff
-  id_res <- tibble(AvgIdentity = NA_real_, TotalSNPs = NA_real_)
+  id_res <- empty_dnadiff_result()
   if (tools$dnadiff) {
     key <- paste0(A$SampleKey, "__vs__", B$SampleKey)
-    id_res <- run_dnadiff(A$full_path, B$full_path, cache_dir, key)
+    fp_A <- list(
+      path = A$full_path[[1]], sha256 = A$fasta_sha256[[1]],
+      size_bytes = A$fasta_size_bytes[[1]], mtime_utc = A$fasta_mtime_utc[[1]]
+    )
+    fp_B <- list(
+      path = B$full_path[[1]], sha256 = B$fasta_sha256[[1]],
+      size_bytes = B$fasta_size_bytes[[1]], mtime_utc = B$fasta_mtime_utc[[1]]
+    )
+    id_res <- run_dnadiff(
+      A$full_path[[1]], B$full_path[[1]], cache_dir, key,
+      a_fingerprint = fp_A, b_fingerprint = fp_B
+    )
   }
 
   # mash
@@ -273,7 +308,10 @@ compute_pair <- function(pidA, tpA, pidB, tpB) {
 
   # Focus genes (optional)
   focus_j <- list(jaccard = NA_real_, n_int = NA_integer_, n_union = NA_integer_)
-  focus_file <- file.path(DIR_VF, "diff_focus_genes_UTI_vs_ASB_fisher.csv")
+  focus_file <- c(
+    file.path(DIR_VF, "diff_focus_genes_UTI_vs_Not_UTI_glmm.csv")
+  )
+  focus_file <- focus_file[file.exists(focus_file)][1]
   if (file.exists(focus_file)) {
     foc <- readr::read_csv(focus_file, show_col_types = FALSE) %>%
       select(FocusKey = any_of(c("FocusKey", "GENE"))) %>%
@@ -352,15 +390,41 @@ compute_pair <- function(pidA, tpA, pidB, tpB) {
     Timepoint_A = as.character(tpA),
     SampleKey_A = A$SampleKey,
     Isolate_ID_A = A$Isolate_ID,
+    Assembler_A = as.character(A$assembler),
+    Fasta_path_A = A$full_path,
+    Fasta_SHA256_A = A$fasta_sha256,
+    Fasta_size_bytes_A = A$fasta_size_bytes,
+    Fasta_mtime_utc_A = A$fasta_mtime_utc,
+    Selected_canonical_A = A$selected_canonical,
+    QC_PASS_A = A$QC_PASS,
     ST_A = st_A,
+    ST_source_A = st_source_A,
+    ST_provider_A = st_provider_A,
+    ST_local_A = st_local_A,
     Participant_id_B = pidB,
     Timepoint_B = as.character(tpB),
     SampleKey_B = B$SampleKey,
     Isolate_ID_B = B$Isolate_ID,
+    Assembler_B = as.character(B$assembler),
+    Fasta_path_B = B$full_path,
+    Fasta_SHA256_B = B$fasta_sha256,
+    Fasta_size_bytes_B = B$fasta_size_bytes,
+    Fasta_mtime_utc_B = B$fasta_mtime_utc,
+    Selected_canonical_B = B$selected_canonical,
+    QC_PASS_B = B$QC_PASS,
     ST_B = st_B,
+    ST_source_B = st_source_B,
+    ST_provider_B = st_provider_B,
+    ST_local_B = st_local_B,
     ST_equal = ST_equal,
     AvgIdentity = id_res$AvgIdentity,
     TotalSNPs = id_res$TotalSNPs,
+    dnadiff_report_path = id_res$dnadiff_report_path,
+    dnadiff_sidecar_path = id_res$dnadiff_sidecar_path,
+    dnadiff_report_sha256 = id_res$dnadiff_report_sha256,
+    dnadiff_cache_signature = id_res$dnadiff_cache_signature,
+    dnadiff_cache_status = id_res$dnadiff_cache_status,
+    dnadiff_version = id_res$dnadiff_version,
     MashDistance = mash_d,
     VF_Jaccard = vf_j$jaccard,
     VF_Overlap_A = vf_j$n_int, # store intersection count as A for shorthand
@@ -373,7 +437,23 @@ compute_pair <- function(pidA, tpA, pidB, tpB) {
 }
 
 timestamp_msg("Computing pairwise metrics for ", nrow(pairs), " pairs …")
-pair_metrics <- purrr::pmap_dfr(list(pairs$Participant_id_A, pairs$Timepoint_A, pairs$Participant_id_B, pairs$Timepoint_B), compute_pair)
+workers <- max(1L, as.integer(opt$workers))
+if (.Platform$OS.type == "windows") workers <- 1L
+workers <- min(workers, nrow(pairs))
+pair_indices <- seq_len(nrow(pairs))
+compute_pair_index <- function(i) {
+  compute_pair(
+    pairs$Participant_id_A[[i]], pairs$Timepoint_A[[i]],
+    pairs$Participant_id_B[[i]], pairs$Timepoint_B[[i]]
+  )
+}
+pair_list <- if (workers > 1L) {
+  timestamp_msg("Using ", workers, " forked workers; output row order remains input-pair order.")
+  parallel::mclapply(pair_indices, compute_pair_index, mc.cores = workers, mc.preschedule = TRUE)
+} else {
+  lapply(pair_indices, compute_pair_index)
+}
+pair_metrics <- bind_rows(pair_list)
 
 if (!nrow(pair_metrics)) stop("No metrics computed – check inputs and availability of assemblies")
 
@@ -388,9 +468,117 @@ cls <- purrr::pmap_df(pair_metrics, apply_class)
 pair_metrics <- bind_cols(pair_metrics, cls)
 
 # within vs between label
-pair_metrics <- pair_metrics %>% mutate(within_participant = Participant_id_A == Participant_id_B)
+pair_metrics <- pair_metrics %>%
+  mutate(
+    within_participant = Participant_id_A == Participant_id_B,
+    ST_A_context = normalise_strain_st_label(ST_A),
+    ST_B_context = normalise_strain_st_label(ST_B),
+    snp_strain_context = case_when(
+      is.na(TotalSNPs) ~ "Missing SNP evidence",
+      TotalSNPs <= opt$snp_thresh ~ "Strong same strain",
+      TRUE ~ "Above same-strain SNP threshold"
+    ),
+    st_lineage_context = case_when(
+      is.na(ST_A_context) | is.na(ST_B_context) ~ "Missing ST evidence",
+      ST_A_context == ST_B_context ~ "Same ST",
+      TRUE ~ "Different ST"
+    ),
+    pair_interpretation = case_when(
+      snp_strain_context == "Strong same strain" & st_lineage_context == "Different ST" ~
+        "Conflict: SNP same-strain but ST differs",
+      snp_strain_context == "Strong same strain" ~
+        "Strong same strain",
+      snp_strain_context != "Strong same strain" &
+        (Classification == "Different" | st_lineage_context == "Different ST") ~
+        "Replacement likely",
+      snp_strain_context == "Above same-strain SNP threshold" & st_lineage_context == "Same ST" ~
+        "Same lineage, not same strain by SNP",
+      snp_strain_context == "Missing SNP evidence" & st_lineage_context == "Same ST" ~
+        "ST-consistent, SNP missing",
+      snp_strain_context == "Missing SNP evidence" & st_lineage_context == "Missing ST evidence" &
+        (is.na(Classification) | Classification == "") ~
+        "Missing strain metrics",
+      snp_strain_context == "Above same-strain SNP threshold" ~
+        "Above same-strain SNP threshold",
+      snp_strain_context == "Missing SNP evidence" ~
+        "Missing SNP evidence",
+      TRUE ~ "Missing strain metrics"
+    ),
+    same_strain_evidence = pair_interpretation,
+    strain_context_level = factor(
+      pair_interpretation,
+      levels = c("Strong same strain",
+                 "Conflict: SNP same-strain but ST differs",
+                 "Same lineage, not same strain by SNP",
+                 "ST-consistent, SNP missing",
+                 "Above same-strain SNP threshold",
+                 "Missing SNP evidence",
+                 "Replacement likely",
+                 "Missing strain metrics")
+    ),
+    replacement_flag = pair_interpretation == "Replacement likely"
+  ) %>%
+  select(-ST_A_context, -ST_B_context)
 
-# ----- write outputs ----------------------------------------------------------
+# ----- provenance validation and write outputs -------------------------------
+input_manifest <- core$assemblies %>%
+  transmute(
+    Participant_id, tp_lab, Isolate_ID, assembler,
+    selected_canonical, QC_PASS,
+    Fasta_path = full_path,
+    Fasta_SHA256 = fasta_sha256,
+    Fasta_size_bytes = fasta_size_bytes,
+    Fasta_mtime_utc = fasta_mtime_utc
+  ) %>%
+  arrange(Participant_id, tp_lab)
+safe_write_csv(input_manifest, file.path(outdir, "pairwise_input_manifest.csv"))
+
+endpoint_ok <- with(
+  pair_metrics,
+  Selected_canonical_A %in% TRUE & QC_PASS_A %in% TRUE &
+    Selected_canonical_B %in% TRUE & QC_PASS_B %in% TRUE
+)
+cache_ok <- if (tools$dnadiff) {
+  vapply(seq_len(nrow(pair_metrics)), function(i) {
+    spec <- dnadiff_cache_spec(
+      pair_metrics$Fasta_path_A[[i]], pair_metrics$Fasta_path_B[[i]], cache_dir,
+      paste0(pair_metrics$SampleKey_A[[i]], "__vs__", pair_metrics$SampleKey_B[[i]]),
+      a_fingerprint = list(
+        path = pair_metrics$Fasta_path_A[[i]], sha256 = pair_metrics$Fasta_SHA256_A[[i]],
+        size_bytes = pair_metrics$Fasta_size_bytes_A[[i]], mtime_utc = pair_metrics$Fasta_mtime_utc_A[[i]]
+      ),
+      b_fingerprint = list(
+        path = pair_metrics$Fasta_path_B[[i]], sha256 = pair_metrics$Fasta_SHA256_B[[i]],
+        size_bytes = pair_metrics$Fasta_size_bytes_B[[i]], mtime_utc = pair_metrics$Fasta_mtime_utc_B[[i]]
+      )
+    )
+    dnadiff_cache_is_valid(spec) &&
+      identical(spec$cache_signature, pair_metrics$dnadiff_cache_signature[[i]])
+  }, logical(1))
+} else {
+  rep(NA, nrow(pair_metrics))
+}
+provenance_audit <- tibble(
+  metric = c(
+    "selected_qc_passing_input_assemblies", "pairwise_rows",
+    "noncanonical_endpoint_rows", "stale_or_missing_dnadiff_cache_rows"
+  ),
+  value = c(
+    nrow(input_manifest), nrow(pair_metrics), sum(!endpoint_ok),
+    if (tools$dnadiff) sum(!cache_ok) else NA_integer_
+  ),
+  requirement = c(
+    "All manifest rows selected_canonical=TRUE and QC_PASS=TRUE",
+    "One row per requested unique pair",
+    "Must equal 0", "Must equal 0 when dnadiff is available"
+  )
+)
+safe_write_csv(provenance_audit, file.path(outdir, "pairwise_provenance_audit.csv"))
+if (any(!endpoint_ok)) stop("Provenance audit failed: noncanonical or QC-failing endpoint detected.")
+if (tools$dnadiff && any(!cache_ok)) {
+  stop("Provenance audit failed: stale, missing, or mismatched dnadiff cache detected.")
+}
+
 safe_write_csv(pair_metrics, file.path(outdir, "pairwise_metrics.csv"))
 
 sum_counts <- pair_metrics %>%
@@ -563,7 +751,9 @@ readme <- c(
   paste0("Generated: ", Sys.time()),
   paste0("Command: ", cmd_line),
   paste0("Identity threshold: ", opt$id_thresh, "; SNP threshold: ", opt$snp_thresh),
-  paste0("Assembler preference: ", opt$prefer_assembler),
+  "Assemblies: selected_canonical=TRUE and QC_PASS=TRUE only; no assembler fallback",
+  paste0("dnadiff cache: SHA-256 input-bound cache in ", cache_dir),
+  paste0("Workers: ", workers),
   paste0("min_vf_prev: ", opt$min_vf_prev, "; min_inc_prev: ", opt$min_inc_prev),
   "See pairwise_metrics.csv, summary_counts.csv, and plots/ for outputs."
 )
