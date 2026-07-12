@@ -35,8 +35,41 @@ read_optional <- function(path) {
 status <- read_optional(FILE_STATUS_MAP)
 poster <- read_optional(FILE_STATUS_MAP_POSTER)
 vf_ready <- read_optional(FILE_VF_READY)
+canonical_file <- file.path(DIR_QC, "canonical_assembly_selection.csv")
+canonical_selection <- read_optional(canonical_file)
 table02 <- read_optional(file.path(DIR_RESULTS, "summary", "table_02_clinical_status_counts.csv"))
 table10 <- read_optional(file.path(DIR_RESULTS, "summary", "table_10_not_uti_uti_transition_cases.csv"))
+
+active_longcycler_keys <- NULL
+selected_non_longcycler <- NULL
+add_check("canonical assembly selection exists", !is.null(canonical_selection), canonical_file)
+if (!is.null(canonical_selection)) {
+  assembler_col <- intersect(c("assembler", "Assembler"), names(canonical_selection))[1]
+  canonical_fields_ok <- !is.na(assembler_col) &&
+    all(c("selected_canonical", "QC_PASS", "Participant_id", "tp_lab") %in% names(canonical_selection))
+  add_check("canonical selection has Longcycler-primary fields", canonical_fields_ok,
+            paste(setdiff(c("selected_canonical", "QC_PASS", "Participant_id", "tp_lab"),
+                          names(canonical_selection)), collapse = ", "))
+  if (canonical_fields_ok) {
+    selected_active <- canonical_selection %>%
+      mutate(
+        Participant_id = as.character(.data$Participant_id),
+        tp_lab = normalise_timepoint_preserve_events(.data$tp_lab),
+        selected_canonical = as_pipeline_bool(.data$selected_canonical),
+        QC_PASS = as_pipeline_bool(.data$QC_PASS),
+        active_assembler = str_to_lower(as.character(.data[[assembler_col]]))
+      ) %>%
+      filter(.data$selected_canonical %in% TRUE, .data$QC_PASS %in% TRUE)
+    selected_non_longcycler <- selected_active %>%
+      filter(.data$active_assembler != "longcycler" | is.na(.data$active_assembler))
+    active_longcycler_keys <- selected_active %>%
+      filter(.data$active_assembler == "longcycler") %>%
+      distinct(.data$Participant_id, .data$tp_lab)
+    add_check("selected QC-pass primary assemblies are Longcycler only",
+              nrow(selected_non_longcycler) == 0,
+              sprintf("%d selected non-Longcycler row(s)", nrow(selected_non_longcycler)))
+  }
+}
 
 add_check("status_map exists", !is.null(status), FILE_STATUS_MAP)
 if (!is.null(status)) {
@@ -119,14 +152,37 @@ if (!is.null(vf_ready)) {
                   "genomics_expected_include") %in% names(vf_ready)),
             paste(setdiff(c("analysis_include_primary", "analysis_exclusion_reason",
                             "duplicate_role", "genomics_expected_include"), names(vf_ready)), collapse = ", "))
-  add_check("primary VF/model denominator expected after manual exclusions",
-            nrow(vf_primary) == 556 &&
-              sum(vf_primary$UTI_Status == "UTI", na.rm = TRUE) == 17 &&
-              sum(vf_primary$UTI_Status == "Not_UTI", na.rm = TRUE) == 539,
-            sprintf("n=%d UTI=%d Not_UTI=%d",
-                    nrow(vf_primary),
-                    sum(vf_primary$UTI_Status == "UTI", na.rm = TRUE),
-                    sum(vf_primary$UTI_Status == "Not_UTI", na.rm = TRUE)))
+  if (!is.null(active_longcycler_keys) && !is.null(status)) {
+    vf_primary <- vf_primary %>%
+      mutate(
+        Participant_id = as.character(.data$Participant_id),
+        tp_lab = normalise_timepoint_preserve_events(.data$tp_lab)
+      )
+    expected_active_status <- filter_primary_analysis(status) %>%
+      mutate(
+        Participant_id = as.character(.data$Participant_id),
+        tp_lab = normalise_timepoint_preserve_events(.data$tp_lab)
+      ) %>%
+      semi_join(active_longcycler_keys, by = c("Participant_id", "tp_lab"))
+    expected_active_total <- nrow(active_longcycler_keys)
+    expected_active_uti <- sum(expected_active_status$UTI_Status == "UTI", na.rm = TRUE)
+    expected_active_not_uti <- sum(expected_active_status$UTI_Status == "Not_UTI", na.rm = TRUE)
+    vf_keys <- vf_primary %>% distinct(.data$Participant_id, .data$tp_lab)
+    key_sets_match <- nrow(anti_join(vf_keys, active_longcycler_keys,
+                                    by = c("Participant_id", "tp_lab"))) == 0 &&
+      nrow(anti_join(active_longcycler_keys, vf_keys,
+                    by = c("Participant_id", "tp_lab"))) == 0
+    add_check("primary VF/model keys equal the active selected QC-pass Longcycler manifest",
+              key_sets_match && nrow(vf_primary) == expected_active_total,
+              sprintf("VF n=%d; active Longcycler n=%d", nrow(vf_primary), expected_active_total))
+    add_check("active Longcycler VF/model status counts match the primary status map",
+              sum(vf_primary$UTI_Status == "UTI", na.rm = TRUE) == expected_active_uti &&
+                sum(vf_primary$UTI_Status == "Not_UTI", na.rm = TRUE) == expected_active_not_uti,
+              sprintf("observed UTI=%d Not_UTI=%d; expected UTI=%d Not_UTI=%d",
+                      sum(vf_primary$UTI_Status == "UTI", na.rm = TRUE),
+                      sum(vf_primary$UTI_Status == "Not_UTI", na.rm = TRUE),
+                      expected_active_uti, expected_active_not_uti))
+  }
 }
 
 quarantine <- read_optional(FILE_QUARANTINED_FASTA_EXPECTATIONS)

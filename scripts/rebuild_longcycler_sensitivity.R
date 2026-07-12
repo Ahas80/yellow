@@ -1,10 +1,12 @@
 #!/usr/bin/env Rscript
 # ==============================================================================
-# Rebuild the Longcycler-only sensitivity denominator and longitudinal pairs
+# Verify the Longcycler-primary denominator and rebuild compatibility exports
 # ==============================================================================
-# This is a restricted sensitivity analysis of the executed mixed-canonical
-# workflow. It does not redefine the project's primary clinical labels and it
-# does not replace the mixed 556-row analysis.
+# The primary genomic workflow is now selected QC-passing Longcycler only.
+# This script independently rebuilds its episode and transition tables, verifies
+# exact compatibility with the primary timeline, and preserves the historical
+# results/sensitivity/longcycler_only export paths for downstream compatibility.
+# It must never create a second restriction, rescue Flye, or alter clinical labels.
 
 suppressPackageStartupMessages({
   library(dplyr)
@@ -74,20 +76,35 @@ canonical <- read_csv(required_files[["canonical"]], show_col_types = FALSE) %>%
     tp_lab = as.character(tp_lab),
     selected_canonical = as_flag(selected_canonical),
     QC_PASS = as_flag(QC_PASS),
-    assembler = str_to_lower(coalesce(as.character(assembler), as.character(Assembler))),
-    fasta_path = coalesce(as.character(fasta_path), as.character(full_path))
+    assembler = str_to_lower(coalesce(
+      if ("assembler" %in% names(.)) as.character(assembler) else NA_character_,
+      if ("Assembler" %in% names(.)) as.character(Assembler) else NA_character_
+    )),
+    fasta_path = coalesce(
+      if ("fasta_path" %in% names(.)) as.character(fasta_path) else NA_character_,
+      if ("full_path" %in% names(.)) as.character(full_path) else NA_character_
+    )
   )
 
 selected <- canonical %>%
-  filter(selected_canonical, QC_PASS, file.exists(fasta_path))
+  filter(selected_canonical, QC_PASS)
 
-longcycler <- selected %>%
-  filter(assembler == "longcycler") %>%
-  distinct(Participant_id, tp_lab, .keep_all = TRUE)
+if (nrow(selected) == 0) stop("Canonical manifest contains no selected QC-passing primary rows")
+if (any(is.na(selected$assembler) | selected$assembler != "longcycler")) {
+  stop("Longcycler-primary verification found selected Flye, combined, or unknown assembler rows")
+}
+if (any(is.na(selected$fasta_path) | !file.exists(selected$fasta_path))) {
+  stop("Longcycler-primary manifest contains a missing selected FASTA")
+}
+if (anyDuplicated(selected[c("Participant_id", "tp_lab")])) {
+  stop("Longcycler-primary manifest contains duplicate participant-timepoint rows")
+}
 
-if (nrow(selected) != 556L) stop("Expected 556 selected canonical rows; observed ", nrow(selected))
-if (nrow(longcycler) != 532L) stop("Expected 532 selected Longcycler rows; observed ", nrow(longcycler))
-if (n_distinct(longcycler$Participant_id) != 161L) stop("Expected 161 Longcycler participants")
+# Compatibility alias: this is the complete primary manifest, not a restriction.
+longcycler <- selected %>% distinct(Participant_id, tp_lab, .keep_all = TRUE)
+if (nrow(longcycler) != nrow(selected)) {
+  stop("Longcycler compatibility alias changed the primary denominator")
+}
 
 status <- read_csv(required_files[["status"]], show_col_types = FALSE) %>%
   prefer_primary_uti_status() %>%
@@ -115,8 +132,18 @@ pairwise <- read_csv(required_files[["pairwise"]], show_col_types = FALSE) %>%
     pair_key = unordered_pair_key(Participant_id_A, Timepoint_A, Participant_id_B, Timepoint_B)
   )
 
-if (nrow(pairwise) != 963L) stop("Expected 963 current canonical within-participant pairs; observed ", nrow(pairwise))
 if (anyDuplicated(pairwise$pair_key)) stop("pairwise_metrics.csv contains duplicate unordered endpoint pairs")
+
+expected_pairwise_n <- longcycler %>%
+  count(Participant_id, name = "n_episodes") %>%
+  summarise(n_pairs = sum(n_episodes * (n_episodes - 1L) / 2L)) %>%
+  pull(n_pairs)
+if (nrow(pairwise) != expected_pairwise_n) {
+  stop(
+    "Primary pairwise denominator does not match all within-participant combinations from the Longcycler manifest: expected ",
+    expected_pairwise_n, ", observed ", nrow(pairwise)
+  )
+}
 
 provenance_cols <- c(
   "Assembler_A", "Assembler_B", "Fasta_path_A", "Fasta_path_B",
@@ -133,8 +160,11 @@ if (any(is.na(pairwise$Fasta_SHA256_A) | pairwise$Fasta_SHA256_A == "" |
   stop("Pairwise output contains missing FASTA fingerprints")
 }
 if (any(!file.exists(pairwise$dnadiff_report_path))) stop("Pairwise output points to missing dnadiff reports")
+if (any(str_to_lower(pairwise$Assembler_A) != "longcycler" |
+        str_to_lower(pairwise$Assembler_B) != "longcycler")) {
+  stop("Primary pairwise output contains a non-Longcycler endpoint")
+}
 
-lc_keys <- longcycler %>% select(Participant_id, tp_lab)
 lc_rows <- vf_ready %>%
   inner_join(
     longcycler %>%
@@ -143,7 +173,12 @@ lc_rows <- vf_ready %>%
     by = c("Participant_id", "tp_lab")
   )
 
-if (nrow(lc_rows) != 532L) stop("Longcycler-to-VF join did not retain exactly 532 rows")
+if (nrow(lc_rows) != nrow(longcycler)) {
+  stop(
+    "Longcycler-primary manifest-to-VF join changed the denominator: manifest=",
+    nrow(longcycler), ", VF-ready=", nrow(lc_rows)
+  )
+}
 if (anyDuplicated(lc_rows[c("Participant_id", "tp_lab")])) stop("Duplicate Longcycler episode keys")
 
 lc_rows <- lc_rows %>%
@@ -195,7 +230,7 @@ transitions <- lc_rows %>%
     time_order_from = time_order,
     time_order_to,
     time_order_source = paste(time_order_source, time_order_source_to, sep = " -> "),
-    comparison_scope = "adjacent among retained Longcycler-selected episodes",
+    comparison_scope = "adjacent in the Longcycler-primary timeline",
     ST_from = normalise_st(ST),
     ST_to = normalise_st(ST_to),
     assembler_from = assembler,
@@ -218,15 +253,27 @@ transitions <- lc_rows %>%
     strict_same_strain = !is.na(TotalSNPs) & TotalSNPs <= same_strain_snp_threshold
   )
 
-if (nrow(transitions) != 371L) stop("Expected 371 Longcycler transitions; observed ", nrow(transitions))
-if (n_distinct(transitions$Participant_id) != 139L) stop("Expected 139 transition participants")
+expected_transition_n <- lc_rows %>%
+  count(Participant_id, name = "n_episodes") %>%
+  summarise(n_transitions = sum(pmax(n_episodes - 1L, 0L))) %>%
+  pull(n_transitions)
+expected_transition_participants <- lc_rows %>%
+  count(Participant_id, name = "n_episodes") %>%
+  filter(n_episodes >= 2L) %>%
+  summarise(n = n()) %>%
+  pull(n)
+if (nrow(transitions) != expected_transition_n) {
+  stop("Rebuilt Longcycler-primary transition count is inconsistent with the episode manifest")
+}
+if (n_distinct(transitions$Participant_id) != expected_transition_participants) {
+  stop("Rebuilt Longcycler-primary transition participant count is inconsistent with the episode manifest")
+}
 if (any(is.na(transitions$TotalSNPs))) stop("Fresh pairwise SNP evidence is missing for one or more Longcycler transitions")
 if (any(transitions$Assembler_A != "longcycler" | transitions$Assembler_B != "longcycler")) {
   stop("Longcycler transition joined to a non-Longcycler pairwise endpoint")
 }
 
 not_uti_to_uti <- transitions %>% filter(status_from == "Not_UTI", status_to == "UTI")
-if (nrow(not_uti_to_uti) != 9L) stop("Expected 9 Longcycler Not_UTI-to-UTI transitions; observed ", nrow(not_uti_to_uti))
 
 target_checks <- tibble::tribble(
   ~Participant_id, ~tp_from, ~tp_to, ~expected_snps,

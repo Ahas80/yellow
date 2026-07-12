@@ -254,9 +254,13 @@ progress_tick <- function(stage, pid = NA_character_, status = "tick") {
 
 # --- Sample Discovery ---
 discover_samples <- function(asm_dir = ASM_DIR, reads_dir = READS_DIR, pids = "ALL") {
-    msg("Discovering assemblies and reads…")
+    msg("Loading Longcycler-only analysis assemblies and discovering reads…")
 
-    asm_files <- list.files(asm_dir, pattern = "\\.(fa|fasta|fna)(\\.gz)?$", full.names = TRUE)
+    if (!exists("load_analysis_assemblies", mode = "function")) {
+        stop("Longcycler analysis-manifest helper is unavailable; source 00_config.R first.")
+    }
+    analysis_manifest <- load_analysis_assemblies(FILE_ANALYSIS_ASSEMBLY_MANIFEST, require_files = TRUE)
+    asm_files <- analysis_manifest$full_path
     reads_R1 <- list.files(reads_dir, pattern = "_R1\\.(fastq|fq)(\\.gz)?$", full.names = TRUE)
     reads_R2 <- gsub("_R1\\.(fastq|fq)(\\.gz)?$", "_R2.\\1\\2", reads_R1, perl = TRUE)
     paired_ok <- file.exists(reads_R2)
@@ -300,9 +304,9 @@ discover_samples <- function(asm_dir = ASM_DIR, reads_dir = READS_DIR, pids = "A
         if (!"R2" %in% names(samples)) samples$R2 <- NA_character_
     }
 
-    # Attach metadata
-    if (file.exists("assembly_metadata.csv") && "assembly" %in% names(samples)) {
-        assembly_raw <- suppressMessages(readr::read_csv("assembly_metadata.csv", show_col_types = FALSE))
+    # Attach metadata from the validated Longcycler-only manifest.
+    if (nrow(analysis_manifest) > 0 && "assembly" %in% names(samples)) {
+        assembly_raw <- analysis_manifest
         file_col <- intersect(c("file_name", "file", "assembly", "fasta", "fasta_file"), names(assembly_raw))
         if (length(file_col)) {
             sid_col <- intersect(c("Isolate_ID", "SampleID", "Sample_ID", "IsolateID"), names(assembly_raw))
@@ -310,7 +314,11 @@ discover_samples <- function(asm_dir = ASM_DIR, reads_dir = READS_DIR, pids = "A
 
             assembly_df <- assembly_raw %>%
                 dplyr::mutate(
-                    assembly = file.path(asm_dir, .data[[file_col[1]]]),
+                    assembly = if ("full_path" %in% names(assembly_raw)) {
+                        normalizePath(.data$full_path, winslash = "/", mustWork = FALSE)
+                    } else {
+                        normalizePath(file.path(asm_dir, .data[[file_col[1]]]), winslash = "/", mustWork = FALSE)
+                    },
                     SampleID_meta = if (!is.null(sid_col)) as.character(.data[[sid_col]]) else tools::file_path_sans_ext(.data[[file_col[1]]]),
                     Participant_id_meta = if ("Participant_id" %in% names(.)) as.character(.data[["Participant_id"]]) else NA_character_,
                     Timepoint_meta = if ("Timepoint" %in% names(.)) as.character(.data[["Timepoint"]]) else NA_character_
@@ -404,9 +412,24 @@ load_qc_summary <- function(qc_file = NULL) {
 }
 
 get_valid_genomes <- function(pid, qc_df) {
-    qc_df %>%
-        dplyr::filter(Participant_id == pid, QC_PASS == TRUE) %>%
-        dplyr::pull(full_path)
+    required <- c("Participant_id", "QC_PASS", "selected_canonical", "full_path")
+    missing <- setdiff(required, names(qc_df))
+    if (length(missing)) stop("get_valid_genomes requires Longcycler manifest columns: ", paste(missing, collapse = ", "))
+    candidate <- qc_df %>%
+        dplyr::filter(
+            as.character(Participant_id) == as.character(pid),
+            QC_PASS %in% TRUE,
+            selected_canonical %in% TRUE
+        )
+    assert_analysis_assembly_manifest(
+        candidate,
+        context = paste0("get_valid_genomes participant ", pid),
+        require_selected = TRUE,
+        require_qc = TRUE,
+        require_files = TRUE,
+        require_unique_episode = TRUE
+    )
+    candidate$full_path
 }
 
 # 4. Tool Checks

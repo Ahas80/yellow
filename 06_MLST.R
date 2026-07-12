@@ -23,8 +23,8 @@
 #
 # Biological/Statistical purpose:
 #   - Uses provider/RIVM MLST at PercGoodTargets >= 95 as the authoritative ST.
-#   - Uses local MLST only as an explicit labelled fallback when provider QC95 ST
-#     is missing.
+#   - Uses local MLST from the same selected QC-passing Longcycler FASTA only as
+#     an explicit labelled fallback when a Longcycler provider QC95 ST is missing.
 #   - Preserves ST_source/ST_provider/ST_local so analyses never silently mix
 #     local and provider nomenclature.
 # ==============================================================================
@@ -32,6 +32,7 @@
 source("00_config.R")
 
 suppressPackageStartupMessages({
+  library(dplyr)
   library(readr)
 })
 
@@ -51,15 +52,13 @@ source_guardrail <- file.path("scripts", "verify_mlst_source_usage.R")
 msg("Starting active RIVM/provider MLST pipeline.")
 msg("Active MLST target: %s", FILE_MLST_CANONICAL)
 
-if (!file.exists(FILE_MLST_LOCAL_CANONICAL)) {
-  msg(
-    "Local MLST provenance is missing (%s); running deprecated local mlst runner once for fallback evidence.",
-    FILE_MLST_LOCAL_CANONICAL
-  )
-  run_pipeline_script(local_runner, "Running deprecated local MLST provenance step.")
-} else {
-  msg("Using existing local MLST provenance: %s", FILE_MLST_LOCAL_CANONICAL)
-}
+# Always rebuild the local canonical table from the current selection manifest.
+# Per-FASTA calls remain cached by the helper, so this refresh is inexpensive
+# when sequences are unchanged and prevents a stale mixed-assembler denominator.
+run_pipeline_script(
+  local_runner,
+  "Refreshing local MLST provenance from selected QC-passing Longcycler FASTAs."
+)
 
 if (!file.exists(FILE_MLST_LOCAL_CANONICAL)) {
   stop("Local MLST provenance is still missing after attempted generation: ", FILE_MLST_LOCAL_CANONICAL)
@@ -80,6 +79,24 @@ source_counts <- if ("ST_source" %in% names(active_mlst)) {
   stop("Provider-preferred MLST output lacks ST_source: ", FILE_MLST_PROVIDER_PREFERRED)
 }
 
-msg("Active RIVM/provider MLST complete.")
+provider_rows <- active_mlst %>%
+  filter(ST_source == "provider_qc95")
+if (nrow(provider_rows) > 0 && any(
+  is.na(provider_rows$provider_assembler) |
+    tolower(provider_rows$provider_assembler) != "longcycler"
+)) {
+  stop("Active provider-primary MLST contains non-Longcycler provider provenance.")
+}
+
+active_assembler <- tolower(coalesce(
+  if ("assembler" %in% names(active_mlst)) as.character(active_mlst$assembler) else NA_character_,
+  if ("Assembler" %in% names(active_mlst)) as.character(active_mlst$Assembler) else NA_character_,
+  if ("local_assembler" %in% names(active_mlst)) as.character(active_mlst$local_assembler) else NA_character_
+))
+if (any(is.na(active_assembler) | active_assembler != "longcycler")) {
+  stop("Active MLST output contains non-Longcycler or missing canonical assembly provenance.")
+}
+
+msg("Active Longcycler-only RIVM/provider MLST complete.")
 msg("ST source counts: %s", paste(names(source_counts), as.integer(source_counts), sep = "=", collapse = "; "))
 msg("Use %s for downstream analyses.", FILE_MLST_PROVIDER_PREFERRED)

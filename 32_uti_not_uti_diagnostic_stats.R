@@ -112,6 +112,39 @@ status_all <- safe_read(FILE_STATUS_MAP, required = TRUE) %>%
 
 status_primary <- filter_primary_analysis(status_all)
 
+canonical_file <- file.path(DIR_QC, "canonical_assembly_selection.csv")
+canonical_selection <- safe_read(canonical_file, required = TRUE)
+assembler_col <- intersect(c("assembler", "Assembler"), names(canonical_selection))[1]
+if (is.na(assembler_col) ||
+    !all(c("selected_canonical", "QC_PASS", "Participant_id", "tp_lab") %in% names(canonical_selection))) {
+  stop("Canonical assembly selection lacks Longcycler-primary selection fields: ", canonical_file)
+}
+active_longcycler_keys <- canonical_selection %>%
+  mutate(
+    Participant_id = as.character(.data$Participant_id),
+    tp_lab = normalise_timepoint_preserve_events(.data$tp_lab),
+    selected_canonical = as_pipeline_bool(.data$selected_canonical),
+    QC_PASS = as_pipeline_bool(.data$QC_PASS),
+    active_assembler = str_to_lower(as.character(.data[[assembler_col]]))
+  ) %>%
+  filter(.data$selected_canonical %in% TRUE,
+         .data$QC_PASS %in% TRUE,
+         .data$active_assembler == "longcycler") %>%
+  distinct(.data$Participant_id, .data$tp_lab)
+if (nrow(active_longcycler_keys) == 0) {
+  stop("Canonical manifest contains no selected QC-passing Longcycler episode keys.")
+}
+
+expected_vf_status <- status_primary %>%
+  mutate(
+    Participant_id = as.character(.data$Participant_id),
+    tp_lab = normalise_timepoint_preserve_events(.data$tp_lab)
+  ) %>%
+  semi_join(active_longcycler_keys, by = c("Participant_id", "tp_lab"))
+if (nrow(expected_vf_status) != nrow(active_longcycler_keys)) {
+  stop("Not every active selected QC-pass Longcycler key has one primary clinical status row.")
+}
+
 vf_all <- safe_read(FILE_VF_READY, required = TRUE) %>%
   mutate(
     Participant_id = as.character(.data$Participant_id),
@@ -120,18 +153,36 @@ vf_all <- safe_read(FILE_VF_READY, required = TRUE) %>%
   prefer_primary_uti_status() %>%
   apply_manual_sample_curation(context = "32_vf_ready_all")
 
-vf <- filter_primary_genomics(vf_all)
+vf_primary_all <- filter_primary_genomics(vf_all) %>%
+  mutate(tp_lab = normalise_timepoint_preserve_events(.data$tp_lab))
+vf <- vf_primary_all %>%
+  semi_join(active_longcycler_keys, by = c("Participant_id", "tp_lab"))
+missing_active_vf <- active_longcycler_keys %>%
+  anti_join(vf %>% distinct(.data$Participant_id, .data$tp_lab),
+            by = c("Participant_id", "tp_lab"))
+if (nrow(missing_active_vf) > 0) {
+  stop("VF-ready data are missing ", nrow(missing_active_vf),
+       " active selected QC-pass Longcycler episode key(s).")
+}
+excluded_non_longcycler_vf <- vf_primary_all %>%
+  anti_join(active_longcycler_keys, by = c("Participant_id", "tp_lab"))
+if (nrow(excluded_non_longcycler_vf) > 0) {
+  msg("Excluded %d non-Longcycler-primary VF-ready row(s) from script 32.",
+      nrow(excluded_non_longcycler_vf))
+}
 
 score_file <- file.path(DIR_VF, "vf_score_table.csv")
 score_raw <- safe_read(score_file)
 score_df <- if (nrow(score_raw) > 0) {
-  clean_keyed(score_raw, context = "32_score_table", genomics = TRUE)
+  clean_keyed(score_raw, context = "32_score_table", genomics = TRUE) %>%
+    semi_join(active_longcycler_keys, by = c("Participant_id", "tp_lab"))
 } else {
   vf
 }
 
 model_denom <- safe_read(file.path(DIR_MODELS, "model_dataset_denominator.csv")) %>%
-  { if (nrow(.) > 0) clean_keyed(., context = "32_model_denominator", genomics = TRUE) else . }
+  { if (nrow(.) > 0) clean_keyed(., context = "32_model_denominator", genomics = TRUE) %>%
+      semi_join(active_longcycler_keys, by = c("Participant_id", "tp_lab")) else . }
 
 manual_exclusions <- safe_read(file.path(DIR_AUDIT, "primary_clinical_manual_exclusions.csv"))
 vf_manual_exclusions <- safe_read(file.path(DIR_AUDIT, "primary_vf_manual_exclusions.csv"))
@@ -148,7 +199,11 @@ vf_counts <- vf %>%
   tidyr::complete(UTI_Status = c("UTI", "Not_UTI", "<missing>"), fill = list(n = 0L))
 
 expected_clinical <- c(UTI = 18L, Not_UTI = 565L)
-expected_vf <- c(UTI = 17L, Not_UTI = 539L, `<missing>` = 0L)
+expected_vf <- c(
+  UTI = sum(expected_vf_status$UTI_Status == "UTI", na.rm = TRUE),
+  Not_UTI = sum(expected_vf_status$UTI_Status == "Not_UTI", na.rm = TRUE),
+  `<missing>` = 0L
+)
 
 clinical_named <- setNames(clinical_counts$n, clinical_counts$UTI_Status)
 vf_named <- setNames(vf_counts$n, vf_counts$UTI_Status)
@@ -156,7 +211,11 @@ if (!all(clinical_named[names(expected_clinical)] == expected_clinical)) {
   stop("Primary clinical counts changed unexpectedly. Expected 18 UTI and 565 Not_UTI.")
 }
 if (!all(vf_named[names(expected_vf)] == expected_vf)) {
-  stop("Primary VF counts changed unexpectedly. Expected 17 UTI, 539 Not_UTI, and 0 missing.")
+  stop(
+    "Active selected QC-pass Longcycler VF counts do not match the canonical manifest and primary status map. Expected ",
+    expected_vf[["UTI"]], " UTI, ", expected_vf[["Not_UTI"]],
+    " Not_UTI, and 0 missing."
+  )
 }
 
 score_candidates <- c(
@@ -944,7 +1003,8 @@ interpretation_table <- tibble::tribble(
   "Documents that UTI-1 is primary and UTI-2 is secondary duplicate QC only.",
   "Does not include UTI-2 in primary denominator.",
   "Sparse-count precision context", "approximate context", "interpretation calibration",
-  "Shows why many feature effects are unstable with 17 UTI VF rows.",
+  sprintf("Shows why many feature effects are unstable with %d active Longcycler UTI VF rows.",
+          sum(vf$UTI_Status == "UTI", na.rm = TRUE)),
   "Not a replacement for a formal sample-size or prospective power analysis."
 )
 write_csv(interpretation_table, file.path(DIR_VF, "uti_not_uti_test_interpretation_table.csv"))

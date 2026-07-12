@@ -160,8 +160,15 @@ ASSEMBLY_EXTENSIONS_GZ <- paste0(ASSEMBLY_EXTENSIONS, ".gz")
 ASSEMBLY_PATTERN <- paste0("\\.(", paste(c(ASSEMBLY_EXTENSIONS, ASSEMBLY_EXTENSIONS_GZ),
                                           collapse = "|"), ")$")
 
-# Known assembler labels used in FASTA filenames
-KNOWN_ASSEMBLERS <- c("flye", "longcycler")
+# Primary-analysis assembly policy. Generated metadata and QC products contain
+# only Longcycler assemblies; no alternative assembler is an analysis input.
+KNOWN_ASSEMBLERS <- c("longcycler")
+ANALYSIS_ASSEMBLER <- "longcycler"
+ALLOW_ASSEMBLER_FALLBACK <- FALSE
+ASSEMBLY_SELECTION_POLICY_VERSION <- "longcycler_only_qcpass_v1"
+FILE_CANONICAL_ASSEMBLY_SELECTION <- file.path(DIR_QC, "canonical_assembly_selection.csv")
+FILE_ANALYSIS_ASSEMBLY_MANIFEST <- file.path(DIR_QC, "analysis_assembly_manifest.csv")
+FILE_ANALYSIS_CLINICAL_COHORT <- file.path(DIR_CLINICAL, "analysis_cohort_longcycler.csv")
 
 # Overview spreadsheet sheet name
 OVERVIEW_SHEET <- "Batches overzicht"

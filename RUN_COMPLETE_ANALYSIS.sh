@@ -31,16 +31,14 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "PHASE 0: Clinical Data Foundation [Est: 2 min]"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-echo "[1/4] Loading clinical data..."
+echo "[1/3] Loading clinical data..."
 Rscript 00a_load_clean_clinical.R
-echo "[2/4] Classifying episodes..."
+echo "[2/3] Classifying episodes..."
 Rscript 00b_classify_episodes.R
-echo "[3/4] Deriving display-only poster timepoints..."
+echo "[3/3] Deriving display-only poster timepoints..."
 Rscript 00d_derive_plot_timepoints.R
-echo "[4/4] Generating clinical plots..."
-Rscript 00c_plot_clinical_summary.R
 
-echo "✓ Phase 0 complete: primary status maps and clinical diagnostics created"
+echo "✓ Phase 0 complete: primary status maps created"
 
 # ============================================================================
 # Phase 1: WGS Processing (LONGEST PHASE)
@@ -50,29 +48,39 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "PHASE 1: WGS Processing [Est: 1-2 hours total]"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-echo "[1/6] Assembly QC [~2 min]..."
+echo "[1/8] Refreshing assembly metadata while retaining all candidates for audit..."
+Rscript 00_make_assembly_metadata.r
+echo "✓ Assembly metadata refreshed"
+
+echo "[2/8] Assembly QC and Longcycler-only canonical selection [~2 min]..."
 Rscript 12a_wgs_qc.R
 echo "✓ QC complete"
 
-echo "[2/6] Core SNP calling with Parsnp [~30-60 min - SLOWEST STEP]..."
-Rscript 12b_core_snp.R
+echo "[3/8] Generating clinical plots from selected Longcycler assemblies..."
+Rscript 00c_plot_clinical_summary.R
+echo "✓ Clinical and assembly-QC plots complete"
+
+echo "[4/8] Core SNP calling with Parsnp [~30-60 min - SLOWEST STEP]..."
+FORCE_RERUN_CORE_SNP="${FORCE_RERUN_CORE_SNP:-1}" Rscript 12b_core_snp.R
 echo "✓ Core SNPs complete"
 
-echo "[3/6] Pangenome analysis with Panaroo [~15 min]..."
+echo "[5/8] Pangenome analysis with Panaroo [~15 min]..."
 Rscript 12c_panaroo.R
 echo "✓ Pangenome complete"
 
-echo "[4/6] Selection visualization [~2 min]..."
+echo "[6/8] Selection visualization [~2 min]..."
 Rscript 13_visualise_panaroo_selection.R
 echo "✓ Visualization complete"
 
-echo "[5/6] Gene presence/absence matrix [~5 min]..."
+echo "[7/8] Gene presence/absence matrix [~5 min]..."
 Rscript 02_gene_presence_analysis.R
 echo "✓ Gene presence matrix created"
 
-echo "[6/6] Active RIVM/provider MLST integration [~3 min]..."
+echo "[8/8] Active Longcycler-only provider/local MLST integration [~3 min]..."
 Rscript 06_MLST.R
 echo "✓ Active RIVM/provider MLST complete"
+
+Rscript scripts/verify_longcycler_only_pipeline.R --stage upstream
 
 echo "✓ Phase 1 complete: WGS data processed"
 
@@ -239,6 +247,10 @@ echo "✓ Legacy ASB-vs-UTI generated outputs archived"
 echo "Verifying UTI-vs-Not_UTI output alignment..."
 Rscript scripts/verify_uti_not_uti_alignment.R
 echo "✓ UTI-vs-Not_UTI alignment verified"
+
+echo "Verifying that every active genomic output is Longcycler-only..."
+Rscript scripts/verify_longcycler_only_pipeline.R --stage final
+echo "✓ Longcycler-only pipeline contract verified"
 
 echo "✓ Phase 4 complete: VF Deep Analysis"
 

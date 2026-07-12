@@ -41,6 +41,7 @@ ensure_dir(DIR_FINAL_PLOTS)
 
 required_paths <- c(
   status_map = FILE_STATUS_MAP,
+  canonical_selection = file.path(DIR_QC, "canonical_assembly_selection.csv"),
   vf_ready = FILE_VF_READY,
   casebook = file.path(DIR_MECHANISM, "not_uti_to_uti_casebook.csv"),
   mechanism_summary = file.path(DIR_MECHANISM, "transition_mechanism_summary.csv"),
@@ -72,6 +73,28 @@ if (any(str_detect(required_paths, regex("_OLD|old_asb|legacy", ignore_case = TR
 
 read_current <- function(path) read_csv(path, show_col_types = FALSE)
 
+canonical_selection <- read_current(required_paths[["canonical_selection"]])
+assembler_col <- intersect(c("assembler", "Assembler"), names(canonical_selection))[1]
+if (is.na(assembler_col) ||
+    !all(c("selected_canonical", "QC_PASS", "Participant_id", "tp_lab") %in% names(canonical_selection))) {
+  stop("Canonical assembly selection lacks Longcycler-primary selection fields.")
+}
+active_longcycler_keys <- canonical_selection %>%
+  mutate(
+    Participant_id = as.character(.data$Participant_id),
+    tp_lab = normalise_timepoint_preserve_events(.data$tp_lab),
+    selected_canonical = as_pipeline_bool(.data$selected_canonical),
+    QC_PASS = as_pipeline_bool(.data$QC_PASS),
+    active_assembler = str_to_lower(as.character(.data[[assembler_col]]))
+  ) %>%
+  filter(.data$selected_canonical %in% TRUE,
+         .data$QC_PASS %in% TRUE,
+         .data$active_assembler == "longcycler") %>%
+  distinct(.data$Participant_id, .data$tp_lab)
+if (nrow(active_longcycler_keys) == 0) {
+  stop("Canonical manifest contains no selected QC-passing Longcycler episode keys.")
+}
+
 mechanism_validation <- read_current(required_paths[["mechanism_validation"]])
 robustness_validation <- read_current(required_paths[["robustness_validation"]])
 stat_validation <- read_current(required_paths[["stat_validation"]])
@@ -92,12 +115,25 @@ status <- read_current(required_paths[["status_map"]]) %>%
   ) %>%
   filter(.data$analysis_include_primary %in% TRUE, .data$UTI_Status %in% c("UTI", "Not_UTI"))
 
+expected_active_status <- status %>%
+  semi_join(active_longcycler_keys, by = c("Participant_id", "tp_lab"))
+if (nrow(expected_active_status) != nrow(active_longcycler_keys)) {
+  stop("Not every active selected QC-pass Longcycler key has one primary clinical status row.")
+}
+expected_active_total <- nrow(active_longcycler_keys)
+expected_active_uti <- sum(expected_active_status$UTI_Status == "UTI", na.rm = TRUE)
+expected_active_not_uti <- sum(expected_active_status$UTI_Status == "Not_UTI", na.rm = TRUE)
+
 vf_ready <- read_current(required_paths[["vf_ready"]]) %>%
   mutate(
     Participant_id = as.character(.data$Participant_id),
     tp_lab = as.character(.data$tp_lab)
   ) %>%
-  filter(.data$UTI_Status %in% c("UTI", "Not_UTI"))
+  filter(.data$UTI_Status %in% c("UTI", "Not_UTI")) %>%
+  semi_join(active_longcycler_keys, by = c("Participant_id", "tp_lab"))
+if (nrow(vf_ready) != expected_active_total) {
+  stop("VF-ready data do not contain every active selected QC-pass Longcycler episode key.")
+}
 
 casebook <- read_current(required_paths[["casebook"]]) %>%
   mutate(Participant_id = as.character(.data$Participant_id))
@@ -124,6 +160,21 @@ if (!"st_lineage_context" %in% names(casebook)) {
 if (!"pair_interpretation" %in% names(casebook)) {
   casebook <- casebook %>% mutate(pair_interpretation = .data$same_strain_evidence)
 }
+active_casebook_pairs <- casebook %>%
+  mutate(
+    from_tp = normalise_timepoint_preserve_events(.data$from_tp),
+    to_tp = normalise_timepoint_preserve_events(.data$to_tp)
+  ) %>%
+  semi_join(
+    active_longcycler_keys %>% transmute(Participant_id, from_tp = tp_lab),
+    by = c("Participant_id", "from_tp")
+  ) %>%
+  semi_join(
+    active_longcycler_keys %>% transmute(Participant_id, to_tp = tp_lab),
+    by = c("Participant_id", "to_tp")
+  )
+expected_linked_casebook <- nrow(active_casebook_pairs)
+expected_missing_casebook <- nrow(casebook) - expected_linked_casebook
 mechanism_summary <- read_current(required_paths[["mechanism_summary"]])
 denominator <- read_current(required_paths[["denominator"]])
 score_contrasts <- read_current(required_paths[["score_contrasts"]])
@@ -131,7 +182,10 @@ model_stability <- read_current(required_paths[["model_stability"]])
 leave_one_summary <- read_current(required_paths[["leave_one_summary"]])
 bootstrap <- read_current(required_paths[["bootstrap"]])
 near_miss <- read_current(required_paths[["near_miss"]]) %>%
-  mutate(Participant_id = as.character(.data$Participant_id))
+  mutate(
+    Participant_id = as.character(.data$Participant_id),
+    tp_lab = normalise_timepoint_preserve_events(.data$tp_lab)
+  )
 power_precision <- read_current(required_paths[["power_precision"]])
 leave_one_detail <- read_current(required_paths[["leave_one_detail"]])
 variants <- read_current(required_paths[["variants"]]) %>%
@@ -168,6 +222,12 @@ near_miss_vf <- metric_num(denominator, "near_miss_vf_ready_rows")
 expanded_uti <- metric_num(denominator, "expanded_vf_uti_if_near_miss_included")
 expanded_not <- metric_num(denominator, "expanded_vf_not_uti_if_near_miss_excluded")
 
+expected_near_miss_vf <- nrow(
+  near_miss %>% semi_join(active_longcycler_keys, by = c("Participant_id", "tp_lab"))
+)
+expected_expanded_uti <- expected_active_uti + expected_near_miss_vf
+expected_expanded_not <- expected_active_not_uti - expected_near_miss_vf
+
 vf_keys <- vf_ready %>% distinct(.data$Participant_id, .data$tp_lab)
 primary_retention <- status %>%
   left_join(vf_keys %>% mutate(retained_for_vf = TRUE),
@@ -195,20 +255,25 @@ validation <- bind_rows(
   check_row("primary clinical denominator is 583 with 18 UTI",
             clinical_total == 583 && clinical_uti == 18 && clinical_not == 565,
             sprintf("n=%d; UTI=%d; Not_UTI=%d", clinical_total, clinical_uti, clinical_not)),
-  check_row("primary VF/model denominator is 556 with 17 UTI",
-            vf_total == 556 && vf_uti == 17 && vf_not == 539,
+  check_row(sprintf("active selected QC-pass Longcycler VF/model denominator is %d with %d UTI",
+                    expected_active_total, expected_active_uti),
+            vf_total == expected_active_total &&
+              vf_uti == expected_active_uti && vf_not == expected_active_not_uti,
             sprintf("n=%d; UTI=%d; Not_UTI=%d", vf_total, vf_uti, vf_not)),
   check_row("near-miss denominator matches current sensitivity outputs",
-            near_miss_clinical == 19 && near_miss_vf == 18 &&
-              expanded_uti == 35 && expanded_not == 521,
+            near_miss_clinical == nrow(near_miss) &&
+              near_miss_vf == expected_near_miss_vf &&
+              expanded_uti == expected_expanded_uti &&
+              expanded_not == expected_expanded_not,
             sprintf("clinical=%d; VF-ready=%d; expanded=%d/%d",
                     near_miss_clinical, near_miss_vf, expanded_uti, expanded_not)),
   check_row("casebook includes 11 clinical Not_UTI-to-UTI transitions",
             nrow(casebook) == 11,
             sprintf("n=%d", nrow(casebook))),
-  check_row("casebook includes 10 WGS/VF-linked and 1 missing endpoint",
-            sum(casebook$has_vf_pair %in% TRUE) == 10 &&
-              sum(!(casebook$has_vf_pair %in% TRUE)) == 1,
+  check_row(sprintf("casebook includes %d active Longcycler WGS/VF-linked and %d missing endpoint pair(s)",
+                    expected_linked_casebook, expected_missing_casebook),
+            sum(casebook$has_vf_pair %in% TRUE) == expected_linked_casebook &&
+              sum(!(casebook$has_vf_pair %in% TRUE)) == expected_missing_casebook,
             sprintf("linked=%d; missing=%d",
                     sum(casebook$has_vf_pair %in% TRUE),
                     sum(!(casebook$has_vf_pair %in% TRUE)))),
@@ -217,14 +282,16 @@ validation <- bind_rows(
             sprintf("uricult=%d", sum(casebook$is_uricult_transition %in% TRUE, na.rm = TRUE))),
   check_row("primary-key retention uses primary denominator directly",
             sum(primary_retention$n[primary_retention$UTI_Status == "Not_UTI" &
-                                      primary_retention$retention_state == "VF/model retained"]) == 539 &&
+                                      primary_retention$retention_state == "VF/model retained"]) == expected_active_not_uti &&
               sum(primary_retention$n[primary_retention$UTI_Status == "Not_UTI" &
-                                      primary_retention$retention_state == "No VF/model endpoint"]) == 26 &&
+                                      primary_retention$retention_state == "No VF/model endpoint"]) == clinical_not - expected_active_not_uti &&
               sum(primary_retention$n[primary_retention$UTI_Status == "UTI" &
-                                      primary_retention$retention_state == "VF/model retained"]) == 17 &&
+                                      primary_retention$retention_state == "VF/model retained"]) == expected_active_uti &&
               sum(primary_retention$n[primary_retention$UTI_Status == "UTI" &
-                                      primary_retention$retention_state == "No VF/model endpoint"]) == 1,
-            "Direct primary-key join: Not_UTI 539 retained/26 missing; UTI 17 retained/1 missing."),
+                                      primary_retention$retention_state == "No VF/model endpoint"]) == clinical_uti - expected_active_uti,
+            sprintf("Direct active Longcycler key join: Not_UTI %d retained/%d missing; UTI %d retained/%d missing.",
+                    expected_active_not_uti, clinical_not - expected_active_not_uti,
+                    expected_active_uti, clinical_uti - expected_active_uti)),
   check_row("no legacy or OLD source path used",
             !any(str_detect(required_paths, regex("_OLD|old_asb|legacy", ignore_case = TRUE))),
             "Inputs are restricted to current primary-status outputs.")
@@ -370,7 +437,8 @@ p1b <- ggplot(retention_plot_data, aes(.data$n, .data$retention_state, fill = .d
   scale_x_continuous(expand = expansion(mult = c(0, 0.12))) +
   labs(
     title = "Clinical-to-VF retention",
-    subtitle = "556 retained: 17 UTI, 539 Not_UTI",
+    subtitle = sprintf("%d active Longcycler rows retained: %d UTI, %d Not_UTI",
+                       vf_total, vf_uti, vf_not),
     x = "Episodes", y = NULL, fill = NULL
   ) +
   final_theme(10) +
@@ -409,7 +477,10 @@ main_fig_1 <- (p1a | p1b | p1c) +
   )
 register_figure(
   "primary_denominator_and_uncertainty", "Main", main_fig_1, 15, 5.8,
-  "Primary status and VF-ready denominators, with near-miss sensitivity framing. Primary clinical analyses include 18 UTI and 565 Not_UTI episodes; genomic analyses include 17 UTI and 539 Not_UTI episodes.",
+  sprintf(
+    "Primary status and active Longcycler VF-ready denominators, with near-miss sensitivity framing. Primary clinical analyses include 18 UTI and 565 Not_UTI episodes; active genomic analyses include %d UTI and %d Not_UTI episodes.",
+    vf_uti, vf_not
+  ),
   required_paths[c("status_map", "vf_ready", "denominator")],
   "Descriptive denominator audit", "Near-miss rows are sensitivity-only and are not primary UTI events."
 )
@@ -651,6 +722,8 @@ contrast_labels <- c(
   total_vf_count_curated = "Curated VF genes",
   total_vf_count_all = "All VF genes"
 )
+primary_rule_label <- sprintf("Primary rule (%d UTI)", vf_uti)
+possible_uti_label <- sprintf("Possible-UTI sensitivity (%d)", expanded_uti)
 contrast_plot <- score_contrasts %>%
   filter(.data$score %in% names(contrast_labels),
          .data$contrast %in% c("primary_UTI_vs_all_Not_UTI",
@@ -658,16 +731,20 @@ contrast_plot <- score_contrasts %>%
   mutate(
     score_label = factor(contrast_labels[.data$score],
                          levels = rev(unname(contrast_labels))),
-    sensitivity = recode(.data$contrast,
-                         primary_UTI_vs_all_Not_UTI = "Primary rule (17 UTI)",
-                         expanded_UTI_vs_Not_UTI_excluding_near_miss = "Possible-UTI sensitivity (35)")
+    sensitivity = case_when(
+      .data$contrast == "primary_UTI_vs_all_Not_UTI" ~ primary_rule_label,
+      .data$contrast == "expanded_UTI_vs_Not_UTI_excluding_near_miss" ~ possible_uti_label,
+      TRUE ~ as.character(.data$contrast)
+    )
   )
 p4c <- ggplot(contrast_plot, aes(.data$median_difference_a_minus_b, .data$score_label,
                                  colour = .data$sensitivity)) +
   geom_vline(xintercept = 0, colour = "grey35", linewidth = 0.5) +
   geom_point(size = 3, position = position_dodge(width = 0.42)) +
-  scale_colour_manual(values = c("Primary rule (17 UTI)" = uti_status_cols[["UTI"]],
-                                 "Possible-UTI sensitivity (35)" = "#E69F00")) +
+  scale_colour_manual(values = stats::setNames(
+    c(uti_status_cols[["UTI"]], "#E69F00"),
+    c(primary_rule_label, possible_uti_label)
+  )) +
   labs(
     title = "Near-miss sensitivity",
     subtitle = "Median difference versus reference Not_UTI",
@@ -834,7 +911,8 @@ near_features <- bind_rows(
 p_s3a <- ggplot(near_features, aes(.data$feature, .data$case_label, fill = .data$display)) +
   geom_tile(colour = "white", linewidth = 0.55) +
   scale_fill_manual(values = c(Yes = "#D55E00", No = "#E5E7EB"), name = NULL) +
-  labs(title = "Near-miss evidence audit", subtitle = "19 clinical rows remain Not_UTI under the primary rule",
+  labs(title = "Near-miss evidence audit",
+       subtitle = sprintf("%d clinical rows remain Not_UTI under the primary rule", nrow(near_miss)),
        x = NULL, y = NULL) +
   final_theme(8.5) +
   theme(axis.text.x = element_text(angle = 35, hjust = 1))
@@ -850,7 +928,7 @@ p_s3b <- power_precision %>%
   scale_fill_manual(values = c("Detectable" = "#2E8B57", "Not detectable" = "#E5E7EB")) +
   labs(
     title = "Sparse-count precision context",
-    subtitle = "Expected-count illustration with 17 UTI VF-ready episodes",
+    subtitle = sprintf("Expected-count illustration with %d active Longcycler UTI VF-ready episodes", vf_uti),
     x = "Assumed odds ratio", y = "Not_UTI feature prevalence", fill = NULL
   ) +
   final_theme(9)
@@ -919,7 +997,9 @@ s4 <- p_s4a + p_s4b +
   plot_layout(widths = c(0.42, 0.58), guides = "collect") +
   plot_annotation(
     title = "Leave-one-UTI-out stability",
-    subtitle = "Twelve of 98 diagnostic effects change direction when one UTI episode is removed.",
+    subtitle = sprintf("%d of %d diagnostic effects change direction when one UTI episode is removed.",
+                       sum(leave_one_detail$direction_flip %in% TRUE, na.rm = TRUE),
+                       nrow(leave_one_detail)),
     caption = "A direction flip indicates dependence on individual sparse UTI observations, not a corrected association result.",
     tag_levels = "A",
     theme = theme(plot.title = element_text(face = "bold", size = 15),
@@ -931,7 +1011,8 @@ register_figure(
   "leave_one_uti_stability", "Supplementary", s4, 15, 7,
   "Leave-one-UTI-out sensitivity for representative supplementary VF endpoints and the most unstable module results.",
   required_paths[c("leave_one_detail", "leave_one_summary")],
-  "Sparse-case sensitivity diagnostic", "Instability is expected with 17 UTI cases and does not constitute association testing."
+  "Sparse-case sensitivity diagnostic",
+  sprintf("Instability is expected with %d active Longcycler UTI cases and does not constitute association testing.", vf_uti)
 )
 
 # ------------------------------------------------------------------------------
@@ -1063,7 +1144,10 @@ s6 <- p_s6a + p_s6b +
   plot_annotation(
     title = "Lineage confounding diagnostic",
     subtitle = "VF burden differs strongly by ST, but ST composition was not significantly different by primary status in this sparse UTI set.",
-    caption = "Exploratory diagnostic; UTI n=17 and most STs contain too few UTI isolates for within-ST inference.",
+    caption = sprintf(
+      "Exploratory diagnostic; active Longcycler UTI n=%d and most STs contain too few UTI isolates for within-ST inference.",
+      vf_uti
+    ),
     tag_levels = "A",
     theme = theme(plot.title = element_text(face = "bold", size = 15),
                   plot.subtitle = element_text(size = 10.5),

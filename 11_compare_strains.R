@@ -536,7 +536,9 @@ safe_write_csv(input_manifest, file.path(outdir, "pairwise_input_manifest.csv"))
 endpoint_ok <- with(
   pair_metrics,
   Selected_canonical_A %in% TRUE & QC_PASS_A %in% TRUE &
-    Selected_canonical_B %in% TRUE & QC_PASS_B %in% TRUE
+    Selected_canonical_B %in% TRUE & QC_PASS_B %in% TRUE &
+    tolower(Assembler_A) == ANALYSIS_ASSEMBLER &
+    tolower(Assembler_B) == ANALYSIS_ASSEMBLER
 )
 cache_ok <- if (tools$dnadiff) {
   vapply(seq_len(nrow(pair_metrics)), function(i) {
@@ -568,7 +570,7 @@ provenance_audit <- tibble(
     if (tools$dnadiff) sum(!cache_ok) else NA_integer_
   ),
   requirement = c(
-    "All manifest rows selected_canonical=TRUE and QC_PASS=TRUE",
+    "All manifest rows selected_canonical=TRUE, QC_PASS=TRUE, and assembler=longcycler",
     "One row per requested unique pair",
     "Must equal 0", "Must equal 0 when dnadiff is available"
   )
@@ -751,7 +753,7 @@ readme <- c(
   paste0("Generated: ", Sys.time()),
   paste0("Command: ", cmd_line),
   paste0("Identity threshold: ", opt$id_thresh, "; SNP threshold: ", opt$snp_thresh),
-  "Assemblies: selected_canonical=TRUE and QC_PASS=TRUE only; no assembler fallback",
+  "Assemblies: selected_canonical=TRUE, QC_PASS=TRUE, assembler=longcycler only; no assembler fallback",
   paste0("dnadiff cache: SHA-256 input-bound cache in ", cache_dir),
   paste0("Workers: ", workers),
   paste0("min_vf_prev: ", opt$min_vf_prev, "; min_inc_prev: ", opt$min_inc_prev),

@@ -13,8 +13,8 @@
 #   non-authoritative provenance and explicit fallback evidence.
 #
 # INPUTS:
-#   - assembly_metadata.csv              (isolate-level metadata)
-#   - data/assemblies/*.fasta            (assemblies to type)
+#   - results/qc/canonical_assembly_selection.csv
+#   - selected QC-passing Longcycler FASTAs only
 #
 # OUTPUTS:
 #   - results/mlst/mlst_all.tsv          (deprecated local full MLST results)
@@ -67,13 +67,53 @@ ensure_dir(DIR_MLST_RAW)
 ensure_dir(DIR_MLST_LOG)
 ensure_dir(DIR_PLOTS_MLST)
 
-msg("DEPRECATED local MLST runner: outputs are provenance/fallback only, not the active analysis ST source.")
+msg("DEPRECATED local MLST runner: Longcycler-only outputs are provenance/local-fallback evidence, not the provider-primary ST source.")
 
-# 3. Load Assembly Metadata
+# 3. Load the mandatory Longcycler-only canonical manifest
 # ------------------------------------------------------------------------------
-if (!file.exists(FILE_METADATA)) stop("Missing ", FILE_METADATA)
-assembly_df <- read_csv(FILE_METADATA, show_col_types = FALSE) %>%
-  apply_manual_sample_curation(context = "mlst_metadata")
+canonical_file <- file.path(DIR_QC, "canonical_assembly_selection.csv")
+if (!file.exists(canonical_file)) {
+  stop("Missing ", canonical_file, ". Run 12a_wgs_qc.R before local MLST.")
+}
+
+assembly_df <- read_csv(canonical_file, show_col_types = FALSE)
+required_selection_cols <- c("Participant_id", "tp_lab", "Isolate_ID", "selected_canonical", "QC_PASS")
+missing_selection_cols <- setdiff(required_selection_cols, names(assembly_df))
+if (length(missing_selection_cols) > 0) {
+  stop("Canonical assembly selection lacks required column(s): ", paste(missing_selection_cols, collapse = ", "))
+}
+if (!"full_path" %in% names(assembly_df) && "fasta_path" %in% names(assembly_df)) {
+  assembly_df$full_path <- assembly_df$fasta_path
+}
+if (!"full_path" %in% names(assembly_df)) {
+  stop("Canonical assembly selection lacks full_path/fasta_path: ", canonical_file)
+}
+if (!"file_name" %in% names(assembly_df)) assembly_df$file_name <- basename(assembly_df$full_path)
+
+assembly_df <- assembly_df %>%
+  mutate(
+    selected_canonical = as_pipeline_bool(selected_canonical),
+    QC_PASS = as_pipeline_bool(QC_PASS),
+    assembler = str_to_lower(coalesce(
+      if ("assembler" %in% names(.)) as.character(assembler) else NA_character_,
+      if ("Assembler" %in% names(.)) as.character(Assembler) else NA_character_,
+      detect_assembler(coalesce(as.character(full_path), as.character(file_name)))
+    )),
+    full_path = normalizePath(as.character(full_path), winslash = "/", mustWork = FALSE)
+  )
+
+selected_qc <- assembly_df %>% filter(selected_canonical %in% TRUE, QC_PASS %in% TRUE)
+if (nrow(selected_qc) == 0) stop("Canonical selection contains no selected QC-passing assemblies.")
+non_longcycler <- selected_qc %>% filter(is.na(assembler) | assembler != "longcycler")
+if (nrow(non_longcycler) > 0) {
+  stop(
+    "Active local MLST manifest contains ", nrow(non_longcycler),
+    " selected non-Longcycler or unknown-assembler row(s). Rerun 12a_wgs_qc.R with Longcycler-only selection."
+  )
+}
+
+assembly_df <- selected_qc %>%
+  apply_manual_sample_curation(context = "mlst_longcycler_canonical")
 
 curation_excluded <- assembly_df %>%
   filter(!(analysis_include_primary %in% TRUE) | !(genomics_expected_include %in% TRUE))
@@ -81,27 +121,25 @@ if (nrow(curation_excluded) > 0) {
   write_csv(curation_excluded, file.path(DIR_QC, "mlst_manual_curation_excluded_rows.csv"))
   msg("Manual curation excludes ", nrow(curation_excluded), " metadata row(s) from active MLST denominators.")
 }
-assembly_df <- filter_primary_genomics(assembly_df)
-
-# Ensure full_path exists and is valid
-if (!"full_path" %in% names(assembly_df)) {
-  # Try to reconstruct if missing (should be handled by 00_make_assembly_metadata.r, but robustify here)
-  if ("file_name" %in% names(assembly_df)) {
-    assembly_df$full_path <- file.path(DIR_FASTAS, assembly_df$file_name)
-  } else {
-    stop("assembly_metadata.csv missing 'full_path' and 'file_name'")
-  }
-}
+assembly_df <- filter_primary_genomics(assembly_df) %>%
+  filter(assembler == "longcycler")
 
 # Verify files exist
 assembly_df$found <- !is.na(assembly_df$full_path) & file.exists(assembly_df$full_path)
 if (any(!assembly_df$found)) {
   missing_files <- assembly_df$full_path[!assembly_df$found]
-  warning("Missing ", length(missing_files), " FASTA files. They will be skipped.")
-  assembly_df <- assembly_df %>% filter(found)
+  stop(
+    "Selected Longcycler manifest contains ", length(missing_files),
+    " missing FASTA file(s):\n", paste(missing_files, collapse = "\n")
+  )
 }
 
-msg("Processing ", nrow(assembly_df), " assemblies.")
+duplicate_episode <- assembly_df %>% count(Participant_id, tp_lab, name = "n") %>% filter(n != 1L)
+if (nrow(duplicate_episode) > 0) {
+  stop("Longcycler MLST manifest must contain exactly one selected row per participant-timepoint.")
+}
+
+msg("Processing ", nrow(assembly_df), " selected QC-passing Longcycler assemblies.")
 
 # 4. Run MLST
 # ------------------------------------------------------------------------------
@@ -228,38 +266,30 @@ top_STs <- mlst_tbl %>%
 write_csv(top_STs, file.path(DIR_MLST, "top_STs.csv"))
 
 # Canonical participant-timepoint MLST table for downstream episode-level joins.
+# assembly_df was already restricted to the mandatory selected QC-passing
+# Longcycler manifest, so no assembler or first-row fallback is permitted here.
 mlst_episode_tbl <- mlst_tbl
-canonical_file <- file.path(DIR_QC, "canonical_assembly_selection.csv")
-if (file.exists(canonical_file) && "full_path" %in% names(mlst_episode_tbl)) {
-  canonical_paths <- read_csv(canonical_file, show_col_types = FALSE) %>%
-    filter(selected_canonical %in% TRUE) %>%
-    mutate(full_path = normalizePath(full_path, winslash = "/", mustWork = FALSE)) %>%
-    pull(full_path)
-  mlst_episode_tbl <- mlst_episode_tbl %>%
-    mutate(full_path = normalizePath(full_path, winslash = "/", mustWork = FALSE)) %>%
-    filter(full_path %in% canonical_paths)
-  msg("Canonical MLST table: ", nrow(mlst_episode_tbl), " selected assembly rows.")
-} else {
-  mlst_conflicts <- mlst_episode_tbl %>%
-    group_by(Participant_id, tp_lab) %>%
-    summarise(n_ST = n_distinct(ST[!is.na(ST)]), ST_values = paste(sort(unique(na.omit(ST))), collapse = ";"), .groups = "drop") %>%
-    filter(n_ST > 1)
-  if (nrow(mlst_conflicts) > 0) {
-    write_csv(mlst_conflicts, file.path(DIR_QC, "mlst_duplicate_participant_timepoint_st_conflicts.csv"))
-    msg("WARNING: canonical selection missing; wrote ", nrow(mlst_conflicts), " ST conflict(s).")
-  }
-  mlst_episode_tbl <- mlst_episode_tbl %>%
-    group_by(Participant_id, tp_lab) %>%
-    summarise(across(everything(), ~ first(.x)), .groups = "drop")
+if (!"full_path" %in% names(mlst_episode_tbl)) stop("Local MLST output lacks full_path provenance.")
+mlst_episode_tbl <- mlst_episode_tbl %>%
+  mutate(full_path = normalizePath(full_path, winslash = "/", mustWork = FALSE))
+if (nrow(mlst_episode_tbl) != nrow(assembly_df)) {
+  stop(
+    "Local Longcycler MLST output has ", nrow(mlst_episode_tbl),
+    " row(s), but the selected Longcycler manifest has ", nrow(assembly_df), "."
+  )
 }
+if (!setequal(mlst_episode_tbl$full_path, assembly_df$full_path)) {
+  stop("Local MLST output FASTA paths do not exactly match the selected Longcycler manifest.")
+}
+msg("Canonical local MLST table: ", nrow(mlst_episode_tbl), " selected Longcycler assembly rows.")
 
 append_denominator_summary(
   mlst_tbl,
   "06_MLST.R",
-  "mlst_all_assemblies",
+  "mlst_selected_longcycler_assemblies",
   "assembly",
-  FILE_METADATA,
-  "Assembly-level MLST; assembler alternatives are retained here"
+  canonical_file,
+  "Selected QC-passing Longcycler assemblies only; no Flye or assembler fallback"
 )
 append_denominator_summary(
   mlst_episode_tbl,
@@ -267,7 +297,7 @@ append_denominator_summary(
   "mlst_local_canonical_episode_table",
   "participant_timepoint",
   FILE_MLST_LOCAL_CANONICAL,
-  "Local mlst pipeline canonical selected assemblies; provider-preferred integration owns FILE_MLST_CANONICAL"
+  "Local MLST on the selected QC-passing Longcycler manifest; provider-preferred integration owns FILE_MLST_CANONICAL"
 )
 
 # 7. Persistence (if applicable)

@@ -16,10 +16,9 @@
 #   different VFs from those from Not_UTI episodes?
 #
 # KEY DESIGN DECISIONS:
-#   - Uses UNION logic: a gene is called “present” if detected in EITHER
-#     the Flye OR Longcycler assembly for a given participant×timepoint.
-#     This maximises sensitivity at the cost of potential false positives
-#     from a single assembler.
+#   - Uses one selected, QC-passing Longcycler assembly per
+#     participant×timepoint. Flye candidates remain visible in QC/audit files
+#     but are not eligible for VF profiling or as an assembler fallback.
 #   - Minimum thresholds: identity ≥ 80%, coverage ≥ 80% (Abricate defaults).
 #   - Results are cached per-isolate in results/vf/abricate/ so re-runs
 #     skip already-processed assemblies.
@@ -66,7 +65,7 @@ option_list <- list(
     help = "Minimum coverage percentage [default: %default]"
   ),
   make_option(c("--selection_file"),
-    type = "character", default = file.path(DIR_QC, "canonical_assembly_selection.csv"),
+    type = "character", default = FILE_ANALYSIS_ASSEMBLY_MANIFEST,
     help = "Assembly selection CSV containing full_path and a logical selection column [default: %default]"
   ),
   make_option(c("--selection_column"),
@@ -170,39 +169,51 @@ assembly_df <- assembly_df %>%
   )
 
 selection_file <- opt$selection_file
-if (file.exists(selection_file)) {
-  selection <- read_csv(selection_file, show_col_types = FALSE)
-  if (!opt$selection_column %in% names(selection)) {
-    stop("Selection file lacks requested column: ", opt$selection_column)
-  }
-  if (!"full_path" %in% names(selection)) {
-    stop("Selection file lacks required full_path column: ", selection_file)
-  }
-  selection <- selection %>%
-    filter(.data[[opt$selection_column]] %in% TRUE) %>%
-    mutate(full_path = normalizePath(full_path, winslash = "/", mustWork = FALSE))
-  n_before_canonical <- nrow(assembly_df)
-  assembly_df <- assembly_df %>%
-    mutate(full_path = normalizePath(full_path, winslash = "/", mustWork = FALSE))
-  assembly_df_selected <- assembly_df %>%
-    semi_join(selection %>% select(full_path), by = "full_path")
-  selection_extra <- selection %>%
-    anti_join(assembly_df %>% select(full_path), by = "full_path")
-  if (nrow(selection_extra) > 0) {
-    missing_cols <- setdiff(names(assembly_df), names(selection_extra))
-    for (col in missing_cols) selection_extra[[col]] <- NA
-    selection_extra <- selection_extra %>%
-      select(all_of(names(assembly_df)))
-    assembly_df <- bind_rows(assembly_df_selected, selection_extra)
-    log_info("Added ", nrow(selection_extra), " selected assembly row(s) directly from selection file.")
-  } else {
-    assembly_df <- assembly_df_selected
-  }
-  log_info("Using selected assemblies for VF profiling: ", nrow(assembly_df),
-           " retained from ", n_before_canonical, " assembly-level rows.")
-} else {
-  log_info("WARNING: assembly selection file not found; VF profiling will use all usable assembly rows.")
+if (!file.exists(selection_file)) {
+  stop(selection_file, " not found. VF profiling cannot fall back to raw assembly metadata; run 12a_wgs_qc.R first.")
 }
+selection <- read_csv(selection_file, show_col_types = FALSE)
+if (!opt$selection_column %in% names(selection)) {
+  stop("Selection file lacks requested column: ", opt$selection_column)
+}
+if (!"full_path" %in% names(selection)) {
+  stop("Selection file lacks required full_path column: ", selection_file)
+}
+if (!"QC_PASS" %in% names(selection)) stop("Selection file lacks required QC_PASS column: ", selection_file)
+selection <- selection %>%
+  filter(.data[[opt$selection_column]] %in% TRUE, QC_PASS %in% TRUE) %>%
+  mutate(full_path = normalizePath(full_path, winslash = "/", mustWork = FALSE))
+selection$.analysis_assembler <- normalise_assembler_column(selection)
+if (!nrow(selection)) stop("Selection file contains no selected QC-passing Longcycler rows: ", selection_file)
+if (any(selection$.analysis_assembler != ANALYSIS_ASSEMBLER | is.na(selection$.analysis_assembler))) {
+  stop("Selection file contains a non-Longcycler row. VF profiling does not permit assembler fallback.")
+}
+if (any(!file.exists(selection$full_path))) stop("Selection file contains missing FASTA paths.")
+selection_dupes <- selection %>% count(Participant_id, tp_lab, name = "n") %>% filter(n != 1L)
+if (nrow(selection_dupes)) stop("Selection file must contain exactly one Longcycler FASTA per participant-timepoint.")
+
+n_before_canonical <- nrow(assembly_df)
+assembly_df <- assembly_df %>%
+  mutate(full_path = normalizePath(full_path, winslash = "/", mustWork = FALSE))
+assembly_df_selected <- assembly_df %>%
+  semi_join(selection %>% select(full_path), by = "full_path")
+selection_extra <- selection %>%
+  select(-.analysis_assembler) %>%
+  anti_join(assembly_df %>% select(full_path), by = "full_path")
+if (nrow(selection_extra) > 0) {
+  missing_cols <- setdiff(names(assembly_df), names(selection_extra))
+  for (col in missing_cols) selection_extra[[col]] <- NA
+  selection_extra <- selection_extra %>% select(all_of(names(assembly_df)))
+  assembly_df <- bind_rows(assembly_df_selected, selection_extra)
+  log_info("Added ", nrow(selection_extra), " selected Longcycler row(s) directly from the analysis manifest.")
+} else {
+  assembly_df <- assembly_df_selected
+}
+if (nrow(assembly_df) != nrow(selection)) {
+  stop("VF input row count does not match the Longcycler selection manifest.")
+}
+log_info("Using Longcycler-only assemblies for VF profiling: ", nrow(assembly_df),
+         " retained from ", n_before_canonical, " candidate assembly rows; no assembler fallback.")
 
 append_denominator_summary(
   assembly_df,
@@ -271,9 +282,8 @@ message("✓ Saved VF hits: ", vf_hits_file)
 
 # 6. Generate Presence/Absence Matrix
 # ------------------------------------------------------------------------------
-# We aggregate Abricate hits to the participant-timepoint level after canonical
-# assembly selection.  This avoids treating flye and longcycler alternatives as
-# independent biological episodes.
+# We aggregate Abricate hits to the participant-timepoint level after the
+# Longcycler-only selection. Each episode is represented by one assembly.
 vf_pa_all <- vf_hits_all %>%
   filter(!is.na(Participant_id), !is.na(tp_lab), !is.na(GENE)) %>%
   mutate(

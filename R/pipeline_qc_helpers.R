@@ -421,6 +421,98 @@ as_pipeline_bool <- function(x, default = FALSE) {
   out
 }
 
+normalise_assembler_column <- function(df) {
+  if ("Assembler" %in% names(df)) {
+    tolower(trimws(safe_chr(df$Assembler)))
+  } else if ("assembler" %in% names(df)) {
+    tolower(trimws(safe_chr(df$assembler)))
+  } else {
+    rep(NA_character_, nrow(df))
+  }
+}
+
+assert_analysis_assembly_manifest <- function(df,
+                                              context = "analysis assembly manifest",
+                                              require_selected = TRUE,
+                                              require_qc = TRUE,
+                                              require_files = FALSE,
+                                              require_unique_episode = TRUE) {
+  df <- tibble::as_tibble(df)
+  assembler <- normalise_assembler_column(df)
+  allowed <- if (exists("ANALYSIS_ASSEMBLER", inherits = TRUE)) {
+    tolower(get("ANALYSIS_ASSEMBLER", inherits = TRUE))
+  } else {
+    "longcycler"
+  }
+  bad_assembler <- is.na(assembler) | assembler != allowed
+  if (any(bad_assembler)) {
+    stop(
+      context, " contains ", sum(bad_assembler),
+      " row(s) that are not ", allowed, ". Active analyses cannot use an assembler fallback."
+    )
+  }
+  if (isTRUE(require_selected)) {
+    if (!"selected_canonical" %in% names(df)) stop(context, " lacks selected_canonical.")
+    selected <- as_pipeline_bool(df$selected_canonical)
+    if (any(!selected)) stop(context, " contains unselected rows.")
+  }
+  if (isTRUE(require_qc)) {
+    if (!"QC_PASS" %in% names(df)) stop(context, " lacks QC_PASS.")
+    qc_pass <- as_pipeline_bool(df$QC_PASS)
+    if (any(!qc_pass)) stop(context, " contains QC-failing rows.")
+  }
+  if (isTRUE(require_files)) {
+    path_col <- intersect(c("full_path", "fasta_path"), names(df))[1]
+    if (is.na(path_col)) stop(context, " lacks full_path/fasta_path.")
+    paths <- safe_chr(df[[path_col]])
+    exists_path <- !is.na(paths) & nzchar(paths) & file.exists(paths)
+    sizes <- rep(NA_real_, length(paths))
+    sizes[exists_path] <- file.size(paths[exists_path])
+    bad_path <- !exists_path | is.na(sizes) | sizes <= 0
+    if (any(bad_path)) stop(context, " contains ", sum(bad_path), " missing or empty FASTA path(s).")
+  }
+  if (isTRUE(require_unique_episode)) {
+    required_key <- c("Participant_id", "tp_lab")
+    missing_key <- setdiff(required_key, names(df))
+    if (length(missing_key)) stop(context, " lacks episode key column(s): ", paste(missing_key, collapse = ", "))
+    dupes <- df |>
+      dplyr::count(.data$Participant_id, .data$tp_lab, name = "n") |>
+      dplyr::filter(.data$n != 1L)
+    if (nrow(dupes)) stop(context, " does not contain exactly one row per participant-timepoint.")
+  }
+  invisible(df)
+}
+
+load_analysis_assemblies <- function(path = if (exists("FILE_ANALYSIS_ASSEMBLY_MANIFEST", inherits = TRUE)) {
+                                       get("FILE_ANALYSIS_ASSEMBLY_MANIFEST", inherits = TRUE)
+                                     } else {
+                                       file.path(DIR_QC, "analysis_assembly_manifest.csv")
+                                     },
+                                     require_files = TRUE) {
+  if (!file.exists(path)) {
+    stop(path, " not found. Run 12a_wgs_qc.R to create the Longcycler-only analysis manifest.")
+  }
+  out <- readr::read_csv(path, show_col_types = FALSE)
+  expected_policy <- if (exists("ASSEMBLY_SELECTION_POLICY_VERSION", inherits = TRUE)) {
+    get("ASSEMBLY_SELECTION_POLICY_VERSION", inherits = TRUE)
+  } else {
+    "longcycler_only_qcpass_v1"
+  }
+  if (!"selection_policy_version" %in% names(out) ||
+      any(is.na(out$selection_policy_version) | out$selection_policy_version != expected_policy)) {
+    stop(path, " is absent or was generated under a different assembly-selection policy. Rerun 12a_wgs_qc.R.")
+  }
+  assert_analysis_assembly_manifest(
+    out,
+    context = path,
+    require_selected = TRUE,
+    require_qc = TRUE,
+    require_files = require_files,
+    require_unique_episode = TRUE
+  )
+  out
+}
+
 curation_default_columns <- function(df) {
   df <- tibble::as_tibble(df)
   n <- nrow(df)
@@ -975,6 +1067,9 @@ build_assembly_gff_inventory <- function(metadata_file = FILE_METADATA,
     )
 
   canonical_missing <- !file.exists(canonical_file)
+  if (canonical_missing) {
+    stop(canonical_file, " is missing. Run 12a_wgs_qc.R; Panaroo cannot fall back to all QC-passing assemblies.")
+  }
   canonical_raw <- if (!canonical_missing) {
     readr::read_csv(canonical_file, show_col_types = FALSE)
   } else {
@@ -994,6 +1089,14 @@ build_assembly_gff_inventory <- function(metadata_file = FILE_METADATA,
       final_analysis_blocker = .data$gff_missing
     ) |>
     dplyr::arrange(.data$Participant_id, .data$tp_lab, .data$Assembly_ID)
+  assert_analysis_assembly_manifest(
+    panaroo_inventory,
+    context = "Panaroo input inventory",
+    require_selected = TRUE,
+    require_qc = TRUE,
+    require_files = TRUE,
+    require_unique_episode = TRUE
+  )
 
   metadata_existing_ids <- metadata_linked |>
     dplyr::filter(
@@ -1451,29 +1554,31 @@ select_canonical_assemblies <- function(qc_df) {
       Participant_id = safe_chr(.data$Participant_id),
       tp_lab = if ("tp_lab" %in% names(qc_df)) normalise_timepoint_preserve_events(.data$tp_lab) else normalise_timepoint_preserve_events(.data$Timepoint),
       Assembly_ID = if ("Assembly_ID" %in% names(qc_df)) .data$Assembly_ID else tools::file_path_sans_ext(basename(ifelse(!is.na(.data$full_path), .data$full_path, .data$file_name))),
-      Assembler = if ("Assembler" %in% names(qc_df)) .data$Assembler else if ("assembler" %in% names(qc_df)) .data$assembler else detect_assembler(ifelse(!is.na(.data$file_name), .data$file_name, .data$full_path)),
+      Assembler = tolower(trimws(if ("Assembler" %in% names(qc_df)) .data$Assembler else if ("assembler" %in% names(qc_df)) .data$assembler else detect_assembler(ifelse(!is.na(.data$file_name), .data$file_name, .data$full_path)))),
       file_exists = !is.na(.data$full_path) & file.exists(.data$full_path),
       usable_fasta = .data$file_exists & .data$QC_PASS,
+      selection_eligible = .data$file_exists & .data$QC_PASS & .data$Assembler == .env$ANALYSIS_ASSEMBLER,
+      selection_policy_version = .env$ASSEMBLY_SELECTION_POLICY_VERSION,
+      eligibility_priority = ifelse(.data$selection_eligible, 0L, 1L),
       qc_priority = ifelse(.data$QC_PASS, 0L, 1L),
       assembler_priority = dplyr::case_when(
-        .data$Assembler == "longcycler" ~ 1L,
-        .data$Assembler == "flye" ~ 2L,
-        TRUE ~ 3L
+        .data$Assembler == .env$ANALYSIS_ASSEMBLER ~ 1L,
+        TRUE ~ 2L
       ),
       n50_priority = -1 * suppressWarnings(as.numeric(.data$N50)),
       contig_priority = suppressWarnings(as.numeric(.data$n_contigs))
     ) |>
     dplyr::group_by(.data$Participant_id, .data$tp_lab) |>
-    dplyr::arrange(.data$qc_priority, .data$assembler_priority, .data$n50_priority, .data$contig_priority, .data$Assembly_ID, .by_group = TRUE) |>
+    dplyr::arrange(.data$eligibility_priority, .data$assembler_priority, .data$qc_priority, .data$n50_priority, .data$contig_priority, .data$Assembly_ID, .by_group = TRUE) |>
     dplyr::mutate(
       canonical_rank = dplyr::row_number(),
-      selected_canonical = .data$canonical_rank == 1L & .data$QC_PASS,
+      selected_canonical = .data$canonical_rank == 1L & .data$selection_eligible,
       canonical_reason = dplyr::case_when(
-        .data$selected_canonical & .data$Assembler == "longcycler" ~ "QC PASS; preferred longcycler",
-        .data$selected_canonical & .data$Assembler == "flye" ~ "QC PASS; flye selected because preferred assembly unavailable/failing",
-        .data$selected_canonical ~ "QC PASS; selected by deterministic fallback",
-        any(.data$QC_PASS, na.rm = TRUE) ~ "Alternative assembly not selected",
-        TRUE ~ "No QC PASS assembly for participant-timepoint"
+        .data$selected_canonical ~ "QC PASS; selected under longcycler-only policy",
+        .data$Assembler != .env$ANALYSIS_ASSEMBLER & .data$QC_PASS ~ "QC PASS but excluded: assembler not permitted by longcycler-only policy",
+        .data$Assembler == .env$ANALYSIS_ASSEMBLER & !.data$QC_PASS ~ "Longcycler present but failed QC",
+        any(.data$selection_eligible, na.rm = TRUE) ~ "Alternative Longcycler assembly not selected",
+        TRUE ~ "No QC-passing Longcycler assembly for participant-timepoint"
       )
     ) |>
     dplyr::ungroup()
@@ -1537,6 +1642,7 @@ write_uti_attrition_outputs <- function(status_file = file.path(DIR_CLINICAL, "s
     m$Participant_id <- safe_chr(m$Participant_id)
     m$tp_lab <- if ("tp_lab" %in% names(m)) normalise_timepoint_preserve_events(m$tp_lab) else normalise_timepoint_preserve_events(m$Timepoint)
     if (!"full_path" %in% names(m) && "fasta_path" %in% names(m)) m$full_path <- m$fasta_path
+    m <- m[normalise_assembler_column(m) %in% ANALYSIS_ASSEMBLER, , drop = FALSE]
     m$key <- paste(m$Participant_id, m$tp_lab, sep = "|")
     m$has_usable <- if ("usable_fasta" %in% names(m)) m$usable_fasta else (!is.na(m$full_path) & file.exists(m$full_path))
     m
@@ -1545,12 +1651,14 @@ write_uti_attrition_outputs <- function(status_file = file.path(DIR_CLINICAL, "s
     readr::read_csv(file.path(DIR_QC, "canonical_assembly_selection.csv"), show_col_types = FALSE) |>
       dplyr::mutate(Participant_id = safe_chr(.data$Participant_id),
                     tp_lab = normalise_timepoint_preserve_events(.data$tp_lab),
-                    key = paste(.data$Participant_id, .data$tp_lab, sep = "|"))
+                    key = paste(.data$Participant_id, .data$tp_lab, sep = "|")) |>
+      dplyr::filter(normalise_assembler_column(dplyr::pick(dplyr::everything())) == .env$ANALYSIS_ASSEMBLER)
   } else tibble::tibble(key = character(), selected_canonical = logical(), QC_PASS = logical())
   qc <- if (file.exists(file.path(DIR_WGS, "qc_summary.csv"))) {
     q <- readr::read_csv(file.path(DIR_WGS, "qc_summary.csv"), show_col_types = FALSE)
     q$Participant_id <- safe_chr(q$Participant_id)
     q$tp_lab <- if ("tp_lab" %in% names(q)) normalise_timepoint_preserve_events(q$tp_lab) else normalise_timepoint_preserve_events(q$Timepoint)
+    q <- q[normalise_assembler_column(q) %in% ANALYSIS_ASSEMBLER, , drop = FALSE]
     q$key <- paste(q$Participant_id, q$tp_lab, sep = "|")
     q
   } else tibble::tibble(key = character(), QC_PASS = logical())

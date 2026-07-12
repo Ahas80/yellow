@@ -181,6 +181,7 @@ path_status <- FILE_STATUS_MAP
 path_status_poster <- FILE_STATUS_MAP_POSTER
 path_vf_ready <- FILE_VF_READY
 path_vf_pa <- FILE_VF_PA
+path_canonical_selection <- file.path(DIR_QC, "canonical_assembly_selection.csv")
 path_gene_map <- file.path(DIR_VF, "gene_map.csv")
 path_qc_wgs <- file.path(DIR_WGS, "qc_summary.csv")
 path_mlst_freq <- file.path(DIR_MLST, "ST_frequencies.csv")
@@ -261,15 +262,46 @@ status_poster <- if (!is.na(status_poster_path_selected) && identical(status_pos
 poster_status_unsuitable <- !file.exists(path_status_poster) ||
   is_stale(path_status_poster, path_status) ||
   !status_map_has_primary_fields(path_status_poster)
-vf_pa <- standardise_episode_keys(safe_read(path_vf_pa), genomics = TRUE)
-vf_ready <- standardise_episode_keys(safe_read(path_vf_ready), genomics = TRUE)
+canonical_selection <- safe_read(path_canonical_selection)
+if (is.null(canonical_selection)) stop("Missing canonical assembly selection: ", path_canonical_selection)
+assembler_col <- intersect(c("assembler", "Assembler"), names(canonical_selection))[1]
+if (is.na(assembler_col) ||
+    !all(c("selected_canonical", "QC_PASS", "Participant_id", "tp_lab") %in% names(canonical_selection))) {
+  stop("Canonical assembly selection lacks Longcycler-primary selection fields: ", path_canonical_selection)
+}
+active_longcycler_keys <- canonical_selection %>%
+  mutate(
+    Participant_id = as.character(.data$Participant_id),
+    tp_lab = normalise_tp_label(.data$tp_lab),
+    selected_canonical = as_pipeline_bool(.data$selected_canonical),
+    QC_PASS = as_pipeline_bool(.data$QC_PASS),
+    active_assembler = str_to_lower(as.character(.data[[assembler_col]]))
+  ) %>%
+  filter(.data$selected_canonical %in% TRUE,
+         .data$QC_PASS %in% TRUE,
+         .data$active_assembler == "longcycler") %>%
+  distinct(.data$Participant_id, .data$tp_lab)
+if (nrow(active_longcycler_keys) == 0) {
+  stop("Canonical manifest contains no selected QC-passing Longcycler episode keys.")
+}
+restrict_to_active_longcycler <- function(df) {
+  if (is.null(df) || !all(c("Participant_id", "tp_lab") %in% names(df))) return(df)
+  df %>% semi_join(active_longcycler_keys, by = c("Participant_id", "tp_lab"))
+}
+
+vf_pa <- standardise_episode_keys(safe_read(path_vf_pa), genomics = TRUE) %>%
+  restrict_to_active_longcycler()
+vf_ready <- standardise_episode_keys(safe_read(path_vf_ready), genomics = TRUE) %>%
+  restrict_to_active_longcycler()
 gene_map <- safe_read(path_gene_map)
 qc_wgs <- safe_read(path_qc_wgs)
 mlst_freq <- safe_read(path_mlst_freq)
-mlst_meta <- standardise_episode_keys(safe_read(path_mlst_meta), "Timepoint", genomics = TRUE)
+mlst_meta <- standardise_episode_keys(safe_read(path_mlst_meta), "Timepoint", genomics = TRUE) %>%
+  restrict_to_active_longcycler()
 mod_summary <- safe_read(path_mod_summary)
 mod_map <- safe_read(path_mod_map)
-score_table <- standardise_episode_keys(safe_read(path_scores), genomics = TRUE)
+score_table <- standardise_episode_keys(safe_read(path_scores), genomics = TRUE) %>%
+  restrict_to_active_longcycler()
 scores_status <- safe_read(path_scores_status)
 scores_st <- safe_read(path_scores_st)
 score_catalog <- safe_read(path_score_catalog)
@@ -308,7 +340,8 @@ uti_attrition <- safe_read(path_uti_attrition)
 panaroo_manifest <- safe_read(path_panaroo_manifest)
 qc_bias <- safe_read(path_qc_bias)
 vf_gap <- safe_read(path_vf_gap)
-model_denom <- standardise_episode_keys(safe_read(path_model_denom))
+model_denom <- standardise_episode_keys(safe_read(path_model_denom)) %>%
+  restrict_to_active_longcycler()
 diag_summary <- safe_read(path_diag_summary)
 diag_bootstrap <- safe_read(path_diag_bootstrap)
 diag_feature_fisher <- safe_read(path_diag_feature_fisher)
@@ -336,6 +369,12 @@ stat_fig_meta <- safe_read(path_stat_fig_meta)
 if (is.null(status_map)) stop("Missing required primary UTI status map: ", path_status)
 if (is.null(vf_pa)) stop("Missing required raw VF P/A matrix: ", path_vf_pa)
 if (is.null(vf_ready)) stop("Missing required canonical VF-ready table: ", path_vf_ready)
+if (nrow(vf_pa) != nrow(active_longcycler_keys)) {
+  stop("VF P/A matrix does not contain every active selected QC-pass Longcycler episode key.")
+}
+if (nrow(vf_ready) != nrow(active_longcycler_keys)) {
+  stop("VF-ready table does not contain every active selected QC-pass Longcycler episode key.")
+}
 
 # ==============================================================================
 # 3. TABLE 01: COHORT AND EPISODE FLOW
@@ -357,8 +396,8 @@ t01 <- bind_rows(
   flow_row(2, "Ordered/poster clinical episodes", status_poster, path_status_poster,
            "Fresh ordered file used only for timelines when available"),
   flow_row(3, "Raw VF presence/absence rows", vf_pa, path_vf_pa, "Sequenced/VFDB-called episode rows"),
-  flow_row(4, "Canonical VF-ready episodes", vf_ready, path_vf_ready,
-           "Raw VF rows joined to primary UTI status/ST by script 22"),
+  flow_row(4, "Active Longcycler-primary VF-ready episodes", vf_ready, path_vf_ready,
+           "Selected QC-pass Longcycler VF rows joined to primary UTI status/ST by script 22"),
   flow_row(5, "UTI/Not_UTI VF modelling subset", uti_not_uti_model, path_vf_ready,
            "Rows with missing primary UTI status excluded"),
   flow_row(6, "Repeated-measures VF longitudinal subset", longitudinal_subset, path_vf_trans,
@@ -881,7 +920,7 @@ if (!is.null(stat_validation)) {
 # 15. VF FIGURE INDEX AND VISUALISATION AUDIT
 # ==============================================================================
 vf_denominator_label <- sprintf(
-  "VF-ready isolates n=%d; participants n=%d; primary UTI n=%d; primary Not_UTI n=%d; missing/other primary status n=%d",
+  "Active selected QC-pass Longcycler VF-ready isolates n=%d; participants n=%d; primary UTI n=%d; primary Not_UTI n=%d; missing/other primary status n=%d",
   nrow(vf_ready),
   n_distinct(vf_ready$Participant_id),
   status_counts(vf_ready)$n_UTI,
@@ -1004,7 +1043,11 @@ if (!is.null(diag_fig_meta) && nrow(diag_fig_meta) > 0) {
       output_file,
       title = recode(.data$figure_id, !!!diagnostic_title, .default = .data$figure_id),
       input_data = paste(path_status, path_vf_ready, path_model_denom, path_diag_summary, sep = "; "),
-      denominator = "Clinical primary n=583 (UTI 18, Not_UTI 565); VF/model primary n=556 (UTI 17, Not_UTI 539, missing status 0)",
+      denominator = sprintf(
+        "Clinical primary n=583 (UTI 18, Not_UTI 565); active selected QC-pass Longcycler VF/model primary n=%d (UTI %d, Not_UTI %d, missing status %d)",
+        nrow(vf_ready), status_counts(vf_ready)$n_UTI,
+        status_counts(vf_ready)$n_Not_UTI, status_counts(vf_ready)$n_other_status
+      ),
       level_of_analysis = .data$evidence_type,
       statistical_test = case_when(
         str_detect(.data$figure_id, "bootstrap") ~ "Participant bootstrap confidence intervals",
@@ -1163,7 +1206,7 @@ ma("")
 ma("## VF/WGS-Ready Dataset")
 ma("- Raw VF matrix rows: **%d** (%d participants)", nrow(vf_pa), n_distinct(vf_pa$Participant_id))
 ma("- Raw VF gene columns: **%d**", length(raw_vf_gene_cols))
-ma("- Canonical VF-ready episodes: **%d** (%d participants)", nrow(vf_ready), n_distinct(vf_ready$Participant_id))
+ma("- Active selected QC-pass Longcycler VF-ready episodes: **%d** (%d participants)", nrow(vf_ready), n_distinct(vf_ready$Participant_id))
 ma("- VF-ready primary status counts: UTI **%d**, Not_UTI **%d**",
    status_counts(vf_ready)$n_UTI, status_counts(vf_ready)$n_Not_UTI)
 ma("- VF-ready gene columns: **%d**", length(vf_gene_cols))

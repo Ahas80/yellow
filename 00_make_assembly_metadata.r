@@ -8,8 +8,8 @@
 #   3. ont-yellow-routine-fastas/ (canonical FASTA discovery helper)
 #
 # This script deliberately does not add unlinked FASTAs as biological episodes.
-# FASTAs absent from both overview and batch CSVs are reported for provenance and
-# excluded from episode-level analyses until a trusted mapping is supplied.
+# Longcycler FASTAs absent from both overview and batch CSVs are reported for
+# provenance and excluded from episode-level analyses until a trusted mapping is supplied.
 # ==============================================================================
 
 source("00_config.R")
@@ -171,7 +171,8 @@ if (nrow(batch_only) > 0) {
 # Canonical FASTA discovery.  The full scan is written for audit; only top-level
 # candidate input FASTAs are eligible for assembly_metadata.csv.
 # ------------------------------------------------------------------------------
-fasta_scan_all <- discover_project_fastas(DIR_FASTAS, recursive = TRUE, include_excluded = TRUE)
+fasta_scan_all <- discover_project_fastas(DIR_FASTAS, recursive = TRUE, include_excluded = TRUE) %>%
+  filter(Assembler == ANALYSIS_ASSEMBLER)
 write_csv(fasta_scan_all, file.path(DIR_QC, "metadata_fasta_discovery_manifest.csv"))
 
 candidate_fastas <- fasta_scan_all %>% filter(include_in_metadata)
@@ -260,8 +261,7 @@ msg("Full recursive FASTA audit universe: %d files (%d excluded from metadata)."
     nrow(fasta_scan_all), sum(!fasta_scan_all$include_in_metadata))
 
 # ------------------------------------------------------------------------------
-# Match expected isolates to candidate FASTAs.  This intentionally expands to
-# assembly-level rows when flye and longcycler are both present.
+# Match expected isolates to Longcycler candidate FASTAs.
 # ------------------------------------------------------------------------------
 meta <- expected_df %>%
   left_join(batch_supp, by = "Isolate_ID") %>%
@@ -401,7 +401,7 @@ append_denominator_summary(filter_primary_genomics(expected_df), "00_make_assemb
                            "Expected isolate universe after manual primary/genomics curation exclusions")
 append_denominator_summary(out_meta, "00_make_assembly_metadata.r", "assembly_metadata",
                            "assembly", FILE_METADATA,
-                           "Assembly-level rows; flye/longcycler alternatives are not independent biological episodes")
+                           "Longcycler assembly rows only; no assembler fallback")
 append_denominator_summary(found_unexpected, "00_make_assembly_metadata.r", "unexpected_fastas",
                            "assembly", file.path(DIR_QC, "unlinked_unexpected_fastas.csv"),
                            "Unlinked candidate FASTAs excluded from episode-level analyses")

@@ -220,12 +220,11 @@ msg("Replicon hits: %d rows, %d unique replicons", nrow(rep_long), n_distinct(re
 
 # Parse isolate_id to extract Participant_id and timepoint
 # Format: PR00XX_barcodeYY_ZZZZZZZZZZ-N_assembler
-# We need to map back to Participant_id and tp_lab using assembly_metadata
-meta_file <- file.path(DIR_ROOT, "assembly_metadata.csv")
+# We map only through the validated Longcycler analysis manifest. Flye
+# replicon rows cannot be rescued through isolate-ID matching.
+meta_file <- FILE_ANALYSIS_ASSEMBLY_MANIFEST
 if (file.exists(meta_file)) {
-  asm_meta <- read_csv(meta_file, show_col_types = FALSE) %>%
-    apply_manual_sample_curation(context = "29_assembly_metadata") %>%
-    filter_primary_genomics() %>%
+  asm_meta <- load_analysis_assemblies(meta_file, require_files = TRUE) %>%
     mutate(
       Participant_id = as.character(Participant_id),
       tp_lab = if ("tp_lab" %in% names(.)) as.character(tp_lab) else normalise_tp_label(Timepoint),
@@ -243,53 +242,14 @@ if (file.exists(meta_file)) {
       assembly_key = normalise_assembly_key(isolate_id),
       lab_isolate_id = extract_lab_isolate_id(isolate_id)
     ) %>%
-    left_join(asm_lookup %>% select(assembly_key, Participant_id, tp_lab) %>% distinct(),
-              by = "assembly_key")
-
-  # Fill any remaining misses by the laboratory isolate ID. This supports both
-  # older numeric IDs and Batch 4-6 IDs containing a "C" token.
-  if (any(is.na(rep_mapped$Participant_id))) {
-    lab_lookup <- asm_lookup %>%
-      filter(!is.na(lab_isolate_id)) %>%
-      distinct(lab_isolate_id, Participant_id, tp_lab)
-    rep_mapped <- rep_mapped %>%
-      left_join(lab_lookup, by = "lab_isolate_id", suffix = c("", ".lab")) %>%
-      mutate(
-        Participant_id = coalesce(Participant_id, Participant_id.lab),
-        tp_lab = coalesce(tp_lab, tp_lab.lab)
-      ) %>%
-      select(-any_of(c("Participant_id.lab", "tp_lab.lab")))
-  }
+    inner_join(asm_lookup %>% select(assembly_key, Participant_id, tp_lab) %>% distinct(),
+               by = "assembly_key")
 } else {
   rep_mapped <- rep_long %>% mutate(Participant_id = NA_character_, tp_lab = NA_character_)
 }
 
-# If direct mapping failed, try extracting from isolate_id pattern
-if (all(is.na(rep_mapped$Participant_id))) {
-  msg("Attempting to extract Participant_id from isolate_id naming convention...")
-  # Try to use the VF PA matrix's sample keys or pairwise_metrics for mapping
-  # Load pairwise_metrics which has both Isolate_ID and Participant_id
-  f_pair <- file.path(DIR_STRAIN, "pairwise_metrics.csv")
-  if (file.exists(f_pair)) {
-    pw <- read_csv(f_pair, show_col_types = FALSE)
-    id_map <- bind_rows(
-      pw %>% select(Isolate_ID = Isolate_ID_A, Participant_id = Participant_id_A,
-                     Timepoint = Timepoint_A) %>% distinct(),
-      pw %>% select(Isolate_ID = Isolate_ID_B, Participant_id = Participant_id_B,
-                     Timepoint = Timepoint_B) %>% distinct()
-    ) %>%
-      distinct() %>%
-      mutate(Participant_id = as.character(Participant_id),
-             tp_lab = as.character(Timepoint))
-
-    # Match: isolate_id in rep_long often starts with isolate ID
-    rep_mapped <- rep_long %>%
-      mutate(match_id = extract_lab_isolate_id(isolate_id)) %>%
-      left_join(id_map %>% mutate(match_id = extract_lab_isolate_id(Isolate_ID)) %>%
-                  distinct(match_id, .keep_all = TRUE),
-                by = "match_id") %>%
-      select(-match_id)
-  }
+if (nrow(rep_mapped) == 0) {
+  msg("No plasmid-replicon rows matched the selected Longcycler assembly keys; no isolate-ID fallback is permitted.")
 }
 
 # Summarise per participant-timepoint: count replicons, list unique types

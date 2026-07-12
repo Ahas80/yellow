@@ -56,20 +56,10 @@ hash_file <- file.path(DIR_CORE, "core_snp_input_manifest.hash")
 stale_report <- file.path(DIR_CORE, "core_snp_staleness_report.txt")
 force_core <- identical(Sys.getenv("FORCE_RERUN_CORE_SNP", "0"), "1")
 
-# 3. Load current selected assembly inputs and fingerprint them before deciding
+# 3. Load the validated Longcycler-only inputs and fingerprint them before deciding
 # whether an existing core-SNP directory is current.
-canonical_file <- file.path(DIR_QC, "canonical_assembly_selection.csv")
-if (file.exists(canonical_file)) {
-    qc_df <- read_csv(canonical_file, show_col_types = FALSE)
-    selected_df <- qc_df %>%
-        filter(selected_canonical %in% TRUE, QC_PASS %in% TRUE)
-    input_source <- canonical_file
-} else {
-    qc_df <- load_qc_summary()
-    selected_df <- qc_df %>% filter(QC_PASS %in% TRUE)
-    input_source <- file.path(DIR_WGS, "qc_summary.csv")
-    log_warn("Canonical assembly selection not found; using all QC PASS assemblies for fingerprinting.")
-}
+selected_df <- load_analysis_assemblies(FILE_ANALYSIS_ASSEMBLY_MANIFEST, require_files = TRUE)
+input_source <- FILE_ANALYSIS_ASSEMBLY_MANIFEST
 
 if (!"tp_lab" %in% names(selected_df) && "Timepoint" %in% names(selected_df)) {
     selected_df$tp_lab <- normalise_timepoint_preserve_events(selected_df$Timepoint)
@@ -131,10 +121,10 @@ if (outputs_exist && identical(current_hash, previous_hash)) {
 }
 
 if (outputs_exist && !force_core) {
-    log_warn("Core SNP outputs are stale relative to current assembly inputs.")
-    log_warn("Not rerunning Parsnp because FORCE_RERUN_CORE_SNP is not 1.")
-    log_warn("Review ", stale_report, " and rerun with FORCE_RERUN_CORE_SNP=1 when ready.")
-    quit(save = "no", status = 0)
+    stop(
+        "Core SNP outputs are stale relative to the Longcycler-only manifest. ",
+        "Review ", stale_report, " and rerun with FORCE_RERUN_CORE_SNP=1; stale mixed-assembler outputs will not be accepted."
+    )
 }
 
 # Check tools

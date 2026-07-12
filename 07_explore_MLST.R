@@ -12,8 +12,8 @@
 # Role: [Descriptive] - Explore and summarize MLST data.
 #
 # Inputs:
-#   - results/mlst/mlst_provider_preferred_all.csv
-#   - assembly_metadata.csv
+#   - results/mlst/mlst_provider_preferred.csv
+#   - results/qc/analysis_assembly_manifest.csv
 #
 # Outputs:
 #   - results/mlst/ST_frequencies.csv
@@ -44,7 +44,7 @@ suppressPackageStartupMessages({
 
 # 2. Configuration
 # ------------------------------------------------------------------------------
-FILE_MLST <- if (file.exists(FILE_MLST_PROVIDER_PREFERRED_ALL)) FILE_MLST_PROVIDER_PREFERRED_ALL else FILE_MLST_CANONICAL
+FILE_MLST <- FILE_MLST_CANONICAL
 DIR_DEBUG <- file.path(DIR_LOGS, "debug")
 ensure_dir(DIR_DEBUG)
 ensure_dir(DIR_PLOTS_MLST)
@@ -66,11 +66,16 @@ if (!"n_loci_typed" %in% names(mlst)) mlst$n_loci_typed <- NA_real_
 if (!"mlst_complete" %in% names(mlst)) mlst$mlst_complete <- NA
 
 # Load Metadata
-if (file.exists(FILE_METADATA)) {
-  meta <- read_csv(FILE_METADATA, show_col_types = FALSE)
-} else {
-  warning("Metadata not found, skipping joins.")
-  meta <- NULL
+meta <- load_analysis_assemblies(FILE_ANALYSIS_ASSEMBLY_MANIFEST, require_files = TRUE)
+if (!"full_path" %in% names(mlst)) stop(FILE_MLST, " lacks full_path; Longcycler provenance cannot be verified.")
+active_paths <- normalizePath(meta$full_path, winslash = "/", mustWork = FALSE)
+mlst <- mlst %>%
+  mutate(full_path = normalizePath(full_path, winslash = "/", mustWork = FALSE)) %>%
+  filter(full_path %in% active_paths)
+if ("ST_source" %in% names(mlst) && "provider_assembler" %in% names(mlst)) {
+  bad_provider <- mlst$ST_source == "provider_qc95" &
+    (is.na(mlst$provider_assembler) | tolower(mlst$provider_assembler) != ANALYSIS_ASSEMBLER)
+  if (any(bad_provider, na.rm = TRUE)) stop("MLST exploration found non-Longcycler provider provenance; rerun 06_MLST.R.")
 }
 
 # 4. Collapse to One Row per Isolate

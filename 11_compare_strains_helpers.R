@@ -152,13 +152,9 @@ detect_tools <- function() {
 
 # ------------- load core tables ---------------------------------------------
 load_core_tables <- function() {
-  # Assemblies: the canonical selection table is the sole authority for script
-  # 11.  Do not silently fall back to another assembler or a failed assembly.
-  canonical_file <- file.path(DIR_QC, "canonical_assembly_selection.csv")
-  if (!file.exists(canonical_file)) {
-    stop(canonical_file, " not found - run 12a_wgs_qc.R before strain comparison.")
-  }
-  asm <- readr::read_csv(canonical_file, show_col_types = FALSE)
+  # Assemblies: the validated analysis manifest is the sole authority. It
+  # contains selected, QC-passing Longcycler FASTAs only.
+  asm <- load_analysis_assemblies(FILE_ANALYSIS_ASSEMBLY_MANIFEST, require_files = TRUE)
   required_asm <- c(
     "Participant_id", "tp_lab", "Isolate_ID", "assembler", "QC_PASS",
     "selected_canonical"
@@ -180,6 +176,14 @@ load_core_tables <- function() {
       QC_PASS = as_pipeline_bool(QC_PASS)
     ) %>%
     filter(selected_canonical %in% TRUE, QC_PASS %in% TRUE)
+  assert_analysis_assembly_manifest(
+    asm,
+    context = "strain-comparison assembly manifest",
+    require_selected = TRUE,
+    require_qc = TRUE,
+    require_files = TRUE,
+    require_unique_episode = TRUE
+  )
   if (!nrow(asm)) stop("Canonical selection contains no selected QC-passing assemblies.")
   missing_fasta <- !usable_fasta_path(asm$full_path)
   if (any(missing_fasta)) {
@@ -217,8 +221,8 @@ load_core_tables <- function() {
       distinct()
   }
 
-  # MLST: active provider-preferred chromosomal STs only.
-  mlst_file <- if (file.exists(FILE_MLST_CANONICAL)) FILE_MLST_CANONICAL else FILE_MLST_PROVIDER_PREFERRED_ALL
+  # MLST: active Longcycler-derived provider-preferred chromosomal STs only.
+  mlst_file <- FILE_MLST_CANONICAL
   if (!file.exists(mlst_file)) {
     stop("No provider-preferred MLST file found - run 06_MLST.R, scripts/compare_mlst_sources.R, and scripts/integrate_provider_mlst.R")
   }
@@ -234,6 +238,17 @@ load_core_tables <- function() {
   }
   if (!length(st_col)) stop("Could not find ST column in provider-preferred MLST file")
   if (!"ST" %in% names(mlst)) mlst$ST <- mlst[[st_col[1]]]
+  if (!"full_path" %in% names(mlst)) stop(mlst_file, " lacks full_path; Longcycler provenance cannot be verified.")
+  mlst <- mlst %>%
+    mutate(full_path = normalizePath(full_path, winslash = "/", mustWork = FALSE)) %>%
+    filter(full_path %in% asm$full_path)
+  if ("ST_source" %in% names(mlst) && "provider_assembler" %in% names(mlst)) {
+    bad_provider <- mlst$ST_source == "provider_qc95" &
+      (is.na(mlst$provider_assembler) | tolower(mlst$provider_assembler) != ANALYSIS_ASSEMBLER)
+    if (any(bad_provider, na.rm = TRUE)) {
+      stop("MLST provider provenance includes a non-Longcycler call. Rerun 06_MLST.R.")
+    }
+  }
   # keep only relevant columns
   mlst <- mlst %>% select(Isolate_ID = any_of(c("Isolate_ID", "isolate_id")), ST, any_of(c("ST_source", "ST_provider", "ST_local")), everything())
 
@@ -307,6 +322,14 @@ resolve_sample <- function(Participant_id, tp_lab, assemblies, prefer_assembler 
       Participant_id, "__", tp_lab, "; found ", nrow(df), "."
     )
   }
+  assert_analysis_assembly_manifest(
+    df,
+    context = paste0("strain-comparison endpoint ", Participant_id, "__", tp_lab),
+    require_selected = TRUE,
+    require_qc = TRUE,
+    require_files = TRUE,
+    require_unique_episode = TRUE
+  )
   df
 }
 

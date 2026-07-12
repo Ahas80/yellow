@@ -100,21 +100,22 @@ test_that("sample resolution never falls back to a noncanonical or failed assemb
   expect_null(resolve_sample("1", "T0", assemblies))
 })
 
-test_that("current canonical snapshot yields 556 inputs and 963 within-participant pairs", {
-  canonical_file <- here::here("results", "qc", "canonical_assembly_selection.csv")
-  skip_if_not(file.exists(canonical_file), "Current project snapshot is unavailable")
-  selected <- readr::read_csv(canonical_file, show_col_types = FALSE) %>%
+test_that("current Longcycler-only snapshot yields 532 inputs and 893 within-participant pairs", {
+  manifest_file <- here::here("results", "qc", "analysis_assembly_manifest.csv")
+  skip_if_not(file.exists(manifest_file), "Current Longcycler-only project snapshot is unavailable")
+  selected <- readr::read_csv(manifest_file, show_col_types = FALSE) %>%
     dplyr::mutate(
       selected_canonical = as_pipeline_bool(selected_canonical),
       QC_PASS = as_pipeline_bool(QC_PASS)
     ) %>%
     dplyr::filter(selected_canonical %in% TRUE, QC_PASS %in% TRUE)
 
-  expect_equal(nrow(selected), 556L)
+  expect_equal(nrow(selected), 532L)
+  expect_true(all(normalise_assembler_column(selected) == ANALYSIS_ASSEMBLER))
   expect_true(all(usable_fasta_path(selected$full_path)))
   per_participant <- table(selected$Participant_id)
   expected_pairs <- sum(vapply(as.integer(per_participant), function(n) choose(n, 2), numeric(1)))
-  expect_equal(expected_pairs, 963)
+  expect_equal(expected_pairs, 893)
   expect_true(all(table(paste(selected$Participant_id, selected$tp_lab, sep = "__")) == 1L))
 })
 

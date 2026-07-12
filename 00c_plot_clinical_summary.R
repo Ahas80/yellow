@@ -16,7 +16,7 @@
 #
 # INPUTS:
 #   - results/clinical/status_map.csv    (from 00b_classify_episodes.R)
-#   - assembly_metadata.csv              (isolate-level metadata)
+#   - results/qc/analysis_assembly_manifest.csv (selected Longcycler genomes)
 #
 # OUTPUTS:
 #   - plots/clinical/*.png, *.pdf        (status distribution figures)
@@ -46,9 +46,9 @@ episode_tbl <- read_csv(FILE_STATUS_MAP, show_col_types = FALSE)
 if (!all(c("UTI_Status", "UTI_binary") %in% names(episode_tbl))) {
     stop("status_map.csv lacks UTI_Status/UTI_binary. Rerun 00b_classify_episodes.R before plotting.")
 }
-assembly_df <- load_metadata() # Use helper from config
+assembly_df <- load_analysis_assemblies(FILE_ANALYSIS_ASSEMBLY_MANIFEST, require_files = TRUE)
 
-msg("Loaded status_map.csv (%d rows) and assembly_metadata.csv (%d rows)", nrow(episode_tbl), nrow(assembly_df))
+msg("Loaded status_map.csv (%d rows) and Longcycler-only analysis manifest (%d rows)", nrow(episode_tbl), nrow(assembly_df))
 
 # Helpers
 # ------------------------------------------------------------------------------

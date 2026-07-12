@@ -14,7 +14,7 @@
 # Role: [Analysis] - Construct longitudinal timelines and identify transitions.
 #
 # Inputs:
-#   - results/clinical/status_map.csv
+#   - results/clinical/analysis_cohort_longcycler.csv
 #   - results/strain_compare/pairwise_metrics.csv
 #   - results/clinical/intermediate/clinical_merged.rds (for dates if avail)
 #
@@ -48,32 +48,57 @@ msg("Starting 15_longitudinal_patterns.R")
 
 # 1. Load Data
 # ------------------------------------------------------------------------------
-# Clinical Status. Prefer the poster-timepoint file only when it is fresh and
-# already carries the primary UTI_Status columns; otherwise use status_map.csv so
-# stale legacy ASB/UTI/Negative labels cannot re-enter timelines.
-status_map <- read_primary_status_map(
-    prefer_poster = TRUE,
-    require_fresh = TRUE,
-    caller = "15_longitudinal_patterns.R"
+# The analytical timeline is the selected QC-pass Longcycler cohort. The broader
+# clinical status map is source attrition/QC only and must not enter this script.
+if (!file.exists(FILE_ANALYSIS_CLINICAL_COHORT)) {
+    stop("Missing ", FILE_ANALYSIS_CLINICAL_COHORT,
+         ". Run the canonical assembly/QC cohort build before script 15.")
+}
+status_map <- readr::read_csv(FILE_ANALYSIS_CLINICAL_COHORT, show_col_types = FALSE) %>%
+    prefer_primary_uti_status(allow_legacy_fallback = FALSE) %>%
+    mutate(
+        Participant_id = as.character(.data$Participant_id),
+        tp_lab = normalise_timepoint_preserve_events(.data$tp_lab)
+    )
+assert_unique_keys(
+    status_map, c("Participant_id", "tp_lab"),
+    context = "15 Longcycler analysis cohort",
+    out_path = file.path(DIR_QC, "15_duplicate_analysis_cohort_keys.csv")
 )
-status_file <- attr(status_map, "source_file") %||% FILE_STATUS_MAP
-msg("Loaded %d episodes from %s", nrow(status_map), basename(status_file))
+msg("Loaded %d selected Longcycler episodes from %s",
+    nrow(status_map), basename(FILE_ANALYSIS_CLINICAL_COHORT))
 
 # Pairwise Metrics
 pairwise_file <- file.path(DIR_STRAIN, "pairwise_metrics.csv")
 if (!file.exists(pairwise_file)) stop("Missing pairwise_metrics.csv. Run 11_compare_strains.R first.")
-pairwise <- read_csv(pairwise_file, show_col_types = FALSE)
+pairwise <- read_csv(pairwise_file, show_col_types = FALSE) %>%
+    mutate(
+        Participant_id_A = as.character(.data$Participant_id_A),
+        Participant_id_B = as.character(.data$Participant_id_B),
+        Timepoint_A = normalise_timepoint_preserve_events(.data$Timepoint_A),
+        Timepoint_B = normalise_timepoint_preserve_events(.data$Timepoint_B),
+        SampleKey_A = paste0(.data$Participant_id_A, "__", .data$Timepoint_A),
+        SampleKey_B = paste0(.data$Participant_id_B, "__", .data$Timepoint_B),
+        pair_key = if_else(
+            .data$SampleKey_A <= .data$SampleKey_B,
+            paste(.data$SampleKey_A, .data$SampleKey_B, sep = "||"),
+            paste(.data$SampleKey_B, .data$SampleKey_A, sep = "||")
+        )
+    )
+if (anyDuplicated(pairwise$pair_key)) stop("pairwise_metrics.csv has duplicate unordered endpoint pairs")
+if (any(tolower(pairwise$Assembler_A) != ANALYSIS_ASSEMBLER |
+        tolower(pairwise$Assembler_B) != ANALYSIS_ASSEMBLER, na.rm = TRUE)) {
+    stop("pairwise_metrics.csv contains an endpoint outside the selected Longcycler cohort")
+}
 msg("Loaded %d pairwise comparisons", nrow(pairwise))
 
 # 2. Assign Global Strain IDs (Graph Clustering)
 # ------------------------------------------------------------------------------
 msg("Assigning Strain IDs based on 'Same' classification...")
 
-# [EPI] Why Graph Clustering?
-# The pairwise comparisons in Script 11 only tell us if Isolate A == Isolate B.
-# To track a strain over time (A == B, B == C), we treat each "Same" classification
-# as an edge in an undirected graph. The connected components of this graph
-# represent a single contiguous strain lineage (Strain_ID) persisting within the host.
+# Graph components provide lineage context only. Every adjacent transition below
+# is classified from its own direct pairwise SNP record; component membership is
+# never substituted for missing direct evidence and never defines Same_Strain.
 
 # Filter for "Same" edges
 edges <- pairwise %>%
@@ -85,28 +110,14 @@ edges <- pairwise %>%
     filter(!is.na(from), !is.na(to), nzchar(from), nzchar(to), from != to) %>%
     distinct()
 
-# Get all unique samples from status_map to ensure singletons are included
-# We need to construct SampleKey for status_map entries to match pairwise
-# SampleKey format: Participant_id__Timepoint (as used in 11_compare_strains.R)
 status_map <- status_map %>%
     mutate(
-        tp_lab = if ("tp_lab" %in% names(.)) normalise_timepoint_preserve_events(tp_lab) else normalise_timepoint_preserve_events(Timepoint),
         SampleKey = paste0(Participant_id, "__", tp_lab)
     )
 
 timeline_nodes <- unique(status_map$SampleKey)
-edge_nodes <- unique(c(edges$from, edges$to))
-edge_only_nodes <- setdiff(edge_nodes, timeline_nodes)
-
-if (length(edge_only_nodes) > 0) {
-    msg(
-        "NOTE: %d same-strain graph node(s) occur in pairwise_metrics.csv but not in the clinical timeline. Including them as graph-only vertices.",
-        length(edge_only_nodes)
-    )
-    msg("First graph-only nodes: %s", paste(head(edge_only_nodes, 10), collapse = ", "))
-}
-
-all_nodes <- unique(c(timeline_nodes, edge_nodes))
+edges <- edges %>% filter(.data$from %in% timeline_nodes, .data$to %in% timeline_nodes)
+all_nodes <- timeline_nodes
 
 # Build graph
 g <- graph_from_data_frame(edges, directed = FALSE, vertices = data.frame(name = all_nodes))
@@ -127,17 +138,8 @@ timeline <- status_map %>%
     left_join(strain_map, by = "SampleKey", relationship = "many-to-one") %>%
     select(-Cluster_ID)
 
-msg("Assigned %d unique Strain IDs across %d episodes", n_distinct(timeline$Strain_ID, na.rm = TRUE), nrow(timeline))
-
-# [Transparency Check] Report episodes with missing Strain IDs (QC Failures/No Seq)
-missing_strain <- sum(is.na(timeline$Strain_ID))
-if (missing_strain > 0) {
-    msg(
-        "NOTE: %d episodes (%.1f%%) have no assigned Strain ID (Sequencing failed or unavailable). These are retained in the timeline as 'No_Seq' but excluded from strain comparisons.",
-        missing_strain,
-        missing_strain / nrow(timeline) * 100
-    )
-}
+msg("Assigned %d graph-component context IDs across %d selected Longcycler episodes",
+    n_distinct(timeline$Strain_ID, na.rm = TRUE), nrow(timeline))
 
 # 3. Order Timelines & Calculate Transitions
 # ------------------------------------------------------------------------------
@@ -178,27 +180,65 @@ timeline <- timeline %>%
     filter(!is.na(Time_Order)) %>%
     arrange(Participant_id, Time_Order, tp_lab)
 
-# Identify Transitions
+# Identify adjacent selected-episode transitions and attach the direct pair
+# record in orientation-independent form.
 transitions <- timeline %>%
     group_by(Participant_id) %>%
     mutate(
         Prev_Strain = lag(Strain_ID),
         Prev_Status = lag(Status_Simple),
         Prev_Time = lag(tp_lab),
-
-        # Transition Types
-        Is_Consecutive = !is.na(Prev_Strain), # Is there a previous point?
-        Same_Strain = Strain_ID == Prev_Strain,
-        Status_Change = Status_Simple != Prev_Status,
-        Event_Type = case_when(
-            !Is_Consecutive ~ "Initial",
-            Same_Strain & Status_Change ~ "Phenotype_Switch",
-            Same_Strain & !Status_Change ~ "Persistence",
-            !Same_Strain ~ "Strain_Replacement",
-            TRUE ~ "Unknown"
+        Is_Consecutive = !is.na(Prev_Time)
+    ) %>%
+    ungroup() %>%
+    filter(.data$Is_Consecutive) %>%
+    mutate(
+        from_sample_key = paste0(.data$Participant_id, "__", .data$Prev_Time),
+        to_sample_key = paste0(.data$Participant_id, "__", .data$tp_lab),
+        pair_key = if_else(
+            .data$from_sample_key <= .data$to_sample_key,
+            paste(.data$from_sample_key, .data$to_sample_key, sep = "||"),
+            paste(.data$to_sample_key, .data$from_sample_key, sep = "||")
         )
     ) %>%
-    ungroup()
+    left_join(
+        pairwise %>%
+            select(.data$pair_key, .data$TotalSNPs, .data$AvgIdentity,
+                   .data$Classification, .data$RuleUsed,
+                   .data$snp_strain_context, .data$st_lineage_context,
+                   .data$pair_interpretation, .data$same_strain_evidence,
+                   .data$Assembler_A, .data$Assembler_B,
+                   .data$Fasta_SHA256_A, .data$Fasta_SHA256_B),
+        by = "pair_key", relationship = "many-to-one"
+    ) %>%
+    mutate(
+        Direct_Pair_Evidence = !is.na(.data$TotalSNPs),
+        Same_Strain = .data$Direct_Pair_Evidence & .data$TotalSNPs <= strain_snp_threshold(),
+        Same_Graph_Component = .data$Strain_ID == .data$Prev_Strain,
+        Status_Change = .data$Status_Simple != .data$Prev_Status,
+        Event_Type = case_when(
+            !.data$Direct_Pair_Evidence ~ "Missing_Direct_Pair_Evidence",
+            .data$Same_Strain & .data$Status_Change ~ "Phenotype_Switch",
+            .data$Same_Strain & !.data$Status_Change ~ "Persistence",
+            !.data$Same_Strain ~ "Strain_Replacement",
+            TRUE ~ "Unknown"
+        )
+    )
+
+expected_transitions <- timeline %>%
+    count(.data$Participant_id, name = "n_episodes") %>%
+    summarise(n = sum(pmax(.data$n_episodes - 1L, 0L))) %>%
+    pull(.data$n)
+if (nrow(transitions) != expected_transitions) {
+    stop("Adjacent transition count is inconsistent with the selected Longcycler timeline")
+}
+if (any(!transitions$Direct_Pair_Evidence)) {
+    stop("One or more selected Longcycler adjacent transitions lack direct pairwise SNP evidence")
+}
+if (any(tolower(transitions$Assembler_A) != ANALYSIS_ASSEMBLER |
+        tolower(transitions$Assembler_B) != ANALYSIS_ASSEMBLER)) {
+    stop("A selected timeline transition contains a non-Longcycler pairwise endpoint")
+}
 
 # 4. Extract "Phenotype Switch" Candidates (Priority 1)
 # ------------------------------------------------------------------------------
@@ -253,9 +293,9 @@ append_denominator_summary(
     timeline,
     "15_longitudinal_patterns.R",
     "participant_timelines",
-    "clinical_episode",
+    "selected_longcycler_episode",
     file.path(out_dir, "participant_timelines.csv"),
-    "Clinical longitudinal ordering uses Collection_Date where available; poster half-step labels are display-only"
+    "Exact selected QC-pass Longcycler cohort; direct pair evidence defines adjacent transition strain context"
 )
 
 msg("Saved tables to %s", out_dir)

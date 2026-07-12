@@ -43,9 +43,9 @@
 #   1. ALL genes are retained, including those labelled "Unassigned" in gene_map.
 #      Rationale: dropping ~50% of detected genes would undercount VF burden.
 #      Category summaries still show "Unassigned" as its own category.
-#   2. Union-based gene calling (present in EITHER Flye OR Longcycler assembly)
-#      is inherited from upstream 02_gene_presence_analysis.R. We do NOT change
-#      that logic here — consistency with the established pipeline is paramount.
+#   2. Every row is derived from one selected, QC-passing Longcycler assembly.
+#      Flye candidates are retained only in upstream QC/audit tables and cannot
+#      enter this active analysis dataset as a fallback.
 #   3. No statistical testing or plotting belongs in this script.  This is
 #      purely a data preparation step.
 #
@@ -76,7 +76,7 @@ option_list <- list(
     help = "Diagnostics text output [default: <dirname(out)>/vf_dataset_diagnostics.txt]"
   ),
   make_option(c("--selection_file"),
-    type = "character", default = file.path(DIR_QC, "canonical_assembly_selection.csv"),
+    type = "character", default = FILE_ANALYSIS_ASSEMBLY_MANIFEST,
     help = "Assembly selection CSV used to filter MLST rows [default: %default]"
   ),
   make_option(c("--selection_column"),
@@ -116,14 +116,27 @@ msg("VF-ready output: %s", out_file)
 # --- Anchor 1: VF Presence/Absence Matrix ---
 #   Produced by 02_gene_presence_analysis.R
 #   Structure: rows = participant × timepoint, columns = VF genes (0/1)
-#   This uses the union of hits across assemblers: a gene is called "present"
-#   if it was detected in EITHER the Flye or Longcycler assembly for that
-#   participant at that timepoint.
+#   This contains hits from one selected QC-passing Longcycler assembly per
+#   participant-timepoint.
 if (!file.exists(opt$vf_pa)) stop("Missing ", opt$vf_pa, ". Run 02_gene_presence_analysis.R first.")
+selection <- load_analysis_assemblies(opt$selection_file, require_files = TRUE)
+selection <- selection %>%
+  mutate(
+    Participant_id = as.character(Participant_id),
+    tp_lab = normalise_timepoint_preserve_events(tp_lab),
+    full_path = normalizePath(full_path, winslash = "/", mustWork = FALSE)
+  )
 vf_pa <- read_csv(opt$vf_pa, show_col_types = FALSE) %>%
   mutate(Participant_id = as.character(Participant_id),
          tp_lab = normalise_timepoint_preserve_events(tp_lab),
          Event_type = episode_event_type(tp_lab))
+
+vf_keys <- vf_pa %>% distinct(Participant_id, tp_lab)
+selection_keys <- selection %>% distinct(Participant_id, tp_lab)
+if (nrow(anti_join(vf_keys, selection_keys, by = c("Participant_id", "tp_lab"))) > 0 ||
+    nrow(anti_join(selection_keys, vf_keys, by = c("Participant_id", "tp_lab"))) > 0) {
+  stop("VF presence/absence rows do not exactly match the Longcycler-only analysis manifest. Rerun script 02.")
+}
 
 # Separate metadata columns from gene columns.
 # Common metadata columns are not VF genes.  Everything else is a binary VF
@@ -214,19 +227,17 @@ if (mlst_available) {
       "provider_assembler", "full_path", "file_name", "assembler", "Assembler"
     )))
 
-  selection_file <- opt$selection_file
-  if (file.exists(selection_file) && "full_path" %in% names(mlst)) {
-    selection <- read_csv(selection_file, show_col_types = FALSE)
-    if (!opt$selection_column %in% names(selection)) {
-      stop("Selection file lacks requested column: ", opt$selection_column)
+  if (!"full_path" %in% names(mlst)) stop(mlst_file, " lacks full_path; cannot verify Longcycler provenance.")
+  canonical_paths <- selection$full_path
+  mlst <- mlst %>%
+    mutate(full_path = normalizePath(full_path, winslash = "/", mustWork = FALSE)) %>%
+    filter(full_path %in% canonical_paths)
+  if ("ST_source" %in% names(mlst) && "provider_assembler" %in% names(mlst)) {
+    bad_provider <- mlst$ST_source == "provider_qc95" &
+      (is.na(mlst$provider_assembler) | tolower(mlst$provider_assembler) != ANALYSIS_ASSEMBLER)
+    if (any(bad_provider, na.rm = TRUE)) {
+      stop("Active MLST contains provider calls that are not Longcycler-derived. Rerun 06_MLST.R.")
     }
-    canonical_paths <- selection %>%
-      filter(.data[[opt$selection_column]] %in% TRUE) %>%
-      mutate(full_path = normalizePath(full_path, winslash = "/", mustWork = FALSE)) %>%
-      pull(full_path)
-    mlst <- mlst %>%
-      mutate(full_path = normalizePath(full_path, winslash = "/", mustWork = FALSE)) %>%
-      filter(full_path %in% canonical_paths)
   }
 
   mlst_conflicts <- mlst %>%

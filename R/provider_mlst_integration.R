@@ -2,8 +2,9 @@
 # R/provider_mlst_integration.R
 # ------------------------------------------------------------------------------
 # Internal provider/RIVM MLST integration helper sourced by 06_MLST.R.
-# It promotes provider SeqSphere MLST to the active chromosomal ST source while
-# preserving local mlst output as labelled provenance and fallback only.
+# It promotes Longcycler provider SeqSphere MLST to the active chromosomal ST
+# source while preserving local MLST from the same Longcycler FASTA as a
+# labelled fallback only.
 # ==============================================================================
 
 source("00_config.R")
@@ -75,9 +76,19 @@ prepare_local_for_preference <- function(df) {
   if (!"ST_local" %in% names(df)) {
     df$ST_local <- NA_character_
   }
+  if (!"full_path" %in% names(df)) {
+    stop("Local MLST table lacks full_path provenance.")
+  }
+  if (!"file_name" %in% names(df)) df$file_name <- basename(df$full_path)
   df %>%
     mutate(
       Isolate_ID = as.character(Isolate_ID),
+      full_path = normalizePath(as.character(full_path), winslash = "/", mustWork = FALSE),
+      local_assembler = str_to_lower(coalesce(
+        if ("assembler" %in% names(.)) as.character(assembler) else NA_character_,
+        if ("Assembler" %in% names(.)) as.character(Assembler) else NA_character_,
+        detect_assembler(coalesce(as.character(full_path), as.character(file_name)))
+      )),
       ST_local = as.character(ST_local),
       local_ST_called = !is_missing_like(ST_local)
     )
@@ -120,9 +131,56 @@ apply_provider_preference <- function(df, provider_summary) {
     )
 }
 
-msg("Reading local MLST provenance: %s", FILE_MLST_LOCAL_CANONICAL)
+selection <- read_csv(canonical_selection_path, show_col_types = FALSE, progress = FALSE)
+required_selection_cols <- c("Participant_id", "tp_lab", "Isolate_ID", "selected_canonical", "QC_PASS")
+missing_selection_cols <- setdiff(required_selection_cols, names(selection))
+if (length(missing_selection_cols) > 0) {
+  stop("Canonical assembly selection lacks required column(s): ", paste(missing_selection_cols, collapse = ", "))
+}
+if (!"full_path" %in% names(selection) && "fasta_path" %in% names(selection)) {
+  selection$full_path <- selection$fasta_path
+}
+if (!"full_path" %in% names(selection)) stop("Canonical assembly selection lacks full_path/fasta_path.")
+if (!"file_name" %in% names(selection)) selection$file_name <- basename(selection$full_path)
+
+selection <- selection %>%
+  mutate(
+    selected_canonical = boolish(selected_canonical),
+    QC_PASS = boolish(QC_PASS),
+    canonical_assembler = str_to_lower(coalesce(
+      if ("assembler" %in% names(.)) as.character(assembler) else NA_character_,
+      if ("Assembler" %in% names(.)) as.character(Assembler) else NA_character_,
+      detect_assembler(coalesce(as.character(full_path), as.character(file_name)))
+    )),
+    full_path = normalizePath(as.character(full_path), winslash = "/", mustWork = FALSE)
+  )
+
+canonical_manifest <- selection %>%
+  filter(selected_canonical %in% TRUE, QC_PASS %in% TRUE)
+if (nrow(canonical_manifest) == 0) stop("Canonical selection contains no selected QC-passing assemblies.")
+if (any(is.na(canonical_manifest$canonical_assembler) | canonical_manifest$canonical_assembler != "longcycler")) {
+  stop("Canonical MLST denominator contains non-Longcycler or unknown assembler rows.")
+}
+if (anyDuplicated(canonical_manifest[c("Participant_id", "tp_lab")])) {
+  stop("Canonical Longcycler MLST denominator has duplicate participant-timepoint rows.")
+}
+canonical_denominator <- nrow(canonical_manifest)
+canonical_paths <- unique(canonical_manifest$full_path)
+
+msg("Reading local Longcycler MLST provenance: %s", FILE_MLST_LOCAL_CANONICAL)
 local_canonical <- read_csv(FILE_MLST_LOCAL_CANONICAL, show_col_types = FALSE, progress = FALSE) %>%
-  prepare_local_for_preference()
+  prepare_local_for_preference() %>%
+  filter(full_path %in% canonical_paths)
+
+if (any(is.na(local_canonical$local_assembler) | local_canonical$local_assembler != "longcycler")) {
+  stop("Local canonical MLST contains non-Longcycler or unknown assembler provenance.")
+}
+if (nrow(local_canonical) != canonical_denominator || !setequal(local_canonical$full_path, canonical_paths)) {
+  stop(
+    "Local canonical MLST does not exactly match the selected Longcycler manifest: local=",
+    nrow(local_canonical), ", canonical=", canonical_denominator, "."
+  )
+}
 
 if (anyDuplicated(local_canonical$Isolate_ID)) {
   dup_ids <- unique(local_canonical$Isolate_ID[duplicated(local_canonical$Isolate_ID)])
@@ -130,18 +188,37 @@ if (anyDuplicated(local_canonical$Isolate_ID)) {
 }
 
 msg("Reading provider normalized MLST: %s", FILE_MLST_PROVIDER_NORMALIZED)
-provider <- read_csv(FILE_MLST_PROVIDER_NORMALIZED, show_col_types = FALSE, progress = FALSE) %>%
+provider <- read_csv(FILE_MLST_PROVIDER_NORMALIZED, show_col_types = FALSE, progress = FALSE)
+required_provider_cols <- c(
+  "provider_assembler", "provider_norm_id", "provider_ST", "Isolate_ID",
+  "matched_canonical", "assembler_matches_canonical"
+)
+missing_provider_cols <- setdiff(required_provider_cols, names(provider))
+if (length(missing_provider_cols) > 0) {
+  stop("Provider normalized MLST lacks required column(s): ", paste(missing_provider_cols, collapse = ", "))
+}
+provider <- provider %>%
   mutate(
     Isolate_ID = as.character(Isolate_ID),
+    provider_assembler = str_to_lower(str_squish(as.character(provider_assembler))),
     provider_ST = as.character(provider_ST),
     provider_ST_called = if ("provider_ST_called" %in% names(.)) boolish(provider_ST_called) else !is_missing_like(provider_ST),
     provider_qc_ge_95 = if ("provider_qc_ge_95" %in% names(.)) boolish(provider_qc_ge_95) else provider_PercGoodTargets >= provider_qc_threshold,
     matched_canonical = if ("matched_canonical" %in% names(.)) boolish(matched_canonical) else !is.na(Isolate_ID),
+    assembler_matches_canonical = boolish(assembler_matches_canonical),
     expected_batch_match = if ("expected_batch_match" %in% names(.)) boolish(expected_batch_match, default = NA) else NA
   )
 
+if (any(is.na(provider$provider_assembler) | provider$provider_assembler != "longcycler")) {
+  stop("Provider-normalized active input contains Flye, combined, or unknown assembler provenance.")
+}
+if (any(provider$matched_canonical %in% TRUE & !(provider$assembler_matches_canonical %in% TRUE))) {
+  stop("Provider-normalized input marks an assembler-mismatched row as canonical.")
+}
+
 provider_qc95 <- provider %>%
   filter(
+    provider_assembler == "longcycler",
     matched_canonical %in% TRUE,
     provider_qc_ge_95 %in% TRUE,
     provider_ST_called %in% TRUE,
@@ -179,10 +256,6 @@ provider_summary <- provider_qc95 %>%
 
 preferred_canonical <- apply_provider_preference(local_canonical, provider_summary)
 
-selection <- read_csv(canonical_selection_path, show_col_types = FALSE, progress = FALSE) %>%
-  mutate(selected_canonical = if ("selected_canonical" %in% names(.)) boolish(selected_canonical) else FALSE)
-canonical_denominator <- sum(selection$selected_canonical %in% TRUE, na.rm = TRUE)
-
 if (nrow(preferred_canonical) != canonical_denominator) {
   stop(
     "Provider-preferred MLST denominator mismatch: wrote ", nrow(preferred_canonical),
@@ -196,6 +269,22 @@ preferred_called_n <- sum(!is_missing_like(preferred_canonical$ST), na.rm = TRUE
 local_fallback_n <- sum(str_starts(preferred_canonical$ST_source, "local_fallback"), na.rm = TRUE)
 missing_n <- sum(preferred_canonical$ST_source %in% c("missing", "missing_provider_conflict"), na.rm = TRUE)
 
+active_assembler <- str_to_lower(coalesce(
+  if ("assembler" %in% names(preferred_canonical)) as.character(preferred_canonical$assembler) else NA_character_,
+  if ("Assembler" %in% names(preferred_canonical)) as.character(preferred_canonical$Assembler) else NA_character_,
+  preferred_canonical$local_assembler
+))
+if (any(is.na(active_assembler) | active_assembler != "longcycler")) {
+  stop("Provider-preferred MLST contains non-Longcycler or missing active assembly provenance.")
+}
+provider_primary <- preferred_canonical %>% filter(ST_source == "provider_qc95")
+if (nrow(provider_primary) > 0 && any(
+  is.na(provider_primary$provider_assembler) |
+    provider_primary$provider_assembler != "longcycler"
+)) {
+  stop("Provider-primary MLST contains Flye, combined, or missing provider provenance.")
+}
+
 if (provider_primary_n < local_called_n) {
   stop(
     "Provider QC95 MLST coverage (", provider_primary_n, ") is below local MLST coverage (",
@@ -208,7 +297,14 @@ write_csv(preferred_canonical, FILE_MLST_PROVIDER_PREFERRED)
 
 if (file.exists(FILE_MLST_LOCAL_ALL)) {
   local_all <- read_mlst_table(FILE_MLST_LOCAL_ALL) %>%
-    prepare_local_for_preference()
+    prepare_local_for_preference() %>%
+    filter(full_path %in% canonical_paths)
+  if (any(is.na(local_all$local_assembler) | local_all$local_assembler != "longcycler")) {
+    stop("Local all/isolate MLST input contains non-Longcycler provenance.")
+  }
+  if (nrow(local_all) != canonical_denominator || !setequal(local_all$full_path, canonical_paths)) {
+    stop("Local all/isolate MLST input does not exactly match the selected Longcycler manifest.")
+  }
   preferred_all <- apply_provider_preference(local_all, provider_summary)
 } else {
   preferred_all <- preferred_canonical

@@ -176,9 +176,24 @@ log_info("Written QC summary to: ", outfile)
 # assembly-level, but downstream biological episode analyses should use only the
 # selected row per Participant_id x tp_lab.
 canonical_selection <- select_canonical_assemblies(qc_res)
-canonical_file <- file.path(DIR_QC, "canonical_assembly_selection.csv")
+canonical_file <- FILE_CANONICAL_ASSEMBLY_SELECTION
 write_csv(canonical_selection, canonical_file)
 log_info("Written canonical assembly selection to: ", canonical_file)
+
+analysis_manifest <- canonical_selection %>%
+    filter(selected_canonical %in% TRUE, QC_PASS %in% TRUE)
+assert_analysis_assembly_manifest(
+    analysis_manifest,
+    context = "12a Longcycler-only analysis manifest",
+    require_selected = TRUE,
+    require_qc = TRUE,
+    require_files = TRUE,
+    require_unique_episode = TRUE
+)
+write_csv(analysis_manifest, FILE_ANALYSIS_ASSEMBLY_MANIFEST)
+log_info("Written Longcycler-only analysis manifest to: ", FILE_ANALYSIS_ASSEMBLY_MANIFEST)
+log_info("  Selected Longcycler assemblies: ", nrow(analysis_manifest))
+log_info("  Selected non-Longcycler assemblies: 0")
 
 append_denominator_summary(
     qc_res,
@@ -186,15 +201,15 @@ append_denominator_summary(
     "assembly_qc",
     "assembly",
     FILE_METADATA,
-    "Assembly-level QC; assembler alternatives remain explicit rows"
+    "Longcycler assembly-level QC only"
 )
 append_denominator_summary(
-    canonical_selection %>% filter(selected_canonical),
+    analysis_manifest,
     "12a_wgs_qc.R",
     "canonical_selected_assemblies",
     "participant_timepoint",
-    canonical_file,
-    "One QC PASS selected assembly per Participant_id x tp_lab; longcycler preferred over flye when both pass"
+    FILE_ANALYSIS_ASSEMBLY_MANIFEST,
+    "One QC-passing Longcycler assembly per Participant_id x tp_lab; no assembler fallback"
 )
 
 # QC selection bias by primary UTI status.  This uses exact-style Fisher testing
@@ -216,7 +231,24 @@ if (file.exists(status_file)) {
         out_path = file.path(DIR_QC, "status_map_duplicate_episode_keys.csv")
     )
     if (nrow(status_dupes) == 0) {
+        cohort_status <- status %>%
+            select(-any_of(setdiff(intersect(names(status), names(analysis_manifest)), c("Participant_id", "tp_lab"))))
+        analysis_cohort <- analysis_manifest %>%
+            inner_join(cohort_status, by = c("Participant_id", "tp_lab"), relationship = "one-to-one")
+        manifest_keys <- analysis_manifest %>% distinct(Participant_id, tp_lab)
+        cohort_keys <- analysis_cohort %>% distinct(Participant_id, tp_lab)
+        if (nrow(analysis_cohort) != nrow(analysis_manifest) ||
+            nrow(anti_join(manifest_keys, cohort_keys, by = c("Participant_id", "tp_lab"))) > 0 ||
+            nrow(anti_join(cohort_keys, manifest_keys, by = c("Participant_id", "tp_lab"))) > 0) {
+            stop("Clinical status map does not contain an exact one-to-one match for the Longcycler analysis manifest.")
+        }
+        write_csv(analysis_cohort, FILE_ANALYSIS_CLINICAL_COHORT)
+        log_info("Written exact Longcycler analysis clinical cohort to: ", FILE_ANALYSIS_CLINICAL_COHORT,
+                 " (", nrow(analysis_cohort), " rows)")
+
         qc_episode <- canonical_selection %>%
+            mutate(.analysis_assembler = normalise_assembler_column(.)) %>%
+            filter(.analysis_assembler == ANALYSIS_ASSEMBLER) %>%
             group_by(Participant_id, tp_lab) %>%
             summarise(
                 has_wgs = any(file_exists, na.rm = TRUE),

@@ -59,6 +59,30 @@ normalise_tp_label <- function(x) {
   }
 }
 
+load_active_longcycler_keys <- function() {
+  canonical_file <- file.path(DIR_QC, "canonical_assembly_selection.csv")
+  selection <- read_csv(require_file(canonical_file, "canonical Longcycler selection"), show_col_types = FALSE)
+  assembler_col <- intersect(c("assembler", "Assembler"), names(selection))[1]
+  if (is.na(assembler_col) ||
+      !all(c("selected_canonical", "QC_PASS", "Participant_id", "tp_lab") %in% names(selection))) {
+    stop("Canonical assembly selection lacks Longcycler-primary selection fields: ", canonical_file)
+  }
+  keys <- selection %>%
+    mutate(
+      Participant_id = as.character(.data$Participant_id),
+      tp_lab = normalise_tp_label(.data$tp_lab),
+      selected_canonical = as_pipeline_bool(.data$selected_canonical),
+      QC_PASS = as_pipeline_bool(.data$QC_PASS),
+      active_assembler = str_to_lower(as.character(.data[[assembler_col]]))
+    ) %>%
+    filter(.data$selected_canonical %in% TRUE,
+           .data$QC_PASS %in% TRUE,
+           .data$active_assembler == "longcycler") %>%
+    distinct(.data$Participant_id, .data$tp_lab)
+  if (nrow(keys) == 0) stop("Canonical manifest contains no selected QC-passing Longcycler episode keys.")
+  keys
+}
+
 normalise_st_label <- function(x) {
   x <- str_trim(as.character(x))
   unknown <- c("", "-", "ST-", "NA", "N/A", "UNKNOWN", "UNK", "NT",
@@ -174,7 +198,21 @@ status_primary <- read_csv(require_file(FILE_STATUS_MAP), show_col_types = FALSE
   mutate(Participant_id = as.character(Participant_id),
          tp_lab = normalise_tp_label(tp_lab))
 
-vf_ready <- read_current_vf_ready()
+active_longcycler_keys <- load_active_longcycler_keys()
+expected_active_status <- status_primary %>%
+  semi_join(active_longcycler_keys, by = c("Participant_id", "tp_lab"))
+if (nrow(expected_active_status) != nrow(active_longcycler_keys)) {
+  stop("Not every active selected QC-pass Longcycler key has one primary clinical status row.")
+}
+expected_active_total <- nrow(active_longcycler_keys)
+expected_active_uti <- sum(expected_active_status$UTI_Status == "UTI", na.rm = TRUE)
+expected_active_not_uti <- sum(expected_active_status$UTI_Status == "Not_UTI", na.rm = TRUE)
+
+vf_ready <- read_current_vf_ready() %>%
+  semi_join(active_longcycler_keys, by = c("Participant_id", "tp_lab"))
+if (nrow(vf_ready) != expected_active_total) {
+  stop("VF-ready data do not contain every active selected QC-pass Longcycler episode key.")
+}
 
 score_path <- require_file(file.path(DIR_VF, "vf_score_table.csv"))
 scores <- read_csv(score_path, show_col_types = FALSE) %>%
@@ -185,7 +223,8 @@ scores <- read_csv(score_path, show_col_types = FALSE) %>%
     Participant_id = as.character(Participant_id),
     tp_lab = normalise_tp_label(tp_lab),
     ST = if ("ST" %in% names(.)) normalise_st_label(ST) else NA_character_
-  )
+  ) %>%
+  semi_join(active_longcycler_keys, by = c("Participant_id", "tp_lab"))
 
 if (any(is.na(scores$UTI_Status))) {
   scores <- scores %>%
@@ -675,7 +714,10 @@ s6 <- p_s6a + p_s6b +
   plot_annotation(
     title = "Lineage confounding diagnostic",
     subtitle = "VF burden differs strongly by ST, but ST composition was not significantly different by primary status in this sparse UTI set.",
-    caption = "Exploratory diagnostic; UTI n=17 and most STs contain too few UTI isolates for within-ST inference."
+    caption = sprintf(
+      "Exploratory diagnostic; active Longcycler UTI n=%d and most STs contain too few UTI isolates for within-ST inference.",
+      sum(vf_ready$UTI_Status == "UTI", na.rm = TRUE)
+    )
   ) &
   theme(legend.position = "bottom")
 ggsave(file.path(DIR_PLOTS_STAT, "lineage_confounding_panel.png"), s6, width = 13, height = 6.5, dpi = 300, bg = "white")
@@ -811,8 +853,8 @@ validation <- tibble(
   check = c(
     "primary clinical denominator is 583 rows",
     "primary clinical counts are 18 UTI and 565 Not_UTI",
-    "primary VF/model denominator is 556 rows",
-    "primary VF/model counts are 17 UTI and 539 Not_UTI",
+    sprintf("active selected QC-pass Longcycler VF/model denominator is %d rows", expected_active_total),
+    sprintf("active Longcycler VF/model counts are %d UTI and %d Not_UTI", expected_active_uti, expected_active_not_uti),
     "participant-collapsed supplementary endpoint tests include BH q-values",
     "paired feature tests include BH q-values",
     "transition module enrichment includes BH q-values",
@@ -823,9 +865,10 @@ validation <- tibble(
     ifelse(nrow(status_primary) == 583, "PASS", "FAIL"),
     ifelse(sum(status_primary$UTI_Status == "UTI", na.rm = TRUE) == 18 &&
              sum(status_primary$UTI_Status == "Not_UTI", na.rm = TRUE) == 565, "PASS", "FAIL"),
-    ifelse(nrow(vf_ready) == 556, "PASS", "FAIL"),
-    ifelse(sum(vf_ready$UTI_Status == "UTI", na.rm = TRUE) == 17 &&
-             sum(vf_ready$UTI_Status == "Not_UTI", na.rm = TRUE) == 539, "PASS", "FAIL"),
+    ifelse(nrow(vf_ready) == expected_active_total, "PASS", "FAIL"),
+    ifelse(sum(vf_ready$UTI_Status == "UTI", na.rm = TRUE) == expected_active_uti &&
+             sum(vf_ready$UTI_Status == "Not_UTI", na.rm = TRUE) == expected_active_not_uti,
+           "PASS", "FAIL"),
     ifelse(all(c("wilcoxon_rank_sum_q_BH", "paired_sign_test_q_BH", "paired_signed_rank_q_BH") %in% names(participant_score_tests)), "PASS", "FAIL"),
     ifelse(all(c("sign_test_q_BH", "signed_rank_q_BH") %in% names(paired_feature_sensitivity)), "PASS", "FAIL"),
     ifelse("fisher_q_BH" %in% names(transition_module_enrichment), "PASS", "FAIL"),
@@ -860,7 +903,7 @@ summary_lines <- c(
           nrow(status_primary),
           sum(status_primary$UTI_Status == "UTI", na.rm = TRUE),
           sum(status_primary$UTI_Status == "Not_UTI", na.rm = TRUE)),
-  sprintf("- Primary VF/model denominator: **%d** rows = **%d UTI**, **%d Not_UTI**.",
+  sprintf("- Active selected QC-pass Longcycler VF/model denominator: **%d** rows = **%d UTI**, **%d Not_UTI**.",
           nrow(vf_ready),
           sum(vf_ready$UTI_Status == "UTI", na.rm = TRUE),
           sum(vf_ready$UTI_Status == "Not_UTI", na.rm = TRUE)),
