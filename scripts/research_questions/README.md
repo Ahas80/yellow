@@ -1,24 +1,34 @@
 # Research-question analysis layer
 
-This directory implements the prespecified RQ01--RQ11 menu without changing the
-numbered clinical/genomic pipeline or its existing outputs. All generated files
-are written below `results/research_questions/`.
+This directory implements the active RQ01--RQ10 release menu. All analytical
+outputs use the exact selected Longcycler cohort and are written below
+`results/research_questions/`.
 
 ## Non-negotiable contracts
 
 - The entire `Rowenas analysis/` tree is out of scope and must never be used as
   an input.
-- Clinical analyses start from the 583 primary-eligible episodes in
-  `results/clinical/status_map.csv`.
-- Primary genomic analyses start from the 532 selected, QC-passing Longcycler
-  rows in `results/qc/analysis_assembly_manifest.csv`.
+- Analytical episodes are the 532 selected, QC-passing Longcycler-linked rows
+  from 161 residents in `results/clinical/analysis_cohort_longcycler.csv`:
+  16 operational UTI and 516 operational Not_UTI episodes.
+- The 583-episode clinical source is used only for clearly labelled attrition
+  and QC context; it is not an analytical denominator.
+- The assembly manifest must contain the same 532 participant-timepoint keys,
+  exact FASTA paths, and no assembler fallback.
+- The longitudinal universes are exactly 893 direct within-resident pairs and
+  371 adjacent pairs rebuilt after cohort restriction. The single canonical
+  adjacent-pair source is `results/longitudinal/longcycler_transitions.csv`.
 - Longitudinal relatedness uses direct endpoint comparisons. Graph-component
   strain identifiers are never used as the primary outcome.
 - The `<=25` DNAdiff SNP rule is an operational reference, not a validated
   biological gold standard.
-- Bootstrap resampling is performed at resident level (or isolate level for the
-  explicitly paired assembler analysis), with seed `20260712` and 10,000
-  replicates for final results.
+- DNAdiff evidence must retain the selected endpoint paths and hashes and pass
+  report-hash, signature, and sidecar validation. Validated reused caches are
+  accepted; reconstructed legacy paths and unvalidated fallbacks are not.
+- Key-linked provider ST calls are accepted by exact selected FASTA path; a
+  provider assembler field is neither required nor published.
+- Bootstrap resampling is performed at resident level, with seed `20260712` and
+  10,000 replicates for final results.
 - Research-facing case tables use generated case labels and never expose raw
   participant identifiers.
 
@@ -27,8 +37,8 @@ are written below `results/research_questions/`.
 - `run_rq01_05.R`: verified clinical and direct-transition questions.
 - `run_rq06_08.R`: VF stability, event-matched VF summaries, and relatedness
   surrogate performance.
-- `run_rq09_11.R`: resident-specific clustering, ST turnover, and paired
-  assembler concordance.
+- `run_rq09_10.R`: resident-specific clustering and adjacent provider-ST
+  turnover with hash-bound direct-pair validation.
 - `run_all.R`: sequential runner and final contract verification.
 
 Use `RQ_BOOTSTRAP_REPS` to reduce bootstrap replicates for development only.

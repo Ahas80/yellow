@@ -1,24 +1,14 @@
-metric,value
-clinical_rows,583
-clinical_participants,166
-clinical_uti,18
-clinical_not_uti,565
-assembly_qc_rows,1291
-mixed_rows,556
-mixed_participants,162
-mixed_uti,17
-mixed_not_uti,539
-selected_flye_rows,24
-selected_longcycler_rows,532
-longcycler_rows,532
-longcycler_participants,161
-longcycler_uti,16
-longcycler_not_uti,516
-mlst_typed_rows,514
-unique_sts,80
-vf_gene_columns,227
-longcycler_transitions,371
-longcycler_transition_participants,139
-strict_same_transitions,116
-notuti_to_uti,9
-notuti_to_uti_strict,7
+analysis_unit,count,denominator_note,registry_field
+Analytical episodes,532,selected QC-passing Longcycler only,analytical_cohort.episodes
+Analytical residents,161,distinct residents in selected cohort,analytical_cohort.residents
+Operational UTI episodes,16,selected cohort,analytical_cohort.operational_UTI
+Operational Not_UTI episodes,516,selected cohort,analytical_cohort.operational_Not_UTI
+All direct within-resident pairs,893,unordered selected-cohort episode pairs,direct_pairs.all_within_resident
+Adjacent transitions,371,rebuilt from selected cohort,adjacent_transitions.pairs
+Residents with adjacent transitions,139,distinct residents in rebuilt transitions,adjacent_transitions.residents
+Adjacent transitions at ≤25 SNPs,140,direct dnadiff evidence,adjacent_transitions.at_or_below_threshold
+Not_UTI to UTI transitions,9,operational status transition,adjacent_transitions.Not_UTI_to_UTI
+Not_UTI to UTI at ≤25 SNPs,5,direct dnadiff evidence,adjacent_transitions.Not_UTI_to_UTI_at_or_below_threshold
+Mechanism casebook linked,9,exactly linked,mechanism_casebook.linked
+Mechanism casebook missing,0,must remain zero,mechanism_casebook.missing
+Full clinical source episodes,583,attrition/QC context only,attrition_qc_context.episodes

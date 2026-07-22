@@ -1,0 +1,25 @@
+Participant_id,tp_lab,Episode_ID,Collection_Date,Event_type,ST,ST_source,provider_PercGoodTargets,emailed_analysis_include_primary,emailed_genomics_expected_include,current_manifest_rows,any_selected_canonical,any_QC_PASS,current_QC_reason,current_selection_reason,analysis_decision
+10010,T2,EP__10010__T2__Routine__12_09_2024,2024-09-12,Routine,,missing,,TRUE,TRUE,0,FALSE,FALSE,No matching row in the current canonical assembly manifest,No selected QC-passing assembly in the current cohort,Excluded from the 532-isolate cluster screen
+10010,T3,EP__10010__T3__Routine__10_12_2024,2024-12-10,Routine,101,provider_qc95,97,TRUE,TRUE,1,FALSE,FALSE,BadSize;,Longcycler present but failed QC,Excluded from the 532-isolate cluster screen
+120003,T5,EP__120003__T5__Routine__11_08_2025,2025-08-11,Routine,2325,provider_qc95,96.9,TRUE,TRUE,1,FALSE,FALSE,BadSize;,Longcycler present but failed QC,Excluded from the 532-isolate cluster screen
+120009,T1,EP__120009__T1__Routine__26_08_2024,2024-08-26,Routine,,missing,,TRUE,TRUE,1,FALSE,FALSE,BadSize;,Longcycler present but failed QC,Excluded from the 532-isolate cluster screen
+120014,T5,EP__120014__T5__Routine__11_08_2025,2025-08-11,Routine,69,provider_qc95,96.4,TRUE,TRUE,1,FALSE,FALSE,BadSize;,Longcycler present but failed QC,Excluded from the 532-isolate cluster screen
+130018,T2,EP__130018__T2__Routine__28_11_2024,2024-11-28,Routine,12,provider_qc95,97.6,TRUE,TRUE,1,FALSE,FALSE,BadSize;,Longcycler present but failed QC,Excluded from the 532-isolate cluster screen
+130024,T0,EP__130024__T0__Routine__23_05_2024,2024-05-23,Routine,131,provider_qc95,97.4,TRUE,TRUE,1,FALSE,FALSE,BadSize;,Longcycler present but failed QC,Excluded from the 532-isolate cluster screen
+130024,T1,EP__130024__T1__Routine__29_08_2024,2024-08-29,Routine,131,provider_qc95,96.8,TRUE,TRUE,1,FALSE,FALSE,BadSize;,Longcycler present but failed QC,Excluded from the 532-isolate cluster screen
+130034,T5,EP__130034__T5__Routine__21_08_2025,2025-08-21,Routine,453,provider_qc95,98.4,TRUE,TRUE,1,FALSE,FALSE,BadSize;,Longcycler present but failed QC,Excluded from the 532-isolate cluster screen
+20002,T3,EP__20002__T3__Routine__02_12_2024,2024-12-02,Routine,767,provider_qc95,96.1,TRUE,TRUE,1,FALSE,FALSE,BadSize;,Longcycler present but failed QC,Excluded from the 532-isolate cluster screen
+20025,T2,EP__20025__T2__Routine__03_09_2024,2024-09-03,Routine,69,provider_qc95,95.2,TRUE,TRUE,1,FALSE,FALSE,BadSize;,Longcycler present but failed QC,Excluded from the 532-isolate cluster screen
+20033,T4,EP__20033__T4__Routine__03_03_2025,2025-03-03,Routine,131,provider_qc95,95.7,TRUE,TRUE,1,FALSE,FALSE,BadSize;,Longcycler present but failed QC,Excluded from the 532-isolate cluster screen
+20043,UTI-2,EP__20043__UTI-2__UTI_event__26_03_2024,2024-03-26,UTI_event,58,provider_qc95,98.4,TRUE,TRUE,1,FALSE,FALSE,BadSize;,Longcycler present but failed QC,Excluded from the 532-isolate cluster screen
+20044,T4,EP__20044__T4__Routine__03_03_2025,2025-03-03,Routine,,missing,,TRUE,TRUE,1,FALSE,FALSE,BadSize;,Longcycler present but failed QC,Excluded from the 532-isolate cluster screen
+20061,T1,EP__20061__T1__Routine__12_06_2024,2024-06-12,Routine,355,provider_qc95,98.6,TRUE,TRUE,1,FALSE,FALSE,BadSize;,Longcycler present but failed QC,Excluded from the 532-isolate cluster screen
+31036,UTI-1,EP__31036__UTI-1__UTI_event__11_06_2024,2024-06-11,UTI_event,141,provider_qc95,99,TRUE,TRUE,0,FALSE,FALSE,No matching row in the current canonical assembly manifest,No selected QC-passing assembly in the current cohort,Excluded from the 532-isolate cluster screen
+40004,T2,EP__40004__T2__Routine__19_09_2024,2024-09-19,Routine,141,provider_qc95,98.6,TRUE,TRUE,1,FALSE,FALSE,BadSize;,Longcycler present but failed QC,Excluded from the 532-isolate cluster screen
+50015,T2,EP__50015__T2__Routine__11_12_2024,2024-12-11,Routine,104,provider_qc95,98.4,TRUE,TRUE,1,FALSE,FALSE,BadSize;,Longcycler present but failed QC,Excluded from the 532-isolate cluster screen
+50040,T4,EP__50040__T4__Routine__17_06_2025,2025-06-17,Routine,69,provider_qc95,95.3,TRUE,TRUE,1,FALSE,FALSE,BadSize;,Longcycler present but failed QC,Excluded from the 532-isolate cluster screen
+60016,T5,EP__60016__T5__Routine__16_07_2025,2025-07-16,Routine,,missing,,TRUE,TRUE,1,FALSE,FALSE,BadSize;,Longcycler present but failed QC,Excluded from the 532-isolate cluster screen
+60023,T1,EP__60023__T1__Routine__25_07_2024,2024-07-25,Routine,48,provider_qc95,95.5,TRUE,TRUE,1,FALSE,FALSE,BadSize;,Longcycler present but failed QC,Excluded from the 532-isolate cluster screen
+70032,T0,EP__70032__T0__Routine__20_06_2024,2024-06-20,Routine,,missing,,TRUE,TRUE,1,FALSE,FALSE,BadSize;,Longcycler present but failed QC,Excluded from the 532-isolate cluster screen
+80029,T4,EP__80029__T4__Routine__16_04_2025,2025-04-16,Routine,12,provider_qc95,96.9,TRUE,TRUE,1,FALSE,FALSE,BadSize;,Longcycler present but failed QC,Excluded from the 532-isolate cluster screen
+90009,T2,EP__90009__T2__Routine__26_11_2024,2024-11-26,Routine,409,local_fallback_provider_missing,,TRUE,TRUE,1,FALSE,FALSE,BadSize;,Longcycler present but failed QC,Excluded from the 532-isolate cluster screen

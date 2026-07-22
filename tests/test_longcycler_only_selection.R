@@ -54,3 +54,24 @@ test_that("a passing Flye is not used when Longcycler fails", {
     "excluded: assembler not permitted"
   )
 })
+
+test_that("GFF lookup requires an exact selected assembly key", {
+  td <- tempfile("strict-gff-key-")
+  dir.create(td)
+  expected <- tibble::tibble(
+    Assembly_ID = "episode-longcycler__fasta",
+    Assembly_Base_ID = "episode-longcycler"
+  )
+
+  substring_only <- file.path(td, "prefix-episode-longcycler-extra.gff")
+  writeLines("##gff-version 3", substring_only)
+  unresolved <- attach_pipeline_gff_paths(expected, gff_dirs = td)
+  expect_false(unresolved$gff_available)
+  expect_true(is.na(unresolved$gff_path))
+
+  exact <- file.path(td, "episode-longcycler.gff")
+  writeLines("##gff-version 3", exact)
+  resolved <- attach_pipeline_gff_paths(expected, gff_dirs = td)
+  expect_true(resolved$gff_available)
+  expect_equal(resolved$gff_path, normalizePath(exact, winslash = "/", mustWork = TRUE))
+})

@@ -2,8 +2,8 @@
   "schema": "openai.presentation.layout/v4",
   "unit": "px",
   "slide": {
-    "aid": "sl/pg3ex0nu",
-    "id": "pg3ex0nu",
+    "aid": "sl/hwbqtkby",
+    "id": "hwbqtkby",
     "slide": 2,
     "layoutId": "/ppt/slideLayouts/slideLayout1.xml",
     "layoutName": "Title Slide",
@@ -76,7 +76,7 @@
       "order": 1,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/yxobm58z",
+      "aid": "sh/mxgjm5s7",
       "id": "1",
       "name": "paper",
       "bbox": [
@@ -94,7 +94,7 @@
       "order": 2,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/5o7qpg3e",
+      "aid": "sh/9072xkry",
       "id": "2",
       "name": "rail",
       "bbox": [
@@ -112,7 +112,7 @@
       "order": 3,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/g3ex0nux",
+      "aid": "sh/ozy1ofad",
       "id": "3",
       "bbox": [
         54,
@@ -180,7 +180,7 @@
       "order": 4,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/r65wjudg",
+      "aid": "sh/b29kza94",
       "id": "4",
       "bbox": [
         54,
@@ -189,8 +189,8 @@
         48
       ],
       "geometry": "rect",
-      "text": "The single-assembler analysis retains 532 genome-linked episodes",
-      "textPreview": "The single-assembler analysis retains 532 genome-linked episodes",
+      "text": "The analysis contains 532 selected genome-linked episodes",
+      "textPreview": "The analysis contains 532 selected genome-linked episodes",
       "resolvedFontSize": 24,
       "resolvedTextStyle": {
         "anchor": 2,
@@ -211,14 +211,14 @@
         "lines": [
           {
             "index": 1,
-            "text": "The single-assembler analysis retains 532 genome-linked episodes"
+            "text": "The analysis contains 532 selected genome-linked episodes"
           }
         ]
       },
       "paragraphs": [
         {
           "index": 1,
-          "text": "The single-assembler analysis retains 532 genome-linked episodes",
+          "text": "The analysis contains 532 selected genome-linked episodes",
           "resolvedTextStyle": {
             "fontSize": 35,
             "typeface": "Aptos Display",
@@ -229,7 +229,7 @@
           "runs": [
             {
               "index": 1,
-              "text": "The single-assembler analysis retains 532 genome-linked episodes",
+              "text": "The analysis contains 532 selected genome-linked episodes",
               "fontSize": 35,
               "typeface": "Aptos Display",
               "color": "#152533",
@@ -248,7 +248,7 @@
       "order": 5,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/ylc7u54z",
+      "aid": "sh/a10jqpsj",
       "id": "5",
       "bbox": [
         54,
@@ -265,7 +265,7 @@
       "order": 6,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/9cvixcze",
+      "aid": "sh/x4r21kru",
       "id": "6",
       "bbox": [
         54,
@@ -274,8 +274,8 @@
         32
       ],
       "geometry": "rect",
-      "text": "Counts are reported at the correct unit: clinical row, selected assembly, VF feature, or within-resident transition.",
-      "textPreview": "Counts are reported at the correct unit: clinical row, selected assembly, VF feature, or within-resident transition.",
+      "text": "    Counts remain paired with their unit, filter and exact Longcycler-only denominator.",
+      "textPreview": "Counts remain paired with their unit, filter and exact Longcycler-only denominator.",
       "resolvedFontSize": 24,
       "resolvedTextStyle": {
         "anchor": 2,
@@ -296,14 +296,14 @@
         "lines": [
           {
             "index": 1,
-            "text": "Counts are reported at the correct unit: clinical row, selected assembly, VF feature, or within-resident transition."
+            "text": "    Counts remain paired with their unit, filter and exact Longcycler-only denominator."
           }
         ]
       },
       "paragraphs": [
         {
           "index": 1,
-          "text": "Counts are reported at the correct unit: clinical row, selected assembly, VF feature, or within-resident transition.",
+          "text": "    Counts remain paired with their unit, filter and exact Longcycler-only denominator.",
           "resolvedTextStyle": {
             "fontSize": 16,
             "typeface": "Aptos",
@@ -313,7 +313,7 @@
           "runs": [
             {
               "index": 1,
-              "text": "Counts are reported at the correct unit: clinical row, selected assembly, VF feature, or within-resident transition.",
+              "text": "    Counts remain paired with their unit, filter and exact Longcycler-only denominator.",
               "fontSize": 16,
               "typeface": "Aptos",
               "color": "#607587"
@@ -331,7 +331,7 @@
       "order": 7,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/gr2p8nqx",
+      "aid": "sh/w3i1sfa9",
       "id": "7",
       "bbox": [
         928,
@@ -348,7 +348,7 @@
       "order": 8,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/rytsvu9k",
+      "aid": "sh/r65knqtk",
       "id": "8",
       "bbox": [
         938,
@@ -416,7 +416,7 @@
       "order": 9,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/yd0z6103",
+      "aid": "sh/q5wjelsz",
       "id": "9",
       "bbox": [
         54,
@@ -433,7 +433,7 @@
       "order": 10,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/wb2hwfyx",
+      "aid": "sh/ove9o7yd",
       "id": "10",
       "bbox": [
         54,
@@ -442,8 +442,8 @@
         14
       ],
       "geometry": "rect",
-      "text": "Longcycler-only methods summary  |  supervisor discussion  |  9 July 2026",
-      "textPreview": "Longcycler-only methods summary  |  supervisor discussion  |  9 July 2026",
+      "text": "Longcycler-only methods summary  |  RQ01–RQ10  |  15 July 2026",
+      "textPreview": "Longcycler-only methods summary  |  RQ01–RQ10  |  15 July 2026",
       "resolvedFontSize": 24,
       "resolvedTextStyle": {
         "anchor": 2,
@@ -464,14 +464,14 @@
         "lines": [
           {
             "index": 1,
-            "text": "Longcycler-only methods summary  |  supervisor discussion  |  9 July 2026"
+            "text": "Longcycler-only methods summary  |  RQ01–RQ10  |  15 July 2026"
           }
         ]
       },
       "paragraphs": [
         {
           "index": 1,
-          "text": "Longcycler-only methods summary  |  supervisor discussion  |  9 July 2026",
+          "text": "Longcycler-only methods summary  |  RQ01–RQ10  |  15 July 2026",
           "resolvedTextStyle": {
             "fontSize": 10,
             "typeface": "Aptos",
@@ -481,7 +481,7 @@
           "runs": [
             {
               "index": 1,
-              "text": "Longcycler-only methods summary  |  supervisor discussion  |  9 July 2026",
+              "text": "Longcycler-only methods summary  |  RQ01–RQ10  |  15 July 2026",
               "fontSize": 10,
               "typeface": "Aptos",
               "color": "#607587"
@@ -499,7 +499,7 @@
       "order": 11,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/lwval87e",
+      "aid": "sh/9wnqhczy",
       "id": "11",
       "bbox": [
         1186,
@@ -567,7 +567,7 @@
       "order": 12,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/e9cvixcz",
+      "aid": "sh/mtwrmxg7",
       "id": "12",
       "bbox": [
         64,
@@ -576,8 +576,8 @@
         17
       ],
       "geometry": "rect",
-      "text": "SELECTION RULE",
-      "textPreview": "SELECTION RULE",
+      "text": "SELECTED COHORT CONTRACT",
+      "textPreview": "SELECTED COHORT CONTRACT",
       "resolvedFontSize": 24,
       "resolvedTextStyle": {
         "anchor": 2,
@@ -594,18 +594,22 @@
         }
       },
       "textLayout": {
-        "lineCount": 1,
+        "lineCount": 2,
         "lines": [
           {
             "index": 1,
-            "text": "SELECTION RULE"
+            "text": "SELECTED COHORT"
+          },
+          {
+            "index": 2,
+            "text": "CONTRACT"
           }
         ]
       },
       "paragraphs": [
         {
           "index": 1,
-          "text": "SELECTION RULE",
+          "text": "SELECTED COHORT CONTRACT",
           "resolvedTextStyle": {
             "fontSize": 11,
             "typeface": "Aptos",
@@ -616,7 +620,7 @@
           "runs": [
             {
               "index": 1,
-              "text": "SELECTION RULE",
+              "text": "SELECTED COHORT CONTRACT",
               "fontSize": 11,
               "typeface": "Aptos",
               "color": "#E7772F",
@@ -635,7 +639,7 @@
       "order": 13,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/3q5o7qpg",
+      "aid": "sh/nu58f2hs",
       "id": "13",
       "bbox": [
         64,
@@ -652,7 +656,7 @@
       "order": 14,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/w3m94fu1",
+      "aid": "sh/wjy9sry9",
       "id": "14",
       "bbox": [
         64,
@@ -669,7 +673,7 @@
       "order": 15,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/loj2t83i",
+      "aid": "sh/xk7qlczu",
       "id": "15",
       "bbox": [
         80,
@@ -737,7 +741,7 @@
       "order": 16,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/ex0nuxc3",
+      "aid": "sh/ahwrqhgj",
       "id": "16",
       "bbox": [
         124,
@@ -746,8 +750,8 @@
         23
       ],
       "geometry": "rect",
-      "text": "Raw canonical set",
-      "textPreview": "Raw canonical set",
+      "text": "Analytical episodes",
+      "textPreview": "Analytical episodes",
       "resolvedFontSize": 24,
       "resolvedTextStyle": {
         "anchor": 2,
@@ -768,14 +772,14 @@
         "lines": [
           {
             "index": 1,
-            "text": "Raw canonical set"
+            "text": "Analytical episodes"
           }
         ]
       },
       "paragraphs": [
         {
           "index": 1,
-          "text": "Raw canonical set",
+          "text": "Analytical episodes",
           "resolvedTextStyle": {
             "fontSize": 14,
             "typeface": "Aptos",
@@ -786,7 +790,7 @@
           "runs": [
             {
               "index": 1,
-              "text": "Raw canonical set",
+              "text": "Analytical episodes",
               "fontSize": 14,
               "typeface": "Aptos",
               "color": "#152533",
@@ -805,7 +809,7 @@
       "order": 17,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/3itgfmlk",
+      "aid": "sh/bip8jmho",
       "id": "17",
       "bbox": [
         82,
@@ -814,8 +818,8 @@
         31
       ],
       "geometry": "rect",
-      "text": "556",
-      "textPreview": "556",
+      "text": "532",
+      "textPreview": "532",
       "resolvedFontSize": 24,
       "resolvedTextStyle": {
         "anchor": 2,
@@ -836,14 +840,14 @@
         "lines": [
           {
             "index": 1,
-            "text": "556"
+            "text": "532"
           }
         ]
       },
       "paragraphs": [
         {
           "index": 1,
-          "text": "556",
+          "text": "532",
           "resolvedTextStyle": {
             "fontSize": 26,
             "typeface": "Aptos Display",
@@ -854,7 +858,7 @@
           "runs": [
             {
               "index": 1,
-              "text": "556",
+              "text": "532",
               "fontSize": 26,
               "typeface": "Aptos Display",
               "color": "#152533",
@@ -873,7 +877,7 @@
       "order": 18,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/szqtcj6t",
+      "aid": "sh/cnupgny5",
       "id": "18",
       "bbox": [
         82,
@@ -882,8 +886,8 @@
         18
       ],
       "geometry": "rect",
-      "text": "Longcycler-preferred + Flye fallback",
-      "textPreview": "Longcycler-preferred + Flye fallback",
+      "text": "selected QC-passing Longcycler rows",
+      "textPreview": "selected QC-passing Longcycler rows",
       "resolvedFontSize": 24,
       "resolvedTextStyle": {
         "anchor": 2,
@@ -904,14 +908,14 @@
         "lines": [
           {
             "index": 1,
-            "text": "Longcycler-preferred + Flye fallback"
+            "text": "selected QC-passing Longcycler rows"
           }
         ]
       },
       "paragraphs": [
         {
           "index": 1,
-          "text": "Longcycler-preferred + Flye fallback",
+          "text": "selected QC-passing Longcycler rows",
           "resolvedTextStyle": {
             "fontSize": 12,
             "typeface": "Aptos",
@@ -921,7 +925,7 @@
           "runs": [
             {
               "index": 1,
-              "text": "Longcycler-preferred + Flye fallback",
+              "text": "selected QC-passing Longcycler rows",
               "fontSize": 12,
               "typeface": "Aptos",
               "color": "#607587"
@@ -939,7 +943,7 @@
       "order": 19,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/lkjm1cfa",
+      "aid": "sh/do3q9szq",
       "id": "19",
       "bbox": [
         82,
@@ -948,8 +952,8 @@
         15
       ],
       "geometry": "rect",
-      "text": "current generated canonical analysis",
-      "textPreview": "current generated canonical analysis",
+      "text": "analysis clinical cohort",
+      "textPreview": "analysis clinical cohort",
       "resolvedFontSize": 24,
       "resolvedTextStyle": {
         "anchor": 2,
@@ -970,14 +974,14 @@
         "lines": [
           {
             "index": 1,
-            "text": "current generated canonical analysis"
+            "text": "analysis clinical cohort"
           }
         ]
       },
       "paragraphs": [
         {
           "index": 1,
-          "text": "current generated canonical analysis",
+          "text": "analysis clinical cohort",
           "resolvedTextStyle": {
             "fontSize": 10,
             "typeface": "Aptos Mono",
@@ -987,7 +991,7 @@
           "runs": [
             {
               "index": 1,
-              "text": "current generated canonical analysis",
+              "text": "analysis clinical cohort",
               "fontSize": 10,
               "typeface": "Aptos Mono",
               "color": "#607587"
@@ -1005,7 +1009,7 @@
       "order": 20,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/lc7u54zi",
+      "aid": "sh/t8byxkn2",
       "id": "20",
       "bbox": [
         344,
@@ -1022,7 +1026,7 @@
       "order": 21,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/wra5gbq1",
+      "aid": "sh/s72xofmh",
       "id": "21",
       "bbox": [
         344,
@@ -1039,7 +1043,7 @@
       "order": 22,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/36hcrmhk",
+      "aid": "sh/76twva5c",
       "id": "22",
       "bbox": [
         360,
@@ -1107,7 +1111,7 @@
       "order": 23,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/eloj2t83",
+      "aid": "sh/65kfmpor",
       "id": "23",
       "bbox": [
         404,
@@ -1116,8 +1120,8 @@
         23
       ],
       "geometry": "rect",
-      "text": "Longcycler-only set",
-      "textPreview": "Longcycler-only set",
+      "text": "Residents",
+      "textPreview": "Residents",
       "resolvedFontSize": 24,
       "resolvedTextStyle": {
         "anchor": 2,
@@ -1138,14 +1142,14 @@
         "lines": [
           {
             "index": 1,
-            "text": "Longcycler-only set"
+            "text": "Residents"
           }
         ]
       },
       "paragraphs": [
         {
           "index": 1,
-          "text": "Longcycler-only set",
+          "text": "Residents",
           "resolvedTextStyle": {
             "fontSize": 14,
             "typeface": "Aptos",
@@ -1156,7 +1160,7 @@
           "runs": [
             {
               "index": 1,
-              "text": "Longcycler-only set",
+              "text": "Residents",
               "fontSize": 14,
               "typeface": "Aptos",
               "color": "#152533",
@@ -1175,7 +1179,7 @@
       "order": 24,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/l0rqd4vm",
+      "aid": "sh/hcvy14ne",
       "id": "24",
       "bbox": [
         362,
@@ -1184,8 +1188,8 @@
         31
       ],
       "geometry": "rect",
-      "text": "532",
-      "textPreview": "532",
+      "text": "161",
+      "textPreview": "161",
       "resolvedFontSize": 24,
       "resolvedTextStyle": {
         "anchor": 2,
@@ -1206,14 +1210,14 @@
         "lines": [
           {
             "index": 1,
-            "text": "532"
+            "text": "161"
           }
         ]
       },
       "paragraphs": [
         {
           "index": 1,
-          "text": "532",
+          "text": "161",
           "resolvedTextStyle": {
             "fontSize": 26,
             "typeface": "Aptos Display",
@@ -1224,7 +1228,7 @@
           "runs": [
             {
               "index": 1,
-              "text": "532",
+              "text": "161",
               "fontSize": 26,
               "typeface": "Aptos Display",
               "color": "#152533",
@@ -1243,7 +1247,7 @@
       "order": 25,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/wfyxobm5",
+      "aid": "sh/gbmxszmt",
       "id": "25",
       "bbox": [
         362,
@@ -1252,78 +1256,8 @@
         18
       ],
       "geometry": "rect",
-      "text": "QC-passing selected Longcycler rows; 24 Flye fallback rows excluded",
-      "textPreview": "QC-passing selected Longcycler rows; 24 Flye fallback rows excluded",
-      "resolvedFontSize": 24,
-      "resolvedTextStyle": {
-        "anchor": 2,
-        "fontSize": 24,
-        "typeface": "Calibri",
-        "color": "tx1",
-        "alignment": "left",
-        "verticalAlignment": "middle",
-        "insets": {
-          "top": 0,
-          "right": 0,
-          "bottom": 0,
-          "left": 0
-        }
-      },
-      "textLayout": {
-        "lineCount": 2,
-        "lines": [
-          {
-            "index": 1,
-            "text": "QC-passing selected Longcycler rows; 24 Flye"
-          },
-          {
-            "index": 2,
-            "text": "fallback rows excluded"
-          }
-        ]
-      },
-      "paragraphs": [
-        {
-          "index": 1,
-          "text": "QC-passing selected Longcycler rows; 24 Flye fallback rows excluded",
-          "resolvedTextStyle": {
-            "fontSize": 12,
-            "typeface": "Aptos",
-            "color": "#607587",
-            "alignment": "left"
-          },
-          "runs": [
-            {
-              "index": 1,
-              "text": "QC-passing selected Longcycler rows; 24 Flye fallback rows excluded",
-              "fontSize": 12,
-              "typeface": "Aptos",
-              "color": "#607587"
-            }
-          ],
-          "bulletCharacter": "",
-          "marginLeft": 0
-        }
-      ],
-      "fillColor": "rgba(0, 0, 0, 0)",
-      "lineColor": "rgba(0, 0, 0, 0)",
-      "lineWidth": 0
-    },
-    {
-      "order": 26,
-      "kind": "shape",
-      "scope": "slide",
-      "aid": "sh/7u54zido",
-      "id": "26",
-      "bbox": [
-        362,
-        308,
-        273,
-        15
-      ],
-      "geometry": "rect",
-      "text": "canonical_assembly_selection.csv",
-      "textPreview": "canonical_assembly_selection.csv",
+      "text": "unique residents represented",
+      "textPreview": "unique residents represented",
       "resolvedFontSize": 24,
       "resolvedTextStyle": {
         "anchor": 2,
@@ -1344,14 +1278,80 @@
         "lines": [
           {
             "index": 1,
-            "text": "canonical_assembly_selection.csv"
+            "text": "unique residents represented"
           }
         ]
       },
       "paragraphs": [
         {
           "index": 1,
-          "text": "canonical_assembly_selection.csv",
+          "text": "unique residents represented",
+          "resolvedTextStyle": {
+            "fontSize": 12,
+            "typeface": "Aptos",
+            "color": "#607587",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "unique residents represented",
+              "fontSize": 12,
+              "typeface": "Aptos",
+              "color": "#607587"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 26,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/fadgzu58",
+      "id": "26",
+      "bbox": [
+        362,
+        308,
+        273,
+        15
+      ],
+      "geometry": "rect",
+      "text": "selected assembly manifest",
+      "textPreview": "selected assembly manifest",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "selected assembly manifest"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "selected assembly manifest",
           "resolvedTextStyle": {
             "fontSize": 10,
             "typeface": "Aptos Mono",
@@ -1361,7 +1361,7 @@
           "runs": [
             {
               "index": 1,
-              "text": "canonical_assembly_selection.csv",
+              "text": "selected assembly manifest",
               "fontSize": 10,
               "typeface": "Aptos Mono",
               "color": "#607587"
@@ -1379,7 +1379,7 @@
       "order": 27,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/ed8bat47",
+      "aid": "sh/u94fqp4n",
       "id": "27",
       "bbox": [
         683,
@@ -1388,8 +1388,8 @@
         17
       ],
       "geometry": "rect",
-      "text": "EPISODE AND LINEAGE DENOMINATOR",
-      "textPreview": "EPISODE AND LINEAGE DENOMINATOR",
+      "text": "CLINICAL AND PAIR DENOMINATORS",
+      "textPreview": "CLINICAL AND PAIR DENOMINATORS",
       "resolvedFontSize": 24,
       "resolvedTextStyle": {
         "anchor": 2,
@@ -1410,18 +1410,18 @@
         "lines": [
           {
             "index": 1,
-            "text": "EPISODE AND LINEAGE"
+            "text": "CLINICAL AND PAIR"
           },
           {
             "index": 2,
-            "text": "DENOMINATOR"
+            "text": "DENOMINATORS"
           }
         ]
       },
       "paragraphs": [
         {
           "index": 1,
-          "text": "EPISODE AND LINEAGE DENOMINATOR",
+          "text": "CLINICAL AND PAIR DENOMINATORS",
           "resolvedTextStyle": {
             "fontSize": 11,
             "typeface": "Aptos",
@@ -1432,7 +1432,7 @@
           "runs": [
             {
               "index": 1,
-              "text": "EPISODE AND LINEAGE DENOMINATOR",
+              "text": "CLINICAL AND PAIR DENOMINATORS",
               "fontSize": 11,
               "typeface": "Aptos",
               "color": "#2678B8",
@@ -1451,7 +1451,7 @@
       "order": 28,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/psfil0rq",
+      "aid": "sh/p0vy54na",
       "id": "28",
       "bbox": [
         683,
@@ -1468,7 +1468,7 @@
       "order": 29,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/w7mp0bi9",
+      "aid": "sh/4zmxwzmp",
       "id": "29",
       "bbox": [
         683,
@@ -1485,7 +1485,7 @@
       "order": 30,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/65wjudg7",
+      "aid": "sh/mlgvq147",
       "id": "30",
       "bbox": [
         699,
@@ -1553,7 +1553,7 @@
       "order": 31,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/zqtcj6to",
+      "aid": "sh/nmpcj6ls",
       "id": "31",
       "bbox": [
         743,
@@ -1562,8 +1562,8 @@
         23
       ],
       "geometry": "rect",
-      "text": "Participants",
-      "textPreview": "Participants",
+      "text": "Operational status",
+      "textPreview": "Operational status",
       "resolvedFontSize": 24,
       "resolvedTextStyle": {
         "anchor": 2,
@@ -1584,14 +1584,14 @@
         "lines": [
           {
             "index": 1,
-            "text": "Participants"
+            "text": "Operational status"
           }
         ]
       },
       "paragraphs": [
         {
           "index": 1,
-          "text": "Participants",
+          "text": "Operational status",
           "resolvedTextStyle": {
             "fontSize": 14,
             "typeface": "Aptos",
@@ -1602,7 +1602,7 @@
           "runs": [
             {
               "index": 1,
-              "text": "Participants",
+              "text": "Operational status",
               "fontSize": 14,
               "typeface": "Aptos",
               "color": "#152533",
@@ -1621,7 +1621,7 @@
       "order": 32,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/obm58z25",
+      "aid": "sh/onydsbmd",
       "id": "32",
       "bbox": [
         701,
@@ -1630,8 +1630,8 @@
         31
       ],
       "geometry": "rect",
-      "text": "161",
-      "textPreview": "161",
+      "text": "16 | 516",
+      "textPreview": "16 | 516",
       "resolvedFontSize": 24,
       "resolvedTextStyle": {
         "anchor": 2,
@@ -1652,14 +1652,14 @@
         "lines": [
           {
             "index": 1,
-            "text": "161"
+            "text": "16 | 516"
           }
         ]
       },
       "paragraphs": [
         {
           "index": 1,
-          "text": "161",
+          "text": "16 | 516",
           "resolvedTextStyle": {
             "fontSize": 26,
             "typeface": "Aptos Display",
@@ -1670,7 +1670,7 @@
           "runs": [
             {
               "index": 1,
-              "text": "161",
+              "text": "16 | 516",
               "fontSize": 26,
               "typeface": "Aptos Display",
               "color": "#152533",
@@ -1689,7 +1689,7 @@
       "order": 33,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/hwfyxobm",
+      "aid": "sh/9o7ulg3y",
       "id": "33",
       "bbox": [
         701,
@@ -1698,8 +1698,8 @@
         18
       ],
       "geometry": "rect",
-      "text": "retained Longcycler-linked participants",
-      "textPreview": "retained Longcycler-linked participants",
+      "text": "UTI | Not_UTI on the selected cohort",
+      "textPreview": "UTI | Not_UTI on the selected cohort",
       "resolvedFontSize": 24,
       "resolvedTextStyle": {
         "anchor": 2,
@@ -1720,14 +1720,14 @@
         "lines": [
           {
             "index": 1,
-            "text": "retained Longcycler-linked participants"
+            "text": "UTI | Not_UTI on the selected cohort"
           }
         ]
       },
       "paragraphs": [
         {
           "index": 1,
-          "text": "retained Longcycler-linked participants",
+          "text": "UTI | Not_UTI on the selected cohort",
           "resolvedTextStyle": {
             "fontSize": 12,
             "typeface": "Aptos",
@@ -1737,7 +1737,7 @@
           "runs": [
             {
               "index": 1,
-              "text": "retained Longcycler-linked participants",
+              "text": "UTI | Not_UTI on the selected cohort",
               "fontSize": 12,
               "typeface": "Aptos",
               "color": "#607587"
@@ -1755,7 +1755,7 @@
       "order": 34,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/6xkf6dcb",
+      "aid": "sh/a9gvulkj",
       "id": "34",
       "bbox": [
         701,
@@ -1764,8 +1764,8 @@
         15
       ],
       "geometry": "rect",
-      "text": "vf_analysis_ready.csv",
-      "textPreview": "vf_analysis_ready.csv",
+      "text": "analysis clinical cohort",
+      "textPreview": "analysis clinical cohort",
       "resolvedFontSize": 24,
       "resolvedTextStyle": {
         "anchor": 2,
@@ -1786,14 +1786,14 @@
         "lines": [
           {
             "index": 1,
-            "text": "vf_analysis_ready.csv"
+            "text": "analysis clinical cohort"
           }
         ]
       },
       "paragraphs": [
         {
           "index": 1,
-          "text": "vf_analysis_ready.csv",
+          "text": "analysis clinical cohort",
           "resolvedTextStyle": {
             "fontSize": 10,
             "typeface": "Aptos Mono",
@@ -1803,7 +1803,7 @@
           "runs": [
             {
               "index": 1,
-              "text": "vf_analysis_ready.csv",
+              "text": "analysis clinical cohort",
               "fontSize": 10,
               "typeface": "Aptos Mono",
               "color": "#607587"
@@ -1821,7 +1821,7 @@
       "order": 35,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/zed8v6ps",
+      "aid": "sh/ba9cn6l4",
       "id": "35",
       "bbox": [
         963,
@@ -1838,7 +1838,7 @@
       "order": 36,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/oza1gvy9",
+      "aid": "sh/wbidwb29",
       "id": "36",
       "bbox": [
         963,
@@ -1855,7 +1855,7 @@
       "order": 37,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/hk3q5o7q",
+      "aid": "sh/xcrupg3u",
       "id": "37",
       "bbox": [
         979,
@@ -1923,7 +1923,7 @@
       "order": 38,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/al87ed8b",
+      "aid": "sh/id0vylkf",
       "id": "38",
       "bbox": [
         1023,
@@ -1932,8 +1932,8 @@
         23
       ],
       "geometry": "rect",
-      "text": "Clinical status",
-      "textPreview": "Clinical status",
+      "text": "Direct genome pairs",
+      "textPreview": "Direct genome pairs",
       "resolvedFontSize": 24,
       "resolvedTextStyle": {
         "anchor": 2,
@@ -1954,14 +1954,14 @@
         "lines": [
           {
             "index": 1,
-            "text": "Clinical status"
+            "text": "Direct genome pairs"
           }
         ]
       },
       "paragraphs": [
         {
           "index": 1,
-          "text": "Clinical status",
+          "text": "Direct genome pairs",
           "resolvedTextStyle": {
             "fontSize": 14,
             "typeface": "Aptos",
@@ -1972,7 +1972,7 @@
           "runs": [
             {
               "index": 1,
-              "text": "Clinical status",
+              "text": "Direct genome pairs",
               "fontSize": 14,
               "typeface": "Aptos",
               "color": "#152533",
@@ -1991,7 +1991,7 @@
       "order": 39,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/z61032ls",
+      "aid": "sh/je9crql0",
       "id": "39",
       "bbox": [
         981,
@@ -2000,8 +2000,8 @@
         31
       ],
       "geometry": "rect",
-      "text": "16 | 516",
-      "textPreview": "16 | 516",
+      "text": "893",
+      "textPreview": "893",
       "resolvedFontSize": 24,
       "resolvedTextStyle": {
         "anchor": 2,
@@ -2022,14 +2022,14 @@
         "lines": [
           {
             "index": 1,
-            "text": "16 | 516"
+            "text": "893"
           }
         ]
       },
       "paragraphs": [
         {
           "index": 1,
-          "text": "16 | 516",
+          "text": "893",
           "resolvedTextStyle": {
             "fontSize": 26,
             "typeface": "Aptos Display",
@@ -2040,7 +2040,7 @@
           "runs": [
             {
               "index": 1,
-              "text": "16 | 516",
+              "text": "893",
               "fontSize": 26,
               "typeface": "Aptos Display",
               "color": "#152533",
@@ -2059,7 +2059,7 @@
       "order": 40,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/fa9w3m94",
+      "aid": "sh/ru5cbqd4",
       "id": "40",
       "bbox": [
         981,
@@ -2068,8 +2068,8 @@
         18
       ],
       "geometry": "rect",
-      "text": "UTI | Not_UTI using primary status",
-      "textPreview": "UTI | Not_UTI using primary status",
+      "text": "all unordered within-resident pairs",
+      "textPreview": "all unordered within-resident pairs",
       "resolvedFontSize": 24,
       "resolvedTextStyle": {
         "anchor": 2,
@@ -2090,14 +2090,14 @@
         "lines": [
           {
             "index": 1,
-            "text": "UTI | Not_UTI using primary status"
+            "text": "all unordered within-resident pairs"
           }
         ]
       },
       "paragraphs": [
         {
           "index": 1,
-          "text": "UTI | Not_UTI using primary status",
+          "text": "all unordered within-resident pairs",
           "resolvedTextStyle": {
             "fontSize": 12,
             "typeface": "Aptos",
@@ -2107,7 +2107,7 @@
           "runs": [
             {
               "index": 1,
-              "text": "UTI | Not_UTI using primary status",
+              "text": "all unordered within-resident pairs",
               "fontSize": 12,
               "typeface": "Aptos",
               "color": "#607587"
@@ -2125,7 +2125,7 @@
       "order": 41,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/qpg3ex0n",
+      "aid": "sh/69wbilcj",
       "id": "41",
       "bbox": [
         981,
@@ -2134,8 +2134,8 @@
         15
       ],
       "geometry": "rect",
-      "text": "status joined to Longcycler rows",
-      "textPreview": "status joined to Longcycler rows",
+      "text": "pairwise metrics",
+      "textPreview": "pairwise metrics",
       "resolvedFontSize": 24,
       "resolvedTextStyle": {
         "anchor": 2,
@@ -2156,14 +2156,14 @@
         "lines": [
           {
             "index": 1,
-            "text": "status joined to Longcycler rows"
+            "text": "pairwise metrics"
           }
         ]
       },
       "paragraphs": [
         {
           "index": 1,
-          "text": "status joined to Longcycler rows",
+          "text": "pairwise metrics",
           "resolvedTextStyle": {
             "fontSize": 10,
             "typeface": "Aptos Mono",
@@ -2173,7 +2173,7 @@
           "runs": [
             {
               "index": 1,
-              "text": "status joined to Longcycler rows",
+              "text": "pairwise metrics",
               "fontSize": 10,
               "typeface": "Aptos Mono",
               "color": "#607587"
@@ -2191,7 +2191,7 @@
       "order": 42,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/xczed8v6",
+      "aid": "sh/tw7ud0va",
       "id": "42",
       "bbox": [
         64,
@@ -2208,7 +2208,7 @@
       "order": 43,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/8v6psfil",
+      "aid": "sh/svedkvup",
       "id": "43",
       "bbox": [
         64,
@@ -2276,7 +2276,7 @@
       "order": 44,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/fyxobm58",
+      "aid": "sh/fypcfqdg",
       "id": "44",
       "bbox": [
         64,
@@ -2293,7 +2293,7 @@
       "order": 45,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/qd4vmtwr",
+      "aid": "sh/exgvmlcv",
       "id": "45",
       "bbox": [
         64,
@@ -2310,7 +2310,7 @@
       "order": 46,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/x4nap4r6",
+      "aid": "sh/107uh0v6",
       "id": "46",
       "bbox": [
         80,
@@ -2378,7 +2378,7 @@
       "order": 47,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/8jqh0fep",
+      "aid": "sh/gzydovul",
       "id": "47",
       "bbox": [
         124,
@@ -2387,8 +2387,8 @@
         23
       ],
       "geometry": "rect",
-      "text": "VF feature space",
-      "textPreview": "VF feature space",
+      "text": "VFDB feature space",
+      "textPreview": "VFDB feature space",
       "resolvedFontSize": 24,
       "resolvedTextStyle": {
         "anchor": 2,
@@ -2409,14 +2409,14 @@
         "lines": [
           {
             "index": 1,
-            "text": "VF feature space"
+            "text": "VFDB feature space"
           }
         ]
       },
       "paragraphs": [
         {
           "index": 1,
-          "text": "VF feature space",
+          "text": "VFDB feature space",
           "resolvedTextStyle": {
             "fontSize": 14,
             "typeface": "Aptos",
@@ -2427,7 +2427,7 @@
           "runs": [
             {
               "index": 1,
-              "text": "VF feature space",
+              "text": "VFDB feature space",
               "fontSize": 14,
               "typeface": "Aptos",
               "color": "#152533",
@@ -2446,7 +2446,7 @@
       "order": 48,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/fmlkjm1c",
+      "aid": "sh/v2lc36dw",
       "id": "48",
       "bbox": [
         82,
@@ -2514,7 +2514,7 @@
       "order": 49,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/q1orytsv",
+      "aid": "sh/a1cba1wb",
       "id": "49",
       "bbox": [
         82,
@@ -2523,8 +2523,8 @@
         18
       ],
       "geometry": "rect",
-      "text": "binary VF gene columns retained",
-      "textPreview": "binary VF gene columns retained",
+      "text": "binary features on selected episodes",
+      "textPreview": "binary features on selected episodes",
       "resolvedFontSize": 24,
       "resolvedTextStyle": {
         "anchor": 2,
@@ -2545,14 +2545,14 @@
         "lines": [
           {
             "index": 1,
-            "text": "binary VF gene columns retained"
+            "text": "binary features on selected episodes"
           }
         ]
       },
       "paragraphs": [
         {
           "index": 1,
-          "text": "binary VF gene columns retained",
+          "text": "binary features on selected episodes",
           "resolvedTextStyle": {
             "fontSize": 12,
             "typeface": "Aptos",
@@ -2562,7 +2562,7 @@
           "runs": [
             {
               "index": 1,
-              "text": "binary VF gene columns retained",
+              "text": "binary features on selected episodes",
               "fontSize": 12,
               "typeface": "Aptos",
               "color": "#607587"
@@ -2580,7 +2580,7 @@
       "order": 50,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/kjm1cfa9",
+      "aid": "sh/0vq1o36x",
       "id": "50",
       "bbox": [
         82,
@@ -2589,8 +2589,8 @@
         15
       ],
       "geometry": "rect",
-      "text": "vf_analysis_ready.csv",
-      "textPreview": "vf_analysis_ready.csv",
+      "text": "claim registry",
+      "textPreview": "claim registry",
       "resolvedFontSize": 24,
       "resolvedTextStyle": {
         "anchor": 2,
@@ -2611,14 +2611,14 @@
         "lines": [
           {
             "index": 1,
-            "text": "vf_analysis_ready.csv"
+            "text": "claim registry"
           }
         ]
       },
       "paragraphs": [
         {
           "index": 1,
-          "text": "vf_analysis_ready.csv",
+          "text": "claim registry",
           "resolvedTextStyle": {
             "fontSize": 10,
             "typeface": "Aptos Mono",
@@ -2628,7 +2628,7 @@
           "runs": [
             {
               "index": 1,
-              "text": "vf_analysis_ready.csv",
+              "text": "claim registry",
               "fontSize": 10,
               "typeface": "Aptos Mono",
               "color": "#607587"
@@ -2646,7 +2646,7 @@
       "order": 51,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/94fu18jq",
+      "aid": "sh/1wzix87i",
       "id": "51",
       "bbox": [
         344,
@@ -2663,7 +2663,7 @@
       "order": 52,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/2hwfyxob",
+      "aid": "sh/et8zmto7",
       "id": "52",
       "bbox": [
         344,
@@ -2680,7 +2680,7 @@
       "order": 53,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/r2p8nqxs",
+      "aid": "sh/zuh0vypc",
       "id": "53",
       "bbox": [
         360,
@@ -2748,7 +2748,7 @@
       "order": 54,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/gvy90je9",
+      "aid": "sh/c76hk361",
       "id": "54",
       "bbox": [
         404,
@@ -2816,7 +2816,7 @@
       "order": 55,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/9gr2p8nq",
+      "aid": "sh/d8zit87m",
       "id": "55",
       "bbox": [
         362,
@@ -2825,8 +2825,8 @@
         31
       ],
       "geometry": "rect",
-      "text": "514 | 80",
-      "textPreview": "514 | 80",
+      "text": "493 | 76",
+      "textPreview": "493 | 76",
       "resolvedFontSize": 24,
       "resolvedTextStyle": {
         "anchor": 2,
@@ -2847,14 +2847,14 @@
         "lines": [
           {
             "index": 1,
-            "text": "514 | 80"
+            "text": "493 | 76"
           }
         ]
       },
       "paragraphs": [
         {
           "index": 1,
-          "text": "514 | 80",
+          "text": "493 | 76",
           "resolvedTextStyle": {
             "fontSize": 26,
             "typeface": "Aptos Display",
@@ -2865,7 +2865,7 @@
           "runs": [
             {
               "index": 1,
-              "text": "514 | 80",
+              "text": "493 | 76",
               "fontSize": 26,
               "typeface": "Aptos Display",
               "color": "#152533",
@@ -2884,7 +2884,7 @@
       "order": 56,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/2p8nqxs7",
+      "aid": "sh/q5ozitov",
       "id": "56",
       "bbox": [
         362,
@@ -2893,8 +2893,8 @@
         35
       ],
       "geometry": "rect",
-      "text": "typed rows | distinct STs; lineage context only",
-      "textPreview": "typed rows | distinct STs; lineage context only",
+      "text": "typed episodes | distinct ST labels",
+      "textPreview": "typed episodes | distinct ST labels",
       "resolvedFontSize": 24,
       "resolvedTextStyle": {
         "anchor": 2,
@@ -2915,14 +2915,14 @@
         "lines": [
           {
             "index": 1,
-            "text": "typed rows | distinct STs; lineage context only"
+            "text": "typed episodes | distinct ST labels"
           }
         ]
       },
       "paragraphs": [
         {
           "index": 1,
-          "text": "typed rows | distinct STs; lineage context only",
+          "text": "typed episodes | distinct ST labels",
           "resolvedTextStyle": {
             "fontSize": 12,
             "typeface": "Aptos",
@@ -2932,7 +2932,7 @@
           "runs": [
             {
               "index": 1,
-              "text": "typed rows | distinct STs; lineage context only",
+              "text": "typed episodes | distinct ST labels",
               "fontSize": 12,
               "typeface": "Aptos",
               "color": "#607587"
@@ -2950,7 +2950,7 @@
       "order": 57,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/ra5gbq1o",
+      "aid": "sh/r6x0rypg",
       "id": "57",
       "bbox": [
         362,
@@ -2959,8 +2959,8 @@
         15
       ],
       "geometry": "rect",
-      "text": "mlst_provider_preferred.csv",
-      "textPreview": "mlst_provider_preferred.csv",
+      "text": "claim registry",
+      "textPreview": "claim registry",
       "resolvedFontSize": 24,
       "resolvedTextStyle": {
         "anchor": 2,
@@ -2981,14 +2981,14 @@
         "lines": [
           {
             "index": 1,
-            "text": "mlst_provider_preferred.csv"
+            "text": "claim registry"
           }
         ]
       },
       "paragraphs": [
         {
           "index": 1,
-          "text": "mlst_provider_preferred.csv",
+          "text": "claim registry",
           "resolvedTextStyle": {
             "fontSize": 10,
             "typeface": "Aptos Mono",
@@ -2998,7 +2998,7 @@
           "runs": [
             {
               "index": 1,
-              "text": "mlst_provider_preferred.csv",
+              "text": "claim registry",
               "fontSize": 10,
               "typeface": "Aptos Mono",
               "color": "#607587"
@@ -3016,7 +3016,7 @@
       "order": 58,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/kzupwb2h",
+      "aid": "sh/w3a1wn65",
       "id": "58",
       "bbox": [
         650,
@@ -3033,7 +3033,7 @@
       "order": 59,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/9knih4by",
+      "aid": "sh/xoji5s7q",
       "id": "59",
       "bbox": [
         650,
@@ -3050,7 +3050,7 @@
       "order": 60,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/d8v6psfi",
+      "aid": "sh/5kfipszu",
       "id": "60",
       "bbox": [
         666,
@@ -3118,7 +3118,7 @@
       "order": 61,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/onyd0z61",
+      "aid": "sh/kj6hgny9",
       "id": "61",
       "bbox": [
         710,
@@ -3127,8 +3127,8 @@
         23
       ],
       "geometry": "rect",
-      "text": "Longitudinal pairs",
-      "textPreview": "Longitudinal pairs",
+      "text": "Adjacent transitions",
+      "textPreview": "Adjacent transitions",
       "resolvedFontSize": 24,
       "resolvedTextStyle": {
         "anchor": 2,
@@ -3149,14 +3149,14 @@
         "lines": [
           {
             "index": 1,
-            "text": "Longitudinal pairs"
+            "text": "Adjacent transitions"
           }
         ]
       },
       "paragraphs": [
         {
           "index": 1,
-          "text": "Longitudinal pairs",
+          "text": "Adjacent transitions",
           "resolvedTextStyle": {
             "fontSize": 14,
             "typeface": "Aptos",
@@ -3167,7 +3167,7 @@
           "runs": [
             {
               "index": 1,
-              "text": "Longitudinal pairs",
+              "text": "Adjacent transitions",
               "fontSize": 14,
               "typeface": "Aptos",
               "color": "#152533",
@@ -3186,7 +3186,7 @@
       "order": 62,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/z25kb6xk",
+      "aid": "sh/jix0niho",
       "id": "62",
       "bbox": [
         668,
@@ -3195,8 +3195,8 @@
         31
       ],
       "geometry": "rect",
-      "text": "371",
-      "textPreview": "371",
+      "text": "371 | 139",
+      "textPreview": "371 | 139",
       "resolvedFontSize": 24,
       "resolvedTextStyle": {
         "anchor": 2,
@@ -3217,14 +3217,14 @@
         "lines": [
           {
             "index": 1,
-            "text": "371"
+            "text": "371 | 139"
           }
         ]
       },
       "paragraphs": [
         {
           "index": 1,
-          "text": "371",
+          "text": "371 | 139",
           "resolvedTextStyle": {
             "fontSize": 26,
             "typeface": "Aptos Display",
@@ -3235,7 +3235,7 @@
           "runs": [
             {
               "index": 1,
-              "text": "371",
+              "text": "371 | 139",
               "fontSize": 26,
               "typeface": "Aptos Display",
               "color": "#152533",
@@ -3254,7 +3254,7 @@
       "order": 63,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/6hcrmhk3",
+      "aid": "sh/ihozedgj",
       "id": "63",
       "bbox": [
         668,
@@ -3263,99 +3263,8 @@
         35
       ],
       "geometry": "rect",
-      "text": "rebuilt in pipeline time order\nfrom 139 participants",
-      "textPreview": "rebuilt in pipeline time order | from 139 participants",
-      "resolvedFontSize": 24,
-      "resolvedTextStyle": {
-        "anchor": 2,
-        "fontSize": 24,
-        "typeface": "Calibri",
-        "color": "tx1",
-        "alignment": "left",
-        "verticalAlignment": "middle",
-        "insets": {
-          "top": 0,
-          "right": 0,
-          "bottom": 0,
-          "left": 0
-        }
-      },
-      "textLayout": {
-        "lineCount": 2,
-        "lines": [
-          {
-            "index": 1,
-            "text": "rebuilt in pipeline time order"
-          },
-          {
-            "index": 2,
-            "text": "from 139 participants"
-          }
-        ]
-      },
-      "paragraphs": [
-        {
-          "index": 1,
-          "text": "rebuilt in pipeline time order",
-          "resolvedTextStyle": {
-            "fontSize": 12,
-            "typeface": "Aptos",
-            "color": "#607587",
-            "alignment": "left"
-          },
-          "runs": [
-            {
-              "index": 1,
-              "text": "rebuilt in pipeline time order",
-              "fontSize": 12,
-              "typeface": "Aptos",
-              "color": "#607587"
-            }
-          ],
-          "bulletCharacter": "",
-          "marginLeft": 0
-        },
-        {
-          "index": 2,
-          "text": "from 139 participants",
-          "resolvedTextStyle": {
-            "fontSize": 12,
-            "typeface": "Aptos",
-            "color": "#607587",
-            "alignment": "left"
-          },
-          "runs": [
-            {
-              "index": 1,
-              "text": "from 139 participants",
-              "fontSize": 12,
-              "typeface": "Aptos",
-              "color": "#607587"
-            }
-          ],
-          "bulletCharacter": "",
-          "marginLeft": 0
-        }
-      ],
-      "fillColor": "rgba(0, 0, 0, 0)",
-      "lineColor": "rgba(0, 0, 0, 0)",
-      "lineWidth": 0
-    },
-    {
-      "order": 64,
-      "kind": "shape",
-      "scope": "slide",
-      "aid": "sh/dg7adsji",
-      "id": "64",
-      "bbox": [
-        668,
-        561,
-        235,
-        15
-      ],
-      "geometry": "rect",
-      "text": "vf_longitudinal_transitions.csv",
-      "textPreview": "vf_longitudinal_transitions.csv",
+      "text": "pairs | residents after full rebuild",
+      "textPreview": "pairs | residents after full rebuild",
       "resolvedFontSize": 24,
       "resolvedTextStyle": {
         "anchor": 2,
@@ -3376,14 +3285,80 @@
         "lines": [
           {
             "index": 1,
-            "text": "vf_longitudinal_transitions.csv"
+            "text": "pairs | residents after full rebuild"
           }
         ]
       },
       "paragraphs": [
         {
           "index": 1,
-          "text": "vf_longitudinal_transitions.csv",
+          "text": "pairs | residents after full rebuild",
+          "resolvedTextStyle": {
+            "fontSize": 12,
+            "typeface": "Aptos",
+            "color": "#607587",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "pairs | residents after full rebuild",
+              "fontSize": 12,
+              "typeface": "Aptos",
+              "color": "#607587"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 64,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/xgfil8zy",
+      "id": "64",
+      "bbox": [
+        668,
+        561,
+        235,
+        15
+      ],
+      "geometry": "rect",
+      "text": "longcycler transitions",
+      "textPreview": "longcycler transitions",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "longcycler transitions"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "longcycler transitions",
           "resolvedTextStyle": {
             "fontSize": 10,
             "typeface": "Aptos Mono",
@@ -3393,7 +3368,7 @@
           "runs": [
             {
               "index": 1,
-              "text": "vf_longitudinal_transitions.csv",
+              "text": "longcycler transitions",
               "fontSize": 10,
               "typeface": "Aptos Mono",
               "color": "#607587"
@@ -3411,7 +3386,7 @@
       "order": 65,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/ovahoza1",
+      "aid": "sh/wf6hcnyd",
       "id": "65",
       "bbox": [
         935,
@@ -3428,7 +3403,7 @@
       "order": 66,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/vahoza1g",
+      "aid": "sh/ved0jihs",
       "id": "66",
       "bbox": [
         935,
@@ -3445,7 +3420,7 @@
       "order": 67,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/6tovahoz",
+      "aid": "sh/ad4zadg7",
       "id": "67",
       "bbox": [
         951,
@@ -3513,7 +3488,7 @@
       "order": 68,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/dsji5sne",
+      "aid": "sh/9svih8zm",
       "id": "68",
       "bbox": [
         995,
@@ -3522,8 +3497,8 @@
         23
       ],
       "geometry": "rect",
-      "text": "Strict SNP evidence",
-      "textPreview": "Strict SNP evidence",
+      "text": "Focused transitions",
+      "textPreview": "Focused transitions",
       "resolvedFontSize": 24,
       "resolvedTextStyle": {
         "anchor": 2,
@@ -3544,14 +3519,14 @@
         "lines": [
           {
             "index": 1,
-            "text": "Strict SNP evidence"
+            "text": "Focused transitions"
           }
         ]
       },
       "paragraphs": [
         {
           "index": 1,
-          "text": "Strict SNP evidence",
+          "text": "Focused transitions",
           "resolvedTextStyle": {
             "fontSize": 14,
             "typeface": "Aptos",
@@ -3562,7 +3537,7 @@
           "runs": [
             {
               "index": 1,
-              "text": "Strict SNP evidence",
+              "text": "Focused transitions",
               "fontSize": 14,
               "typeface": "Aptos",
               "color": "#152533",
@@ -3581,7 +3556,7 @@
       "order": 69,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/o7qpg3ex",
+      "aid": "sh/8rmh83y1",
       "id": "69",
       "bbox": [
         953,
@@ -3590,8 +3565,8 @@
         31
       ],
       "geometry": "rect",
-      "text": "116",
-      "textPreview": "116",
+      "text": "9 | 5",
+      "textPreview": "9 | 5",
       "resolvedFontSize": 24,
       "resolvedTextStyle": {
         "anchor": 2,
@@ -3612,14 +3587,14 @@
         "lines": [
           {
             "index": 1,
-            "text": "116"
+            "text": "9 | 5"
           }
         ]
       },
       "paragraphs": [
         {
           "index": 1,
-          "text": "116",
+          "text": "9 | 5",
           "resolvedTextStyle": {
             "fontSize": 26,
             "typeface": "Aptos Display",
@@ -3630,7 +3605,7 @@
           "runs": [
             {
               "index": 1,
-              "text": "116",
+              "text": "9 | 5",
               "fontSize": 26,
               "typeface": "Aptos Display",
               "color": "#152533",
@@ -3649,7 +3624,7 @@
       "order": 70,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/y1kre1w7",
+      "aid": "sh/yxkfi9wz",
       "id": "70",
       "bbox": [
         953,
@@ -3658,99 +3633,8 @@
         35
       ],
       "geometry": "rect",
-      "text": "≤25 SNP among rebuilt pairs\n7/9 Not_UTI -> UTI strict",
-      "textPreview": "≤25 SNP among rebuilt pairs | 7/9 Not_UTI -> UTI strict",
-      "resolvedFontSize": 24,
-      "resolvedTextStyle": {
-        "anchor": 2,
-        "fontSize": 24,
-        "typeface": "Calibri",
-        "color": "tx1",
-        "alignment": "left",
-        "verticalAlignment": "middle",
-        "insets": {
-          "top": 0,
-          "right": 0,
-          "bottom": 0,
-          "left": 0
-        }
-      },
-      "textLayout": {
-        "lineCount": 2,
-        "lines": [
-          {
-            "index": 1,
-            "text": "≤25 SNP among rebuilt pairs"
-          },
-          {
-            "index": 2,
-            "text": "7/9 Not_UTI -> UTI strict"
-          }
-        ]
-      },
-      "paragraphs": [
-        {
-          "index": 1,
-          "text": "≤25 SNP among rebuilt pairs",
-          "resolvedTextStyle": {
-            "fontSize": 12,
-            "typeface": "Aptos",
-            "color": "#607587",
-            "alignment": "left"
-          },
-          "runs": [
-            {
-              "index": 1,
-              "text": "≤25 SNP among rebuilt pairs",
-              "fontSize": 12,
-              "typeface": "Aptos",
-              "color": "#607587"
-            }
-          ],
-          "bulletCharacter": "",
-          "marginLeft": 0
-        },
-        {
-          "index": 2,
-          "text": "7/9 Not_UTI -> UTI strict",
-          "resolvedTextStyle": {
-            "fontSize": 12,
-            "typeface": "Aptos",
-            "color": "#607587",
-            "alignment": "left"
-          },
-          "runs": [
-            {
-              "index": 1,
-              "text": "7/9 Not_UTI -> UTI strict",
-              "fontSize": 12,
-              "typeface": "Aptos",
-              "color": "#607587"
-            }
-          ],
-          "bulletCharacter": "",
-          "marginLeft": 0
-        }
-      ],
-      "fillColor": "rgba(0, 0, 0, 0)",
-      "lineColor": "rgba(0, 0, 0, 0)",
-      "lineWidth": 0
-    },
-    {
-      "order": 71,
-      "kind": "shape",
-      "scope": "slide",
-      "aid": "sh/rmhk3q5o",
-      "id": "71",
-      "bbox": [
-        953,
-        561,
-        250,
-        15
-      ],
-      "geometry": "rect",
-      "text": "pairwise_metrics.csv",
-      "textPreview": "pairwise_metrics.csv",
+      "text": "Not_UTI→UTI | at ≤25 SNPs",
+      "textPreview": "Not_UTI→UTI | at ≤25 SNPs",
       "resolvedFontSize": 24,
       "resolvedTextStyle": {
         "anchor": 2,
@@ -3771,14 +3655,80 @@
         "lines": [
           {
             "index": 1,
-            "text": "pairwise_metrics.csv"
+            "text": "Not_UTI→UTI | at ≤25 SNPs"
           }
         ]
       },
       "paragraphs": [
         {
           "index": 1,
-          "text": "pairwise_metrics.csv",
+          "text": "Not_UTI→UTI | at ≤25 SNPs",
+          "resolvedTextStyle": {
+            "fontSize": 12,
+            "typeface": "Aptos",
+            "color": "#607587",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Not_UTI→UTI | at ≤25 SNPs",
+              "fontSize": 12,
+              "typeface": "Aptos",
+              "color": "#607587"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 71,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/zytgbexk",
+      "id": "71",
+      "bbox": [
+        953,
+        561,
+        250,
+        15
+      ],
+      "geometry": "rect",
+      "text": "mechanism casebook",
+      "textPreview": "mechanism casebook",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "mechanism casebook"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "mechanism casebook",
           "resolvedTextStyle": {
             "fontSize": 10,
             "typeface": "Aptos Mono",
@@ -3788,7 +3738,7 @@
           "runs": [
             {
               "index": 1,
-              "text": "pairwise_metrics.csv",
+              "text": "mechanism casebook",
               "fontSize": 10,
               "typeface": "Aptos Mono",
               "color": "#607587"

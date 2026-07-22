@@ -3,266 +3,209 @@
 # 08_core_vs_plasmid.R
 # ==============================================================================
 #
-# GOAL:
-#   Compare chromosomal ST lineages with plasmid replicon types to assess
-#   whether specific plasmids are associated with particular E. coli lineages.
-#   This informs whether plasmid-carried VFs are lineage-linked or independently
-#   mobile across different STs.
-#
-# ------------------------------------------------------------------------------
-# Role: [Inferential-core] - Compare chromosomal STs with plasmid types.
-#
-# Inputs:
-#   - results/mlst/mlst_provider_preferred.csv
-#   - results/qc/canonical_assembly_selection.csv
-#
-# Outputs:
-#   - results/mlst/ST_core_freq.csv
-#   - results/mlst/pMLST_hits_long.csv OR plasmid_replicons_long.csv
-#   - results/mlst/plasmid_types_per_isolate.csv
-#   - results/mlst/ST_plasmid_associations.csv
-#
-# Usage:
-#   Rscript 08_core_vs_plasmid.R
-#
-# Biological/Statistical purpose:
-#   - Investigates associations between bacterial lineages (STs) and plasmid types.
-#   - Tests for significant co-occurrence (e.g., IncF plasmids in ST131).
+# Descriptive lineage context for the canonical gene-level PlasmidFinder calls
+# produced by script 09. This script never calls ABRicate or pMLST and does not
+# treat repeated episodes as independent evidence for plasmid-ST association.
 # ==============================================================================
 
-# 1. Load Configuration & Libraries
 source("00_config.R")
 suppressPackageStartupMessages({
   library(dplyr)
   library(readr)
   library(tidyr)
-  library(purrr)
-  library(furrr)
-  library(fs)
-  library(stringr)
   library(scales)
-  library(processx)
+  library(tibble)
 })
 
-# 2. Configuration
-# ------------------------------------------------------------------------------
-DIR_PMLST_LOG <- file.path(DIR_MLST, "pmlst_logs")
-ensure_dir(DIR_PMLST_LOG)
-ensure_dir(file.path(DIR_MLST, "raw"))
+EXPECTED_EPISODES <- 532L
+pf_hits_path <- file.path(DIR_PLASMIDS, "plasmidfinder_hits_long.csv")
+pf_pa_path <- file.path(DIR_PLASMIDS, "plasmidfinder_presence_absence.csv")
+pf_marker <- file.path(DIR_PLASMIDS, "PLASMIDFINDER_RUN_COMPLETE.txt")
 
-invisible(check_tool("mlst"))
-
-# 3. Chromosomal ST Frequencies
-# ------------------------------------------------------------------------------
-if (file.exists(FILE_MLST_CANONICAL)) {
-  core_tbl <- read_csv(FILE_MLST_CANONICAL, show_col_types = FALSE)
-
-  if ("ST" %in% names(core_tbl)) {
-    core_tbl %>%
-      mutate(ST_source = if ("ST_source" %in% names(.)) ST_source else NA_character_) %>%
-      filter(!is.na(ST), ST != "") %>%
-      count(ST, ST_source, sort = TRUE) %>%
-      mutate(pct = percent(n / sum(n))) %>%
-      write_csv(file.path(DIR_MLST, "ST_core_freq.csv"))
-  }
-}
-
-# 4. pMLST Setup
-# ------------------------------------------------------------------------------
-# Check for plasmid schemes in mlst
-schemes_out <- system2("mlst", "--list", stdout = TRUE, stderr = TRUE)
-writeLines(schemes_out, file.path(DIR_PMLST_LOG, "mlst_list.txt"))
-
-pSchemes <- schemes_out[grepl("inc|plasmid|pmlst", schemes_out, ignore.case = TRUE)]
-pSchemes <- sub("\\s.*$", "", trimws(pSchemes))
-pSchemes <- unique(pSchemes[nzchar(pSchemes)])
-
-selection_file <- file.path(DIR_QC, "canonical_assembly_selection.csv")
-if (file.exists(selection_file)) {
-  fasta_manifest <- read_csv(selection_file, show_col_types = FALSE) %>%
-    mutate(
-      full_path = if ("full_path" %in% names(.)) as.character(full_path) else as.character(fasta_path),
-      selected_canonical = if ("selected_canonical" %in% names(.)) as_pipeline_bool(selected_canonical) else FALSE,
-      file_exists = if ("file_exists" %in% names(.)) as_pipeline_bool(file_exists, default = file.exists(full_path)) else file.exists(full_path),
-      Isolate_ID = if ("Isolate_ID" %in% names(.)) as.character(Isolate_ID) else tools::file_path_sans_ext(basename(full_path))
-    ) %>%
-    filter(selected_canonical %in% TRUE, file_exists %in% TRUE, !is.na(full_path), file.exists(full_path)) %>%
-    distinct(full_path, .keep_all = TRUE)
-  msg("Using %d canonical selected FASTA(s) for plasmid MLST/replicon screening.", nrow(fasta_manifest))
-} else {
-  warning("Canonical assembly selection not found; falling back to top-level FASTA scan.")
-  fasta_files <- dir_ls(DIR_FASTAS, glob = "*.fasta")
-  if (length(fasta_files) == 0) fasta_files <- dir_ls(DIR_FASTAS, glob = "*.fa")
-  fasta_manifest <- tibble::tibble(
-    full_path = as.character(fasta_files),
-    Isolate_ID = tools::file_path_sans_ext(basename(fasta_files))
+required <- c(FILE_MLST_CANONICAL, pf_hits_path, pf_pa_path, pf_marker)
+if (!all(file.exists(required))) {
+  stop(
+    "Script 08 requires completed canonical outputs from script 09: ",
+    paste(basename(required[!file.exists(required)]), collapse = ", "),
+    call. = FALSE
   )
 }
 
-fasta_files <- fasta_manifest$full_path
-fasta_lookup <- fasta_manifest %>%
+manifest <- load_analysis_assemblies(
+  FILE_ANALYSIS_ASSEMBLY_MANIFEST, require_files = TRUE
+) %>%
+  mutate(
+    Isolate_ID = as.character(Isolate_ID),
+    Participant_id = as.character(Participant_id),
+    fasta_path = normalizePath(full_path, winslash = "/", mustWork = TRUE),
+    fasta_sha256 = vapply(
+      fasta_path, digest::digest, character(1),
+      algo = "sha256", file = TRUE, serialize = FALSE
+    )
+  ) %>%
+  distinct(Isolate_ID, .keep_all = TRUE)
+if (nrow(manifest) != EXPECTED_EPISODES || anyDuplicated(manifest$Isolate_ID)) {
+  stop("Script 08 requires the exact 532 selected Longcycler episodes.", call. = FALSE)
+}
+
+mlst <- read_csv(FILE_MLST_CANONICAL, show_col_types = FALSE) %>%
+  mutate(
+    Isolate_ID = as.character(Isolate_ID),
+    ST = as.character(ST),
+    ST_source = if ("ST_source" %in% names(.)) as.character(ST_source) else NA_character_
+  )
+if (nrow(mlst) != EXPECTED_EPISODES ||
+    anyDuplicated(mlst$Isolate_ID) ||
+    !setequal(mlst$Isolate_ID, manifest$Isolate_ID)) {
+  stop("Canonical MLST rows do not match the exact 532-episode cohort.", call. = FALSE)
+}
+
+mlst %>%
+  filter(!is.na(ST), nzchar(ST)) %>%
+  count(ST, ST_source, sort = TRUE) %>%
+  mutate(pct = percent(n / sum(n))) %>%
+  write_csv(file.path(DIR_MLST, "ST_core_freq.csv"))
+
+hits <- read_csv(pf_hits_path, show_col_types = FALSE) %>%
+  mutate(
+    Isolate_ID = as.character(Isolate_ID),
+    fasta_path = normalizePath(fasta_path, winslash = "/", mustWork = TRUE),
+    fasta_sha256 = tolower(as.character(fasta_sha256))
+  )
+required_hit_cols <- c(
+  "Isolate_ID", "fasta_path", "fasta_sha256", "GENE",
+  "accession", "identity", "coverage"
+)
+if (!all(required_hit_cols %in% names(hits))) {
+  stop("Canonical PlasmidFinder long table lacks required columns.", call. = FALSE)
+}
+unmatched_hits <- hits %>%
+  anti_join(
+    manifest %>% select(Isolate_ID, fasta_path, fasta_sha256),
+    by = c("Isolate_ID", "fasta_path", "fasta_sha256")
+  )
+if (nrow(unmatched_hits)) {
+  stop("Canonical replicon hits do not match selected FASTA path/hash keys.", call. = FALSE)
+}
+
+pa <- read_csv(pf_pa_path, show_col_types = FALSE) %>%
+  mutate(Isolate_ID = as.character(Isolate_ID))
+if (nrow(pa) != EXPECTED_EPISODES ||
+    anyDuplicated(pa$Isolate_ID) ||
+    !setequal(pa$Isolate_ID, manifest$Isolate_ID)) {
+  stop("Canonical gene-level plasmid matrix does not match all 532 episodes.", call. = FALSE)
+}
+replicon_cols <- setdiff(names(pa), "Isolate_ID")
+if (!length(replicon_cols) ||
+    any(replicon_cols %in% unique(hits$accession)) ||
+    any(!vapply(pa[replicon_cols], function(x) all(x %in% c(0, 1)), logical(1)))) {
+  stop("Compatibility exports require a binary GENE-label matrix.", call. = FALSE)
+}
+
+compat_long <- hits %>%
   transmute(
-    full_path_norm = normalizePath(full_path, winslash = "/", mustWork = FALSE),
-    Isolate_ID = as.character(Isolate_ID)
+    isolate_id = Isolate_ID,
+    fasta_path,
+    fasta_sha256,
+    replicon = GENE,
+    accession,
+    identity,
+    coverage,
+    contig_id = SEQUENCE
   )
-lookup_isolate_id <- function(fasta) {
-  key <- normalizePath(fasta, winslash = "/", mustWork = FALSE)
-  hit <- fasta_lookup$Isolate_ID[match(key, fasta_lookup$full_path_norm)]
-  if (length(hit) == 1 && !is.na(hit) && nzchar(hit)) hit else tools::file_path_sans_ext(fs::path_file(fasta))
-}
+write_csv(compat_long, file.path(DIR_MLST, "plasmid_replicons_long.csv"))
 
-if (length(fasta_files) == 0) stop("No FASTA files found in ", DIR_FASTAS)
+compat_wide <- pa %>%
+  arrange(match(Isolate_ID, manifest$Isolate_ID))
+write_csv(compat_wide, file.path(DIR_MLST, "plasmid_replicons_wide.csv"))
+write_csv(compat_wide, file.path(DIR_MLST, "plasmid_types_per_isolate.csv"))
 
-# 5. Run pMLST or Fallback
-# ------------------------------------------------------------------------------
-if (length(pSchemes) > 0) {
-  msg("Running pMLST with schemes: ", paste(pSchemes, collapse = ", "))
+episode_long <- pa %>%
+  pivot_longer(
+    cols = all_of(replicon_cols),
+    names_to = "replicon",
+    values_to = "present"
+  ) %>%
+  left_join(
+    manifest %>% select(Isolate_ID, Participant_id),
+    by = "Isolate_ID"
+  ) %>%
+  left_join(
+    mlst %>% select(Isolate_ID, ST, ST_source),
+    by = "Isolate_ID"
+  )
 
-  run_pmlst <- function(fasta, scheme) {
-    basename <- fs::path_file(fasta)
-    out_csv <- fs::path(DIR_MLST, "raw", paste0(basename, ".", scheme, ".csv"))
+episode_prevalence <- episode_long %>%
+  filter(!is.na(ST), nzchar(ST)) %>%
+  group_by(ST, ST_source, replicon) %>%
+  summarise(
+    n_ST_episodes = n(),
+    n_with_replicon = sum(present == 1L),
+    prevalence = n_with_replicon / n_ST_episodes,
+    .groups = "drop"
+  ) %>%
+  arrange(desc(n_ST_episodes), ST, desc(prevalence), replicon)
+write_csv(
+  episode_prevalence,
+  file.path(DIR_MLST, "ST_replicon_prevalence_by_episode.csv")
+)
 
-    if (file.exists(out_csv)) {
-      return(read_csv(out_csv, show_col_types = FALSE))
+resident_profile <- episode_long %>%
+  filter(!is.na(ST), nzchar(ST)) %>%
+  group_by(Participant_id, ST, ST_source, replicon) %>%
+  summarise(present = as.integer(any(present == 1L)), .groups = "drop")
+resident_prevalence <- resident_profile %>%
+  group_by(ST, ST_source, replicon) %>%
+  summarise(
+    n_ST_residents = n(),
+    n_residents_with_replicon = sum(present == 1L),
+    prevalence = n_residents_with_replicon / n_ST_residents,
+    .groups = "drop"
+  ) %>%
+  arrange(desc(n_ST_residents), ST, desc(prevalence), replicon)
+write_csv(
+  resident_prevalence,
+  file.path(DIR_MLST, "ST_replicon_prevalence_by_resident.csv")
+)
+
+legacy_assoc <- file.path(DIR_MLST, "ST_plasmid_associations.csv")
+if (file.exists(legacy_assoc)) {
+  old <- tryCatch(read_csv(legacy_assoc, show_col_types = FALSE), error = function(e) NULL)
+  if (!is.null(old) && any(c("p_value", "FDR", "OR") %in% names(old))) {
+    archive_dir <- file.path(DIR_MLST, "superseded")
+    dir.create(archive_dir, recursive = TRUE, showWarnings = FALSE)
+    content_hash <- digest::digest(
+      legacy_assoc, algo = "sha256", file = TRUE, serialize = FALSE
+    )
+    archive_path <- file.path(
+      archive_dir,
+      paste0("ST_plasmid_associations_repeated_episode_fisher_",
+             substr(content_hash, 1L, 16L), ".csv")
+    )
+    if (!file.exists(archive_path) && !file.copy(legacy_assoc, archive_path)) {
+      stop("Could not archive the superseded ST-plasmid association table.", call. = FALSE)
     }
-
-    res <- processx::run("mlst", c("--quiet", "--threads", "1", "--scheme", scheme, "--csv", "--legacy", fasta), error_on_status = FALSE)
-
-    if (res$status == 0 && grepl(",", res$stdout)) {
-      dat <- read_csv(I(res$stdout), show_col_types = FALSE) %>%
-        rename_with(tolower) %>%
-        mutate(scheme = scheme, isolate_id = lookup_isolate_id(fasta), .before = 1)
-      write_csv(dat, out_csv)
-      return(dat)
-    }
-    return(NULL)
-  }
-
-  future::plan(future::multisession, workers = CORES_USE)
-  grid <- expand_grid(file = fasta_files, scheme = pSchemes)
-  pmlst_hits <- future_pmap_dfr(list(grid$file, grid$scheme), ~ run_pmlst(..1, ..2), .progress = TRUE)
-  future::plan(future::sequential)
-
-  if (nrow(pmlst_hits) > 0) {
-    write_csv(pmlst_hits, file.path(DIR_MLST, "pMLST_hits_long.csv"))
-
-    pmlst_wide <- pmlst_hits %>%
-      select(Isolate_ID = isolate_id, p_scheme = scheme, st) %>%
-      pivot_wider(names_from = p_scheme, values_from = st, values_fill = NA, names_prefix = "pST_")
-    write_csv(pmlst_wide, file.path(DIR_MLST, "plasmid_types_per_isolate.csv"))
-  }
-} else {
-  msg("No pMLST schemes found. Falling back to ABRicate (PlasmidFinder).")
-  check_tool("abricate")
-
-  run_pf <- function(fasta) {
-    res <- processx::run("abricate", c("--quiet", "--db", "plasmidfinder", fasta), error_on_status = FALSE, stderr_to_stdout = TRUE)
-    if (res$status != 0 || !nzchar(res$stdout)) {
-      return(NULL)
-    }
-
-    tab <- read_tsv(I(res$stdout), show_col_types = FALSE)
-    if (nrow(tab) == 0) {
-      return(NULL)
-    }
-
-    tab %>%
-      mutate(isolate_id = lookup_isolate_id(fasta)) %>%
-      select(isolate_id, replicon = GENE, identity = `%IDENTITY`, coverage = `%COVERAGE`)
-  }
-
-  future::plan(future::multisession, workers = CORES_USE)
-  pf_hits <- future_map_dfr(fasta_files, run_pf, .progress = TRUE)
-  future::plan(future::sequential)
-
-  if (nrow(pf_hits) > 0) {
-    write_csv(pf_hits, file.path(DIR_MLST, "plasmid_replicons_long.csv"))
-
-    pf_wide <- pf_hits %>%
-      distinct(isolate_id, replicon) %>%
-      mutate(present = TRUE) %>%
-      pivot_wider(names_from = replicon, values_from = present, values_fill = FALSE)
-    write_csv(pf_wide, file.path(DIR_MLST, "plasmid_replicons_wide.csv"))
+    unlink(legacy_assoc)
   }
 }
+writeLines(
+  c(
+    "ST_plasmid_associations.csv is retired.",
+    "Reason: the former Fisher tests omitted plasmid-negative episodes and treated repeated episodes as independent.",
+    "Use ST_replicon_prevalence_by_episode.csv and ST_replicon_prevalence_by_resident.csv for descriptive lineage context.",
+    "No inferential ST-plasmid association claim is made by script 08."
+  ),
+  file.path(DIR_MLST, "ST_plasmid_associations_RETIRED.txt")
+)
 
-
-# 6. Statistical Association (ST vs Plasmid)
-# ------------------------------------------------------------------------------
-# [STAT] Test for significant associations between major STs and plasmid types
-# (e.g., Is IncF significantly enriched in ST131?)
-
-# Determine which plasmid data is available
-plasmid_data <- NULL
-if (exists("pmlst_wide")) {
-  plasmid_data <- pmlst_wide
-} else if (exists("pf_wide")) {
-  plasmid_data <- pf_wide
-}
-
-if (!is.null(plasmid_data) && exists("core_tbl")) {
-  msg("Running statistical tests for ST-plasmid associations...")
-
-  # Join ST and Plasmid data
-  # Ensure Isolate_ID matching (case-insensitive or exact)
-  # core_tbl has Isolate_ID, plasmid_data has Isolate_ID or isolate_id
-
-  # Normalize ID column names
-  if ("isolate_id" %in% names(plasmid_data)) plasmid_data <- rename(plasmid_data, Isolate_ID = isolate_id)
-
-  merged <- inner_join(core_tbl, plasmid_data, by = "Isolate_ID")
-
-  if (nrow(merged) > 10) {
-    # Identify top STs and top Plasmids to test (avoid testing rare things)
-    top_STs <- names(sort(table(merged$ST), decreasing = TRUE))[1:min(5, n_distinct(merged$ST))]
-
-    # Identify plasmid columns (exclude ID and ST)
-    plasmid_cols <- setdiff(names(plasmid_data), c("Isolate_ID", "p_scheme", "st"))
-
-    # Function to test one ST vs one Plasmid
-    test_assoc <- function(target_st, target_plasmid) {
-      # Create 2x2 table: ST vs Not-ST, Plasmid vs Not-Plasmid
-      st_binary <- merged$ST == target_st
-      plasmid_binary <- !is.na(merged[[target_plasmid]]) & merged[[target_plasmid]] != FALSE & merged[[target_plasmid]] != 0
-
-      tbl <- table(st_binary, plasmid_binary)
-
-      if (all(dim(tbl) == 2)) {
-        res <- fisher.test(tbl)
-        tibble(
-          ST = target_st,
-          Plasmid = target_plasmid,
-          OR = res$estimate,
-          p_value = res$p.value,
-          n_cooccur = tbl[2, 2]
-        )
-      } else {
-        NULL
-      }
-    }
-
-    # Run tests
-    results <- list()
-    for (st in top_STs) {
-      for (pl in plasmid_cols) {
-        # Only test if plasmid is present in >5% of isolates
-        if (mean(!is.na(merged[[pl]]) & merged[[pl]] != FALSE) > 0.05) {
-          results[[length(results) + 1]] <- test_assoc(st, pl)
-        }
-      }
-    }
-
-    assoc_results <- bind_rows(results)
-
-    if (nrow(assoc_results) > 0) {
-      assoc_results <- assoc_results %>%
-        mutate(FDR = p.adjust(p_value, method = "BH")) %>%
-        arrange(p_value)
-
-      write_csv(assoc_results, file.path(DIR_MLST, "ST_plasmid_associations.csv"))
-      msg("Saved association results to ST_plasmid_associations.csv")
-    }
-  }
-}
-
-msg("✓ Core vs Plasmid analysis complete.")
+writeLines(
+  c(
+    "Core-versus-plasmid descriptive layer: PASS",
+    paste0("episodes=", nrow(pa)),
+    paste0("replicon_gene_features=", length(replicon_cols)),
+    "episode_denominator_includes_successful_no_hit_profiles=TRUE",
+    "inference=descriptive only; repeated episodes are not treated as independent"
+  ),
+  file.path(DIR_MLST, "CORE_VS_PLASMID_RUN_COMPLETE.txt")
+)
+msg("✓ Descriptive ST–replicon context complete.")

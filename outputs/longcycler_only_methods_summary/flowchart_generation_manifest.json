@@ -1,10 +1,19 @@
 {
-  "generatedAt": "2026-07-09T15:45:01.963Z",
-  "inspirationDeck": "/Users/Aamir/Desktop/rUTIs/Base presentation.pptx",
-  "sourceDeck": "/Users/Aamir/Desktop/rUTIs/outputs/longcycler_only_methods_summary/Longcycler_only_methods_summary.pptx",
-  "standalonePptx": "/Users/Aamir/Desktop/rUTIs/outputs/longcycler_only_methods_summary/Longcycler_only_analysis_flowchart.pptx",
-  "appendedPptx": "/Users/Aamir/Desktop/rUTIs/outputs/longcycler_only_methods_summary/Longcycler_only_methods_summary_with_flowchart.pptx",
-  "previewPath": "/Users/Aamir/Desktop/rUTIs/outputs/longcycler_only_methods_summary/flowchart_preview.png",
-  "layoutPath": "/Users/Aamir/Desktop/rUTIs/outputs/longcycler_only_methods_summary/flowchart_layout.json",
-  "countsPath": "/Users/Aamir/Desktop/rUTIs/outputs/longcycler_only_methods_summary/flowchart_counts.csv"
+  "schema_version": "longcycler_flowchart_v2",
+  "generated_at": "2026-07-15 01:36:53 CEST",
+  "source_registry": "/Users/Aamir/Desktop/rUTIs/results/pipeline/longcycler_release_claim_registry.json",
+  "source_registry_sha256": "87f65979259a4c92545afbb74b5d3a8efffb8a3d18cd2481df165b97e5c6d30e",
+  "flowchart": {
+    "file": "Longcycler_only_analysis_flowchart.pptx",
+    "sha256": "513784e870dbafad015c1304c285471809ac42f0ce67c91751ae5950a4eb88ec",
+    "slides": 1
+  },
+  "anchors": {
+    "analytical_episodes": 532,
+    "analytical_residents": 161,
+    "direct_pairs": 893,
+    "adjacent_transitions": 371,
+    "focused_transitions": 9,
+    "focused_at_threshold": 5
+  }
 }

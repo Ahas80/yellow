@@ -3,19 +3,15 @@
 # ==============================================================================
 # 35_final_figure_pack.R
 # ==============================================================================
-#
-# Goal:
-#   Render a manuscript-ready final figure pack from the current validated
-#   primary UTI/Not_UTI, mechanism, and robustness outputs.
-#
-# Guardrails:
-#   - This script does not reclassify episodes or rerun upstream analyses.
-#   - It does not use legacy ASB-vs-UTI or archived OLD generated outputs.
-#   - Figures are descriptive or sensitivity-focused, not confirmatory.
+# Canonical thesis-figure layer for the selected QC-passing Longcycler cohort.
+# This script runs only after RQ01-RQ10 have completed. It consumes validated
+# tables, derives every displayed denominator, and never reclassifies episodes.
+# Legacy ASB/UTI/Negative figures remain descriptive and are not read here.
 # ==============================================================================
 
 source("00_config.R")
 source("R/plot_helpers.R")
+source("R/wgs_helpers.R")
 
 suppressPackageStartupMessages({
   library(dplyr)
@@ -26,1268 +22,1375 @@ suppressPackageStartupMessages({
   library(scales)
   library(patchwork)
   library(ggrepel)
+  library(digest)
+  library(ape)
+  library(ggtree)
 })
 
-msg("Starting 35_final_figure_pack.R")
+set.seed(20260714)
+msg("Starting canonical thesis figure pack")
 
-DIR_FINAL_RESULTS <- file.path(DIR_RESULTS, "final_figures")
-DIR_FINAL_PLOTS <- file.path(DIR_PLOTS, "final_figures")
-DIR_MECHANISM <- file.path(DIR_RESULTS, "mechanism")
-DIR_ROBUSTNESS <- file.path(DIR_RESULTS, "robustness")
-DIR_STAT <- file.path(DIR_RESULTS, "statistical_sensitivity")
-DIR_AUDIT <- file.path(DIR_RESULTS, "audit")
-ensure_dir(DIR_FINAL_RESULTS)
-ensure_dir(DIR_FINAL_PLOTS)
+DIR_FINAL <- file.path(DIR_PLOTS, "final")
+DIR_SUPP <- file.path(DIR_FINAL, "supplementary")
+DIR_FIG_AUDIT <- file.path(DIR_RESULTS, "figure_audit")
+ensure_dir(DIR_FINAL)
+ensure_dir(DIR_SUPP)
+ensure_dir(DIR_FIG_AUDIT)
 
-required_paths <- c(
-  status_map = FILE_STATUS_MAP,
-  canonical_selection = file.path(DIR_QC, "canonical_assembly_selection.csv"),
+paths <- c(
+  source_status = file.path(DIR_CLINICAL, "status_map.csv"),
+  cohort = FILE_ANALYSIS_CLINICAL_COHORT,
+  qc = FILE_CANONICAL_ASSEMBLY_SELECTION,
+  mlst = file.path(DIR_MLST, "mlst_provider_preferred.csv"),
   vf_ready = FILE_VF_READY,
-  casebook = file.path(DIR_MECHANISM, "not_uti_to_uti_casebook.csv"),
-  mechanism_summary = file.path(DIR_MECHANISM, "transition_mechanism_summary.csv"),
-  mechanism_validation = file.path(DIR_MECHANISM, "mechanism_validation_checks.csv"),
-  denominator = file.path(DIR_ROBUSTNESS, "denominator_robustness_summary.csv"),
-  robustness_validation = file.path(DIR_ROBUSTNESS, "robustness_validation_checks.csv"),
-  score_contrasts = file.path(DIR_ROBUSTNESS, "near_miss_expanded_score_contrasts.csv"),
-  model_stability = file.path(DIR_ROBUSTNESS, "model_stability_summary.csv"),
-  leave_one_summary = file.path(DIR_ROBUSTNESS, "leave_one_uti_sensitivity_summary.csv"),
-  bootstrap = file.path(DIR_ROBUSTNESS, "bootstrap_score_robustness.csv"),
-  near_miss = file.path(DIR_AUDIT, "uti_not_uti_near_miss_rows.csv"),
-  power_precision = file.path(DIR_VF, "uti_not_uti_power_precision_context.csv"),
-  leave_one_detail = file.path(DIR_VF, "uti_not_uti_leave_one_uti_out.csv"),
-  variants = file.path(DIR_RESULTS, "longitudinal", "variant_annotation_detailed.csv"),
-  stat_validation = file.path(DIR_STAT, "statistical_sensitivity_validation_checks.csv"),
-  stat_score_values = file.path(DIR_STAT, "participant_collapsed_score_values.csv"),
-  stat_module_matrix = file.path(DIR_STAT, "not_uti_to_uti_module_change_matrix.csv"),
-  stat_transition_module = file.path(DIR_STAT, "transition_module_gain_loss_enrichment.csv"),
-  stat_pcoa = file.path(DIR_VF, "vf_pcoa_jaccard_coordinates.csv")
+  vf_pa = file.path(DIR_VF, "vf_pa_all.csv"),
+  gene_map = file.path(DIR_VF, "gene_map.csv"),
+  score_table = file.path(DIR_VF, "vf_score_table.csv"),
+  score_models = file.path(DIR_RESULTS, "statistical_sensitivity", "score_glmm_sensitivity.csv"),
+  score_collapsed = file.path(DIR_RESULTS, "statistical_sensitivity", "participant_collapsed_score_values.csv"),
+  gene_models = file.path(DIR_RESULTS, "models", "gwas_multivariable_glmm.csv"),
+  fisher = file.path(DIR_RESULTS, "models", "gwas_univariable_stats.csv"),
+  timelines = file.path(DIR_RESULTS, "longitudinal", "participant_timelines.csv"),
+  transitions = file.path(DIR_RESULTS, "longitudinal", "longcycler_transitions.csv"),
+  casebook = file.path(DIR_RESULTS, "mechanism", "not_uti_to_uti_casebook.csv"),
+  mechanism_summary = file.path(DIR_RESULTS, "mechanism", "transition_mechanism_summary.csv"),
+  pairwise = file.path(DIR_RESULTS, "strain_compare", "pairwise_metrics.csv"),
+  rq_marker = file.path(DIR_RESULTS, "research_questions", "RUN_COMPLETE.txt"),
+  rq01_threshold = file.path(DIR_RESULTS, "research_questions", "RQ01", "threshold_sensitivity.csv"),
+  rq03_cases = file.path(DIR_RESULTS, "research_questions", "RQ03", "deidentified_case_matrix.csv"),
+  rq06_pairs = file.path(DIR_RESULTS, "research_questions", "RQ06", "rq06_adjacent_pair_vf_changes.csv"),
+  rq07_inference = file.path(DIR_RESULTS, "research_questions", "RQ07", "rq07_event_sample_inference.csv"),
+  rq07_paired = file.path(DIR_RESULTS, "research_questions", "RQ07", "rq07_nearest_paired_resident_values.csv"),
+  module_changes = file.path(DIR_RESULTS, "statistical_sensitivity", "not_uti_to_uti_module_change_matrix.csv"),
+  pcoa = file.path(DIR_VF, "vf_pcoa_jaccard_coordinates.csv"),
+  near_miss = file.path(DIR_RESULTS, "audit", "uti_not_uti_near_miss_rows.csv"),
+  leave_one = file.path(DIR_VF, "uti_not_uti_leave_one_uti_out.csv"),
+  plasmid_manifest = file.path(DIR_RESULTS, "plasmids", "plasmidfinder_input_manifest.csv"),
+  replicons = file.path(DIR_MLST, "plasmid_replicons_long.csv"),
+  mob_profiles = file.path(
+    DIR_RESULTS, "plasmids", "mob_suite",
+    "episode_plasmid_profiles.csv"
+  ),
+  plasmid_mechanism_profiles = file.path(
+    DIR_RESULTS, "plasmids", "mob_suite",
+    "episode_mechanism_profiles.csv"
+  ),
+  plasmid_focused = file.path(
+    DIR_RESULTS, "plasmids", "mob_suite",
+    "not_uti_to_uti_plasmid_metrics_9.csv"
+  ),
+  plasmid_location_validation = file.path(
+    DIR_RESULTS, "plasmids", "mob_suite",
+    "plasmid_gene_location_validation.csv"
+  ),
+  amr = file.path(DIR_RESULTS, "amr", "episode_amr_profiles.csv"),
+  tree = file.path(DIR_RESULTS, "wgs", "core", "core_genome.tree"),
+  tree_map = file.path(DIR_RESULTS, "wgs", "core", "core_snp_sample_map.csv"),
+  variants = file.path(DIR_FIG_AUDIT, "reference_aware_variants.csv"),
+  variant_validation = file.path(DIR_FIG_AUDIT, "reference_aware_variants_validation.csv")
 )
 
-missing_paths <- required_paths[!file.exists(required_paths)]
-if (length(missing_paths) > 0) {
-  stop("Missing required final-figure input(s): ", paste(missing_paths, collapse = ", "))
+required <- setdiff(names(paths), c("variants", "variant_validation"))
+missing_required <- paths[required][!file.exists(paths[required])]
+if (length(missing_required)) {
+  stop("Missing canonical figure input(s): ", paste(missing_required, collapse = "; "), call. = FALSE)
 }
-if (any(str_detect(required_paths, regex("_OLD|old_asb|legacy", ignore_case = TRUE)))) {
-  stop("Final figure inputs include a legacy or OLD path; refusing to render.")
+if (any(str_detect(paths[required], regex("_OLD|old_asb|legacy", ignore_case = TRUE)))) {
+  stop("A canonical figure input points to a legacy result.", call. = FALSE)
 }
 
 read_current <- function(path) read_csv(path, show_col_types = FALSE)
-
-canonical_selection <- read_current(required_paths[["canonical_selection"]])
-assembler_col <- intersect(c("assembler", "Assembler"), names(canonical_selection))[1]
-if (is.na(assembler_col) ||
-    !all(c("selected_canonical", "QC_PASS", "Participant_id", "tp_lab") %in% names(canonical_selection))) {
-  stop("Canonical assembly selection lacks Longcycler-primary selection fields.")
+assert_unique <- function(x, keys, label) {
+  if (any(!keys %in% names(x))) stop(label, " lacks key column(s): ", paste(setdiff(keys, names(x)), collapse = ", "))
+  dup <- x %>% count(across(all_of(keys)), name = ".n") %>% filter(.data$.n > 1L)
+  if (nrow(dup)) stop(label, " contains ", nrow(dup), " duplicated key(s).", call. = FALSE)
+  invisible(x)
 }
-active_longcycler_keys <- canonical_selection %>%
-  mutate(
-    Participant_id = as.character(.data$Participant_id),
-    tp_lab = normalise_timepoint_preserve_events(.data$tp_lab),
-    selected_canonical = as_pipeline_bool(.data$selected_canonical),
-    QC_PASS = as_pipeline_bool(.data$QC_PASS),
-    active_assembler = str_to_lower(as.character(.data[[assembler_col]]))
-  ) %>%
-  filter(.data$selected_canonical %in% TRUE,
-         .data$QC_PASS %in% TRUE,
-         .data$active_assembler == "longcycler") %>%
-  distinct(.data$Participant_id, .data$tp_lab)
-if (nrow(active_longcycler_keys) == 0) {
-  stop("Canonical manifest contains no selected QC-passing Longcycler episode keys.")
+assert_value <- function(observed, expected, label) {
+  if (!identical(as.integer(observed), as.integer(expected))) {
+    stop(label, ": observed ", observed, ", expected ", expected, call. = FALSE)
+  }
 }
-
-mechanism_validation <- read_current(required_paths[["mechanism_validation"]])
-robustness_validation <- read_current(required_paths[["robustness_validation"]])
-stat_validation <- read_current(required_paths[["stat_validation"]])
-if (any(mechanism_validation$status != "PASS")) {
-  stop("Mechanism validation includes a non-PASS check; rerun or repair the mechanism add-on first.")
+status_label <- function(x) recode_operational_uti_status(x, strict = TRUE, as_factor = TRUE)
+status_colours <- c("Not UTI" = "#0072B2", "UTI" = "#D55E00", "Unknown" = "#CCCCCC")
+status_fill <- function(...) scale_fill_operational_status(..., reader_facing = TRUE)
+status_colour <- function(...) scale_colour_operational_status(..., reader_facing = TRUE)
+reader_event <- function(x) recode(as.character(x), Routine = "Routine surveillance", UTI_event = "UTI-related sampling", .default = "Other sampling")
+normalise_st <- function(x) {
+  out <- str_trim(as.character(x))
+  out[out %in% c("", "-", "NA", "N/A", "Unknown", "unknown")] <- NA_character_
+  out
 }
-if (any(robustness_validation$status != "PASS")) {
-  stop("Robustness validation includes a non-PASS check; rerun or repair the robustness add-on first.")
+case_labels <- function(casebook) {
+  casebook %>%
+    distinct(case_id, Participant_id) %>%
+    arrange(.data$case_id) %>%
+    mutate(Case_Label = sprintf("Case %02d", row_number()))
 }
-if (any(stat_validation$status != "PASS")) {
-  stop("Statistical sensitivity validation includes a non-PASS check; rerun or repair script 36 first.")
-}
-
-status <- read_current(required_paths[["status_map"]]) %>%
-  mutate(
-    Participant_id = as.character(.data$Participant_id),
-    tp_lab = as.character(.data$tp_lab)
-  ) %>%
-  filter(.data$analysis_include_primary %in% TRUE, .data$UTI_Status %in% c("UTI", "Not_UTI"))
-
-expected_active_status <- status %>%
-  semi_join(active_longcycler_keys, by = c("Participant_id", "tp_lab"))
-if (nrow(expected_active_status) != nrow(active_longcycler_keys)) {
-  stop("Not every active selected QC-pass Longcycler key has one primary clinical status row.")
-}
-expected_active_total <- nrow(active_longcycler_keys)
-expected_active_uti <- sum(expected_active_status$UTI_Status == "UTI", na.rm = TRUE)
-expected_active_not_uti <- sum(expected_active_status$UTI_Status == "Not_UTI", na.rm = TRUE)
-
-vf_ready <- read_current(required_paths[["vf_ready"]]) %>%
-  mutate(
-    Participant_id = as.character(.data$Participant_id),
-    tp_lab = as.character(.data$tp_lab)
-  ) %>%
-  filter(.data$UTI_Status %in% c("UTI", "Not_UTI")) %>%
-  semi_join(active_longcycler_keys, by = c("Participant_id", "tp_lab"))
-if (nrow(vf_ready) != expected_active_total) {
-  stop("VF-ready data do not contain every active selected QC-pass Longcycler episode key.")
-}
-
-casebook <- read_current(required_paths[["casebook"]]) %>%
-  mutate(Participant_id = as.character(.data$Participant_id))
-if (!"snp_strain_context" %in% names(casebook)) {
-  casebook <- casebook %>%
-    mutate(
-      snp_strain_context = case_when(
-        is.na(.data$SNPs) ~ "Missing SNP evidence",
-        .data$SNPs <= strain_snp_threshold() ~ "Strong same strain",
-        TRUE ~ "Above same-strain SNP threshold"
-      )
-    )
-}
-if (!"st_lineage_context" %in% names(casebook)) {
-  casebook <- casebook %>%
-    mutate(
-      st_lineage_context = case_when(
-        .data$same_ST %in% TRUE ~ "Same ST",
-        .data$same_ST %in% FALSE ~ "Different ST",
-        TRUE ~ "Missing ST evidence"
-      )
-    )
-}
-if (!"pair_interpretation" %in% names(casebook)) {
-  casebook <- casebook %>% mutate(pair_interpretation = .data$same_strain_evidence)
-}
-active_casebook_pairs <- casebook %>%
-  mutate(
-    from_tp = normalise_timepoint_preserve_events(.data$from_tp),
-    to_tp = normalise_timepoint_preserve_events(.data$to_tp)
-  ) %>%
-  semi_join(
-    active_longcycler_keys %>% transmute(Participant_id, from_tp = tp_lab),
-    by = c("Participant_id", "from_tp")
-  ) %>%
-  semi_join(
-    active_longcycler_keys %>% transmute(Participant_id, to_tp = tp_lab),
-    by = c("Participant_id", "to_tp")
-  )
-expected_linked_casebook <- nrow(active_casebook_pairs)
-expected_missing_casebook <- nrow(casebook) - expected_linked_casebook
-mechanism_summary <- read_current(required_paths[["mechanism_summary"]])
-denominator <- read_current(required_paths[["denominator"]])
-score_contrasts <- read_current(required_paths[["score_contrasts"]])
-model_stability <- read_current(required_paths[["model_stability"]])
-leave_one_summary <- read_current(required_paths[["leave_one_summary"]])
-bootstrap <- read_current(required_paths[["bootstrap"]])
-near_miss <- read_current(required_paths[["near_miss"]]) %>%
-  mutate(
-    Participant_id = as.character(.data$Participant_id),
-    tp_lab = normalise_timepoint_preserve_events(.data$tp_lab)
-  )
-power_precision <- read_current(required_paths[["power_precision"]])
-leave_one_detail <- read_current(required_paths[["leave_one_detail"]])
-variants <- read_current(required_paths[["variants"]]) %>%
-  mutate(Participant_id = as.character(.data$Participant_id))
-stat_score_values <- read_current(required_paths[["stat_score_values"]]) %>%
-  mutate(
-    Participant_id = as.character(.data$Participant_id),
-    UTI_Status = factor(.data$UTI_Status, levels = c("Not_UTI", "UTI"))
-  )
-stat_module_matrix <- read_current(required_paths[["stat_module_matrix"]]) %>%
-  mutate(Participant_id = as.character(.data$Participant_id))
-stat_transition_module <- read_current(required_paths[["stat_transition_module"]])
-stat_pcoa <- read_current(required_paths[["stat_pcoa"]]) %>%
-  prefer_primary_uti_status(allow_legacy_fallback = FALSE) %>%
-  mutate(
-    Participant_id = as.character(.data$Participant_id),
-    UTI_Status = factor(.data$UTI_Status, levels = c("Not_UTI", "UTI"))
-  )
-
-metric_num <- function(df, metric_name) {
-  out <- df %>% filter(.data$metric == metric_name) %>% pull(.data$value)
-  if (length(out) != 1) stop("Expected one denominator metric: ", metric_name)
-  suppressWarnings(as.numeric(out))
-}
-
-clinical_total <- metric_num(denominator, "primary_clinical_total")
-clinical_uti <- metric_num(denominator, "primary_clinical_uti")
-clinical_not <- metric_num(denominator, "primary_clinical_not_uti")
-vf_total <- metric_num(denominator, "primary_vf_total")
-vf_uti <- metric_num(denominator, "primary_vf_uti")
-vf_not <- metric_num(denominator, "primary_vf_not_uti")
-near_miss_clinical <- metric_num(denominator, "near_miss_clinical_rows")
-near_miss_vf <- metric_num(denominator, "near_miss_vf_ready_rows")
-expanded_uti <- metric_num(denominator, "expanded_vf_uti_if_near_miss_included")
-expanded_not <- metric_num(denominator, "expanded_vf_not_uti_if_near_miss_excluded")
-
-expected_near_miss_vf <- nrow(
-  near_miss %>% semi_join(active_longcycler_keys, by = c("Participant_id", "tp_lab"))
-)
-expected_expanded_uti <- expected_active_uti + expected_near_miss_vf
-expected_expanded_not <- expected_active_not_uti - expected_near_miss_vf
-
-vf_keys <- vf_ready %>% distinct(.data$Participant_id, .data$tp_lab)
-primary_retention <- status %>%
-  left_join(vf_keys %>% mutate(retained_for_vf = TRUE),
-            by = c("Participant_id", "tp_lab")) %>%
-  mutate(
-    retained_for_vf = coalesce(.data$retained_for_vf, FALSE),
-    retention_state = if_else(.data$retained_for_vf, "VF/model retained", "No VF/model endpoint")
-  ) %>%
-  count(.data$UTI_Status, .data$retention_state, name = "n") %>%
-  complete(
-    UTI_Status = c("Not_UTI", "UTI"),
-    retention_state = c("VF/model retained", "No VF/model endpoint"),
-    fill = list(n = 0L)
-  )
-
-check_row <- function(check, ok, detail) {
-  tibble(check = check, status = if_else(ok, "PASS", "FAIL"), detail = as.character(detail))
-}
-
-validation <- bind_rows(
-  check_row("all upstream mechanism checks passed", all(mechanism_validation$status == "PASS"),
-            sprintf("%d mechanism checks imported", nrow(mechanism_validation))),
-  check_row("all upstream robustness checks passed", all(robustness_validation$status == "PASS"),
-            sprintf("%d robustness checks imported", nrow(robustness_validation))),
-  check_row("primary clinical denominator is 583 with 18 UTI",
-            clinical_total == 583 && clinical_uti == 18 && clinical_not == 565,
-            sprintf("n=%d; UTI=%d; Not_UTI=%d", clinical_total, clinical_uti, clinical_not)),
-  check_row(sprintf("active selected QC-pass Longcycler VF/model denominator is %d with %d UTI",
-                    expected_active_total, expected_active_uti),
-            vf_total == expected_active_total &&
-              vf_uti == expected_active_uti && vf_not == expected_active_not_uti,
-            sprintf("n=%d; UTI=%d; Not_UTI=%d", vf_total, vf_uti, vf_not)),
-  check_row("near-miss denominator matches current sensitivity outputs",
-            near_miss_clinical == nrow(near_miss) &&
-              near_miss_vf == expected_near_miss_vf &&
-              expanded_uti == expected_expanded_uti &&
-              expanded_not == expected_expanded_not,
-            sprintf("clinical=%d; VF-ready=%d; expanded=%d/%d",
-                    near_miss_clinical, near_miss_vf, expanded_uti, expanded_not)),
-  check_row("casebook includes 11 clinical Not_UTI-to-UTI transitions",
-            nrow(casebook) == 11,
-            sprintf("n=%d", nrow(casebook))),
-  check_row(sprintf("casebook includes %d active Longcycler WGS/VF-linked and %d missing endpoint pair(s)",
-                    expected_linked_casebook, expected_missing_casebook),
-            sum(casebook$has_vf_pair %in% TRUE) == expected_linked_casebook &&
-              sum(!(casebook$has_vf_pair %in% TRUE)) == expected_missing_casebook,
-            sprintf("linked=%d; missing=%d",
-                    sum(casebook$has_vf_pair %in% TRUE),
-                    sum(!(casebook$has_vf_pair %in% TRUE)))),
-  check_row("casebook includes no Uricult-linked transition",
-            sum(casebook$is_uricult_transition %in% TRUE, na.rm = TRUE) == 0,
-            sprintf("uricult=%d", sum(casebook$is_uricult_transition %in% TRUE, na.rm = TRUE))),
-  check_row("primary-key retention uses primary denominator directly",
-            sum(primary_retention$n[primary_retention$UTI_Status == "Not_UTI" &
-                                      primary_retention$retention_state == "VF/model retained"]) == expected_active_not_uti &&
-              sum(primary_retention$n[primary_retention$UTI_Status == "Not_UTI" &
-                                      primary_retention$retention_state == "No VF/model endpoint"]) == clinical_not - expected_active_not_uti &&
-              sum(primary_retention$n[primary_retention$UTI_Status == "UTI" &
-                                      primary_retention$retention_state == "VF/model retained"]) == expected_active_uti &&
-              sum(primary_retention$n[primary_retention$UTI_Status == "UTI" &
-                                      primary_retention$retention_state == "No VF/model endpoint"]) == clinical_uti - expected_active_uti,
-            sprintf("Direct active Longcycler key join: Not_UTI %d retained/%d missing; UTI %d retained/%d missing.",
-                    expected_active_not_uti, clinical_not - expected_active_not_uti,
-                    expected_active_uti, clinical_uti - expected_active_uti)),
-  check_row("no legacy or OLD source path used",
-            !any(str_detect(required_paths, regex("_OLD|old_asb|legacy", ignore_case = TRUE))),
-            "Inputs are restricted to current primary-status outputs.")
-)
-
-write_csv(validation, file.path(DIR_FINAL_RESULTS, "final_figure_validation_checks.csv"))
-if (any(validation$status != "PASS")) {
-  stop("Final figure validation failed; see results/final_figures/final_figure_validation_checks.csv.")
-}
-
-amr_report_path <- file.path(DIR_MECHANISM, "amr_screen_report.txt")
-amr_complete <- file.exists(amr_report_path) &&
-  any(str_detect(readLines(amr_report_path, warn = FALSE), fixed("Status: COMPLETE")))
-
-mechanism_levels <- c(
-  "same_strain_stable_profile",
-  "same_strain_genomic_change",
-  "strain_replacement",
-  "uncertain",
-  "missing_wgs_endpoint"
+short_score <- c(
+  total_vf_count_all = "All detected VF genes",
+  total_vf_count_curated = "Curated VF genes",
+  upec_system_count = "UPEC-associated systems",
+  expec_marker_count = "ExPEC-like markers"
 )
 mechanism_labels <- c(
   same_strain_stable_profile = "Same strain, stable profile",
   same_strain_genomic_change = "Same strain, profile change",
   strain_replacement = "Strain replacement",
   uncertain = "Uncertain",
-  missing_wgs_endpoint = "Missing genomic endpoint"
+  missing_wgs_endpoint = "Genomic endpoint unavailable"
 )
-mechanism_cols <- c(
-  same_strain_stable_profile = "#2E8B57",
+mechanism_colours <- c(
+  same_strain_stable_profile = "#009E73",
   same_strain_genomic_change = "#E69F00",
-  strain_replacement = "#C44E19",
-  uncertain = "#718096",
+  strain_replacement = "#CC79A7",
+  uncertain = "#6B7280",
   missing_wgs_endpoint = "#BDBDBD"
 )
 
-final_theme <- function(base_size = 10) {
-  theme_bw(base_size = base_size) +
-    theme(
-      plot.title = element_text(face = "bold", size = rel(1.12)),
-      plot.subtitle = element_text(colour = "grey25", size = rel(0.92)),
-      plot.caption = element_text(colour = "grey35", hjust = 0, size = rel(0.78)),
-      legend.position = "bottom",
-      legend.title = element_text(face = "bold"),
-      strip.background = element_rect(fill = "#F3F4F6", colour = "grey75"),
-      strip.text = element_text(face = "bold"),
-      panel.grid.minor = element_blank(),
-      axis.title = element_text(face = "bold")
-    )
-}
-
-human_case <- function(participant, from_tp, to_tp) {
-  paste0(participant, ": ", from_tp, " to ", to_tp)
-}
-
-normalise_st_label <- function(x) {
-  x <- str_trim(as.character(x))
-  unknown <- c("", "-", "ST-", "NA", "N/A", "UNKNOWN", "UNK", "NT",
-               "NON-TYPABLE", "NONTYPABLE", "NOT TYPED")
-  x[str_to_upper(x) %in% unknown] <- NA_character_
-  x
-}
-
-st_group4 <- function(x) {
-  st <- normalise_st_label(x)
-  case_when(
-    st == "131" ~ "ST131",
-    st == "141" ~ "ST141",
-    is.na(st) ~ "Missing ST",
-    TRUE ~ "Other typed ST"
-  )
-}
-
-casebook <- casebook %>%
+cohort <- read_current(paths[["cohort"]]) %>%
   mutate(
-    mechanism_bucket = factor(.data$mechanism_bucket, levels = mechanism_levels),
-    mechanism_label = factor(mechanism_labels[as.character(.data$mechanism_bucket)],
-                             levels = mechanism_labels[mechanism_levels]),
-    case_label = human_case(.data$Participant_id, .data$from_tp, .data$to_tp)
-  ) %>%
-  arrange(.data$mechanism_bucket, is.na(.data$SNPs), .data$SNPs, .data$Participant_id)
+    Participant_id = as.character(.data$Participant_id),
+    tp_lab = normalise_timepoint_preserve_events(.data$tp_lab),
+    status_display = status_label(.data$UTI_Status)
+  )
+assert_unique(cohort, c("Participant_id", "tp_lab"), "Selected Longcycler cohort")
+assert_value(nrow(cohort), 532L, "Selected Longcycler episodes")
+assert_value(n_distinct(cohort$Participant_id), 161L, "Selected participants")
+assert_value(sum(cohort$UTI_Status == "UTI"), 16L, "Operational UTI episodes")
+assert_value(sum(cohort$UTI_Status == "Not_UTI"), 516L, "Operational Not UTI episodes")
 
-case_order <- rev(casebook$case_label)
-casebook <- casebook %>% mutate(case_label = factor(.data$case_label, levels = case_order))
+source_status <- read_current(paths[["source_status"]]) %>%
+  filter(.data$analysis_include_primary %in% TRUE) %>%
+  mutate(Participant_id = as.character(.data$Participant_id), status_display = status_label(.data$UTI_Status))
+assert_unique(source_status, c("Participant_id", "tp_lab"), "Primary clinical source cohort")
+assert_value(nrow(source_status), 583L, "Primary clinical source episodes")
+assert_value(n_distinct(source_status$Participant_id), 166L, "Primary clinical source participants")
+
+qc <- read_current(paths[["qc"]]) %>% mutate(Participant_id = as.character(.data$Participant_id))
+assert_unique(qc, c("Assembly_ID"), "Longcycler candidate QC table")
+assert_value(nrow(qc), 592L, "Longcycler candidates")
+assert_value(sum(qc$selected_canonical %in% TRUE & qc$QC_PASS %in% TRUE), 532L, "Selected QC-passing assemblies")
+
+mlst <- read_current(paths[["mlst"]]) %>%
+  mutate(Participant_id = as.character(.data$Participant_id), tp_lab = normalise_timepoint_preserve_events(.data$tp_lab))
+assert_unique(mlst, c("Participant_id", "tp_lab"), "Provider-preferred MLST")
+assert_value(nrow(mlst), 532L, "MLST denominator")
+
+vf_ready <- read_current(paths[["vf_ready"]]) %>%
+  mutate(Participant_id = as.character(.data$Participant_id), tp_lab = normalise_timepoint_preserve_events(.data$tp_lab))
+assert_unique(vf_ready, c("Participant_id", "tp_lab"), "VF-ready table")
+assert_value(nrow(vf_ready), 532L, "VF-ready denominator")
+
+score_table <- read_current(paths[["score_table"]]) %>%
+  mutate(Participant_id = as.character(.data$Participant_id), tp_lab = normalise_timepoint_preserve_events(.data$tp_lab)) %>%
+  select(-any_of(c("Infection_Status", "UTI_Status"))) %>%
+  left_join(cohort %>% select(Participant_id, tp_lab, UTI_Status, status_display),
+            by = c("Participant_id", "tp_lab"), relationship = "one-to-one")
+assert_unique(score_table, c("Participant_id", "tp_lab"), "VF score table")
+assert_value(nrow(score_table), 532L, "VF score denominator")
+if (anyNA(score_table$UTI_Status)) stop("VF score table has unmatched clinical status.")
+
+transitions <- read_current(paths[["transitions"]]) %>% mutate(Participant_id = as.character(.data$Participant_id))
+assert_unique(transitions, c("Participant_id", "tp_from", "tp_to"), "Canonical adjacent transitions")
+assert_value(nrow(transitions), 371L, "Adjacent transition count")
+assert_value(n_distinct(transitions$Participant_id), 139L, "Participants with adjacent transitions")
+assert_value(sum(transitions$status_from == "Not_UTI" & transitions$status_to == "UTI"), 9L, "Not UTI-to-UTI transitions")
+assert_value(sum(transitions$status_from == "Not_UTI" & transitions$status_to == "UTI" & transitions$TotalSNPs <= SAME_STRAIN_SNP_THRESHOLD), 5L, "Not UTI-to-UTI transitions at or below 25 SNPs")
+
+pairwise <- read_current(paths[["pairwise"]])
+assert_value(nrow(pairwise), 893L, "Direct within-participant pair count")
+if (any(pairwise$within_participant %in% FALSE, na.rm = TRUE)) stop("Pairwise table contains cross-participant pairs.")
+
+casebook <- read_current(paths[["casebook"]]) %>% mutate(Participant_id = as.character(.data$Participant_id))
+assert_unique(casebook, c("Participant_id", "from_tp", "to_tp"), "Not UTI-to-UTI casebook")
+assert_value(nrow(casebook), 9L, "Not UTI-to-UTI casebook size")
+case_key <- case_labels(casebook)
+casebook <- casebook %>% left_join(case_key, by = c("case_id", "Participant_id"), relationship = "many-to-one")
+
+rq_status_files <- file.path(DIR_RESULTS, "research_questions", sprintf("RQ%02d", 1:10), "analysis_status.csv")
+if (any(!file.exists(rq_status_files))) stop("Final figures require all ten per-question completion files.")
+rq_status <- bind_rows(lapply(rq_status_files, read_current))
+if (nrow(rq_status) != 10L || any(rq_status$status != "complete")) stop("At least one research question is not complete.")
 
 manifest <- tibble()
-register_figure <- function(figure_id, figure_class, plot, width, height, caption,
-                            source_inputs, evidence_type, limitations, include_amr = FALSE) {
-  png_path <- file.path(DIR_FINAL_PLOTS, paste0(figure_id, ".png"))
-  pdf_path <- file.path(DIR_FINAL_PLOTS, paste0(figure_id, ".pdf"))
-  ggsave(png_path, plot, width = width, height = height, dpi = 300, bg = "white")
-  ggsave(pdf_path, plot, width = width, height = height, device = "pdf", bg = "white")
-  manifest <<- bind_rows(
-    manifest,
-    tibble(
-      figure_id = figure_id,
+register_figure <- function(figure_id, figure_number, title, scientific_question, figure_class,
+                            plot, width, height, caption, source_inputs, statistical_method,
+                            caveat, unit, filters, visual_encodings, multiplicity,
+                            validation_status = "validated") {
+  out_dir <- if (identical(figure_class, "Main")) DIR_FINAL else DIR_SUPP
+  stub <- file.path(out_dir, figure_id)
+  save_result <- save_ruti_figure(
+    plot = plot,
+    filename = stub,
+    width = width,
+    height = height,
+    dpi = 300,
+    figure_id = figure_id,
+    manifest_path = file.path(DIR_FIG_AUDIT, "save_ruti_figure_manifest.csv"),
+    metadata = list(
+      figure_number = figure_number,
+      title = title,
+      scientific_question = scientific_question,
       figure_class = figure_class,
-      png_path = png_path,
-      pdf_path = pdf_path,
       caption = caption,
-      source_inputs = paste(source_inputs, collapse = "; "),
-      evidence_type = evidence_type,
-      interpretation_limitations = limitations,
-      amr_screen_included = include_amr && amr_complete
+      source_inputs = source_inputs,
+      statistical_method = statistical_method,
+      caveat = caveat,
+      unit = unit,
+      filters = filters,
+      visual_encodings = visual_encodings,
+      multiplicity = multiplicity,
+      validation_status = validation_status
     )
   )
+  manifest <<- bind_rows(manifest, tibble(
+    figure_id, figure_number, title, scientific_question, figure_class,
+    png_path = paste0(stub, ".png"), pdf_path = paste0(stub, ".pdf"),
+    width_in = width, height_in = height, dpi = 300L,
+    caption, source_inputs = paste(source_inputs, collapse = "; "),
+    statistical_method, caveat, unit, filters, visual_encodings, multiplicity,
+    validation_status
+  ))
+  invisible(save_result)
 }
 
-# ------------------------------------------------------------------------------
-# Main Figure 1: Denominators and sensitivity framing
-# ------------------------------------------------------------------------------
-clinical_plot_data <- tibble(
-  Status = factor(c("Not_UTI", "UTI"), levels = c("Not_UTI", "UTI")),
-  n = c(clinical_not, clinical_uti),
-  cohort = "Clinical episodes"
-)
-p1a <- ggplot(clinical_plot_data, aes(.data$cohort, .data$n, fill = .data$Status)) +
-  geom_col(width = 0.62, colour = "white") +
-  geom_text(aes(label = .data$n), position = position_stack(vjust = 0.5),
-            colour = "white", fontface = "bold", size = 3.6) +
-  scale_fill_uti_status(drop = FALSE) +
-  labs(
-    title = "Primary clinical status",
-    subtitle = "583 episodes: 18 UTI, 565 Not_UTI",
-    x = NULL, y = "Episodes", fill = "Primary status"
-  ) +
-  final_theme(10) +
-  theme(axis.text.x = element_blank(), axis.ticks.x = element_blank())
-
-retention_plot_data <- primary_retention %>%
-  mutate(
-    UTI_Status = factor(.data$UTI_Status, levels = c("Not_UTI", "UTI")),
-    retention_state = factor(.data$retention_state,
-                             levels = c("VF/model retained", "No VF/model endpoint"))
-  )
-p1b <- ggplot(retention_plot_data, aes(.data$n, .data$retention_state, fill = .data$retention_state)) +
-  geom_col(width = 0.6) +
-  geom_text(aes(label = if_else(.data$n > 0, as.character(.data$n), "")),
-            hjust = -0.2, size = 3.3, fontface = "bold") +
-  scale_fill_manual(values = c("VF/model retained" = "#2E8B57",
-                               "No VF/model endpoint" = "#D9A441")) +
-  facet_grid(rows = vars(UTI_Status), scales = "free_y") +
-  scale_x_continuous(expand = expansion(mult = c(0, 0.12))) +
-  labs(
-    title = "Clinical-to-VF retention",
-    subtitle = sprintf("%d active Longcycler rows retained: %d UTI, %d Not_UTI",
-                       vf_total, vf_uti, vf_not),
-    x = "Episodes", y = NULL, fill = NULL
-  ) +
-  final_theme(10) +
-  theme(axis.text.y = element_text(size = 8))
-
-sensitivity_data <- tibble(
-  analysis = factor(rep(c("Primary rule", "Possible-UTI\nsensitivity"), each = 2),
-                    levels = c("Primary rule", "Possible-UTI\nsensitivity")),
-  segment = factor(c("Reference Not_UTI", "UTI", "Reference Not_UTI", "Possible UTI"),
-                   levels = c("Reference Not_UTI", "UTI", "Possible UTI")),
-  n = c(vf_not, vf_uti, expanded_not, expanded_uti)
-)
-p1c <- ggplot(sensitivity_data, aes(.data$analysis, .data$n, fill = .data$segment)) +
-  geom_col(width = 0.62, colour = "white") +
-  geom_text(aes(label = .data$n), position = position_stack(vjust = 0.5),
-            size = 3.5, fontface = "bold") +
-  scale_fill_manual(values = c("Reference Not_UTI" = uti_status_cols[["Not_UTI"]],
-                               "UTI" = uti_status_cols[["UTI"]],
-                               "Possible UTI" = "#E69F00")) +
-  labs(
-    title = "Near-miss sensitivity",
-    subtitle = "18 VF-ready near-miss rows are sensitivity only",
-    x = NULL, y = "VF/model episodes", fill = NULL
-  ) +
-  final_theme(10)
-
-main_fig_1 <- (p1a | p1b | p1c) +
-  plot_annotation(
-    title = "Sparse UTI denominators define the interpretation boundary",
-    subtitle = "Primary analyses use UTI_Status; near-miss rows are never relabelled in the main analysis.",
-    caption = "Descriptive denominator audit. Retention is derived by joining primary clinical episode keys directly to VF-ready keys.",
-    tag_levels = "A",
-    theme = theme(plot.title = element_text(face = "bold", size = 16),
-                  plot.subtitle = element_text(size = 11),
-                  plot.caption = element_text(size = 9, colour = "grey35"))
-  )
-register_figure(
-  "primary_denominator_and_uncertainty", "Main", main_fig_1, 15, 5.8,
-  sprintf(
-    "Primary status and active Longcycler VF-ready denominators, with near-miss sensitivity framing. Primary clinical analyses include 18 UTI and 565 Not_UTI episodes; active genomic analyses include %d UTI and %d Not_UTI episodes.",
-    vf_uti, vf_not
-  ),
-  required_paths[c("status_map", "vf_ready", "denominator")],
-  "Descriptive denominator audit", "Near-miss rows are sensitivity-only and are not primary UTI events."
+panel_annotation_theme <- theme(
+  plot.title = element_text(face = "bold", size = 15),
+  plot.subtitle = element_text(size = 10.5, colour = "grey25"),
+  plot.caption = element_text(size = 8.5, colour = "grey35", hjust = 0),
+  plot.margin = margin(8, 10, 8, 8)
 )
 
-# ------------------------------------------------------------------------------
-# Main Figure 2: Mechanism casebook
-# ------------------------------------------------------------------------------
-case_counts <- casebook %>%
-  count(.data$mechanism_bucket, name = "n") %>%
-  complete(mechanism_bucket = factor(mechanism_levels, levels = mechanism_levels),
-           fill = list(n = 0L)) %>%
-  mutate(mechanism_label = factor(mechanism_labels[as.character(.data$mechanism_bucket)],
-                                  levels = rev(mechanism_labels[mechanism_levels])))
+# ----------------------------------------------------------------------------
+# Fig01. Cohort and analytical denominators
+# ----------------------------------------------------------------------------
+cohort_flow <- tibble(
+  stage = factor(c("Primary clinical cohort", "Selected Longcycler cohort"),
+                 levels = rev(c("Primary clinical cohort", "Selected Longcycler cohort"))),
+  episodes = c(nrow(source_status), nrow(cohort)),
+  participants = c(n_distinct(source_status$Participant_id), n_distinct(cohort$Participant_id))
+)
+p01a <- cohort_flow %>%
+  pivot_longer(c("episodes", "participants"), names_to = "unit", values_to = "n") %>%
+  mutate(unit = recode(.data$unit, episodes = "Episodes", participants = "Participants")) %>%
+  ggplot(aes(.data$n, .data$stage, colour = .data$unit)) +
+  geom_segment(aes(x = 0, xend = .data$n, yend = .data$stage), linewidth = 1.1, colour = "grey78") +
+  geom_point(size = 4) +
+  geom_text(aes(label = .data$n), nudge_x = -25, hjust = 1, fontface = "bold", size = 3.3) +
+  facet_wrap(~unit, scales = "free_x") +
+  scale_colour_manual(values = c(Episodes = "#4C78A8", Participants = "#7A5195"), guide = "none") +
+  scale_x_continuous(expand = expansion(mult = c(0, .14))) +
+  labs(title = "Selection into the genomic cohort", x = "Count", y = NULL) +
+  theme_ruti_publication(9.5)
 
-p2a <- ggplot(case_counts, aes(.data$n, .data$mechanism_label, fill = .data$mechanism_bucket)) +
-  geom_col(width = 0.65) +
-  geom_text(aes(label = .data$n), hjust = -0.35, fontface = "bold", size = 3.6) +
-  scale_fill_manual(values = mechanism_cols, guide = "none") +
-  scale_x_continuous(limits = c(0, max(case_counts$n) + 1), breaks = pretty_breaks()) +
-  labs(title = "Mechanism categories", subtitle = "11 clinical Not_UTI to UTI transitions",
-       x = "Transitions", y = NULL) +
-  final_theme(10)
-
-case_tiles <- bind_rows(
-  casebook %>% transmute(case_label, feature = "WGS/VF endpoint",
-                         value = if_else(.data$has_vf_pair %in% TRUE, "Available", "Missing")),
-  casebook %>% transmute(case_label, feature = "SNP context",
-                         value = case_when(
-                           .data$snp_strain_context == "Strong same strain" ~ "Strong same strain",
-                           .data$snp_strain_context == "Above same-strain SNP threshold" ~ "Above SNP threshold",
-                           .data$snp_strain_context == "Missing SNP evidence" ~ "Missing SNP",
-                           TRUE ~ "Uncertain")),
-  casebook %>% transmute(case_label, feature = "ST context",
-                         value = case_when(
-                           .data$st_lineage_context == "Same ST" ~ "Same ST",
-                           .data$st_lineage_context == "Different ST" ~ "Different ST",
-                           .data$st_lineage_context == "Missing ST evidence" ~ "Missing ST",
-                           TRUE ~ "Uncertain")),
-  casebook %>% transmute(case_label, feature = "VF/module profile",
-                         value = case_when(
-                           !(.data$has_vf_pair %in% TRUE) ~ "Missing",
-                           coalesce(.data$n_vf_genes_gained, 0) + coalesce(.data$n_vf_genes_lost, 0) +
-                             coalesce(.data$n_modules_gained, 0) + coalesce(.data$n_modules_lost, 0) > 0 ~ "Changed",
-                           TRUE ~ "Stable")),
-  casebook %>% transmute(case_label, feature = "Plasmid/AMR profile",
-                         value = case_when(
-                           !(.data$has_vf_pair %in% TRUE) ~ "Missing",
-                           (coalesce(.data$n_plasmid_gained, 0) + coalesce(.data$n_plasmid_lost, 0) +
-                              if (amr_complete) {
-                                coalesce(.data$n_amr_gained, 0) + coalesce(.data$n_amr_lost, 0)
-                              } else {
-                                0
-                              }) > 0 ~ "Changed",
-                           TRUE ~ "Stable")),
-  casebook %>% transmute(case_label, feature = "Symptom state",
-                         value = if_else(.data$symptom_state_change == "symptoms_emerged",
-                                         "Symptoms emerged", "No recorded emergence")),
-  casebook %>% transmute(case_label, feature = "Collection/catheter",
-                         value = if_else(coalesce(.data$collection_method_changed, FALSE) |
-                                           coalesce(.data$catheter_rule_changed, FALSE),
-                                         "Changed context", "No context shift"))
+status_counts <- bind_rows(
+  source_status %>% count(.data$status_display, name = "n") %>% mutate(cohort = "Primary clinical cohort"),
+  cohort %>% count(.data$status_display, name = "n") %>% mutate(cohort = "Selected Longcycler cohort")
 ) %>%
-  mutate(feature = factor(.data$feature,
-                          levels = c("WGS/VF endpoint", "SNP context", "ST context", "VF/module profile",
-                                     "Plasmid/AMR profile", "Symptom state", "Collection/catheter")))
+  group_by(.data$cohort) %>% mutate(percent = 100 * .data$n / sum(.data$n)) %>% ungroup()
+p01b <- ggplot(status_counts, aes(.data$cohort, .data$n, fill = .data$status_display)) +
+  geom_col(width = .65, colour = "white") +
+  geom_text(aes(label = .data$n), position = position_stack(vjust = .5), colour = "white", fontface = "bold", size = 3.2) +
+  status_fill(name = "Operational UTI status") +
+  labs(title = "Operational-status composition", x = NULL, y = "Number of episodes") +
+  theme_ruti_publication(9.5)
 
-tile_cols <- c(
-  "Available" = "#4C9F70", "Missing" = "#D0D5DD",
-  "Strong same strain" = mechanism_cols[["same_strain_stable_profile"]],
-  "Above SNP threshold" = "#D69E2E", "Missing SNP" = "#9CA3AF",
-  "Same ST" = "#009E73", "Different ST" = "#D55E00", "Missing ST" = "#9CA3AF",
-  "Uncertain" = mechanism_cols[["uncertain"]],
-  "Stable" = "#A7D7C5", "Changed" = "#E69F00",
-  "Symptoms emerged" = "#6B5B95", "No recorded emergence" = "#D0D5DD",
-  "Changed context" = "#4C78A8", "No context shift" = "#E5E7EB"
-)
-p2b <- ggplot(case_tiles, aes(.data$feature, .data$case_label, fill = .data$value)) +
-  geom_tile(colour = "white", linewidth = 0.7) +
-  scale_fill_manual(values = tile_cols, name = "Observed state") +
-  labs(
-    title = "Casewise evidence matrix",
-    subtitle = "Ordered by mechanism category and SNP evidence",
-    x = NULL, y = NULL
-  ) +
-  final_theme(9) +
-  theme(axis.text.x = element_text(angle = 35, hjust = 1),
-        legend.position = "bottom")
-
-main_fig_2 <- p2a + p2b +
-  plot_layout(widths = c(0.34, 0.66), guides = "collect") +
-  plot_annotation(
-    title = "Not_UTI-to-UTI transitions show heterogeneous bacterial context",
-    subtitle = "Four events show same-strain stable profiles; three are consistent with strain replacement.",
-    caption = "Descriptive mechanism classification; all 11 clinical transitions are retained, including one with a missing genomic endpoint.",
-    tag_levels = "A",
-    theme = theme(plot.title = element_text(face = "bold", size = 16),
-                  plot.subtitle = element_text(size = 11),
-                  plot.caption = element_text(size = 9, colour = "grey35"))
-  ) &
-  theme(legend.position = "bottom")
-register_figure(
-  "not_uti_to_uti_mechanism_casebook", "Main", main_fig_2, 16, 8.2,
-  "Mechanism classification and evidence matrix for the 11 clinical Not_UTI-to-UTI transitions. The casebook includes 10 WGS/VF-linked transitions and one missing genomic endpoint.",
-  c(required_paths[c("casebook", "mechanism_validation")], amr_report_path),
-  "Descriptive mechanism casebook", "Buckets organise evidence; they do not prove a biological mechanism."
-  , include_amr = TRUE
-)
-
-# ------------------------------------------------------------------------------
-# Main Figure 3: Strain/VF evidence and host context
-# ------------------------------------------------------------------------------
-wgs_cases <- casebook %>% filter(.data$has_vf_pair %in% TRUE, !is.na(.data$SNPs), !is.na(.data$vf_jaccard))
-p3a <- ggplot(wgs_cases, aes(.data$SNPs, .data$vf_jaccard, colour = .data$mechanism_bucket,
-                             label = .data$Participant_id)) +
-  geom_point(size = 3.2) +
-  ggrepel::geom_text_repel(size = 3, show.legend = FALSE, max.overlaps = Inf,
-                           box.padding = 0.35, point.padding = 0.25) +
-  scale_x_log10(labels = label_number(big.mark = ",")) +
-  scale_colour_manual(values = mechanism_cols, labels = mechanism_labels, name = "Mechanism category") +
-  coord_cartesian(ylim = c(0.45, 1.04)) +
-  labs(
-    title = "Strain distance and VF similarity",
-    subtitle = "10 WGS/VF-linked Not_UTI to UTI cases",
-    x = "SNP distance (log scale)", y = "VF Jaccard similarity"
-  ) +
-  final_theme(10)
-
-host_tiles <- bind_rows(
-  casebook %>% transmute(case_label, feature = "Symptoms emerged",
-                         value = .data$symptom_state_change == "symptoms_emerged"),
-  casebook %>% transmute(case_label, feature = "Culture support persisted",
-                         value = .data$culture_state_change == "culture_support_persisted"),
-  casebook %>% transmute(case_label, feature = "Collection method changed",
-                         value = coalesce(.data$collection_method_changed, FALSE)),
-  casebook %>% transmute(case_label, feature = "Catheter rule changed",
-                         value = coalesce(.data$catheter_rule_changed, FALSE))
-) %>%
-  mutate(feature = factor(.data$feature,
-                          levels = c("Symptoms emerged", "Culture support persisted",
-                                     "Collection method changed", "Catheter rule changed",
-                                     "Days between samples")),
-         display = if_else(.data$value, "Yes", "No"))
-interval_tiles <- casebook %>%
-  transmute(case_label, feature = factor("Days between samples",
-                                         levels = levels(host_tiles$feature)),
-            display = paste0(.data$days_between, " d"))
-
-p3b <- ggplot(host_tiles, aes(.data$feature, .data$case_label, fill = .data$display)) +
-  geom_tile(colour = "white", linewidth = 0.7) +
-  geom_text(aes(label = .data$display), size = 2.8) +
-  geom_tile(data = interval_tiles, aes(.data$feature, .data$case_label),
-            inherit.aes = FALSE, fill = "#F1F3F5", colour = "white", linewidth = 0.7) +
-  geom_text(data = interval_tiles, aes(.data$feature, .data$case_label, label = .data$display),
-            inherit.aes = FALSE, size = 2.8) +
-  scale_fill_manual(values = c("Yes" = "#6B5B95", "No" = "#E5E7EB"), name = NULL) +
-  labs(
-    title = "Clinical context around transition",
-    subtitle = "UTI emerges on pre-existing culture support in all 11 cases",
-    x = NULL, y = NULL
-  ) +
-  final_theme(9) +
-  theme(axis.text.x = element_text(angle = 35, hjust = 1))
-
-main_fig_3 <- p3a + p3b +
-  plot_layout(widths = c(0.42, 0.58), guides = "collect") +
-  plot_annotation(
-    title = "Stable bacterial profiles coexist with changing clinical state",
-    subtitle = "Same-strain, VF-stable cases motivate host-state and regulatory hypotheses rather than simple VF acquisition.",
-    caption = "SNP distance, VF similarity, and host-context observations are descriptive; UTI case counts are sparse.",
-    tag_levels = "A",
-    theme = theme(plot.title = element_text(face = "bold", size = 16),
-                  plot.subtitle = element_text(size = 11),
-                  plot.caption = element_text(size = 9, colour = "grey35"))
-  ) &
-  theme(legend.position = "bottom")
-register_figure(
-  "strain_stability_and_host_context", "Main", main_fig_3, 16, 8,
-  "Strain distance and VF similarity alongside clinical-context changes among Not_UTI-to-UTI transitions.",
-  required_paths[c("casebook")],
-  "Descriptive transition context", "Low SNP distance and stable VF profiles do not distinguish host state from unmeasured bacterial regulation."
-)
-
-# ------------------------------------------------------------------------------
-# Main Figure 4: Global VF signal and robustness
-# ------------------------------------------------------------------------------
-forest_labels <- c(
-  expec_marker_count = "ExPEC-like markers",
-  upec_system_count = "UPEC systems",
-  total_vf_count_all = "All VF genes",
-  total_vf_count_curated = "Curated VF genes"
-)
-forest <- bootstrap %>%
-  filter(.data$score %in% names(forest_labels), .data$statistic == "mean difference") %>%
-  mutate(score_label = factor(forest_labels[.data$score],
-                              levels = rev(unname(forest_labels))))
-p4a <- ggplot(forest, aes(.data$observed_effect, .data$score_label)) +
-  geom_vline(xintercept = 0, colour = "grey35", linewidth = 0.5) +
-  geom_errorbarh(aes(xmin = .data$ci_lower, xmax = .data$ci_upper),
-                 height = 0.14, colour = "#4C78A8", linewidth = 0.7) +
-  geom_point(size = 2.8, colour = "#0F766E") +
-  labs(
-    title = "Participant-bootstrap effects",
-    subtitle = "Mean difference: UTI minus Not_UTI",
-    x = "Difference in endpoint value", y = NULL
-  ) +
-  final_theme(9)
-
-get_stability <- function(metric) {
-  suppressWarnings(as.numeric(model_stability$value[model_stability$metric == metric][1]))
-}
-flag_data <- tibble(
-  flag = factor(c("GLMM sparse/separation risk", "Leave-one direction flip",
-                  "GLMM singular fit", "GLMM FDR < 0.05", "Univariable FDR < 0.05"),
-                levels = rev(c("GLMM sparse/separation risk", "Leave-one direction flip",
-                               "GLMM singular fit", "GLMM FDR < 0.05", "Univariable FDR < 0.05"))),
-  n = c(get_stability("glmm_sparse_or_separation_risk"),
-        sum(leave_one_summary$n_direction_flip),
-        get_stability("glmm_singular_models"),
-        get_stability("glmm_fdr_lt_0_05"),
-        get_stability("univariable_fdr_lt_0_05")),
-  denom = c(get_stability("glmm_models_total"),
-            sum(leave_one_summary$n_features),
-            get_stability("glmm_models_total"),
-            get_stability("glmm_models_total"),
-            get_stability("univariable_tests_total"))
-) %>%
-  mutate(label = paste0(.data$n, "/", .data$denom))
-p4b <- ggplot(flag_data, aes(.data$n, .data$flag)) +
-  geom_col(fill = "#C45A24", width = 0.63) +
-  geom_text(aes(label = .data$label), hjust = -0.15, size = 3.1) +
-  scale_x_continuous(expand = expansion(mult = c(0, 0.18))) +
-  labs(title = "Stability flags", subtitle = "Sparse data dominate model interpretation",
-       x = "Flagged results", y = NULL) +
-  final_theme(9)
-
-contrast_labels <- c(
-  expec_marker_count = "ExPEC-like markers",
-  upec_system_count = "UPEC systems",
-  total_vf_count_curated = "Curated VF genes",
-  total_vf_count_all = "All VF genes"
-)
-primary_rule_label <- sprintf("Primary rule (%d UTI)", vf_uti)
-possible_uti_label <- sprintf("Possible-UTI sensitivity (%d)", expanded_uti)
-contrast_plot <- score_contrasts %>%
-  filter(.data$score %in% names(contrast_labels),
-         .data$contrast %in% c("primary_UTI_vs_all_Not_UTI",
-                               "expanded_UTI_vs_Not_UTI_excluding_near_miss")) %>%
+not_uti_subgroups <- cohort %>%
+  filter(.data$UTI_Status == "Not_UTI") %>%
   mutate(
-    score_label = factor(contrast_labels[.data$score],
-                         levels = rev(unname(contrast_labels))),
-    sensitivity = case_when(
-      .data$contrast == "primary_UTI_vs_all_Not_UTI" ~ primary_rule_label,
-      .data$contrast == "expanded_UTI_vs_Not_UTI_excluding_near_miss" ~ possible_uti_label,
-      TRUE ~ as.character(.data$contrast)
-    )
-  )
-p4c <- ggplot(contrast_plot, aes(.data$median_difference_a_minus_b, .data$score_label,
-                                 colour = .data$sensitivity)) +
-  geom_vline(xintercept = 0, colour = "grey35", linewidth = 0.5) +
-  geom_point(size = 3, position = position_dodge(width = 0.42)) +
-  scale_colour_manual(values = stats::setNames(
-    c(uti_status_cols[["UTI"]], "#E69F00"),
-    c(primary_rule_label, possible_uti_label)
-  )) +
-  labs(
-    title = "Near-miss sensitivity",
-    subtitle = "Median difference versus reference Not_UTI",
-    x = "Difference in endpoint value", y = NULL, colour = NULL
-  ) +
-  final_theme(9)
-
-main_fig_4 <- (p4a | p4b) / p4c +
-  plot_layout(heights = c(0.55, 0.45), guides = "collect") +
-  plot_annotation(
-    title = "Global VF associations remain exploratory and unstable",
-    subtitle = "No GLMM or univariable feature association remains significant after FDR correction.",
-    caption = "Participant bootstrap, model diagnostics, and near-miss sensitivity are interpretive robustness checks, not confirmatory inference.",
-    tag_levels = "A",
-    theme = theme(plot.title = element_text(face = "bold", size = 16),
-                  plot.subtitle = element_text(size = 11),
-                  plot.caption = element_text(size = 9, colour = "grey35"))
-  ) &
-  theme(legend.position = "bottom")
-register_figure(
-  "global_vf_signal_and_robustness", "Main", main_fig_4, 15, 9,
-  "Participant-bootstrap VF supplementary endpoint effects, model stability flags, and near-miss sensitivity contrasts in the VF/model cohort.",
-  required_paths[c("bootstrap", "model_stability", "leave_one_summary", "score_contrasts")],
-  "Exploratory robustness diagnostics", "No adjusted association is confirmatory; only 17 VF-ready primary UTI episodes are available."
-)
-
-# ------------------------------------------------------------------------------
-# Supplementary Figure S1: Mechanisms by transition type
-# ------------------------------------------------------------------------------
-transition_types <- c("Not_UTI->Not_UTI", "Not_UTI->UTI", "UTI->Not_UTI")
-s1_data <- mechanism_summary %>%
-  filter(.data$transition_type %in% transition_types) %>%
-  complete(transition_type = transition_types,
-           mechanism_bucket = mechanism_levels,
-           fill = list(n_transitions = 0)) %>%
-  mutate(
-    transition_label = factor(recode(.data$transition_type,
-                                     "Not_UTI->Not_UTI" = "Not_UTI to Not_UTI",
-                                     "Not_UTI->UTI" = "Not_UTI to UTI",
-                                     "UTI->Not_UTI" = "UTI to Not_UTI"),
-                              levels = c("Not_UTI to Not_UTI", "Not_UTI to UTI", "UTI to Not_UTI")),
-    mechanism_bucket = factor(.data$mechanism_bucket, levels = mechanism_levels)
-  ) %>%
-  group_by(.data$transition_label) %>%
-  mutate(total = sum(.data$n_transitions),
-         fraction = .data$n_transitions / .data$total,
-         n_label = if_else(.data$fraction >= 0.07 | .data$transition_label == "Not_UTI to UTI",
-                           as.character(.data$n_transitions), ""))
-s1 <- ggplot(s1_data, aes(.data$transition_label, .data$fraction, fill = .data$mechanism_bucket)) +
-  geom_col(width = 0.65, colour = "white") +
-  geom_text(aes(label = .data$n_label), position = position_stack(vjust = 0.5),
-            size = 3.4, colour = "white", fontface = "bold") +
-  scale_fill_manual(values = mechanism_cols, labels = mechanism_labels, name = "Mechanism category",
-                    guide = guide_legend(nrow = 2, byrow = TRUE)) +
-  scale_y_continuous(labels = percent_format()) +
-  labs(
-    title = "Transition mechanism composition",
-    subtitle = "Mechanism buckets are descriptive and transition denominators differ markedly",
-    x = NULL, y = "Proportion of transition type",
-    caption = "Not_UTI-to-UTI n=11; UTI-to-Not_UTI n=14; Not_UTI-to-Not_UTI n=391."
-  ) +
-  final_theme(11) +
-  theme(legend.text = element_text(size = 9))
-register_figure(
-  "transition_mechanisms_by_transition_type", "Supplementary", s1, 9, 6.4,
-  "Descriptive composition of mechanism categories across within-resident transition types.",
-  required_paths[c("mechanism_summary")],
-  "Descriptive comparison", "Unequal transition denominators prevent inferential comparison of proportions."
-)
-
-# ------------------------------------------------------------------------------
-# Supplementary Figure S2: Accessory, plasmid, and AMR changes
-# ------------------------------------------------------------------------------
-s2_accessory <- casebook %>%
-  transmute(
-    case_label,
-    gained = coalesce(.data$n_accessory_genes_gained, 0),
-    lost = coalesce(.data$n_accessory_genes_lost, 0)
-  ) %>%
-  pivot_longer(c("gained", "lost"), names_to = "direction", values_to = "n") %>%
-  mutate(
-    signed_log = if_else(.data$direction == "gained", log10(.data$n + 1), -log10(.data$n + 1)),
-    label = if_else(.data$n == 0, "", as.character(.data$n))
-  )
-p_s2a <- ggplot(s2_accessory, aes(.data$signed_log, .data$case_label, fill = .data$direction)) +
-  geom_vline(xintercept = 0, colour = "grey45") +
-  geom_col(width = 0.67) +
-  geom_text(aes(label = .data$label),
-            hjust = ifelse(s2_accessory$direction == "gained", -0.1, 1.1),
-            size = 2.8) +
-  scale_fill_manual(values = c(gained = "#2E8B57", lost = "#C44E19"),
-                    labels = c(gained = "Gained", lost = "Lost"), name = "Accessory genes") +
-  scale_x_continuous(
-    breaks = c(-log10(1001), -log10(101), -log10(11), 0,
-               log10(11), log10(101), log10(1001)),
-    labels = c("-1000", "-100", "-10", "0", "+10", "+100", "+1000")
-  ) +
-  labs(title = "Accessory-gene changes", subtitle = "Signed log scale; count labels show raw Panaroo changes",
-       x = "Genes lost / gained", y = NULL) +
-  final_theme(9)
-
-s2_mobile <- bind_rows(
-  casebook %>% transmute(case_label, feature = "Plasmid gained", n = coalesce(.data$n_plasmid_gained, 0)),
-  casebook %>% transmute(case_label, feature = "Plasmid lost", n = coalesce(.data$n_plasmid_lost, 0)),
-  casebook %>% transmute(case_label, feature = "AMR gained", n = if (amr_complete) coalesce(.data$n_amr_gained, 0) else NA_real_),
-  casebook %>% transmute(case_label, feature = "AMR lost", n = if (amr_complete) coalesce(.data$n_amr_lost, 0) else NA_real_)
-) %>%
-  mutate(
-    feature = factor(.data$feature, levels = c("Plasmid gained", "Plasmid lost", "AMR gained", "AMR lost")),
-    category = case_when(is.na(.data$n) ~ "Unavailable", .data$n > 0 ~ "Change detected", TRUE ~ "No change"),
-    label = if_else(is.na(.data$n), "NA", as.character(.data$n))
-  )
-p_s2b <- ggplot(s2_mobile, aes(.data$feature, .data$case_label, fill = .data$category)) +
-  geom_tile(colour = "white", linewidth = 0.7) +
-  geom_text(aes(label = .data$label), size = 2.8) +
-  scale_fill_manual(values = c("Change detected" = "#E69F00", "No change" = "#E5E7EB",
-                               "Unavailable" = "#BDBDBD"), name = NULL) +
-  labs(title = "Plasmid and AMR changes",
-       subtitle = if_else(amr_complete, "AMR screened by cached ABRicate ResFinder output",
-                          "AMR output unavailable; AMR tiles intentionally blank"),
-       x = NULL, y = NULL) +
-  final_theme(9) +
-  theme(axis.text.x = element_text(angle = 35, hjust = 1))
-s2 <- p_s2a + p_s2b +
-  plot_layout(widths = c(0.55, 0.45), guides = "collect") +
-  plot_annotation(
-    title = "Exploratory accessory and mobile-resistance context",
-    caption = "Accessory-gene and AMR changes are exploratory leads and do not establish a UTI mechanism.",
-    tag_levels = "A",
-    theme = theme(plot.title = element_text(face = "bold", size = 15),
-                  plot.caption = element_text(size = 9, colour = "grey35"))
-  ) &
-  theme(legend.position = "bottom")
-register_figure(
-  "accessory_plasmid_amr_changes", "Supplementary", s2, 15, 8.4,
-  "Exploratory Panaroo accessory-gene, plasmid-replicon, and completed ResFinder AMR changes for Not_UTI-to-UTI cases.",
-  c(required_paths[["casebook"]], amr_report_path),
-  "Exploratory genome screen context", "Accessory calls may include annotation or presence-absence noise; AMR changes are not VF evidence.",
-  include_amr = TRUE
-)
-
-# ------------------------------------------------------------------------------
-# Supplementary Figure S3: Near-miss rule and sparse precision
-# ------------------------------------------------------------------------------
-near_features <- bind_rows(
-  near_miss %>% transmute(case_label = human_case(.data$Participant_id, .data$tp_lab, ""),
-                          feature = "Culture supports UTI", value = .data$culture_supports_uti),
-  near_miss %>% transmute(case_label = human_case(.data$Participant_id, .data$tp_lab, ""),
-                          feature = "Local urinary symptom", value = .data$local_urinary_symptom_any),
-  near_miss %>% transmute(case_label = human_case(.data$Participant_id, .data$tp_lab, ""),
-                          feature = "Systemic symptom", value = .data$systemic_symptom_any),
-  near_miss %>% transmute(case_label = human_case(.data$Participant_id, .data$tp_lab, ""),
-                          feature = "Symptom rule met", value = .data$symptom_compatible_uti),
-  near_miss %>% transmute(case_label = human_case(.data$Participant_id, .data$tp_lab, ""),
-                          feature = "Indwelling catheter rule", value = .data$catheter_rule == "B_indwelling")
-) %>%
-  mutate(
-    feature = factor(.data$feature, levels = c("Culture supports UTI", "Local urinary symptom",
-                                               "Systemic symptom", "Symptom rule met",
-                                               "Indwelling catheter rule")),
-    case_label = factor(.data$case_label, levels = rev(unique(.data$case_label))),
-    display = if_else(coalesce(.data$value, FALSE), "Yes", "No")
-  )
-p_s3a <- ggplot(near_features, aes(.data$feature, .data$case_label, fill = .data$display)) +
-  geom_tile(colour = "white", linewidth = 0.55) +
-  scale_fill_manual(values = c(Yes = "#D55E00", No = "#E5E7EB"), name = NULL) +
-  labs(title = "Near-miss evidence audit",
-       subtitle = sprintf("%d clinical rows remain Not_UTI under the primary rule", nrow(near_miss)),
-       x = NULL, y = NULL) +
-  final_theme(8.5) +
-  theme(axis.text.x = element_text(angle = 35, hjust = 1))
-
-p_s3b <- power_precision %>%
-  mutate(
-    odds_ratio = factor(.data$odds_ratio, levels = sort(unique(.data$odds_ratio))),
-    baseline_label = paste0(round(.data$baseline_not_uti_prevalence * 100), "%"),
-    detectable = if_else(.data$detectable_at_alpha_0_05, "Detectable", "Not detectable")
-  ) %>%
-  ggplot(aes(.data$odds_ratio, .data$baseline_label, fill = .data$detectable)) +
-  geom_tile(colour = "white", linewidth = 0.55) +
-  scale_fill_manual(values = c("Detectable" = "#2E8B57", "Not detectable" = "#E5E7EB")) +
-  labs(
-    title = "Sparse-count precision context",
-    subtitle = sprintf("Expected-count illustration with %d active Longcycler UTI VF-ready episodes", vf_uti),
-    x = "Assumed odds ratio", y = "Not_UTI feature prevalence", fill = NULL
-  ) +
-  final_theme(9)
-s3 <- p_s3a + p_s3b +
-  plot_layout(widths = c(0.56, 0.44), guides = "collect") +
-  plot_annotation(
-    title = "Endpoint sensitivity and sparse-count limits",
-    caption = "Near-miss rows are not relabelled; precision tiles are approximate interpretation context, not formal prospective power.",
-    tag_levels = "A",
-    theme = theme(plot.title = element_text(face = "bold", size = 15),
-                  plot.caption = element_text(size = 9, colour = "grey35"))
-  ) &
-  theme(legend.position = "bottom")
-register_figure(
-  "near_miss_and_sparse_precision", "Supplementary", s3, 15, 8.7,
-  "Current-rule near-miss audit and approximate sparse-count precision context.",
-  required_paths[c("near_miss", "power_precision")],
-  "Sensitivity diagnostic", "Near-miss episodes do not enter the primary UTI group; precision context is approximate."
-)
-
-# ------------------------------------------------------------------------------
-# Supplementary Figure S4: Leave-one-UTI stability
-# ------------------------------------------------------------------------------
-score_features <- c("expec_marker_count", "upec_system_count", "total_vf_count_curated")
-score_names <- c(
-  expec_marker_count = "ExPEC-like markers",
-  upec_system_count = "UPEC systems",
-  total_vf_count_curated = "Curated VF genes"
-)
-s4_scores <- leave_one_detail %>%
-  filter(.data$feature_type == "score", .data$statistic == "mean difference",
-         .data$feature %in% score_features) %>%
-  mutate(label = factor(score_names[.data$feature], levels = rev(unname(score_names))))
-p_s4a <- ggplot(s4_scores, aes(.data$full_effect, .data$label)) +
-  geom_vline(xintercept = 0, colour = "grey35") +
-  geom_segment(aes(x = .data$min_without_one_uti, xend = .data$max_without_one_uti,
-                   yend = .data$label), linewidth = 1.2, colour = "#4C78A8") +
-  geom_point(size = 3, colour = "#0F766E") +
-  labs(title = "Endpoint stability", subtitle = "Range after removing one UTI episode",
-       x = "UTI minus Not_UTI mean difference", y = NULL) +
-  final_theme(10)
-
-s4_modules <- leave_one_detail %>%
-  filter(.data$feature_type == "module", .data$statistic == "log2 odds ratio") %>%
-  arrange(desc(.data$direction_flip), desc(.data$sensitivity_range)) %>%
-  slice_head(n = 8) %>%
-  mutate(
-    label = .data$feature %>%
-      str_remove("^mod_") %>%
-      str_remove("_present$") %>%
-      str_replace_all("_", " ") %>%
-      str_to_sentence(),
-    label = factor(.data$label, levels = rev(.data$label)),
-    flip = if_else(.data$direction_flip, "Direction flip", "No direction flip")
-  )
-p_s4b <- ggplot(s4_modules, aes(.data$full_effect, .data$label, colour = .data$flip)) +
-  geom_vline(xintercept = 0, colour = "grey35") +
-  geom_segment(aes(x = .data$min_without_one_uti, xend = .data$max_without_one_uti,
-                   yend = .data$label), linewidth = 1.1) +
-  geom_point(size = 2.8) +
-  scale_colour_manual(values = c("Direction flip" = "#C44E19", "No direction flip" = "#4C78A8")) +
-  labs(title = "Most sensitive modules", subtitle = "Log2 odds-ratio range after removing one UTI",
-       x = "Log2 odds ratio", y = NULL, colour = NULL) +
-  final_theme(9)
-s4 <- p_s4a + p_s4b +
-  plot_layout(widths = c(0.42, 0.58), guides = "collect") +
-  plot_annotation(
-    title = "Leave-one-UTI-out stability",
-    subtitle = sprintf("%d of %d diagnostic effects change direction when one UTI episode is removed.",
-                       sum(leave_one_detail$direction_flip %in% TRUE, na.rm = TRUE),
-                       nrow(leave_one_detail)),
-    caption = "A direction flip indicates dependence on individual sparse UTI observations, not a corrected association result.",
-    tag_levels = "A",
-    theme = theme(plot.title = element_text(face = "bold", size = 15),
-                  plot.subtitle = element_text(size = 10.5),
-                  plot.caption = element_text(size = 9, colour = "grey35"))
-  ) &
-  theme(legend.position = "bottom")
-register_figure(
-  "leave_one_uti_stability", "Supplementary", s4, 15, 7,
-  "Leave-one-UTI-out sensitivity for representative supplementary VF endpoints and the most unstable module results.",
-  required_paths[c("leave_one_detail", "leave_one_summary")],
-  "Sparse-case sensitivity diagnostic",
-  sprintf("Instability is expected with %d active Longcycler UTI cases and does not constitute association testing.", vf_uti)
-)
-
-# ------------------------------------------------------------------------------
-# Supplementary Figure S5: Prioritised variant map
-# ------------------------------------------------------------------------------
-variant_cases <- casebook %>%
-  filter(.data$mechanism_bucket %in% c("same_strain_stable_profile",
-                                       "same_strain_genomic_change", "uncertain")) %>%
-  select("Participant_id", "from_tp", "to_tp", "case_label", "mechanism_bucket")
-s5_variants <- variants %>%
-  inner_join(variant_cases,
-             by = c("Participant_id" = "Participant_id",
-                    "From_Time" = "from_tp", "To_Time" = "to_tp")) %>%
-  mutate(
-    label = if_else(!is.na(.data$Gene) & nzchar(.data$Gene), .data$Gene, NA_character_),
-    case_label = factor(.data$case_label, levels = rev(unique(as.character(variant_cases$case_label))))
-  )
-if (nrow(s5_variants) == 0) stop("No prioritised same-strain/uncertain detailed variants are available to plot.")
-max_variant_pos <- max(s5_variants$Pos_Ref, na.rm = TRUE)
-s5_labels <- s5_variants %>%
-  filter(!is.na(.data$label)) %>%
-  group_by(.data$case_label, .data$label) %>%
-  slice_min(.data$Pos_Ref, n = 1, with_ties = FALSE) %>%
-  ungroup()
-s5_counts <- s5_variants %>%
-  count(.data$case_label, name = "n_snps") %>%
-  mutate(Pos_Ref = max_variant_pos * 1.02,
-         label = paste0("n = ", .data$n_snps))
-s5 <- ggplot(s5_variants, aes(.data$Pos_Ref, .data$case_label, colour = .data$mechanism_bucket)) +
-  geom_segment(aes(x = 0, xend = max_variant_pos * 1.01,
-                   yend = .data$case_label), colour = "grey88", linewidth = 1.2) +
-  geom_point(size = 2.1, alpha = 0.85) +
-  ggrepel::geom_text_repel(data = s5_labels, aes(label = .data$label),
-                           size = 2.7, min.segment.length = 0, box.padding = 0.25,
-                           point.padding = 0.15, max.overlaps = Inf, show.legend = FALSE) +
-  geom_text(data = s5_counts, aes(x = .data$Pos_Ref, y = .data$case_label, label = .data$label),
-            colour = "grey25",
-            hjust = 0, size = 3, inherit.aes = FALSE) +
-  scale_colour_manual(values = mechanism_cols, labels = mechanism_labels, name = "Mechanism category") +
-  scale_x_continuous(labels = unit_format(unit = "Mb", scale = 1e-6),
-                     expand = expansion(mult = c(0.01, 0.13))) +
-  labs(
-    title = "Prioritised within-strain variant map",
-    subtitle = "Detailed annotations shown only for same-strain or uncertain Not_UTI-to-UTI cases with available GFF annotation",
-    x = "Reference genome position", y = NULL,
-    caption = "Gene labels identify annotated variant loci; unlabeled points are retained in counts. This is descriptive candidate prioritisation."
-  ) +
-  final_theme(10) +
-  theme(legend.position = "bottom")
-register_figure(
-  "prioritised_variant_map", "Supplementary", s5, 13, 6.8,
-  "Prioritised detailed-annotation SNP map for same-strain or uncertain Not_UTI-to-UTI cases with available annotations.",
-  required_paths[c("casebook", "variants")],
-  "Descriptive variant prioritisation", "Only annotated candidate comparisons are shown; absence from this panel is not absence of genomic change."
-)
-
-# ------------------------------------------------------------------------------
-# Supplementary Figure S6: Lineage confounding diagnostic
-# ------------------------------------------------------------------------------
-status_st_data <- vf_ready %>%
-  mutate(
-    ST_norm = normalise_st_label(.data$ST),
-    ST_plot = if_else(is.na(.data$ST_norm), "Missing ST", paste0("ST", .data$ST_norm)),
-    UTI_Status = factor(.data$UTI_Status, levels = c("Not_UTI", "UTI"))
-  )
-top_st_groups <- status_st_data %>%
-  count(.data$ST_plot, sort = TRUE) %>%
-  filter(.data$ST_plot != "Missing ST") %>%
-  slice_head(n = 8) %>%
-  pull(.data$ST_plot)
-st_comp <- status_st_data %>%
-  mutate(
-    ST_group_plot = case_when(
-      .data$ST_plot %in% top_st_groups ~ .data$ST_plot,
-      .data$ST_plot == "Missing ST" ~ "Missing ST",
-      TRUE ~ "Other STs"
+    legacy_type = factor(.data$Infection_Status_legacy, levels = c("UTI", "Negative", "ASB")),
+    subgroup = factor(
+      recode(.data$Infection_Status_legacy,
+             ASB = "Legacy ASB",
+             Negative = "Legacy Negative",
+             UTI = "Legacy UTI, reclassified"),
+      levels = c("Legacy UTI, reclassified", "Legacy Negative", "Legacy ASB")
     )
   ) %>%
-  count(.data$UTI_Status, .data$ST_group_plot, name = "n") %>%
-  group_by(.data$UTI_Status) %>%
-  mutate(prop = .data$n / sum(.data$n)) %>%
-  ungroup()
-base_st_cols <- c(
-  "ST131" = "#4C78A8", "ST141" = "#F58518", "ST69" = "#54A24B", "ST73" = "#B279A2",
-  "ST12" = "#72B7B2", "ST95" = "#E45756", "ST127" = "#9D755D", "ST10" = "#EECA3B",
-  "Other STs" = "#BDBDBD", "Missing ST" = "#E5E7EB"
+  count(.data$legacy_type, .data$subgroup, sort = TRUE)
+assert_value(sum(not_uti_subgroups$n), 516L, "Legacy composition of selected Not UTI episodes")
+p01c <- ggplot(not_uti_subgroups, aes(.data$n, .data$subgroup, fill = .data$legacy_type)) +
+  geom_col(width = .68) +
+  geom_text(aes(label = .data$n), hjust = -0.2, fontface = "bold", size = 3.1) +
+  scale_fill_clinical_episode(name = "Legacy clinical episode type", guide = "none") +
+  scale_x_continuous(expand = expansion(mult = c(0, .12))) +
+  labs(title = "Composition of operational Not UTI", subtitle = "Legacy episode type; descriptive context only", x = "Number of episodes", y = NULL) +
+  theme_ruti_publication(9.5)
+
+fig01 <- (p01a | p01b | p01c) +
+  plot_annotation(
+    title = "Cohort selection and analytical denominators",
+    subtitle = "The canonical analysis contains 532 episodes from 161 participants: 16 UTI and 516 heterogeneous Not UTI episodes.",
+    caption = "Counts are derived from the primary clinical status map and the selected QC-passing Longcycler manifest.",
+    tag_levels = "A", theme = panel_annotation_theme
+  ) & theme(legend.position = "bottom")
+cap01 <- paste0(
+  "Cohort selection and analytical denominators. Panel A shows episode- and participant-level attrition from 583 primary clinical episodes among 166 participants to 532 selected QC-passing Longcycler episodes among 161 participants. ",
+  "Panel B shows operational UTI status before and after genomic selection; the selected cohort contains 16 UTI and 516 Not UTI episodes. Panel C provides descriptive legacy context for the 516 operational Not UTI episodes: 416 were formerly classified as ASB, 83 as Negative, and 17 as UTI. Bars encode counts; colours retain the canonical operational and legacy episode-type mappings. No inferential test is shown. Repeated episodes from the same participant are descriptive observations and are not independent."
 )
-extra_st_groups <- setdiff(unique(st_comp$ST_group_plot), names(base_st_cols))
-extra_st_cols <- if (length(extra_st_groups) > 0) {
-  setNames(grDevices::hcl.colors(length(extra_st_groups), palette = "Dark 3"), extra_st_groups)
-} else character()
-st_cols <- c(base_st_cols, extra_st_cols)[unique(st_comp$ST_group_plot)]
+register_figure("Fig01_cohort_and_denominators", "Fig01", "Cohort selection and analytical denominators",
+                "Which episodes and participants enter each analytical denominator?", "Main", fig01, 15, 6.2, cap01,
+                paths[c("source_status", "cohort", "qc")], "Descriptive denominator audit",
+                "Not UTI is heterogeneous; episode counts are not independent participant counts.",
+                "Episode and participant", "Primary clinical inclusion and selected QC-passing Longcycler assemblies",
+                "Bar length and labels are counts; fill denotes operational UTI status or, in panel C, labelled legacy episode type.", "None")
 
-p_s6a <- ggplot(st_comp, aes(.data$UTI_Status, .data$prop, fill = .data$ST_group_plot)) +
-  geom_col(width = 0.66, colour = "white", linewidth = 0.25) +
-  scale_y_continuous(labels = percent_format()) +
-  scale_fill_manual(values = st_cols, name = "Sequence type") +
-  labs(
-    title = "Sequence-type composition",
-    x = "Primary UTI status",
-    y = "Within-status proportion of VF-ready isolates"
-  ) +
-  final_theme(9)
+# ----------------------------------------------------------------------------
+# Fig02. WGS quality control
+# ----------------------------------------------------------------------------
+qc_plot <- qc %>%
+  mutate(
+    qc_state = factor(if_else(.data$QC_PASS, "Pass", "Fail"), levels = c("Pass", "Fail")),
+    selection_state = factor(if_else(.data$selected_canonical, "Selected", "Not selected"), levels = c("Selected", "Not selected")),
+    assembly_mb = .data$total_bp / 1e6,
+    outlier_rank = rank(abs(.data$assembly_mb - 5), ties.method = "first", na.last = "keep"),
+    outlier_label = NA_character_
+  )
+fail_labs <- qc_plot %>% filter(.data$qc_state == "Fail") %>% arrange(desc(abs(.data$assembly_mb - 5))) %>% slice_head(n = 8) %>% mutate(outlier_label = sprintf("QC outlier %02d", row_number()))
+qc_plot <- qc_plot %>% select(-outlier_label) %>% left_join(fail_labs %>% select(Assembly_ID, outlier_label), by = "Assembly_ID", relationship = "one-to-one")
+qc_cols <- c(Pass = "#0072B2", Fail = "#D55E00")
+selection_fills <- c(Selected = "#555555", `Not selected` = "white")
+p02a <- ggplot(qc_plot, aes(.data$n_contigs, .data$N50 / 1000,
+                            colour = .data$qc_state, shape = .data$qc_state,
+                            fill = .data$selection_state)) +
+  geom_vline(xintercept = 200, linetype = "dashed", colour = "grey35") +
+  geom_hline(yintercept = 20, linetype = "dashed", colour = "grey35") +
+  geom_point(alpha = .78, size = 2.15, stroke = .7) +
+  scale_y_log10(labels = label_number()) +
+  scale_colour_manual(values = qc_cols, name = "Assembly QC") +
+  scale_shape_manual(values = c(Pass = 21, Fail = 24), name = "Assembly QC") +
+  scale_fill_manual(values = selection_fills, name = "Canonical selection") +
+  guides(fill = guide_legend(override.aes = list(shape = 21, colour = "grey20", alpha = 1, size = 2.8))) +
+  labs(title = "Contiguity metrics", subtitle = "N50 axis is logarithmic; dashed lines: <=200 contigs and N50 >=20 kb",
+       x = "Number of contigs", y = "Assembly N50 (kb; logarithmic scale)") +
+  theme_ruti_publication(9.5)
+p02b <- ggplot(qc_plot, aes(.data$assembly_mb, .data$GC_pct,
+                            colour = .data$qc_state, shape = .data$qc_state,
+                            fill = .data$selection_state)) +
+  geom_vline(xintercept = c(4, 6), linetype = "dashed", colour = "grey35") +
+  geom_point(alpha = .78, size = 2.15, stroke = .7) +
+  ggrepel::geom_text_repel(data = qc_plot %>% filter(!is.na(.data$outlier_label)), aes(label = .data$outlier_label),
+                           size = 2.6, seed = 20260714, min.segment.length = 0, max.overlaps = Inf, show.legend = FALSE) +
+  scale_colour_manual(values = qc_cols, name = "Assembly QC") +
+  scale_shape_manual(values = c(Pass = 21, Fail = 24), name = "Assembly QC") +
+  scale_fill_manual(values = selection_fills, name = "Canonical selection") +
+  guides(fill = guide_legend(override.aes = list(shape = 21, colour = "grey20", alpha = 1, size = 2.8))) +
+  labs(title = "Assembly size and GC content", subtitle = "Dashed lines: accepted assembly-size range 4-6 Mb; no GC threshold was imposed",
+       x = "Assembly length (Mb)", y = "GC content (%)") +
+  theme_ruti_publication(9.5)
+fig02 <- (p02a | p02b) + plot_layout(guides = "collect") +
+  plot_annotation(
+    title = "Whole-genome assembly quality control",
+    subtitle = sprintf("%d Longcycler candidates; %d passed all implemented thresholds; %d were selected for analysis.", nrow(qc_plot), sum(qc_plot$QC_PASS), sum(qc_plot$selected_canonical & qc_plot$QC_PASS)),
+    caption = "All candidates were assembled with Longcycler. Failure labels follow an objective extreme-size rule and disclose no isolate identifier.",
+    tag_levels = "A", theme = panel_annotation_theme
+  ) & theme(legend.position = "bottom")
+cap02 <- paste0(
+  "Whole-genome assembly quality control for 592 Longcycler candidate assemblies. Panel A plots N50 on a logarithmic kilobase axis against contig count with the implemented thresholds of N50 >=20 kb and <=200 contigs. Panel B plots assembly length against GC content with the implemented 4-6 Mb assembly-length limits; GC content is shown diagnostically and was not thresholded. ",
+  "Points are assemblies; colour and shape redundantly indicate pass/fail, while filled versus open symbols distinguish the 532 canonically selected assemblies from candidates not selected. Eight most extreme failing assembly lengths are labelled using deidentified QC labels. No inferential test is shown. Repeated episodes from the same participant can contribute multiple assemblies and are not independent."
+)
+register_figure("Fig02_wgs_quality_control", "Fig02", "Whole-genome assembly quality control",
+                "Do candidate assemblies satisfy the implemented quality thresholds?", "Main", fig02, 13.5, 6.4, cap02,
+                paths[c("qc")], "Descriptive quality-control thresholds",
+                "GC content was diagnostic only; repeated episodes from the same participant are not independent.",
+                "Assembly", "All primary-analysis Longcycler candidates",
+                "Points are assemblies; colour and shape are pass/fail; symbol fill is canonical selection; dashed lines are implemented thresholds; N50 is logarithmic.", "None")
 
-sts_both <- status_st_data %>%
-  filter(!is.na(.data$ST_norm)) %>%
-  count(.data$ST_norm, .data$UTI_Status) %>%
+# ----------------------------------------------------------------------------
+# Fig03. Sequence types and provenance
+# ----------------------------------------------------------------------------
+st_data <- mlst %>%
+  select(Participant_id, tp_lab, ST, ST_source, ST_provider, ST_local) %>%
+  left_join(cohort %>% select(Participant_id, tp_lab, UTI_Status, status_display),
+            by = c("Participant_id", "tp_lab"), relationship = "one-to-one") %>%
+  mutate(ST_norm = normalise_st(.data$ST))
+st_keep <- st_data %>%
+  count(.data$ST_norm, .data$UTI_Status, name = "n") %>%
   group_by(.data$ST_norm) %>%
-  filter(n_distinct(.data$UTI_Status) == 2) %>%
-  pull(.data$ST_norm) %>%
-  unique()
-
-p_s6b <- ggplot(status_st_data %>% filter(.data$ST_norm %in% sts_both),
-                aes(.data$UTI_Status, .data$total_vf_count_all, fill = .data$UTI_Status)) +
-  geom_boxplot(outlier.shape = NA, width = 0.5, alpha = 0.75) +
-  geom_jitter(width = 0.12, height = 0, alpha = 0.45, size = 1.3) +
-  facet_wrap(~ paste0("ST", ST_norm), scales = "free_x") +
-  scale_fill_uti_status(drop = FALSE) +
-  labs(
-    title = "Within-ST VF burden",
-    x = "Primary UTI status",
-    y = "Detected VF genes per isolate"
-  ) +
-  final_theme(9) +
-  theme(legend.position = "none")
-
-s6 <- p_s6a + p_s6b +
-  plot_layout(widths = c(0.45, 0.55), guides = "collect") +
-  plot_annotation(
-    title = "Lineage confounding diagnostic",
-    subtitle = "VF burden differs strongly by ST, but ST composition was not significantly different by primary status in this sparse UTI set.",
-    caption = sprintf(
-      "Exploratory diagnostic; active Longcycler UTI n=%d and most STs contain too few UTI isolates for within-ST inference.",
-      vf_uti
-    ),
-    tag_levels = "A",
-    theme = theme(plot.title = element_text(face = "bold", size = 15),
-                  plot.subtitle = element_text(size = 10.5),
-                  plot.caption = element_text(size = 9, colour = "grey35"))
-  ) &
-  theme(legend.position = "bottom")
-register_figure(
-  "lineage_confounding_diagnostic", "Supplementary", s6, 13, 6.5,
-  "Lineage confounding diagnostic combining sequence-type composition by primary status with within-ST VF burden for STs containing both UTI and Not_UTI isolates.",
-  c(required_paths[c("vf_ready", "stat_validation")]),
-  "Exploratory lineage diagnostic", "ST structure is sparse for UTI episodes; within-ST contrasts are underpowered."
-)
-
-# ------------------------------------------------------------------------------
-# Supplementary Figure S7: Paired resident ExPEC-like marker slopeplot
-# ------------------------------------------------------------------------------
-s7_data <- stat_score_values %>%
-  filter(.data$score == "expec_marker_count") %>%
-  group_by(.data$Participant_id) %>%
-  filter(all(c("Not_UTI", "UTI") %in% as.character(.data$UTI_Status))) %>%
-  ungroup() %>%
-  mutate(UTI_Status = factor(.data$UTI_Status, levels = c("Not_UTI", "UTI")))
-
-s7 <- ggplot(s7_data, aes(.data$UTI_Status, .data$participant_status_median, group = .data$Participant_id)) +
-  geom_line(colour = "#B8B8B8", linewidth = 0.45, alpha = 0.85) +
-  geom_point(aes(colour = .data$UTI_Status), size = 2.2) +
-  scale_colour_uti_status(drop = FALSE) +
-  labs(
-    title = "Paired resident ExPEC-like marker count",
-    subtitle = "Each line is one resident; this visual reduces between-resident confounding but includes only residents observed in both states.",
-    x = "Primary status within resident",
-    y = "Participant-median ExPEC-like marker count",
-    colour = "Primary status",
-    caption = "Paired resident-level descriptive sensitivity; residents observed in only one state are not represented."
-  ) +
-  final_theme(10)
-register_figure(
-  "paired_resident_expec_marker", "Supplementary", s7, 7.5, 5.8,
-  "Each line is one resident; this visual reduces between-resident confounding but includes only residents observed in both states.",
-  required_paths[c("stat_score_values")],
-  "Paired descriptive sensitivity", "Only residents with both statuses are shown; this does not represent residents observed in one state only."
-)
-
-# ------------------------------------------------------------------------------
-# Supplementary Figure S8: Not_UTI-to-UTI module gain/loss heatmap
-# ------------------------------------------------------------------------------
-s8_plot_data <- stat_module_matrix %>%
+  summarise(n_all = sum(.data$n), n_uti = sum(.data$n[.data$UTI_Status == "UTI"]), .groups = "drop") %>%
+  filter(!is.na(.data$ST_norm), .data$n_all >= 10L | .data$n_uti >= 2L) %>% pull("ST_norm")
+st_data <- st_data %>%
+  mutate(ST_group = case_when(
+    is.na(.data$ST_norm) ~ "Missing / non-typable",
+    .data$ST_norm %in% st_keep ~ paste0("ST", .data$ST_norm),
+    TRUE ~ "Other typed ST"
+  ))
+st_summary <- st_data %>%
+  count(.data$ST_group, .data$status_display, name = "n") %>%
+  group_by(.data$status_display) %>% mutate(percent = 100 * .data$n / sum(.data$n)) %>% ungroup()
+st_order <- st_summary %>% group_by(.data$ST_group) %>% summarise(n = sum(.data$n), .groups = "drop") %>% arrange(.data$n) %>% pull("ST_group")
+st_summary <- st_summary %>%
   mutate(
-    case_label = factor(.data$case_label, levels = unique(.data$case_label)),
-    module_label = factor(.data$module_label, levels = rev(unique(.data$module_label))),
-    change_display = factor(.data$change_display,
-                            levels = c("Gained", "Lost", "Stable present", "Stable absent"))
+    ST_group = factor(.data$ST_group, levels = st_order),
+    label_y = as.numeric(.data$ST_group) + if_else(.data$status_display == "UTI", .14, -.14)
+  )
+p03a <- ggplot(st_summary, aes(.data$percent, .data$ST_group, colour = .data$status_display)) +
+  geom_line(aes(group = .data$ST_group), colour = "grey75", linewidth = .7) +
+  geom_point(aes(shape = .data$status_display), size = 3) +
+  geom_text(aes(y = .data$label_y, label = paste0("n=", .data$n)), hjust = -.25, size = 2.6, show.legend = FALSE) +
+  status_colour(name = "Operational UTI status") +
+  scale_shape_manual(values = c("Not UTI" = 16, "UTI" = 17), name = "Operational UTI status") +
+  scale_x_continuous(labels = label_number(suffix = "%"), expand = expansion(mult = c(.02, .18))) +
+  labs(title = "Sequence-type composition", subtitle = "Display rule: >=10 episodes overall or >=2 UTI episodes; remaining typed calls are grouped",
+       x = "Within-status prevalence", y = NULL) + theme_ruti_publication(9)
+prov_summary <- st_data %>%
+  mutate(provenance = recode(.data$ST_source,
+                             provider_qc95 = "Provider call (QC >=95%)",
+                             local_fallback_provider_missing = "Local fallback",
+                             missing = "Missing / non-typable",
+                             .default = "Other / unavailable")) %>%
+  count(.data$status_display, .data$provenance, name = "n") %>%
+  group_by(.data$status_display) %>% mutate(percent = .data$n / sum(.data$n)) %>% ungroup()
+prov_cols <- c("Provider call (QC >=95%)" = "#0072B2", "Local fallback" = "#E69F00", "Missing / non-typable" = "#BDBDBD", "Other / unavailable" = "#6B7280")
+p03b <- ggplot(prov_summary, aes(.data$status_display, .data$percent, fill = .data$provenance)) +
+  geom_col(width = .65, colour = "white") +
+  geom_text(aes(label = as.character(.data$n)), position = position_stack(vjust = .5), size = 2.8) +
+  scale_y_continuous(labels = label_percent()) + scale_fill_manual(values = prov_cols, name = "ST provenance") +
+  labs(title = "Typing provenance", subtitle = "Counts are episodes, not participants", x = "Operational UTI status", y = "Episodes within status") +
+  theme_ruti_publication(9)
+fig03 <- (p03a | p03b) + plot_layout(widths = c(.66, .34), guides = "collect") +
+  plot_annotation(
+    title = "Sequence-type distribution and provenance",
+    subtitle = "Provider calls are preferred; local calls are labelled as fallback rather than treated as equivalent provenance.",
+    caption = "Lineage comparisons are descriptive because UTI counts are sparse and repeated episodes can share participant and lineage.",
+    tag_levels = "A", theme = panel_annotation_theme
+  ) & theme(legend.position = "bottom")
+cap03 <- paste0(
+  "Sequence-type distribution and provenance across 532 selected episodes (516 Not UTI; 16 UTI) from 161 participants. Panel A compares within-status prevalence for sequence types observed in at least 10 episodes overall or at least two UTI episodes; remaining typed calls are grouped as Other typed ST and missing/non-typable calls remain separate. Points show percentages, connecting lines aid comparison, and labels give episode counts. ",
+  "Panel B shows provider-derived, local-fallback, and missing typing provenance. In Panel A, colour and shape redundantly encode operational UTI status. Provider-only calls should be used for lineage claims. The display is descriptive; repeated episodes and lineage structure preclude treating episode counts as independent evidence of UTI risk."
+)
+register_figure("Fig03_sequence_type_distribution", "Fig03", "Sequence-type distribution and provenance",
+                "How are sequence types distributed by operational status, and where did calls originate?", "Main", fig03, 14.5, 7.2, cap03,
+                paths[c("mlst", "cohort")], "Descriptive prevalence and provenance",
+                "Provider/local calls have distinct provenance; lineage claims require provider-only sensitivity and participant-aware analysis.",
+                "Episode", "Selected cohort; displayed ST rule >=10 episodes overall or >=2 UTI episodes",
+                "Dots are within-status percentages; labels are episode counts; stacked bars encode ST provenance.", "None")
+
+# ----------------------------------------------------------------------------
+# Fig04. VF score distributions and paired participant summaries
+# ----------------------------------------------------------------------------
+score_long <- score_table %>%
+  select(Participant_id, tp_lab, status_display, all_of(names(short_score))) %>%
+  pivot_longer(all_of(names(short_score)), names_to = "score", values_to = "value") %>%
+  mutate(score_label = factor(short_score[.data$score], levels = unname(short_score)),
+         status_display = factor(.data$status_display, levels = c("Not UTI", "UTI")))
+p04a <- ggplot(score_long, aes(.data$status_display, .data$value, fill = .data$status_display, colour = .data$status_display)) +
+  geom_violin(alpha = .16, linewidth = .35, width = .82, trim = FALSE) +
+  geom_boxplot(width = .24, outlier.shape = NA, alpha = .5, linewidth = .45) +
+  geom_point(position = position_jitter(width = .14, height = 0, seed = 20260714), alpha = .22, size = .8) +
+  stat_summary(fun = median, geom = "point", shape = 23, fill = "white", colour = "black", size = 2.5) +
+  facet_wrap(~score_label, scales = "free_y", nrow = 2) +
+  status_fill(name = "Operational UTI status") + status_colour(name = "Operational UTI status") +
+  scale_x_discrete(labels = c("Not UTI" = "Not UTI\n516 episodes", "UTI" = "UTI\n16 episodes")) +
+  labs(title = "Episode-level distributions", subtitle = "Points are episodes; diamonds are medians", x = NULL, y = "Count") +
+  theme_ruti_publication(9) + theme(legend.position = "none", plot.margin = margin(8, 8, 8, 14))
+
+collapsed <- read_current(paths[["score_collapsed"]]) %>%
+  mutate(Participant_id = as.character(.data$Participant_id), status_display = status_label(.data$UTI_Status),
+         status_display = factor(.data$status_display, levels = c("Not UTI", "UTI")),
+         score_label = factor(short_score[.data$score], levels = unname(short_score))) %>%
+  filter(.data$score %in% names(short_score)) %>%
+  group_by(.data$Participant_id, .data$score) %>%
+  filter(n_distinct(.data$status_display) == 2L) %>% ungroup()
+n_paired <- n_distinct(collapsed$Participant_id)
+p04b <- ggplot(collapsed, aes(.data$status_display, .data$participant_status_median, group = interaction(.data$Participant_id, .data$score))) +
+  geom_line(colour = "grey65", linewidth = .45, alpha = .75) +
+  geom_point(aes(colour = .data$status_display), size = 1.8) +
+  facet_wrap(~score_label, scales = "free_y", nrow = 2) +
+  status_colour(name = "Operational UTI status") +
+  labs(title = "Within-participant summaries", subtitle = sprintf("Participant-status medians for %d participants observed in both states", n_paired),
+       x = NULL, y = "Median count") + theme_ruti_publication(9) +
+  theme(legend.position = "none", plot.margin = margin(8, 8, 8, 14))
+fig04 <- (p04a | p04b) + plot_annotation(
+  title = "Virulence-factor burden and prespecified score distributions",
+  subtitle = "Raw episode distributions and participant-collapsed trajectories show both imbalance and within-participant structure.",
+  caption = "Distributional displays are descriptive. Participant lines include only people sampled in both operational states.",
+  tag_levels = "A", theme = panel_annotation_theme
+)
+cap04 <- paste0(
+  "Virulence-factor burden and prespecified score distributions. Panel A shows all 532 episodes (516 Not UTI; 16 UTI) for all detected VF genes, curated VF genes, UPEC-associated systems, and ExPEC-like markers. Violin envelopes show density, boxes show the median and interquartile range, points are episodes, and white diamonds mark medians. ",
+  "Panel B collapses repeated episodes to participant-status medians and connects the ", n_paired, " participants observed in both operational states; line segments compare observed state-specific summaries and do not imply continuous observation. No p-values are shown. Episode-level observations are repeated within participants and should not be interpreted as independent."
+)
+register_figure("Fig04_vf_burden", "Fig04", "Virulence-factor burden and prespecified score distributions",
+                "How do VF burdens and prespecified scores vary between operational states and within participants?", "Main", fig04, 14, 8.2, cap04,
+                paths[c("score_table", "score_collapsed", "cohort")], "Descriptive episode distributions and participant-status medians",
+                "Episode points are repeated within participants; paired panels include only participants observed in both states.",
+                "Episode and participant-status summary", "Selected cohort; four prespecified VF scores",
+                "Violins show density, boxes show IQR/median, points are episodes, and lines join participant-status medians.", "None")
+
+# ----------------------------------------------------------------------------
+# Fig05. Prespecified score-level model evidence
+# ----------------------------------------------------------------------------
+score_models <- read_current(paths[["score_models"]]) %>%
+  filter(.data$model_variant == "batch_timepoint_collapsed_st_glmm", .data$score %in% names(short_score)) %>%
+  mutate(
+    score_label = factor(short_score[.data$score], levels = rev(unname(short_score))),
+    estimability = if_else(is.finite(.data$OR_per_1sd) & is.finite(.data$OR_lower) & is.finite(.data$OR_upper) &
+                             .data$OR_per_1sd > 0 & .data$OR_lower > 0 & .data$OR_upper > 0, "Finite estimate", "Not estimable"),
+    singular = str_detect(.data$model_type, fixed("Singular")),
+    q_label = sprintf("BH q = %.3f", .data$q_value_BH),
+    model_state = factor(
+      case_when(
+        .data$estimability == "Not estimable" ~ "Not estimable",
+        .data$singular ~ "Finite estimate; singular fit",
+        TRUE ~ "Finite estimate; non-singular fit"
+      ),
+      levels = c("Finite estimate; non-singular fit", "Finite estimate; singular fit", "Not estimable")
+    )
+  )
+assert_value(nrow(score_models), 4L, "Prespecified ST-adjusted score models")
+score_state_cols <- c(
+  "Finite estimate; non-singular fit" = "#0072B2",
+  "Finite estimate; singular fit" = "#D55E00",
+  "Not estimable" = "#6B7280"
+)
+score_state_shapes <- c(
+  "Finite estimate; non-singular fit" = 16,
+  "Finite estimate; singular fit" = 17,
+  "Not estimable" = 4
+)
+p05 <- ggplot(score_models, aes(.data$OR_per_1sd, .data$score_label)) +
+  geom_vline(xintercept = 1, linetype = "dashed", colour = "grey35") +
+  geom_errorbarh(aes(xmin = .data$OR_lower, xmax = .data$OR_upper, colour = .data$model_state), height = .14, linewidth = .8) +
+  geom_point(aes(shape = .data$model_state, colour = .data$model_state), size = 3.3, stroke = .8) +
+  geom_text(
+    data = score_models,
+    aes(x = 1.18, y = .data$score_label, label = .data$q_label),
+    inherit.aes = FALSE, hjust = 0, size = 3.25, fontface = "bold"
+  ) +
+  scale_x_log10(limits = c(min(score_models$OR_lower) * .75, max(score_models$OR_upper) * 2.3), breaks = c(.05, .1, .25, .5, 1, 2, 4)) +
+  scale_colour_manual(values = score_state_cols, name = "Estimate and fit diagnostic") +
+  scale_shape_manual(values = score_state_shapes, name = "Estimate and fit diagnostic") +
+  labs(
+    title = "Prespecified score-level associations with operational UTI",
+    subtitle = "Adjusted odds ratio per 1-SD increase; triangles flag the four singular fits and text gives BH-adjusted q-values",
+    x = "Adjusted odds ratio for UTI versus Not UTI (log scale)", y = NULL,
+    caption = "Outcome: operational UTI. Covariates: batch, timepoint and collapsed ST group; random intercept: participant. BH q-values span four prespecified ST-adjusted score models."
+  ) + theme_ruti_publication(10) + theme(legend.position = "bottom", plot.margin = margin(8, 80, 8, 8)) + coord_cartesian(clip = "off")
+cap05 <- paste0(
+  "Prespecified score-level mixed-effects model estimates for 532 episodes from 161 participants (16 UTI; 516 Not UTI). Triangles are adjusted odds ratios for operational UTI per one-standard-deviation increase in each score, horizontal lines are Wald 95% confidence intervals on a logarithmic scale, and the dashed line marks OR=1. Text reports the Benjamini-Hochberg-adjusted q-value for each score. ",
+  "Models include batch, timepoint, and collapsed sequence-type group as fixed effects and a participant random intercept, with Not UTI as the reference. Benjamini-Hochberg q-values were calculated across the four prespecified ST-adjusted score models. All four fits were singular and are marked accordingly, so the apparent inverse associations are exploratory and model-dependent rather than confirmatory evidence."
+)
+register_figure("Fig05_vf_association_evidence", "Fig05", "VF association evidence and uncertainty",
+                "What do participant-aware prespecified score models estimate, and how uncertain are they?", "Main", p05, 10.5, 5.8, cap05,
+                paths[c("score_models", "cohort")], "Binomial GLMM with participant random intercept; batch, timepoint and ST-group covariates",
+                "All prespecified ST-adjusted fits are singular; sparse UTI data limit inference.",
+                "Episode with participant random intercept", "Four prespecified standardized VF scores; selected cohort",
+                "Triangles are finite adjusted ORs from singular fits; lines are 95% CIs; text gives BH q-values.", "Benjamini-Hochberg across four ST-adjusted score models")
+
+# ----------------------------------------------------------------------------
+# Fig06. Deidentified longitudinal trajectories
+# ----------------------------------------------------------------------------
+timelines <- read_current(paths[["timelines"]]) %>%
+  mutate(Participant_id = as.character(.data$Participant_id), tp_lab = normalise_timepoint_preserve_events(.data$tp_lab)) %>%
+  semi_join(case_key, by = "Participant_id") %>%
+  left_join(case_key, by = "Participant_id", relationship = "many-to-one") %>%
+  mutate(status_display = status_label(.data$UTI_Status), event_display = factor(reader_event(.data$Event_type),
+         levels = c("Routine surveillance", "UTI-related sampling", "Other sampling")),
+         Case_Label = factor(.data$Case_Label, levels = rev(case_key$Case_Label)))
+assert_unique(timelines, c("Participant_id", "tp_lab"), "Switch-case timeline episodes")
+transition_segments <- casebook %>%
+  select(Participant_id, from_tp, to_tp, SNPs, Case_Label) %>%
+  left_join(timelines %>% select(Participant_id, from_tp = tp_lab, x_from = Time_Order),
+            by = c("Participant_id", "from_tp"), relationship = "one-to-one") %>%
+  left_join(timelines %>% select(Participant_id, to_tp = tp_lab, x_to = Time_Order),
+            by = c("Participant_id", "to_tp"), relationship = "one-to-one") %>%
+  mutate(snp_support = factor(if_else(.data$SNPs <= SAME_STRAIN_SNP_THRESHOLD, "<=25 SNPs", ">25 SNPs"), levels = c("<=25 SNPs", ">25 SNPs")),
+         Case_Label = factor(.data$Case_Label, levels = levels(timelines$Case_Label)))
+if (anyNA(transition_segments$x_from) || anyNA(transition_segments$x_to)) stop("A casebook transition did not map to its timeline endpoints.")
+p06 <- ggplot(timelines, aes(.data$Time_Order, .data$Case_Label)) +
+  geom_line(aes(group = .data$Case_Label), colour = "grey78", linetype = "dotted", linewidth = .55) +
+  geom_segment(data = transition_segments,
+               aes(x = .data$x_from, xend = .data$x_to, y = .data$Case_Label, yend = .data$Case_Label, linetype = .data$snp_support),
+               colour = "black", linewidth = 1.25, inherit.aes = FALSE) +
+  geom_point(aes(fill = .data$status_display, shape = .data$event_display, size = .data$status_display), colour = "black", stroke = .45) +
+  status_fill(name = "Operational UTI status", breaks = c("UTI", "Not UTI"), labels = c("UTI", "Not UTI")) +
+  scale_size_manual(values = c("UTI" = 4.5, "Not UTI" = 2.8), guide = "none") +
+  scale_shape_manual(values = c("Routine surveillance" = 21, "UTI-related sampling" = 24, "Other sampling" = 22), name = "Sampling event type") +
+  scale_linetype_manual(values = c("<=25 SNPs" = "solid", ">25 SNPs" = "longdash"), name = "Direct genomic evidence") +
+  labs(
+    title = "Deidentified trajectories for participants with a Not UTI-to-UTI transition",
+    subtitle = "All observed episodes are shown; UTI symbols are larger, and bold segments distinguish five intervals with <=25-SNP support",
+    x = "Days since first selected episode for that participant", y = NULL,
+    caption = "Dotted lines connect observed sampling events for orientation only; they do not imply continuous carriage or observation between samples."
+  ) + theme_ruti_publication(10) +
+  guides(fill = guide_legend(override.aes = list(shape = c(21, 21), colour = "black", size = c(4.5, 2.8)))) +
+  theme(legend.position = "bottom")
+cap06 <- paste0(
+  "Deidentified longitudinal trajectories for the nine participants with an adjacent Not UTI-to-UTI transition. Points are selected episodes ordered by observed collection date; fill and symbol size redundantly denote operational UTI status, and shape denotes sampling event type. Dotted grey lines connect successive observed samples for orientation only. Bold segments identify the nine Not UTI-to-UTI intervals; solid segments mark the five intervals with direct same-strain support at the operational <=25-SNP reference, whereas dashed segments exceed 25 SNPs. ",
+  "Case labels are stable research-facing pseudonyms. Unequal sampling density and gaps mean that connecting lines do not imply continuous observation, persistence, or causation."
+)
+register_figure("Fig06_longitudinal_trajectories", "Fig06", "Deidentified longitudinal trajectories",
+                "How do observed clinical states evolve around Not UTI-to-UTI transitions?", "Main", p06, 12.5, 7.2, cap06,
+                paths[c("timelines", "casebook", "transitions")], "Descriptive longitudinal reconstruction with direct SNP context",
+                "Connections link observed samples only; five of nine transitions meet the operational <=25-SNP reference.",
+                "Episode nested within participant", "Nine data-derived adjacent Not UTI-to-UTI transitions",
+                "Point fill and size are status, point shape is sampling event, and bold interval linetype is direct SNP context.", "None")
+
+# ----------------------------------------------------------------------------
+# Fig07. Within-host genomic continuity and VF similarity
+# ----------------------------------------------------------------------------
+rq06 <- read_current(paths[["rq06_pairs"]]) %>%
+  mutate(
+    transition_display = case_when(
+      .data$status_from == "Not_UTI" & .data$status_to == "Not_UTI" ~ "Not UTI -> Not UTI",
+      .data$status_from == "Not_UTI" & .data$status_to == "UTI" ~ "Not UTI -> UTI",
+      .data$status_from == "UTI" & .data$status_to == "Not_UTI" ~ "UTI -> Not UTI",
+      TRUE ~ "UTI -> UTI"
+    ),
+    snp_context = factor(if_else(.data$TotalSNPs <= SAME_STRAIN_SNP_THRESHOLD, "<=25 SNPs", ">25 SNPs"), levels = c("<=25 SNPs", ">25 SNPs"))
+  )
+assert_value(nrow(rq06), 371L, "RQ06 adjacent-pair figure denominator")
+transition_cols <- c("Not UTI -> Not UTI" = "#0072B2", "Not UTI -> UTI" = "#D55E00", "UTI -> Not UTI" = "#CC79A7", "UTI -> UTI" = "#E69F00")
+p07a <- ggplot(rq06, aes(.data$days_between, .data$TotalSNPs + 1, colour = .data$transition_display)) +
+  geom_hline(yintercept = SAME_STRAIN_SNP_THRESHOLD + 1, linetype = "dashed", colour = "grey25") +
+  geom_point(aes(shape = .data$transition_display), alpha = .55, size = 1.7) +
+  scale_y_log10(labels = label_number()) +
+  scale_colour_manual(values = transition_cols, name = "Operational-status transition") +
+  scale_shape_manual(values = c("Not UTI -> Not UTI" = 16, "Not UTI -> UTI" = 17,
+                                "UTI -> Not UTI" = 15, "UTI -> UTI" = 3),
+                     name = "Operational-status transition") +
+  labs(title = "Adjacent-pair genomic distance", subtitle = "The y-axis displays SNP distance + 1; the dashed line is the operational 25-SNP reference",
+       x = "Days between adjacent samples", y = "SNP distance + 1") +
+  theme_ruti_publication(9) + theme(plot.margin = margin(8, 8, 8, 14))
+p07b <- ggplot(rq06, aes(.data$snp_context, .data$vf_jaccard, fill = .data$snp_context)) +
+  geom_violin(trim = FALSE, alpha = .25, linewidth = .4) +
+  geom_boxplot(width = .24, outlier.shape = NA, alpha = .55) +
+  geom_point(position = position_jitter(width = .13, seed = 20260714), alpha = .32, size = .9) +
+  scale_fill_manual(values = c("<=25 SNPs" = "#009E73", ">25 SNPs" = "#7A5195"), guide = "none") +
+  scale_y_continuous(labels = label_number(accuracy = .1)) +
+  labs(title = "VF-profile similarity", subtitle = sprintf("%d pairs <=25 SNPs; %d pairs >25 SNPs", sum(rq06$close25), sum(!rq06$close25)),
+       x = "Direct genomic-distance context", y = "VF Jaccard similarity") +
+  coord_cartesian(ylim = c(0, 1)) + theme_ruti_publication(9) +
+  theme(plot.margin = margin(8, 8, 8, 14))
+fig07 <- (p07a | p07b) + plot_layout(widths = c(.58, .42), guides = "collect") +
+  plot_annotation(
+    title = "Within-host genomic continuity and virulence-factor similarity",
+    subtitle = "All 371 adjacent direct comparisons from 139 participants are shown.",
+    caption = "The <=25-SNP reference is operational rather than proof of persistence or transmission; participants contribute unequal numbers of pairs.",
+    tag_levels = "A", theme = panel_annotation_theme
+  ) & theme(legend.position = "bottom")
+cap07 <- paste0(
+  "Within-host genomic continuity and virulence-factor similarity for 371 adjacent direct comparisons from 139 participants. Panel A plots days between samples against pairwise SNP distance plus one on a logarithmic scale; colour and shape redundantly indicate the observed operational-status transition and the dashed line corresponds to 25 SNPs after the displayed +1 transformation. Panel B shows VF Jaccard similarity for 140 pairs at or below and 231 pairs above the operational 25-SNP reference; violins show density, boxes show medians and interquartile ranges, and points are comparisons. ",
+  "The threshold is an operational genomic-continuity reference, not evidence of transmission. Participants contribute unequal numbers of comparisons, so points are not independent."
+)
+register_figure("Fig07_within_host_genomic_continuity", "Fig07", "Within-host genomic continuity and VF similarity",
+                "How do adjacent direct SNP distances relate to time, clinical transition, and VF similarity?", "Main", fig07, 14, 6.5, cap07,
+                paths[c("rq06_pairs", "transitions")], "Descriptive adjacent-pair comparison; operational 25-SNP reference",
+                "Comparisons repeat within participants; genomic proximity is not demonstrated transmission.",
+                "Adjacent pair nested within participant", "371 adjacent direct comparisons from 139 participants",
+                "Points are pairs; colour is status transition; box/violin summaries stratify by SNP reference.", "None")
+
+# ----------------------------------------------------------------------------
+# Fig08. Reference-aware variant map (strictly conditional)
+# ----------------------------------------------------------------------------
+variant_valid <- FALSE
+if (file.exists(paths[["variants"]]) && file.exists(paths[["variant_validation"]])) {
+  vv <- read_current(paths[["variant_validation"]])
+  variant_valid <- nrow(vv) > 0 && "Figure_Eligible" %in% names(vv) && all(vv$Figure_Eligible %in% TRUE)
+}
+if (variant_valid) {
+  var <- read_current(paths[["variants"]])
+  required_var_cols <- c("Reference_ID", "Participant_id", "From_Time", "To_Time",
+                         "Reference_Cumulative_Position", "Reference_Total_Length",
+                         "Reference_Contig_ID", "Reference_Contig_Offset",
+                         "Reference_Contig_Length", "Gene", "Type", "Figure_Eligible")
+  if (any(!required_var_cols %in% names(var))) stop("Reference-aware variant table lacks required plotting columns.")
+  reference_key <- var %>% distinct(Reference_ID) %>% arrange(.data$Reference_ID) %>%
+    mutate(reference_pseudonym = sprintf("Reference %02d", row_number()))
+  var_case <- var %>%
+    filter(.data$Figure_Eligible %in% TRUE) %>%
+    mutate(Participant_id = as.character(.data$Participant_id),
+           From_Time = normalise_timepoint_preserve_events(.data$From_Time),
+           To_Time = normalise_timepoint_preserve_events(.data$To_Time)) %>%
+    left_join(casebook %>% select(case_id, Participant_id, from_tp, to_tp, Case_Label),
+              by = c("Participant_id", "From_Time" = "from_tp", "To_Time" = "to_tp"), relationship = "many-to-one") %>%
+    left_join(reference_key, by = "Reference_ID", relationship = "many-to-one") %>%
+    mutate(Case_Label = factor(.data$Case_Label, levels = rev(case_key$Case_Label)),
+           reference_label = paste(.data$reference_pseudonym, .data$Case_Label, sep = " - "),
+           reference_contig = .data$Reference_Contig_ID,
+           cumulative_position = .data$Reference_Cumulative_Position,
+           reference_length = .data$Reference_Total_Length,
+           contig_start = .data$Reference_Contig_Offset,
+           contig_end = .data$Reference_Contig_Offset + .data$Reference_Contig_Length,
+           label = if_else(!is.na(.data$Gene) & nzchar(.data$Gene), .data$Gene, NA_character_),
+           mutation_type = if_else(.data$Type %in% c("SNP", "Substitution"), "Substitution", as.character(.data$Type)))
+  if (anyNA(var_case$Case_Label)) stop("A validated variant lacks a deidentified case label.")
+  if (!identical(sort(unique(var_case$mutation_type)), "Substitution")) {
+    stop("The current reference-aware variant map expects validated substitutions only.")
+  }
+  lab_rule <- var_case %>% filter(!is.na(.data$label)) %>% group_by(.data$case_id, .data$label) %>% slice_min(.data$cumulative_position, n = 1, with_ties = FALSE) %>% ungroup()
+  contigs <- var_case %>% distinct(reference_label, reference_contig, contig_start, contig_end)
+  p08 <- ggplot(var_case, aes(.data$cumulative_position / 1e6, 1)) +
+    geom_vline(data = contigs, aes(xintercept = .data$contig_end / 1e6), colour = "grey88", linewidth = .25) +
+    geom_hline(yintercept = 1, colour = "grey70", linewidth = .35) +
+    geom_point(size = 2, alpha = .85, colour = "#4C78A8") +
+    ggrepel::geom_text_repel(data = lab_rule, aes(label = .data$label), seed = 20260714, size = 2.5,
+                             min.segment.length = 0, max.overlaps = Inf, direction = "both", show.legend = FALSE) +
+    facet_wrap(~reference_label, scales = "free_x", ncol = 1) +
+    scale_y_continuous(NULL, breaks = NULL, expand = expansion(add = c(.55, .8))) +
+    labs(title = "Reference-aware within-host variant map",
+         subtitle = sprintf("All %d validated variants are substitutions; coordinates are cumulative only within each exact reference", nrow(var_case)),
+         x = "Reference-genome coordinate (Mb)", y = NULL,
+         caption = "Vertical lines mark contig boundaries. Gene labels follow a reproducible rule: the first mapped occurrence of each annotated gene within each comparison. Reference panels are not coordinate-comparable.") +
+    theme_ruti_publication(9.5) + theme(panel.grid.major.y = element_blank(), panel.grid.minor.y = element_blank())
+  cap08 <- paste0(
+    "Reference-aware within-host variant map for ", nrow(var_case), " validated variants from ",
+    n_distinct(var_case$case_id), " Not UTI-to-UTI comparisons across ",
+    n_distinct(var_case$reference_pseudonym), " exact references. All validated variants are substitutions. Points are positioned using contig lengths derived from each exact reference FASTA; cumulative coordinates are calculated only within a reference, and different references are faceted separately. Vertical grey lines mark contig boundaries, and labels identify the first mapped occurrence of each annotated gene per comparison. ",
+    "Every position was checked against its named reference contig and reference hash before plotting. Reference panels are not directly coordinate-comparable, unlabelled points remain included, and candidate variants are descriptive rather than causal."
+  )
+  register_figure("Fig08_reference_aware_variant_map", "Fig08", "Reference-aware within-host variant map",
+                  "Where do validated within-host variants fall on their exact reference assemblies?", "Main", p08, 12, 8.2, cap08,
+                  paths[c("variants", "variant_validation", "casebook")], "Validated reference-contig coordinate reconstruction",
+                  "Coordinates are comparable only within the same reference; candidate variants are not causal evidence.",
+                  "Variant within reference-specific comparison", "Only variants passing exact reference/contig/position validation",
+                  "Points are substitutions, facets are exact references, vertical lines are contig boundaries, labels follow a deterministic gene rule.", "None")
+} else {
+  writeLines(c(
+    "Fig08 was not generated.",
+    "Reason: the exact reference/contig coordinate validator did not report all checks as passing.",
+    "The obsolete position maps from scripts 21 and the previous script 35 must not be used."
+  ), file.path(DIR_FIG_AUDIT, "Fig08_UNVALIDATED.txt"))
+}
+
+# ----------------------------------------------------------------------------
+# FigS01. Curated VF presence/absence/missing heatmap
+# ----------------------------------------------------------------------------
+vf_pa <- read_current(paths[["vf_pa"]]) %>% mutate(Participant_id = as.character(.data$Participant_id), tp_lab = normalise_timepoint_preserve_events(.data$tp_lab))
+assert_unique(vf_pa, c("Participant_id", "tp_lab"), "VF presence/absence matrix")
+gene_cols <- setdiff(names(vf_pa), c("Participant_id", "tp_lab", "Episode_ID"))
+gene_prev <- tibble(gene = gene_cols, prevalence = vapply(vf_pa[gene_cols], function(z) mean(z == 1, na.rm = TRUE), numeric(1)),
+                    missing_fraction = vapply(vf_pa[gene_cols], function(z) mean(is.na(z)), numeric(1)))
+display_genes <- gene_prev %>% filter(.data$prevalence >= .05, .data$prevalence <= .95) %>% pull("gene")
+gene_map <- read_current(paths[["gene_map"]]) %>% transmute(gene = .data$Gene, category = .data$Category)
+gene_order <- gene_prev %>% filter(.data$gene %in% display_genes) %>%
+  left_join(gene_map, by = "gene", relationship = "many-to-one") %>%
+  mutate(category = coalesce(.data$category, "Unassigned"), category = str_replace_all(.data$category, "/", " / ")) %>%
+  arrange(.data$category, desc(.data$prevalence)) %>% mutate(gene_factor = factor(.data$gene, levels = rev(.data$gene)))
+episode_order <- cohort %>% select(Participant_id, tp_lab, status_display, Collection_Date) %>%
+  left_join(mlst %>% select(Participant_id, tp_lab, ST), by = c("Participant_id", "tp_lab"), relationship = "one-to-one") %>%
+  arrange(.data$status_display, .data$Participant_id, .data$Collection_Date, .data$ST, .data$tp_lab) %>% mutate(episode_index = row_number())
+heat_long <- vf_pa %>% inner_join(episode_order %>% select(Participant_id, tp_lab, episode_index),
+                                  by = c("Participant_id", "tp_lab"), relationship = "one-to-one") %>%
+  pivot_longer(all_of(display_genes), names_to = "gene", values_to = "presence") %>%
+  left_join(gene_order %>% select(gene, category, gene_factor), by = "gene", relationship = "many-to-one") %>%
+  mutate(state = factor(case_when(is.na(.data$presence) ~ "Unavailable", .data$presence == 1 ~ "Present", TRUE ~ "Absent"),
+                        levels = c("Present", "Absent", "Unavailable")))
+pS01bar <- ggplot(episode_order, aes(.data$episode_index, 1, fill = .data$status_display)) + geom_raster() + status_fill(name = "Operational UTI status") +
+  labs(x = NULL, y = NULL) + theme_void() + theme(legend.position = "bottom")
+pS01heat <- ggplot(heat_long, aes(.data$episode_index, .data$gene_factor, fill = .data$state)) +
+  geom_raster() + facet_grid(rows = vars(category), scales = "free_y", space = "free_y", switch = "y") +
+  scale_fill_manual(values = c(Present = "#253494", Absent = "#F7FBFF", Unavailable = "#D55E00"), name = "VF state", drop = FALSE) +
+  labs(x = "Episodes ordered by operational status, participant, collection date and sequence type", y = "Virulence-factor gene") +
+  theme_ruti_publication(7) + theme(axis.text.x = element_blank(), axis.ticks.x = element_blank(), strip.placement = "outside",
+                                      strip.text.y.left = element_text(angle = 0, size = 6.3), legend.position = "bottom")
+figS01 <- pS01bar / pS01heat + plot_layout(heights = c(.035, .965), guides = "collect") +
+  plot_annotation(title = "Curated virulence-factor presence heatmap",
+                  subtitle = sprintf("%d genes with 5-95%% prevalence across 532 episodes; no binary Euclidean clustering", length(display_genes)),
+                  caption = "Rows are biologically ordered by functional category and prevalence. Missing/unavailable calls have a distinct state and are never converted to absence.",
+                  theme = panel_annotation_theme) & theme(legend.position = "bottom")
+capS01 <- paste0(
+  "Curated VF heatmap for 532 selected episodes and ", length(display_genes), " genes with overall prevalence between 5% and 95%. Columns are episodes ordered by operational UTI status, participant, collection date, and sequence type; rows are genes ordered by curated functional category and decreasing prevalence. Dark blue indicates presence, pale blue absence, and orange unavailable data. The status strip uses the canonical operational colours. No clustering or inferential test is applied, avoiding inappropriate default Euclidean clustering of binary observations. Repeated participant episodes can visually dominate recurrent profiles and should not be treated as independent clusters."
+)
+register_figure("FigS01_vf_presence_heatmap", "FigS01", "Curated VF presence heatmap",
+                "Which variably prevalent curated VF genes co-occur across episodes?", "Supplementary", figS01, 15, 15.5, capS01,
+                paths[c("vf_pa", "gene_map", "cohort", "mlst")], "Descriptive binary matrix",
+                "Repeated episodes can dominate patterns; ordering is biological rather than a transmission or lineage inference.",
+                "Gene-by-episode cell", "Genes with 5-95% prevalence; all selected episodes",
+                "Dark blue present, pale blue absent, orange unavailable; status strip uses canonical colours.", "None")
+
+# ----------------------------------------------------------------------------
+# FigS02. Exact 532-tip core-genome tree
+# ----------------------------------------------------------------------------
+tips_in_component <- function(tree, start, blocked) {
+  n_tip <- length(tree$tip.label)
+  edges <- tree$edge
+  adj <- split(c(edges[, 2], edges[, 1]), c(edges[, 1], edges[, 2]))
+  seen <- blocked
+  queue <- start
+  out <- integer()
+  while (length(queue)) {
+    node <- queue[[1]]; queue <- queue[-1]
+    if (node %in% seen) next
+    seen <- c(seen, node)
+    if (node <= n_tip) out <- c(out, node)
+    queue <- c(queue, setdiff(adj[[as.character(node)]], seen))
+  }
+  unique(out)
+}
+midpoint_root_display <- function(tree) {
+  if (is.null(tree$edge.length)) stop("Core tree lacks branch lengths.")
+  negative_n <- sum(tree$edge.length < 0, na.rm = TRUE)
+  tree$edge.length[tree$edge.length < 0] <- 0
+  dm <- cophenetic.phylo(tree)
+  ij <- which(dm == max(dm), arr.ind = TRUE)[1, ]
+  tip1 <- ij[[1]]; tip2 <- ij[[2]]
+  edges <- tree$edge
+  lens <- tree$edge.length
+  adj <- split(c(edges[, 2], edges[, 1]), c(edges[, 1], edges[, 2]))
+  edge_key <- function(a, b) which((edges[,1] == a & edges[,2] == b) | (edges[,1] == b & edges[,2] == a))[[1]]
+  prev <- rep(NA_integer_, length(tree$tip.label) + tree$Nnode)
+  queue <- tip1; prev[tip1] <- 0L
+  while (length(queue) && is.na(prev[tip2])) {
+    node <- queue[[1]]; queue <- queue[-1]
+    for (nb in adj[[as.character(node)]]) if (is.na(prev[nb])) { prev[nb] <- node; queue <- c(queue, nb) }
+  }
+  path <- tip2
+  while (tail(path, 1) != tip1) path <- c(path, prev[tail(path, 1)])
+  path <- rev(path)
+  path_lens <- vapply(seq_len(length(path) - 1L), function(i) lens[edge_key(path[i], path[i+1])], numeric(1))
+  target <- sum(path_lens) / 2
+  j <- which(cumsum(path_lens) >= target)[1]
+  before <- if (j == 1L) 0 else sum(path_lens[seq_len(j - 1L)])
+  left_len <- target - before
+  right_len <- path_lens[j] - left_len
+  left_node <- path[j]; right_node <- path[j + 1L]
+  left_tips <- tips_in_component(tree, left_node, right_node)
+  rooted <- ape::root(tree, outgroup = left_tips, resolve.root = TRUE)
+  root_rows <- which(rooted$edge[, 1] == length(rooted$tip.label) + 1L)
+  if (length(root_rows) != 2L) stop("Midpoint display root did not create two root branches.")
+  descendant_has_tip <- function(child, tip) tip %in% tips_in_component(rooted, child, length(rooted$tip.label) + 1L)
+  for (rr in root_rows) rooted$edge.length[rr] <- if (descendant_has_tip(rooted$edge[rr, 2], tip1)) left_len else right_len
+  attr(rooted, "negative_edges_truncated_for_display") <- negative_n
+  rooted
+}
+tree <- read.tree(paths[["tree"]])
+tree_map <- read_current(paths[["tree_map"]]) %>% mutate(Participant_id = as.character(.data$Participant_id), tp_lab = normalise_timepoint_preserve_events(.data$tp_lab))
+assert_value(length(tree$tip.label), 532L, "Core-genome tree tips")
+assert_unique(tree_map, c("parsnp_alignment_label"), "Core-genome tree sample map")
+if (!setequal(tree$tip.label, tree_map$parsnp_alignment_label)) stop("Core tree tips do not exactly match the 532-row sample map.")
+transition_tip_labels <- casebook %>%
+  transmute(.data$Participant_id, tp_lab = .data$to_tp, .data$Case_Label) %>%
+  distinct()
+assert_unique(transition_tip_labels, c("Participant_id", "tp_lab"), "Transition endpoint tip labels")
+assert_value(nrow(transition_tip_labels), 9L, "Transition endpoint tip-label count")
+tree_meta <- tree_map %>% transmute(label = .data$parsnp_alignment_label, .data$Participant_id, .data$tp_lab) %>%
+  left_join(cohort %>% select(Participant_id, tp_lab, status_display), by = c("Participant_id", "tp_lab"), relationship = "one-to-one") %>%
+  left_join(mlst %>% select(Participant_id, tp_lab, ST), by = c("Participant_id", "tp_lab"), relationship = "one-to-one") %>%
+  left_join(transition_tip_labels, by = c("Participant_id", "tp_lab"), relationship = "one-to-one") %>%
+  mutate(ST_plot = case_when(is.na(.data$ST) ~ "Missing ST", as.character(.data$ST) == "131" ~ "ST131", as.character(.data$ST) == "73" ~ "ST73",
+                             as.character(.data$ST) == "69" ~ "ST69", TRUE ~ "Other typed ST"),
+         case_tip_label = if_else(!is.na(.data$Case_Label), .data$Case_Label, NA_character_))
+if (anyNA(tree_meta$status_display)) stop("Core tree metadata join left an unmatched tip.")
+tree_display <- midpoint_root_display(tree)
+negative_edges <- attr(tree_display, "negative_edges_truncated_for_display")
+tree_base <- ggtree(tree_display, linewidth = .22) %<+% tree_meta
+tree_label_data <- tree_base$data %>% filter(.data$isTip, !is.na(.data$case_tip_label))
+assert_value(nrow(tree_label_data), 9L, "Labelled transition endpoints on the core tree")
+pS02 <- tree_base +
+  geom_tippoint(aes(colour = .data$status_display, shape = .data$ST_plot), size = .75, alpha = .8) +
+  ggrepel::geom_text_repel(data = tree_label_data, aes(x = .data$x, y = .data$y, label = .data$case_tip_label),
+                           inherit.aes = FALSE, direction = "y", hjust = 0,
+                           nudge_x = max(tree_base$data$x) * .015, seed = 20260714,
+                           size = 1.8, min.segment.length = 0, max.overlaps = Inf, colour = "grey20") +
+  status_colour(name = "Operational UTI status") +
+  scale_shape_manual(values = c(ST131 = 16, ST73 = 17, ST69 = 15, `Other typed ST` = 1, `Missing ST` = 4), name = "Sequence-type annotation") +
+  geom_treescale(width = 100, x = 0, y = 0, fontsize = 3) +
+  labs(title = "Canonical core-genome neighbour-joining tree",
+       subtitle = "Exact 532-tip sample map; midpoint-rooted for display only; branch lengths are SNP-distance units",
+       caption = sprintf("No branch-support values are claimed. %d negative neighbour-joining branch estimates were truncated to zero for display; the source tree is unchanged.", negative_edges)) +
+  theme_tree2() + theme_ruti_publication(8) + theme(axis.title.y = element_blank(), axis.text.y = element_blank(), axis.ticks.y = element_blank(), legend.position = "bottom")
+capS02 <- paste0(
+  "Canonical core-genome neighbour-joining tree for all 532 selected assemblies. Every tip was matched one-to-one to the exact core-SNP sample map before clinical and sequence-type metadata were added. Branch lengths are in SNP-distance units; the tree was midpoint-rooted only for display and no rooting or transmission claim is made. Tip colour denotes operational UTI status, tip shape gives a compact sequence-type annotation, and labels identify only the nine deidentified UTI endpoints of the data-derived Not UTI-to-UTI transitions. ",
+  negative_edges, " negative neighbour-joining branch estimates were truncated to zero for display while the source tree remained unchanged. Branch support values were unavailable and are not shown. Repeated episodes from the same participant may cluster and are not independent."
+)
+register_figure("FigS02_core_genome_phylogeny", "FigS02", "Canonical core-genome phylogeny",
+                "How are selected assemblies related in the core-genome SNP tree?", "Supplementary", pS02, 13, 14, capS02,
+                paths[c("tree", "tree_map", "cohort", "mlst")], "Neighbour-joining tree from the canonical core-SNP distance matrix",
+                "Midpoint root is display-only; genomic clustering is not demonstrated transmission; no support values available.",
+                "Assembly tip", "Exact 532-tip core-SNP sample map",
+                "Branch length is SNP distance; colour is status; shape is compact ST annotation; labels are deidentified cases.", "None")
+
+# ----------------------------------------------------------------------------
+# FigS03. Module gain/loss
+# ----------------------------------------------------------------------------
+module <- read_current(paths[["module_changes"]]) %>% mutate(Participant_id = as.character(.data$Participant_id)) %>%
+  select(-any_of("case_label")) %>% left_join(case_key, by = c("case_id", "Participant_id"), relationship = "many-to-one") %>%
+  mutate(Case_Label = factor(.data$Case_Label, levels = case_key$Case_Label),
+         module_label = factor(.data$module_label, levels = rev(unique(.data$module_label))),
+         change_display = factor(.data$change_display, levels = c("Gained", "Lost", "Stable present", "Stable absent")))
+pS03 <- ggplot(module, aes(.data$Case_Label, .data$module_label, fill = .data$change_display)) +
+  geom_tile(colour = "white", linewidth = .25) +
+  scale_fill_manual(values = c("Gained" = "#009E73", "Lost" = "#CC79A7", "Stable present" = "#0072B2", "Stable absent" = "#F2F2F2"), name = "Module state") +
+  labs(title = "VF module changes across Not UTI-to-UTI transitions", subtitle = "Nine deidentified adjacent comparisons; stable absence remains explicit",
+       x = "Transition case", y = "VF module", caption = "Presence/absence changes describe observed endpoints and do not establish acquisition timing or causation.") +
+  theme_ruti_publication(8.5) + theme(axis.text.x = element_text(angle = 35, hjust = 1), legend.position = "bottom")
+capS03 <- paste0(
+  "Virulence-factor module gain/loss matrix for ", n_distinct(module$case_id),
+  " deidentified adjacent Not UTI-to-UTI comparisons. Columns are transition cases and rows are ",
+  n_distinct(module$module_label),
+  " curated VF modules. Green indicates gained, magenta lost, blue stable present, and pale grey stable absent between the two observed endpoints; unavailable values would remain distinct rather than be converted to absence. The analysis is descriptive, repeated episodes are nested within participants, and endpoint differences do not establish when a change occurred or whether it caused UTI."
+)
+register_figure("FigS03_module_gain_loss", "FigS03", "VF module gain/loss",
+                "Which VF modules differ between adjacent Not UTI and UTI endpoints?", "Supplementary", pS03, 12.5, 9.5, capS03,
+                paths[c("module_changes", "casebook")], "Descriptive paired presence/absence comparison",
+                "Endpoint changes do not determine acquisition timing or causation.", "Module within transition pair",
+                "Nine adjacent Not UTI-to-UTI transitions", "Tile fill denotes gained, lost, stable present, or stable absent.", "None")
+
+# ----------------------------------------------------------------------------
+# FigS04. Global VF PCoA
+# ----------------------------------------------------------------------------
+pcoa <- read_current(paths[["pcoa"]]) %>% mutate(Participant_id = as.character(.data$Participant_id), tp_lab = normalise_timepoint_preserve_events(.data$tp_lab)) %>%
+  select(-any_of(c("UTI_Status", "status_display"))) %>%
+  left_join(cohort %>% select(Participant_id, tp_lab, status_display), by = c("Participant_id", "tp_lab"), relationship = "one-to-one") %>%
+  left_join(mlst %>% select(Participant_id, tp_lab, ST_plot = ST), by = c("Participant_id", "tp_lab"), relationship = "one-to-one") %>%
+  mutate(ST_group = case_when(is.na(.data$ST_plot) ~ "Missing ST", as.character(.data$ST_plot) == "131" ~ "ST131", as.character(.data$ST_plot) == "73" ~ "ST73", TRUE ~ "Other typed ST"))
+axis1 <- unique(pcoa$var_Axis1)[1]; axis2 <- unique(pcoa$var_Axis2)[1]
+pS04 <- ggplot(pcoa, aes(.data$Axis1, .data$Axis2, colour = .data$status_display, shape = .data$ST_group)) +
+  geom_point(aes(size = .data$status_display), alpha = .72) + status_colour(name = "Operational UTI status") +
+  scale_size_manual(values = c("Not UTI" = 1.8, "UTI" = 3), guide = "none") +
+  scale_shape_manual(values = c(ST131 = 16, ST73 = 17, `Other typed ST` = 1, `Missing ST` = 4), name = "Sequence-type group") +
+  labs(title = "Global VF-profile principal coordinates", subtitle = "Jaccard distance on module presence/absence; descriptive and unadjusted",
+       x = sprintf("PCoA axis 1 (%.1f%%)", axis1), y = sprintf("PCoA axis 2 (%.1f%%)", axis2),
+       caption = str_wrap("Status colour and size redundantly encode UTI status; shape encodes the ST group. Descriptive only: no independent-episode inference.", width = 115)) +
+  theme_ruti_publication(10) + theme(legend.position = "bottom")
+capS04 <- "Principal-coordinate analysis of Jaccard distances among VF module presence/absence profiles for all 532 selected episodes. Each point is an episode; colour denotes operational UTI status, UTI points are also larger for accessibility, and shape provides a compact sequence-type annotation. Axes report the displayed proportion of variation. The ordination is descriptive, has no hypothesis-test overlay, and is not adjusted for repeated episodes, unequal group sizes, or lineage structure. Visual overlap or separation should therefore not be interpreted as an independent or causal UTI association."
+register_figure("FigS04_vf_pcoa", "FigS04", "Global VF-profile PCoA",
+                "Do global VF module profiles visually separate by operational status?", "Supplementary", pS04, 8.5, 6.5, capS04,
+                paths[c("pcoa", "cohort", "mlst")], "Jaccard PCoA",
+                "Unadjusted ordination; points repeat within participants and reflect lineage structure.", "Episode",
+                "All selected episodes and VF module presence/absence", "Point colour and size encode status; shape is compact ST group.", "None")
+
+# ----------------------------------------------------------------------------
+# FigS05. Near-miss and leave-one-UTI diagnostics
+# ----------------------------------------------------------------------------
+near <- read_current(paths[["near_miss"]])
+near_features <- tibble(
+  criterion = c("Culture supports UTI", "Local urinary symptom", "Systemic symptom", "Symptom rule met", "Indwelling-catheter rule"),
+  n = c(sum(near$culture_supports_uti %in% TRUE, na.rm = TRUE), sum(near$local_urinary_symptom_any %in% TRUE, na.rm = TRUE),
+        sum(near$systemic_symptom_any %in% TRUE, na.rm = TRUE), sum(near$symptom_rule_met %in% TRUE, na.rm = TRUE),
+        sum(near$catheter_rule == "B_indwelling", na.rm = TRUE))
+)
+pS05a <- ggplot(near_features, aes(.data$n, reorder(.data$criterion, .data$n))) + geom_col(fill = "#E69F00", width = .68) +
+  geom_text(aes(label = .data$n), hjust = -.25, fontface = "bold") + scale_x_continuous(expand = expansion(mult = c(0, .15))) +
+  labs(title = "Near-miss rule components", subtitle = sprintf("%d episodes remain Not UTI under the primary definition", nrow(near)), x = "Episodes meeting component", y = NULL) + theme_ruti_publication(9)
+loo <- read_current(paths[["leave_one"]]) %>% filter(.data$feature_type == "score", .data$feature %in% names(short_score), .data$statistic == "mean difference") %>%
+  mutate(score_label = factor(short_score[.data$feature], levels = rev(unname(short_score))))
+pS05b <- ggplot(loo, aes(.data$full_effect, .data$score_label)) + geom_vline(xintercept = 0, linetype = "dashed") +
+  geom_segment(aes(x = .data$min_without_one_uti, xend = .data$max_without_one_uti, yend = .data$score_label, colour = .data$direction_flip), linewidth = 1.2) +
+  geom_point(size = 3, colour = "black") + scale_colour_manual(values = c(`TRUE` = "#D55E00", `FALSE` = "#0072B2"), labels = c(`TRUE` = "Direction flip", `FALSE` = "No direction flip"), name = NULL) +
+  labs(title = "Leave-one-UTI-out sensitivity", subtitle = "Point: full UTI-minus-Not-UTI mean difference; line: range after omitting one UTI episode",
+       x = "Mean difference", y = NULL) + theme_ruti_publication(9)
+figS05 <- (pS05a | pS05b) + plot_annotation(title = "Operational-definition and sparse-case diagnostics", tag_levels = "A", theme = panel_annotation_theme) & theme(legend.position = "bottom")
+capS05 <- paste0(
+  "Operational-definition and sparse-case diagnostics. Panel A counts the prespecified clinical components among ", nrow(near), " near-miss episodes that remain Not UTI under the primary operational definition; criteria overlap and bars must not be summed. Panel B shows full UTI-minus-Not-UTI mean differences for four prespecified VF scores and the range obtained after omitting each of the 16 UTI episodes in turn; colour flags direction changes. These are sensitivity diagnostics, not corrected association tests. Episodes repeat within participants, and leave-one-episode analysis does not replace participant-aware modelling."
+)
+register_figure("FigS05_near_miss_leave_one_uti", "FigS05", "Near-miss and leave-one-UTI diagnostics",
+                "How sensitive are descriptive findings to the operational rule and individual UTI episodes?", "Supplementary", figS05, 13.5, 6.1, capS05,
+                paths[c("near_miss", "leave_one")], "Rule-component audit and leave-one-UTI sensitivity",
+                "Criteria overlap; sensitivity ranges are not inferential confidence intervals.", "Episode and score diagnostic",
+                "Prespecified near-miss rows and four score mean differences", "Bars count rule components; points are full effects; lines are leave-one ranges.", "None")
+
+# ----------------------------------------------------------------------------
+# FigS06. Transition mechanism composition
+# ----------------------------------------------------------------------------
+mech <- read_current(paths[["mechanism_summary"]]) %>%
+  mutate(transition_display = recode(.data$transition_type, `Not_UTI->Not_UTI` = "Not UTI -> Not UTI", `Not_UTI->UTI` = "Not UTI -> UTI",
+                                     `UTI->Not_UTI` = "UTI -> Not UTI", `UTI->UTI` = "UTI -> UTI"),
+         mechanism_display = factor(mechanism_labels[.data$mechanism_bucket], levels = mechanism_labels)) %>%
+  group_by(.data$transition_display) %>% mutate(prop = .data$n_transitions / sum(.data$n_transitions)) %>% ungroup()
+pS06 <- ggplot(mech, aes(.data$transition_display, .data$prop, fill = .data$mechanism_bucket)) + geom_col(colour = "white", width = .72) +
+  geom_text(aes(label = if_else(.data$n_transitions > 0, as.character(.data$n_transitions), "")),
+            position = position_stack(vjust = .5), size = 2.7, fontface = "bold") +
+  scale_y_continuous(labels = label_percent()) + scale_fill_manual(values = mechanism_colours, labels = mechanism_labels, name = "Evidence category") +
+  labs(title = "Evidence categories across adjacent operational-status transitions", subtitle = "Counts are derived from all 371 adjacent comparisons",
+       x = "Observed adjacent transition", y = "Proportion of transitions",
+       caption = "Categories organise SNP, ST and VF evidence; they do not prove a biological mechanism or transmission.") +
+  theme_ruti_publication(9.5) + theme(legend.position = "bottom")
+capS06 <- "Evidence-category composition across 371 adjacent comparisons from 139 participants: 349 Not UTI-to-Not UTI, nine Not UTI-to-UTI, 12 UTI-to-Not UTI, and one UTI-to-UTI interval. Bar height is the within-transition-type proportion, fill combines direct SNP, sequence-type, and VF-profile context, and visible labels give transition counts. Categories are descriptive evidence summaries, not proof of replacement, within-host evolution, persistence, or transmission. Repeated comparisons from the same participant are not independent."
+register_figure("FigS06_transition_mechanisms", "FigS06", "Transition mechanism composition",
+                "How do evidence categories vary across observed operational-status transitions?", "Supplementary", pS06, 10.5, 6.5, capS06,
+                paths[c("mechanism_summary", "transitions")], "Descriptive mechanism evidence classification",
+                "Evidence categories are not causal mechanisms or transmission claims.", "Adjacent pair",
+                "All 371 adjacent comparisons", "Stacked proportions show evidence-category composition; labels are counts.", "None")
+
+# Keep the historical unnumbered compatibility alias in sync with the canonical
+# numbered figure because current presentation builders still resolve release
+# assets through the audited plots/final_figures inventory.
+transition_alias_dir <- file.path(DIR_PLOTS, "final_figures")
+dir.create(transition_alias_dir, recursive = TRUE, showWarnings = FALSE)
+transition_alias_ok <- vapply(c("png", "pdf"), function(ext) {
+  file.copy(
+    file.path(DIR_SUPP, paste0("FigS06_transition_mechanisms.", ext)),
+    file.path(transition_alias_dir, paste0("transition_mechanisms_by_transition_type.", ext)),
+    overwrite = TRUE
+  )
+}, logical(1))
+if (!all(transition_alias_ok)) stop("Failed to refresh the transition-mechanism compatibility aliases.")
+
+# ----------------------------------------------------------------------------
+# FigS07. Predicted plasmid and AMR mechanism context
+# ----------------------------------------------------------------------------
+plasmid_manifest <- read_current(paths[["plasmid_manifest"]]) %>% mutate(Participant_id = as.character(.data$Participant_id), tp_lab = normalise_timepoint_preserve_events(.data$tp_lab))
+assert_unique(plasmid_manifest, c("Participant_id", "tp_lab"), "PlasmidFinder manifest")
+assert_value(nrow(plasmid_manifest), 532L, "PlasmidFinder manifest denominator")
+rep <- read_current(paths[["replicons"]]) %>% distinct(isolate_id, replicon) %>%
+  left_join(mlst %>% transmute(isolate_id = .data$Isolate_ID, .data$Participant_id, .data$tp_lab), by = "isolate_id", relationship = "many-to-one")
+if (anyNA(rep$Participant_id)) stop("Replicon hit did not map to the selected MLST isolate table.")
+rep_prev <- rep %>% count(.data$replicon, name = "n") %>% mutate(prevalence = .data$n / 532) %>% filter(.data$prevalence >= .05) %>% pull("replicon")
+rep_summary <- plasmid_manifest %>% select(Participant_id, tp_lab) %>%
+  left_join(cohort %>% select(Participant_id, tp_lab, status_display), by = c("Participant_id", "tp_lab"), relationship = "one-to-one") %>%
+  crossing(replicon = rep_prev) %>%
+  left_join(rep %>% filter(.data$replicon %in% rep_prev) %>% transmute(.data$Participant_id, .data$tp_lab, .data$replicon, present = TRUE),
+            by = c("Participant_id", "tp_lab", "replicon"), relationship = "one-to-one") %>%
+  mutate(present = coalesce(.data$present, FALSE)) %>% group_by(.data$replicon, .data$status_display) %>%
+  summarise(n = sum(.data$present), N = n(), percent = 100 * .data$n / .data$N, .groups = "drop")
+rep_order <- rep_summary %>% group_by(.data$replicon) %>% summarise(n = sum(.data$n), .groups = "drop") %>% arrange(.data$n) %>% pull("replicon")
+rep_summary <- rep_summary %>%
+  mutate(replicon = factor(.data$replicon, levels = rep_order),
+         label_y = as.numeric(.data$replicon) + if_else(.data$status_display == "UTI", .20, -.20),
+         label_hjust = if_else(.data$status_display == "UTI" & .data$percent >= 5, 1.25, -.25))
+status_order <- c("UTI", "Not UTI")
+rep_denoms <- rep_summary %>% distinct(.data$status_display, .data$N)
+rep_n <- setNames(rep_denoms$N[match(status_order, as.character(rep_denoms$status_display))], status_order)
+if (anyNA(rep_n)) stop("Replicon status denominators are incomplete.")
+rep_status_labels <- setNames(sprintf("%s (n=%d)", status_order, rep_n), status_order)
+pS07a <- ggplot(rep_summary, aes(.data$percent, .data$replicon, colour = .data$status_display)) +
+  geom_point(aes(shape = .data$status_display), size = 3) +
+  geom_text(aes(y = .data$label_y, label = paste0("n=", .data$n), hjust = .data$label_hjust), size = 3, show.legend = FALSE) +
+  status_colour(name = "Operational UTI status", breaks = status_order, labels = unname(rep_status_labels)) +
+  scale_shape_manual(values = c("Not UTI" = 16, "UTI" = 17), name = "Operational UTI status",
+                     breaks = status_order, labels = unname(rep_status_labels)) +
+  scale_x_continuous(labels = label_number(suffix = "%"), expand = expansion(mult = c(0, .18))) +
+  labs(title = "Replicon prevalence", subtitle = "Replicons present in at least 5% overall; legend gives the within-status denominators",
+       x = "Within-status prevalence", y = NULL) +
+  theme_ruti_publication(10) + theme(axis.text.y = element_text(size = 9.2))
+
+amr <- read_current(paths[["amr"]]) %>% mutate(Participant_id = as.character(.data$Participant_id), tp_lab = normalise_timepoint_preserve_events(.data$tp_lab))
+assert_unique(amr, c("Participant_id", "tp_lab"), "Script-29 AMR profile")
+assert_value(nrow(amr), 532L, "Script-29 AMR denominator")
+mob_profiles <- read_current(paths[["mob_profiles"]]) %>%
+  mutate(
+    Participant_id = as.character(.data$Participant_id),
+    tp_lab = normalise_timepoint_preserve_events(.data$tp_lab)
+  )
+mechanism_profiles <- read_current(paths[["plasmid_mechanism_profiles"]]) %>%
+  mutate(
+    Participant_id = as.character(.data$Participant_id),
+    tp_lab = normalise_timepoint_preserve_events(.data$tp_lab)
+  )
+location_validation <- read_current(paths[["plasmid_location_validation"]])
+assert_unique(mob_profiles, c("Participant_id", "tp_lab"), "MOB episode profiles")
+assert_unique(mechanism_profiles, c("Participant_id", "tp_lab"), "Plasmid mechanism profiles")
+assert_value(nrow(mob_profiles), 532L, "MOB episode denominator")
+assert_value(nrow(mechanism_profiles), 532L, "Plasmid mechanism denominator")
+if (any(!location_validation$pass)) {
+  stop("Predicted-plasmid location validation failed; FigS07 cannot be published.")
+}
+
+episode_mechanism <- cohort %>% select(Participant_id, tp_lab, status_display) %>%
+  left_join(
+    amr %>% select(
+      Participant_id, tp_lab,
+      amr_gene_count = amr_gene_count_informative,
+      mdfA_detected
+    ),
+    by = c("Participant_id", "tp_lab"), relationship = "one-to-one"
+  ) %>%
+  left_join(
+    mechanism_profiles %>% select(
+      Participant_id, tp_lab, predicted_plasmid_count,
+      plasmid_binned_informative_vf_amr_burden,
+      mob_high_confidence_profile
+    ),
+    by = c("Participant_id", "tp_lab"), relationship = "one-to-one"
+  ) %>%
+  mutate(
+    profile_state = if_else(
+      is.na(.data$amr_gene_count) |
+        is.na(.data$predicted_plasmid_count) |
+        is.na(.data$plasmid_binned_informative_vf_amr_burden),
+      "Unavailable", "Available"
+    )
+  )
+if (any(episode_mechanism$profile_state != "Available")) {
+  stop("All 532 episodes require validated AMR and predicted-plasmid profiles.")
+}
+mechanism_denoms <- episode_mechanism %>%
+  count(.data$status_display, name = "n")
+mechanism_n <- setNames(
+  mechanism_denoms$n[
+    match(status_order, as.character(mechanism_denoms$status_display))
+  ],
+  status_order
+)
+if (anyNA(mechanism_n)) stop("Predicted-plasmid status denominators are incomplete.")
+mechanism_status_labels <- setNames(
+  sprintf("%s\n(n=%d episodes)", status_order, mechanism_n),
+  status_order
+)
+mechanism_long <- episode_mechanism %>%
+  select(
+    Participant_id, tp_lab, status_display,
+    predicted_plasmid_count,
+    plasmid_binned_informative_vf_amr_burden
+  ) %>%
+  pivot_longer(
+    c(
+      predicted_plasmid_count,
+      plasmid_binned_informative_vf_amr_burden
+    ),
+    names_to = "endpoint", values_to = "value"
+  ) %>%
+  mutate(
+    endpoint = recode(
+      endpoint,
+      predicted_plasmid_count = "MOB predicted plasmid count",
+      plasmid_binned_informative_vf_amr_burden =
+        "Plasmid-binned informative VF/AMR burden"
+    )
+  )
+pS07b <- ggplot(
+  mechanism_long,
+  aes(.data$status_display, .data$value, fill = .data$status_display)
+) +
+  geom_boxplot(width = .45, outlier.shape = NA, alpha = .5) +
+  geom_point(
+    position = position_jitter(width = .12, seed = 20260714),
+    alpha = .25, size = .7
+  ) +
+  facet_wrap(~ endpoint, scales = "free_y", ncol = 2) +
+  status_fill(name = "Operational UTI status", guide = "none") +
+  scale_x_discrete(labels = mechanism_status_labels) +
+  labs(
+    title = "Predicted plasmid burden and localized gene context",
+    subtitle = "532/532 MOB profiles; VF/AMR burden counts distinct informative features placed in predicted bins",
+    x = "Operational UTI status and complete-profile denominator",
+    y = "Episode-level count"
+  ) +
+  theme_ruti_publication(9.5) +
+  theme(legend.position = "none", plot.margin = margin(8, 8, 8, 14))
+
+focused_plasmid <- read_current(paths[["plasmid_focused"]]) %>%
+  arrange(.data$Participant_id, .data$tp_from, .data$tp_to) %>%
+  mutate(
+    case = sprintf("Case %02d", row_number()),
+    `Replicon profile` = if_else(
+      .data$any_replicon_profile_change, "Changed", "Stable"
+    ),
+    `MOB cluster profile` = if_else(
+      .data$any_mob_cluster_change, "Changed", "Stable"
+    ),
+    `Predicted plasmid count` = if_else(
+      .data$predicted_plasmid_count_difference != 0, "Changed", "Stable"
+    ),
+    `Plasmid-binned VF` = if_else(
+      nzchar(coalesce(.data$plasmid_binned_vf_genes_gained, "")) |
+        nzchar(coalesce(.data$plasmid_binned_vf_genes_lost, "")),
+      "Changed", "Stable"
+    ),
+    `Plasmid-binned AMR` = if_else(
+      nzchar(coalesce(
+        .data$plasmid_binned_informative_amr_genes_gained, ""
+      )) |
+        nzchar(coalesce(
+          .data$plasmid_binned_informative_amr_genes_lost, ""
+        )),
+      "Changed", "Stable"
+    )
+  )
+assert_value(nrow(focused_plasmid), 9L, "Focused plasmid transition denominator")
+focused_heat <- focused_plasmid %>%
+  select(
+    case, `Replicon profile`, `MOB cluster profile`,
+    `Predicted plasmid count`, `Plasmid-binned VF`,
+    `Plasmid-binned AMR`
+  ) %>%
+  pivot_longer(-case, names_to = "mechanism", values_to = "state") %>%
+  mutate(
+    case = factor(case, levels = rev(unique(case))),
+    state = factor(state, levels = c("Stable", "Changed"))
+  )
+pS07c <- ggplot(focused_heat, aes(.data$mechanism, .data$case, fill = .data$state)) +
+  geom_tile(colour = "white", linewidth = .7) +
+  geom_text(aes(label = .data$state), size = 2.6) +
+  scale_fill_manual(
+    values = c(Stable = "#DCE8F2", Changed = "#D55E00"),
+    name = "Predicted change"
+  ) +
+  labs(
+    title = "Nine descriptive Not UTI-to-UTI transitions",
+    subtitle = "Deidentified cases; changes are assembly-based predicted context",
+    x = NULL, y = NULL
+  ) +
+  theme_ruti_publication(9.5) +
+  theme(
+    axis.text.x = element_text(angle = 25, hjust = 1),
+    panel.grid = element_blank()
   )
 
-s8 <- ggplot(s8_plot_data, aes(.data$case_label, .data$module_label, fill = .data$change_display)) +
-  geom_tile(colour = "white", linewidth = 0.25) +
-  scale_fill_manual(
-    values = c("Gained" = "#009E73", "Lost" = "#CC79A7",
-               "Stable present" = "#0072B2", "Stable absent" = "#F2F2F2"),
-    name = "Module change"
-  ) +
-  labs(
-    title = "Not_UTI-to-UTI module gain/loss heatmap",
-    subtitle = "Module changes across WGS-linked Not_UTI-to-UTI transitions; descriptive, not causal.",
-    x = "Transition case",
-    y = "VF module",
-    caption = "Transitions can repeat within residents; stable/present and stable/absent states are shown to keep absence explicit."
-  ) +
-  final_theme(8.5) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+figS07 <- (pS07a / pS07b / pS07c) +
+  plot_layout(heights = c(1.2, .95, 1.05), guides = "collect") +
+  plot_annotation(
+    title = "Replicon detection, predicted plasmid context and localized AMR/VF changes",
+    subtitle = "Marker detection, reconstructed bins and predicted gene localization are shown as distinct evidence layers",
+    tag_levels = "A", theme = panel_annotation_theme
+  ) &
+  theme(
+    legend.position = "bottom",
+    legend.box = "vertical",
+    legend.box.just = "center"
+  )
+capS07 <- paste0(
+  "Predicted plasmid and genomic-AMR mechanism context. Panel A shows corrected gene-level PlasmidFinder marker prevalence for markers detected in at least 5% of 532 complete episode profiles (",
+  rep_status_labels[["UTI"]], "; ", rep_status_labels[["Not UTI"]],
+  "); successful no-hit episodes remain valid zero profiles. Panel B separates MOB predicted plasmid-bin count from the count of distinct pinned CGE VirulenceFinder and primary informative AMRFinderPlus features placed in predicted plasmid bins (",
+  mechanism_status_labels[["UTI"]] %>% str_replace("\\n", " "), "; ",
+  mechanism_status_labels[["Not UTI"]] %>% str_replace("\\n", " "),
+  "). Panel C shows descriptive changes across the nine deidentified adjacent Not UTI-to-UTI transitions; no regression is fitted. Episodes and adjacent pairs are repeated within participants and are not independent. MOB results are assembly-based predictions, not confirmed circular plasmids. Same-bin placement is predicted linkage only and does not establish transfer, transmission, phenotypic susceptibility, causality, or direction."
+)
 register_figure(
-  "not_uti_to_uti_module_gain_loss", "Supplementary", s8, 12.5, 9.5,
-  "Module gain/loss heatmap across WGS-linked Not_UTI-to-UTI transitions.",
-  required_paths[c("stat_module_matrix", "stat_transition_module")],
-  "Descriptive transition sensitivity", "Module changes are presence/absence observations and do not prove causality."
+  "FigS07_plasmid_amr_context", "FigS07",
+  "Predicted plasmid and AMR mechanism context",
+  "How do replicon markers, reconstructed plasmid predictions and predicted gene localization contribute distinct mechanism context?",
+  "Supplementary", figS07, 8.27, 13.5, capS07,
+  paths[c(
+    "plasmid_manifest", "replicons", "mob_profiles",
+    "plasmid_mechanism_profiles", "plasmid_focused",
+    "plasmid_location_validation", "amr", "mlst", "cohort"
+  )],
+  "Descriptive marker prevalence, predicted burden and nine-case changes",
+  "Assembly-only predictions; no circularity, physical transfer, transmission, phenotype or causality claim.",
+  "Episode and adjacent transition",
+  "532 complete profiles and nine deidentified Not UTI-to-UTI transitions",
+  "Panel A shows marker prevalence; Panel B shows predicted bin/gene burden; Panel C shows descriptive transition changes.",
+  "None"
 )
 
-# ------------------------------------------------------------------------------
-# Supplementary Figure S9: VF module PCoA
-# ------------------------------------------------------------------------------
-stat_pcoa <- stat_pcoa %>%
+# ----------------------------------------------------------------------------
+# FigS08. Full prescreened gene-model evidence
+# ----------------------------------------------------------------------------
+gm <- read_current(paths[["gene_models"]]) %>%
   mutate(
-    ST_group = factor(st_group4(.data$ST), levels = c("ST131", "ST141", "Other typed ST", "Missing ST"))
-  ) %>%
-  filter(.data$UTI_Status %in% c("Not_UTI", "UTI"))
-axis1_lab <- sprintf("PCoA1 (%.1f%% variation)", unique(stat_pcoa$var_Axis1)[1])
-axis2_lab <- sprintf("PCoA2 (%.1f%% variation)", unique(stat_pcoa$var_Axis2)[1])
-s9 <- ggplot(stat_pcoa, aes(.data$Axis1, .data$Axis2, colour = .data$UTI_Status, shape = .data$ST_group)) +
-  geom_point(size = 2.2, alpha = 0.78) +
-  scale_colour_uti_status(drop = FALSE) +
-  scale_shape_manual(values = c("ST131" = 16, "ST141" = 17, "Other typed ST" = 1, "Missing ST" = 4)) +
-  labs(
-    title = "Global VF module PCoA",
-    subtitle = "Global VF module profiles show whether UTI episodes separate from Not_UTI episodes; interpretation is limited by sparse UTI counts and lineage structure.",
-    x = axis1_lab,
-    y = axis2_lab,
-    colour = "Primary status",
-    shape = "Sequence type group",
-    caption = "Jaccard PCoA from module presence/absence; descriptive and unadjusted for repeated residents or lineage."
-  ) +
-  final_theme(10)
-register_figure(
-  "vf_module_pcoa_primary_status", "Supplementary", s9, 8.2, 6.2,
-  "Global VF module profiles show whether UTI episodes separate from Not_UTI episodes; interpretation is limited by sparse UTI counts and lineage structure.",
-  required_paths[c("stat_pcoa", "stat_validation")],
-  "Exploratory global profile visualisation", "Separation patterns are descriptive and are not adjusted for repeated residents or lineage."
-)
+    estimable = is.finite(.data$OR) & is.finite(.data$OR_lower) & is.finite(.data$OR_upper) & .data$OR > 0 & .data$OR_lower > 0 & .data$OR_upper > 0,
+    sparse = .data$sparse_data_separation_risk %in% TRUE,
+    singular = str_detect(.data$model_type, fixed("Singular")),
+    display_or = if_else(.data$estimable, pmin(pmax(.data$OR, .01), 100), 1),
+    display_lo = if_else(.data$estimable, pmin(pmax(.data$OR_lower, .01), 100), 1),
+    display_hi = if_else(.data$estimable, pmin(pmax(.data$OR_upper, .01), 100), 1),
+    feature_label = factor(.data$feature, levels = rev(.data$feature[order(.data$OR, na.last = TRUE)])),
+    estimate_state = case_when(!.data$estimable ~ "Not estimable", .data$sparse ~ "Sparse/separation risk", .data$singular ~ "Singular fit", TRUE ~ "Finite model")
+  )
+assert_value(nrow(gm), 50L, "Prescreened gene-model result count")
+gm_cols <- c("Finite model" = "#0072B2", "Singular fit" = "#E69F00", "Sparse/separation risk" = "#CC79A7", "Not estimable" = "#6B7280")
+gm_shapes <- c("Finite model" = 16, "Singular fit" = 17, "Sparse/separation risk" = 18, "Not estimable" = 4)
+pS08 <- ggplot(gm, aes(.data$display_or, .data$feature_label, colour = .data$estimate_state)) +
+  geom_vline(xintercept = 1, linetype = "dashed", colour = "grey35") +
+  geom_errorbarh(aes(xmin = .data$display_lo, xmax = .data$display_hi), height = .14, linewidth = .65) +
+  geom_point(aes(shape = .data$estimate_state), size = 2.45, stroke = .8) +
+  scale_x_log10(limits = c(.01, 100), breaks = c(.01, .1, 1, 10, 100)) +
+  scale_colour_manual(values = gm_cols, name = "Model diagnostic") +
+  scale_shape_manual(values = gm_shapes, name = "Model diagnostic") +
+  labs(title = "Prescreened gene-level model evidence", subtitle = "All 50 fitted features; CIs are clipped at 0.01 and 100, and colour plus shape flag model diagnostics",
+       x = "Adjusted odds ratio for UTI versus Not UTI (log scale)", y = "Virulence-factor gene / feature",
+       caption = str_wrap("Inclusion rule from script 14: Fisher p<0.1 or the first 50 Fisher-ranked features. No model was BH-FDR significant; prescreening and sparse fits make this exploratory.", width = 118)) +
+  theme_ruti_publication(9) +
+  theme(
+    legend.position = "bottom",
+    axis.text.y = element_text(size = 8.5),
+    legend.text = element_text(size = 8.3),
+    plot.caption = element_text(size = 8.1, lineheight = 1.05)
+  )
+capS08 <- "Gene-level association evidence for all 50 features fitted after the declared exploratory prescreen (Fisher p<0.1 or the first 50 Fisher-ranked features). Points are adjusted odds ratios for operational UTI, horizontal lines are Wald 95% confidence intervals, and the logarithmic x-axis is truncated at 0.01 and 100 for display. Non-estimable or separated results are shown at the null with an x rather than plotted as finite effects; colour and shape redundantly flag finite, singular, sparse/separation-risk, and non-estimable fits. Models use participant random intercepts where GLMM fitting succeeded and adjust for timepoint and batch. Benjamini-Hochberg correction was applied across fitted features; none had FDR<0.05. This is exploratory prescreened evidence, not an independent confirmatory analysis."
+register_figure("FigS08_gene_model_forest", "FigS08", "Prescreened gene-level model evidence",
+                "What does the full fitted gene-level evidence show, including unstable estimates?", "Supplementary", pS08, 8.27, 11.69, capS08,
+                paths[c("gene_models", "fisher")], "Prescreened gene-level GLMM/declared fallback model",
+                "Prescreening, singularity, separation and repeated episodes limit inference; no FDR-significant gene.", "Episode with participant-aware model when estimable",
+                "Fisher p<0.1 or first 50 Fisher-ranked features", "Points are ORs, lines are 95% CIs, and colour plus shape flag model diagnostics.",
+                "Benjamini-Hochberg across fitted gene models")
 
-write_csv(manifest, file.path(DIR_FINAL_RESULTS, "final_figure_manifest.csv"))
+# ----------------------------------------------------------------------------
+# FigS09. UTI-event paired sensitivity
+# ----------------------------------------------------------------------------
+rq07inf <- read_current(paths[["rq07_inference"]]) %>% filter(.data$analysis == "all_UTI_event_samples")
+rq07pair <- read_current(paths[["rq07_paired"]]) %>% mutate(Participant_id = as.character(.data$Participant_id)) %>%
+  pivot_longer(c("curated_delta_uti_minus_not", "expec_delta_uti_minus_not"), names_to = "endpoint", values_to = "delta") %>%
+  mutate(endpoint_label = recode(.data$endpoint, curated_delta_uti_minus_not = "Curated VF genes", expec_delta_uti_minus_not = "ExPEC-like markers"))
+pS09 <- ggplot(rq07pair, aes(.data$delta, .data$endpoint_label)) + geom_vline(xintercept = 0, linetype = "dashed") +
+  geom_point(position = position_jitter(height = .08, seed = 20260714), alpha = .65, size = 2, colour = "#4C78A8") +
+  stat_summary(fun = median, geom = "point", shape = 23, fill = "#D55E00", colour = "black", size = 3.5) +
+  labs(title = "Nearest within-participant event-sample sensitivity", subtitle = sprintf("%d paired participants; each point is UTI minus nearest Not UTI", n_distinct(rq07pair$Participant_id)),
+       x = "Within-participant difference", y = NULL,
+       caption = "Pairs are selected by temporal proximity and do not imply uninterrupted carriage. Diamonds are medians; inference remains exploratory.") + theme_ruti_publication(10)
+capS09 <- paste0(
+  "Nearest within-participant sensitivity analysis for ", n_distinct(rq07pair$Participant_id), " participants with an operational UTI among UTI-related samples and a temporally nearest Not UTI comparator. Points are within-participant UTI-minus-Not-UTI differences for curated VF-gene count and ExPEC-like marker count; diamonds are medians and the dashed line marks no difference. The prespecified all-event-sample analysis included 32 UTI-related samples from 29 participants (15 UTI; 17 Not UTI) with resident-cluster bootstrap uncertainty and Holm adjustment across two frozen endpoints. Temporal pairing reduces, but does not eliminate, confounding and does not establish continuous carriage."
+)
+register_figure("FigS09_event_sample_sensitivity", "FigS09", "UTI-event paired VF sensitivity",
+                "Do nearest within-participant UTI-event comparisons support a VF burden difference?", "Supplementary", pS09, 8.5, 5.5, capS09,
+                paths[c("rq07_inference", "rq07_paired")], "Nearest within-participant descriptive contrast; resident-cluster bootstrap in companion table",
+                "Temporal pairing does not imply continuous carriage and includes a sparse subset.", "Participant pair",
+                "Nearest available UTI and Not UTI UTI-event samples", "Points are participant differences; diamonds are medians.", "Holm across two frozen RQ07 endpoints")
+
+# ----------------------------------------------------------------------------
+# FigS10. SNP-threshold sensitivity
+# ----------------------------------------------------------------------------
+thr <- read_current(paths[["rq01_threshold"]])
+pS10 <- ggplot(thr, aes(.data$threshold, .data$estimate)) +
+  geom_ribbon(aes(ymin = .data$conf_low, ymax = .data$conf_high), fill = "#0072B2", alpha = .18) +
+  geom_line(colour = "#0072B2", linewidth = .9) + geom_point(colour = "#0072B2", size = 2.6) +
+  geom_vline(xintercept = SAME_STRAIN_SNP_THRESHOLD, linetype = "dashed", colour = "#D55E00") +
+  scale_y_continuous(labels = label_percent()) +
+  labs(title = "Sensitivity to the operational SNP reference", subtitle = "Resident-cluster bootstrap proportions across prespecified thresholds",
+       x = "Pairwise SNP threshold", y = "Proportion of 371 adjacent pairs at or below threshold",
+       caption = "Ribbon shows the 95% resident-cluster bootstrap interval; the orange line marks the prespecified 25-SNP reference.") + theme_ruti_publication(10)
+capS10 <- "Threshold sensitivity for the proportion of 371 adjacent direct comparisons from 139 participants classified at or below each prespecified SNP threshold. Points and line show the observed proportions; the ribbon is the 95% resident-cluster bootstrap interval from 10,000 resamples, and the orange dashed line marks the operational 25-SNP reference. The analysis describes how a threshold changes classification and does not validate a universal biological boundary or imply transmission."
+register_figure("FigS10_snp_threshold_sensitivity", "FigS10", "SNP-threshold sensitivity",
+                "How does the classified continuity proportion change across SNP thresholds?", "Supplementary", pS10, 8.5, 5.5, capS10,
+                paths[c("rq01_threshold", "transitions")], "Resident-cluster bootstrap proportion",
+                "Thresholds are operational continuity references, not universal biological boundaries.", "Adjacent pair nested within participant",
+                "371 adjacent comparisons; prespecified thresholds", "Line/points are observed proportions; ribbon is 95% cluster-bootstrap interval.", "None")
+
+# ----------------------------------------------------------------------------
+# Structured outputs
+# ----------------------------------------------------------------------------
+write_csv(manifest, file.path(DIR_FIG_AUDIT, "final_figure_manifest.csv"))
 
 caption_lines <- c(
-  "# Final Figure Captions",
+  "# Final thesis figure captions",
   "",
-  sprintf("Generated: %s", format(Sys.time(), "%Y-%m-%d %H:%M:%S")),
+  paste0("Generated: ", format(Sys.time(), "%Y-%m-%d %H:%M:%S %Z")),
   "",
-  "All figures use the current primary `UTI_Status` definition. Analyses are descriptive or sensitivity-focused because the VF/model denominator includes only 17 primary UTI episodes.",
+  "Canonical analytical contract: 532 selected QC-passing Longcycler episodes from 161 participants (16 operational UTI; 516 heterogeneous Not UTI).",
   ""
 )
 for (i in seq_len(nrow(manifest))) {
-  caption_lines <- c(
-    caption_lines,
-    paste0("## ", manifest$figure_id[i]),
-    "",
-    manifest$caption[i],
-    "",
-    paste0("Evidence type: ", manifest$evidence_type[i], "."),
-    paste0("Interpretation limitation: ", manifest$interpretation_limitations[i]),
-    ""
-  )
+  caption_lines <- c(caption_lines,
+    paste0("## ", manifest$figure_number[[i]], ". ", manifest$title[[i]]), "",
+    manifest$caption[[i]], "",
+    paste0("Statistical/scientific method: ", manifest$statistical_method[[i]], "."),
+    paste0("Required caveat: ", manifest$caveat[[i]]),
+    paste0("Files: `", manifest$png_path[[i]], "`; `", manifest$pdf_path[[i]], "`."), "")
 }
-caption_lines <- c(
-  caption_lines,
-  "## Reproducibility Note",
-  "",
-  "Run `Rscript 35_final_figure_pack.R` after the mechanism and robustness add-ons have passed validation. Existing publication figures are not overwritten.",
-  "",
-  "The clinical-to-VF retention panel is calculated directly from primary episode keys joined to `vf_analysis_ready.csv`; it is not taken from a pre-exclusion QC summary table."
-)
-writeLines(caption_lines, file.path(DIR_FINAL_RESULTS, "final_figure_captions.md"))
+if (!variant_valid) {
+  caption_lines <- c(caption_lines,
+    "## Fig08. Reference-aware within-host variant map - withheld", "",
+    "Fig08 remains unvalidated and is not part of the final set because the exact reference/contig coordinate checks did not all pass. Earlier genomic-position maps are obsolete and must not be substituted.", "")
+}
+writeLines(caption_lines, file.path(DIR_FIG_AUDIT, "final_figure_captions.md"))
 
-msg("Rendered %d final figures as PNG and PDF.", nrow(manifest))
-msg("Outputs written to %s and %s", DIR_FINAL_RESULTS, DIR_FINAL_PLOTS)
-msg("35_final_figure_pack.R complete.")
+checks <- tibble(
+  check = c(
+    "selected episodes", "selected participants", "operational UTI", "operational Not UTI",
+    "direct pairs", "adjacent pairs", "Not UTI-to-UTI transitions", "same-strain-supported transitions",
+    "MLST rows", "VF-ready rows", "tree tips", "tree-map one-to-one", "all expected figure files exist",
+    "all expected figure files nonempty", "no raw participant identifiers in manifest captions"
+  ),
+  observed = c(
+    nrow(cohort), n_distinct(cohort$Participant_id), sum(cohort$UTI_Status == "UTI"), sum(cohort$UTI_Status == "Not_UTI"),
+    nrow(pairwise), nrow(transitions), sum(transitions$status_from == "Not_UTI" & transitions$status_to == "UTI"),
+    sum(transitions$status_from == "Not_UTI" & transitions$status_to == "UTI" & transitions$TotalSNPs <= SAME_STRAIN_SNP_THRESHOLD),
+    nrow(mlst), nrow(vf_ready), length(tree$tip.label), as.integer(setequal(tree$tip.label, tree_map$parsnp_alignment_label)),
+    sum(file.exists(c(manifest$png_path, manifest$pdf_path))),
+    sum(file.info(c(manifest$png_path, manifest$pdf_path))$size > 0),
+    sum(str_detect(paste(manifest$caption, collapse = " "), "[0-9]{5,}"))
+  ),
+  expected = c(532, 161, 16, 516, 893, 371, 9, 5, 532, 532, 532, 1,
+               2 * nrow(manifest), 2 * nrow(manifest), 0)
+) %>% mutate(pass = .data$observed == .data$expected)
+write_csv(checks, file.path(DIR_FIG_AUDIT, "final_figure_data_checks.csv"))
+if (any(!checks$pass)) stop("Final figure data checks failed; see results/figure_audit/final_figure_data_checks.csv.")
+
+msg("Canonical thesis figure pack complete: %d retained figure families (%d main, %d supplementary).",
+    nrow(manifest), sum(manifest$figure_class == "Main"), sum(manifest$figure_class == "Supplementary"))

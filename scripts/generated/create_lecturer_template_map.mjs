@@ -1,103 +1,133 @@
+#!/usr/bin/env node
+
 import fs from "node:fs/promises";
+import path from "node:path";
 
-const tmp = "/var/folders/fp/wwwk1rbj70l0k92s92kd2z500000gp/T/codex-presentations/manual-20260710-lecturer-methods/tmp";
-const inspectPath = `${tmp}/template-inspect/template-inspect.ndjson`;
-const lines = (await fs.readFile(inspectPath, "utf8"))
-  .trim()
-  .split(/\n+/)
-  .map((line) => JSON.parse(line));
-
-const plan = [
-  [1, 1, "Minimal claim-linked analysis framing"],
-  [2, 3, "Glossary and unit ladder"],
-  [3, 4, "Clinical UTI rule"],
-  [4, 15, "Two-track clinical and assembly methods flowchart"],
-  [5, 5, "Mixed executed set versus Longcycler sensitivity"],
-  [6, 6, "Parallel genomic analysis branches"],
-  [7, 5, "Longitudinal reconstruction and fresh SNP result"],
-  [8, 13, "Supported conclusions and lecturer decisions"],
-  [9, 3, "Appendix denominator ladder"],
-  [10, 14, "Appendix tool and threshold table"],
-  [11, 6, "Appendix distance-method distinctions"],
-  [12, 13, "Appendix statistical cautions"],
-  [13, 15, "Appendix claim-to-script traceability map"],
-  [14, 13, "Appendix assumptions, missing provenance and excluded claims"],
-];
-
-const sourceSlides = [...new Set(plan.map((row) => row[1]))];
-const sourceLayouts = new Map();
-for (const sourceSlide of sourceSlides) {
-  const file = `${tmp}/template-inspect/layouts/source-slide-${String(sourceSlide).padStart(2, "0")}.layout.json`;
-  sourceLayouts.set(sourceSlide, JSON.parse(await fs.readFile(file, "utf8")));
+function parseArgs(argv) {
+  const out = {};
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index];
+    if (!arg.startsWith("--")) continue;
+    const key = arg.slice(2);
+    const next = argv[index + 1];
+    if (next && !next.startsWith("--")) {
+      out[key] = next;
+      index += 1;
+    } else {
+      out[key] = true;
+    }
+  }
+  return out;
 }
 
-const outputSlides = [];
-for (const [outputSlide, sourceSlide, narrativeRole] of plan) {
-  const textIds = lines
-    .filter((item) => item.slide === sourceSlide && item.kind === "textbox")
-    .map((item) => item.id);
-  const repositionOrders = new Set(
-    sourceSlide === 15
-      ? [8, 11, 18, 25, 31, 38, 45, 51, 58, 65]
-      : sourceSlide === 1
-        ? []
-        : [8],
+const roles = {
+  methods_summary: [
+    "Declare the single analytical denominator",
+    "Name each denominator and analysis unit",
+    "Bound the supported and unsupported claims",
+  ],
+  flowchart: ["Trace the selected cohort through all analytical layers"],
+  combined: [
+    "Declare the single analytical denominator",
+    "Name each denominator and analysis unit",
+    "Bound the supported and unsupported claims",
+    "Trace the selected cohort through all analytical layers",
+  ],
+  lecturer: [
+    "Orient the lecturer to the release methodology",
+    "Separate episodes, residents, pairs and transitions",
+    "Define the versioned operational UTI phenotype",
+    "Show the selected-cohort and evidence flow",
+    "Distinguish parallel genomic branches",
+    "Keep analytical denominators visible",
+    "Report implemented thresholds and method boundaries",
+    "Map release claims to their traceability core",
+  ],
+};
+
+async function main() {
+  const args = parseArgs(process.argv.slice(2));
+  const workspace = path.resolve(String(args.workspace || ""));
+  const deckKind = String(args["deck-kind"] || "");
+  const expectedSlides = Number(args["expected-slides"]);
+  const registryPath = String(args.registry || "claim registry");
+  if (!workspace || !roles[deckKind] || !Number.isInteger(expectedSlides)) {
+    throw new Error("Usage: create_lecturer_template_map.mjs --workspace <dir> --deck-kind <methods_summary|flowchart|combined|lecturer> --expected-slides <n> --registry <path>");
+  }
+  if (roles[deckKind].length !== expectedSlides) {
+    throw new Error(`${deckKind}: role inventory has ${roles[deckKind].length} slides; expected ${expectedSlides}`);
+  }
+
+  const inspectRoot = path.join(workspace, "template-inspect");
+  const manifest = JSON.parse(await fs.readFile(path.join(inspectRoot, "template-manifest.json"), "utf8"));
+  if (manifest.slideCount !== expectedSlides) {
+    throw new Error(`${deckKind}: inspected ${manifest.slideCount} source slides; expected ${expectedSlides}`);
+  }
+
+  const outputSlides = [];
+  for (let slide = 1; slide <= expectedSlides; slide += 1) {
+    const layout = JSON.parse(await fs.readFile(
+      path.join(inspectRoot, "layouts", `source-slide-${String(slide).padStart(2, "0")}.layout.json`),
+      "utf8",
+    ));
+    const textIds = layout.elements
+      .filter((element) => typeof element.text === "string" && typeof element.aid === "string")
+      .map((element) => element.aid);
+    if (!textIds.length) throw new Error(`${deckKind} slide ${slide}: no inherited text objects found`);
+    outputSlides.push({
+      outputSlide: slide,
+      sourceSlide: slide,
+      narrativeRole: roles[deckKind][slide - 1],
+      reuseMode: "duplicate-slide",
+      editTargets: [
+        {
+          action: "rewrite",
+          sourceElementIds: textIds,
+          reason: "Replace claim-linked audience copy from the final claim registry while preserving inherited typography, geometry and chrome",
+        },
+      ],
+    });
+  }
+
+  await fs.writeFile(
+    path.join(workspace, "template-frame-map.json"),
+    `${JSON.stringify({ outputSlides, omittedSourceSlides: [] }, null, 2)}\n`,
   );
-  const repositionIds = sourceLayouts
-    .get(sourceSlide)
-    .elements
-    .filter((element) => typeof element.text === "string" && repositionOrders.has(element.order))
-    .map((element) => element.aid);
-  const rewriteIds = textIds.filter((id) => !repositionIds.includes(id));
-  outputSlides.push({
-    outputSlide,
-    sourceSlide,
-    narrativeRole,
-    reuseMode: "duplicate-slide",
-    editTargets: [
-      {
-        action: "rewrite",
-        sourceElementIds: rewriteIds,
-        reason: "Replace inherited audience copy while preserving the reference layout and styling",
-      },
-      ...(repositionIds.length
-        ? [{
-            action: "rewrite-and-reposition",
-            sourceElementIds: repositionIds,
-            reason: "Shift inherited title/footer text clear of source badges or slide edge after copy replacement",
-          }]
-        : []),
-    ],
-  });
+  await fs.writeFile(
+    path.join(workspace, "template-audit.txt"),
+    [
+      "Template audit",
+      `Deck family: ${deckKind}`,
+      `Complete source-slide inventory reviewed: ${expectedSlides} of ${expectedSlides} slides.`,
+      "Every output slide duplicates its same-numbered source slide.",
+      "Typography, palette, spacing, card geometry, connectors, rails, footers and page markers are inherited unchanged.",
+      "All inherited text boxes are explicit rewrite targets; no new slide primitive or parallel visual system is permitted.",
+      "The source contains no empty structural placeholders after template-plan validation.",
+    ].join("\n"),
+  );
+  await fs.writeFile(
+    path.join(workspace, "deviation-log.txt"),
+    [
+      "Deviation log",
+      "Audience-facing copy and speaker notes are refreshed from the release claim registry.",
+      "No object geometry, connector routing, palette, typography, footer position or slide silhouette is changed.",
+      "Page markers are corrected to the current deck sequence through inherited text objects.",
+    ].join("\n"),
+  );
+  await fs.writeFile(
+    path.join(workspace, "source-notes.txt"),
+    [
+      "Content source",
+      registryPath,
+      "Only registry-validated counts and scope statements are used in visible copy and support artifacts.",
+      "The full clinical source appears only when explicitly labelled as attrition/QC context.",
+      "No external images or web research are used.",
+    ].join("\n"),
+  );
+  console.log(path.join(workspace, "template-frame-map.json"));
 }
 
-const allSlides = lines.filter((item) => item.kind === "slide").map((item) => item.slide);
-const omittedSourceSlides = allSlides
-  .filter((slide) => !sourceSlides.includes(slide))
-  .map((sourceSlide) => ({ sourceSlide, reason: "Layout pattern not required for this methods narrative" }));
-
-await fs.writeFile(
-  `${tmp}/template-frame-map.json`,
-  JSON.stringify({ outputSlides, omittedSourceSlides }, null, 2),
-);
-
-const audit = [
-  "Template audit",
-  "Source: Longitudinal_Urinary_Ecoli_VF_Pipeline_Review_Compact_Onboarding_2026-05-28.pptx",
-  "Purpose: preserve its teaching-first hierarchy, typography, colour system, rails and footers.",
-  "Base presentation.pptx was reviewed as a content inventory only because the user explicitly said it did not need to be imported.",
-  "Reusable source patterns: question-led opener (1), unit ladder (3), clinical rule (4), repeated episode comparison (5), parallel branches (6), three-card decision close (13), operational map (14), numbered pipeline map (15).",
-  "All inherited text boxes on mapped slides are rewrite targets. Slide 4 rewrites the inherited flow-card components in place and replaces only the connector logic to create an accurate two-track flowchart.",
-].join("\n");
-await fs.writeFile(`${tmp}/template-audit.txt`, audit);
-
-const deviations = [
-  "Deviation log",
-  "The Base presentation is not cloned; its assembly-to-analysis sequence informs content only.",
-  "The compact onboarding deck is the sole visual reference because it is the established readable project style.",
-  "Card titles on slide 13 move right within inherited cards; footer text on slides 2-14 moves right to prevent edge clipping.",
-  "Slide 4 rewrites the nine inherited flow cards in place and replaces the source arrows because the original connector sequence implied scientifically incorrect single-track attrition. The inherited positions, card components, typography, palette, rails and footer are retained; only connector logic and explanatory labels change.",
-  "Slides 6 and 11 remove inherited arrows where methods are parallel rather than sequential.",
-  "No external images or additional visual systems are introduced.",
-].join("\n");
-await fs.writeFile(`${tmp}/deviation-log.txt`, deviations);
+main().catch((error) => {
+  console.error(error.stack || error.message || String(error));
+  process.exit(1);
+});

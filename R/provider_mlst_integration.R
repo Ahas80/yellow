@@ -18,7 +18,7 @@ suppressPackageStartupMessages({
 })
 
 provider_qc_threshold <- 95
-canonical_selection_path <- file.path(DIR_QC, "canonical_assembly_selection.csv")
+canonical_selection_path <- FILE_ANALYSIS_ASSEMBLY_MANIFEST
 
 required_files <- c(
   FILE_MLST_LOCAL_CANONICAL,
@@ -79,6 +79,11 @@ prepare_local_for_preference <- function(df) {
   if (!"full_path" %in% names(df)) {
     stop("Local MLST table lacks full_path provenance.")
   }
+  required_local_qc <- c("mlst_complete", "ambiguous_call")
+  missing_local_qc <- setdiff(required_local_qc, names(df))
+  if (length(missing_local_qc) > 0L) {
+    stop("Local MLST table lacks QC column(s): ", paste(missing_local_qc, collapse = ", "))
+  }
   if (!"file_name" %in% names(df)) df$file_name <- basename(df$full_path)
   df %>%
     mutate(
@@ -86,11 +91,14 @@ prepare_local_for_preference <- function(df) {
       full_path = normalizePath(as.character(full_path), winslash = "/", mustWork = FALSE),
       local_assembler = str_to_lower(coalesce(
         if ("assembler" %in% names(.)) as.character(assembler) else NA_character_,
-        if ("Assembler" %in% names(.)) as.character(Assembler) else NA_character_,
-        detect_assembler(coalesce(as.character(full_path), as.character(file_name)))
+        if ("Assembler" %in% names(.)) as.character(Assembler) else NA_character_
       )),
       ST_local = as.character(ST_local),
-      local_ST_called = !is_missing_like(ST_local)
+      local_mlst_complete = boolish(mlst_complete),
+      local_ambiguous_call = boolish(ambiguous_call),
+      local_ST_called = !is_missing_like(ST_local) &
+        local_mlst_complete %in% TRUE &
+        !(local_ambiguous_call %in% TRUE)
     )
 }
 
@@ -116,7 +124,11 @@ apply_provider_preference <- function(df, provider_summary) {
         str_starts(ST_source, "local_fallback") ~ "local_mlst",
         TRUE ~ NA_character_
       ),
-      ST_numeric_comparable_to_local = FALSE
+      ST_numeric_comparable_to_local = case_when(
+        provider_ST_called & provider_has_classic_7_loci %in% TRUE ~ TRUE,
+        !provider_ST_called & local_ST_called ~ TRUE,
+        TRUE ~ NA
+      )
     ) %>%
     select(
       any_of(c(
@@ -131,7 +143,7 @@ apply_provider_preference <- function(df, provider_summary) {
     )
 }
 
-selection <- read_csv(canonical_selection_path, show_col_types = FALSE, progress = FALSE)
+selection <- load_analysis_assemblies(canonical_selection_path, require_files = TRUE)
 required_selection_cols <- c("Participant_id", "tp_lab", "Isolate_ID", "selected_canonical", "QC_PASS")
 missing_selection_cols <- setdiff(required_selection_cols, names(selection))
 if (length(missing_selection_cols) > 0) {
@@ -149,10 +161,10 @@ selection <- selection %>%
     QC_PASS = boolish(QC_PASS),
     canonical_assembler = str_to_lower(coalesce(
       if ("assembler" %in% names(.)) as.character(assembler) else NA_character_,
-      if ("Assembler" %in% names(.)) as.character(Assembler) else NA_character_,
-      detect_assembler(coalesce(as.character(full_path), as.character(file_name)))
+      if ("Assembler" %in% names(.)) as.character(Assembler) else NA_character_
     )),
-    full_path = normalizePath(as.character(full_path), winslash = "/", mustWork = FALSE)
+    full_path = normalizePath(as.character(full_path), winslash = "/", mustWork = TRUE),
+    fasta_sha256 = vapply(full_path, digest::digest, character(1), algo = "sha256", file = TRUE)
   )
 
 canonical_manifest <- selection %>%
@@ -166,6 +178,7 @@ if (anyDuplicated(canonical_manifest[c("Participant_id", "tp_lab")])) {
 }
 canonical_denominator <- nrow(canonical_manifest)
 canonical_paths <- unique(canonical_manifest$full_path)
+canonical_fasta_hashes <- canonical_manifest$fasta_sha256
 
 msg("Reading local Longcycler MLST provenance: %s", FILE_MLST_LOCAL_CANONICAL)
 local_canonical <- read_csv(FILE_MLST_LOCAL_CANONICAL, show_col_types = FALSE, progress = FALSE) %>%
@@ -181,6 +194,10 @@ if (nrow(local_canonical) != canonical_denominator || !setequal(local_canonical$
     nrow(local_canonical), ", canonical=", canonical_denominator, "."
   )
 }
+if (!"fasta_sha256" %in% names(local_canonical)) stop("Local canonical MLST lacks FASTA SHA-256 provenance.")
+canonical_path_hash <- paste(canonical_manifest$full_path, canonical_manifest$fasta_sha256, sep = "\n")
+local_path_hash <- paste(local_canonical$full_path, local_canonical$fasta_sha256, sep = "\n")
+if (!setequal(local_path_hash, canonical_path_hash)) stop("Local canonical MLST FASTA path/hash does not exactly match the selected manifest.")
 
 if (anyDuplicated(local_canonical$Isolate_ID)) {
   dup_ids <- unique(local_canonical$Isolate_ID[duplicated(local_canonical$Isolate_ID)])
@@ -191,7 +208,8 @@ msg("Reading provider normalized MLST: %s", FILE_MLST_PROVIDER_NORMALIZED)
 provider <- read_csv(FILE_MLST_PROVIDER_NORMALIZED, show_col_types = FALSE, progress = FALSE)
 required_provider_cols <- c(
   "provider_assembler", "provider_norm_id", "provider_ST", "Isolate_ID",
-  "matched_canonical", "assembler_matches_canonical"
+  "matched_canonical", "assembler_matches_canonical", "full_path", "fasta_sha256",
+  "provider_has_classic_7_loci"
 )
 missing_provider_cols <- setdiff(required_provider_cols, names(provider))
 if (length(missing_provider_cols) > 0) {
@@ -201,7 +219,10 @@ provider <- provider %>%
   mutate(
     Isolate_ID = as.character(Isolate_ID),
     provider_assembler = str_to_lower(str_squish(as.character(provider_assembler))),
+    full_path = normalizePath(as.character(full_path), winslash = "/", mustWork = FALSE),
+    fasta_sha256 = as.character(fasta_sha256),
     provider_ST = as.character(provider_ST),
+    provider_has_classic_7_loci = boolish(provider_has_classic_7_loci),
     provider_ST_called = if ("provider_ST_called" %in% names(.)) boolish(provider_ST_called) else !is_missing_like(provider_ST),
     provider_qc_ge_95 = if ("provider_qc_ge_95" %in% names(.)) boolish(provider_qc_ge_95) else provider_PercGoodTargets >= provider_qc_threshold,
     matched_canonical = if ("matched_canonical" %in% names(.)) boolish(matched_canonical) else !is.na(Isolate_ID),
@@ -209,21 +230,25 @@ provider <- provider %>%
     expected_batch_match = if ("expected_batch_match" %in% names(.)) boolish(expected_batch_match, default = NA) else NA
   )
 
-if (any(is.na(provider$provider_assembler) | provider$provider_assembler != "longcycler")) {
-  stop("Provider-normalized active input contains Flye, combined, or unknown assembler provenance.")
-}
 if (any(provider$matched_canonical %in% TRUE & !(provider$assembler_matches_canonical %in% TRUE))) {
   stop("Provider-normalized input marks an assembler-mismatched row as canonical.")
+}
+provider_path_hash <- paste(provider$full_path, provider$fasta_sha256, sep = "\n")
+if (any(!provider_path_hash %in% canonical_path_hash)) {
+  stop("Provider-normalized input contains provenance not tied to the current selected Longcycler FASTA path/hash.")
 }
 
 provider_qc95 <- provider %>%
   filter(
-    provider_assembler == "longcycler",
     matched_canonical %in% TRUE,
     provider_qc_ge_95 %in% TRUE,
     provider_ST_called %in% TRUE,
     !is_missing_like(provider_ST)
   )
+
+if (nrow(provider_qc95) > 0 && any(!(provider_qc95$provider_has_classic_7_loci %in% TRUE))) {
+  stop("A provider QC95 MLST call lacks evidence for the classic seven-locus scheme.")
+}
 
 provider_conflicts <- provider_qc95 %>%
   group_by(Isolate_ID) %>%
@@ -237,6 +262,32 @@ provider_conflicts <- provider_qc95 %>%
   ) %>%
   filter(n_provider_qc95_ST > 1)
 
+provider_below_qc95 <- provider %>%
+  filter(
+    matched_canonical %in% TRUE,
+    !(provider_qc_ge_95 %in% TRUE),
+    provider_ST_called %in% TRUE,
+    !is_missing_like(provider_ST)
+  ) %>%
+  group_by(Isolate_ID) %>%
+  summarise(
+    provider_below_qc95_n_rows = n(),
+    provider_below_qc95_n_ST = n_distinct(provider_ST),
+    provider_below_qc95_ST_values = collapse_unique(provider_ST),
+    ST_provider_below_qc95 = if (n_distinct(provider_ST) == 1) first(provider_ST) else NA_character_,
+    provider_below_qc95_PercGoodTargets = suppressWarnings(max(as.numeric(provider_PercGoodTargets), na.rm = TRUE)),
+    provider_below_qc95_file = collapse_unique(provider_file),
+    provider_below_qc95_has_classic_7_loci = all(provider_has_classic_7_loci %in% TRUE),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    provider_below_qc95_PercGoodTargets = ifelse(
+      is.infinite(provider_below_qc95_PercGoodTargets),
+      NA_real_,
+      provider_below_qc95_PercGoodTargets
+    )
+  )
+
 provider_summary <- provider_qc95 %>%
   group_by(Isolate_ID) %>%
   summarise(
@@ -248,13 +299,15 @@ provider_summary <- provider_qc95 %>%
     provider_file = collapse_unique(provider_file),
     provider_source = collapse_unique(provider_source),
     provider_assembler = collapse_unique(provider_assembler),
+    provider_has_classic_7_loci = all(provider_has_classic_7_loci %in% TRUE),
     provider_batch_match = any(expected_batch_match %in% TRUE, na.rm = TRUE),
     provider_internal_conflict = n_distinct(provider_ST) > 1,
     .groups = "drop"
   ) %>%
   mutate(provider_PercGoodTargets = ifelse(is.infinite(provider_PercGoodTargets), NA_real_, provider_PercGoodTargets))
 
-preferred_canonical <- apply_provider_preference(local_canonical, provider_summary)
+preferred_canonical <- apply_provider_preference(local_canonical, provider_summary) %>%
+  left_join(provider_below_qc95, by = "Isolate_ID")
 
 if (nrow(preferred_canonical) != canonical_denominator) {
   stop(
@@ -268,6 +321,34 @@ local_called_n <- sum(preferred_canonical$local_ST_called %in% TRUE, na.rm = TRU
 preferred_called_n <- sum(!is_missing_like(preferred_canonical$ST), na.rm = TRUE)
 local_fallback_n <- sum(str_starts(preferred_canonical$ST_source, "local_fallback"), na.rm = TRUE)
 missing_n <- sum(preferred_canonical$ST_source %in% c("missing", "missing_provider_conflict"), na.rm = TRUE)
+below_qc95_evidence_n <- sum(!is_missing_like(preferred_canonical$ST_provider_below_qc95), na.rm = TRUE)
+fallback_with_below_qc95_n <- sum(
+  str_starts(preferred_canonical$ST_source, "local_fallback") &
+    !is_missing_like(preferred_canonical$ST_provider_below_qc95),
+  na.rm = TRUE
+)
+missing_with_below_qc95_n <- sum(
+  preferred_canonical$ST_source %in% c("missing", "missing_provider_conflict") &
+    !is_missing_like(preferred_canonical$ST_provider_below_qc95),
+  na.rm = TRUE
+)
+fallback_below_qc95 <- preferred_canonical %>%
+  filter(
+    str_starts(.data$ST_source, "local_fallback"),
+    !is_missing_like(.data$ST_provider_below_qc95)
+  )
+fallback_below_qc95_discordant_n <- sum(
+  as.character(fallback_below_qc95$ST_local) !=
+    as.character(fallback_below_qc95$ST_provider_below_qc95),
+  na.rm = TRUE
+)
+dual_usable <- preferred_canonical %>%
+  filter(.data$ST_source == "provider_qc95", .data$local_ST_called %in% TRUE)
+dual_usable_n <- nrow(dual_usable)
+dual_discordant_n <- sum(
+  as.character(dual_usable$ST_provider) != as.character(dual_usable$ST_local),
+  na.rm = TRUE
+)
 
 active_assembler <- str_to_lower(coalesce(
   if ("assembler" %in% names(preferred_canonical)) as.character(preferred_canonical$assembler) else NA_character_,
@@ -278,17 +359,43 @@ if (any(is.na(active_assembler) | active_assembler != "longcycler")) {
   stop("Provider-preferred MLST contains non-Longcycler or missing active assembly provenance.")
 }
 provider_primary <- preferred_canonical %>% filter(ST_source == "provider_qc95")
-if (nrow(provider_primary) > 0 && any(
-  is.na(provider_primary$provider_assembler) |
-    provider_primary$provider_assembler != "longcycler"
-)) {
-  stop("Provider-primary MLST contains Flye, combined, or missing provider provenance.")
+if (nrow(provider_primary) > 0 && any(provider_primary$provider_assembler != "longcycler")) {
+  stop("Provider-primary MLST is not tied to the selected Longcycler manifest.")
+}
+if (nrow(provider_primary) > 0 && any(!(provider_primary$provider_has_classic_7_loci %in% TRUE))) {
+  stop("Provider-primary MLST lacks classic seven-locus scheme evidence.")
+}
+if (dual_discordant_n > 0L) {
+  stop(
+    "Provider and local classic seven-locus ST disagree for ",
+    dual_discordant_n,
+    " dual-usable selected Longcycler isolate(s)."
+  )
+}
+if (fallback_below_qc95_discordant_n > 0L) {
+  stop(
+    "Local fallback and retained below-QC95 provider ST disagree for ",
+    fallback_below_qc95_discordant_n,
+    " selected Longcycler isolate(s)."
+  )
 }
 
-if (provider_primary_n < local_called_n) {
+if (provider_primary_n == 0L) {
+  stop("Provider-preferred MLST has no usable provider QC95 calls.")
+}
+if (preferred_called_n != provider_primary_n + local_fallback_n) {
   stop(
-    "Provider QC95 MLST coverage (", provider_primary_n, ") is below local MLST coverage (",
-    local_called_n, "). Review provider inputs before promoting this source."
+    "Provider-preferred usable-ST count does not equal provider-primary plus labelled local fallback."
+  )
+}
+if (provider_primary_n + local_fallback_n + missing_n != canonical_denominator) {
+  stop("Provider-preferred MLST source assignments do not sum to the canonical denominator.")
+}
+if (preferred_called_n < local_called_n) {
+  stop(
+    "Provider-preferred MLST coverage after labelled Longcycler fallback (",
+    preferred_called_n, ") is below local MLST coverage (", local_called_n,
+    "). Review provider inputs before promoting this source."
   )
 }
 
@@ -321,7 +428,13 @@ coverage_audit <- tibble(
     "provider_qc95_usable_ST",
     "provider_preferred_usable_ST",
     "local_fallback_ST",
-    "missing_ST"
+    "missing_ST",
+    "below_qc95_provider_ST_evidence",
+    "local_fallback_with_below_qc95_provider_ST",
+    "missing_with_below_qc95_provider_ST",
+    "local_fallback_below_qc95_provider_discordant_ST",
+    "provider_local_dual_usable_ST",
+    "provider_local_dual_discordant_ST"
   ),
   value = c(
     canonical_denominator,
@@ -329,7 +442,13 @@ coverage_audit <- tibble(
     provider_primary_n,
     preferred_called_n,
     local_fallback_n,
-    missing_n
+    missing_n,
+    below_qc95_evidence_n,
+    fallback_with_below_qc95_n,
+    missing_with_below_qc95_n,
+    fallback_below_qc95_discordant_n,
+    dual_usable_n,
+    dual_discordant_n
   ),
   note = c(
     "Selected canonical isolates",
@@ -337,7 +456,13 @@ coverage_audit <- tibble(
     "Provider SeqSphere ST with PercGoodTargets >= 95",
     "Active ST after provider-primary plus labelled local fallback",
     "Rows where local ST is used because provider QC95 ST is absent or conflicted",
-    "Rows where neither usable provider QC95 nor local ST is available"
+    "Rows where neither usable provider QC95 nor local ST is available",
+    "Rows retaining a provider ST below the QC95 promotion threshold",
+    "Local-fallback rows that retain concordant below-QC95 provider ST evidence",
+    "Missing active-ST rows that retain below-QC95 provider ST evidence",
+    "Local-fallback rows whose retained below-QC95 provider ST disagrees with the local ST",
+    "Rows with both provider QC95 and usable local classic seven-locus ST",
+    "Dual-usable rows whose provider and local classic seven-locus ST disagree"
   )
 )
 
@@ -371,7 +496,12 @@ fallback_audit <- preferred_canonical %>%
     note = paste0(
       ST_source,
       "; local_ST=", coalesce(ST_local, "NA"),
-      "; provider_ST=", coalesce(ST_provider, "NA")
+      "; provider_qc95_ST=", coalesce(ST_provider, "NA"),
+      "; provider_below_qc95_ST=", coalesce(ST_provider_below_qc95, "NA"),
+      "; provider_below_qc95_good_targets=", coalesce(
+        as.character(provider_below_qc95_PercGoodTargets),
+        "NA"
+      )
     )
   )
 

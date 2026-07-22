@@ -16,8 +16,8 @@
 # Role: [Analysis] - Priority 3: Lineage-Specific Virulence.
 #
 # Inputs:
-#   - results/clinical/status_map.csv
-#   - results/mlst/mlst_provider_preferred.csv
+#   - results/clinical/analysis_cohort_longcycler.csv
+#   - results/vf/vf_analysis_ready.csv
 #   - results/models/gwas_multivariable_glmm.csv (to compare hits)
 #
 # Outputs:
@@ -43,71 +43,53 @@ suppressPackageStartupMessages({
 
 msg("Starting 17_lineage_analysis.R")
 
-# 1. Load Data
+# 1. Load the canonical selected cohort and fail closed on any mismatch
 # ------------------------------------------------------------------------------
-# Status
-status <- read_csv(FILE_STATUS_MAP, show_col_types = FALSE) %>%
+if (!file.exists(FILE_ANALYSIS_CLINICAL_COHORT)) {
+    stop("Selected Longcycler clinical cohort is missing: ", FILE_ANALYSIS_CLINICAL_COHORT)
+}
+if (!file.exists(FILE_VF_READY)) {
+    stop("Canonical VF-ready dataset is missing: ", FILE_VF_READY,
+         ". Run 22_vf_build_analysis_dataset.R first.")
+}
+
+cohort <- read_csv(FILE_ANALYSIS_CLINICAL_COHORT, show_col_types = FALSE) %>%
+    mutate(
+        Participant_id = as.character(Participant_id),
+        Timepoint = normalise_timepoint_preserve_events(tp_lab)
+    )
+cohort_keys <- paste(cohort$Participant_id, cohort$Timepoint, sep = "|")
+if (nrow(cohort) != 532L || n_distinct(cohort$Participant_id) != 161L ||
+    sum(cohort$UTI_Status == "UTI", na.rm = TRUE) != 16L ||
+    sum(cohort$UTI_Status == "Not_UTI", na.rm = TRUE) != 516L ||
+    anyDuplicated(cohort_keys)) {
+    stop("Lineage analysis requires the exact 532-episode selected Longcycler cohort.")
+}
+
+vf_ready_lineage <- read_csv(FILE_VF_READY, show_col_types = FALSE) %>%
     prefer_primary_uti_status() %>%
-    filter(UTI_Status %in% c("UTI", "Not_UTI"))
-
-# MLST
-mlst_file <- FILE_MLST_CANONICAL
-if (file.exists(mlst_file)) {
-    mlst <- read_csv(mlst_file, show_col_types = FALSE)
-} else {
-    stop("Provider-preferred MLST missing: ", mlst_file, ". Run scripts/integrate_provider_mlst.R.")
-}
-
-# 2. Harmonize & Join
-# ------------------------------------------------------------------------------
-# We need to link ST to Episode (Participant + Timepoint)
-# MLST is per Isolate. Status is per Episode.
-# We'll take the ST of the isolate associated with the episode.
-
-# Ensure columns match for join
-mlst_clean <- mlst %>%
-    mutate(Timepoint = if ("tp_lab" %in% names(.)) tp_lab else Timepoint) %>%
-    select(any_of(c("Participant_id", "Timepoint", "ST", "ST_source", "ST_provider", "ST_local"))) %>%
-    distinct() %>%
     mutate(
         Participant_id = as.character(Participant_id),
-        Timepoint = as.character(Timepoint)
+        Timepoint = normalise_timepoint_preserve_events(tp_lab),
+        Infection_Status = as.character(UTI_Status),
+        ST = as.character(ST)
     )
-
-status_clean <- status %>%
-    mutate(
-        Participant_id = as.character(Participant_id),
-        Timepoint = as.character(Timepoint)
-    )
-
-data_merged <- status_clean %>%
-    inner_join(mlst_clean, by = c("Participant_id", "Timepoint"), relationship = "many-to-many")
-
-if (file.exists(FILE_VF_READY)) {
-    vf_ready_lineage <- read_csv(FILE_VF_READY, show_col_types = FALSE) %>%
-        prefer_primary_uti_status() %>%
-        mutate(
-            Participant_id = as.character(Participant_id),
-            Timepoint = normalise_timepoint_preserve_events(tp_lab),
-            Infection_Status = as.character(UTI_Status),
-            ST = as.character(ST)
-        ) %>%
-        filter(Infection_Status %in% c("UTI", "Not_UTI")) %>%
-        filter(!is.na(ST), ST != "") %>%
-        select(any_of(c("Participant_id", "Timepoint", "Episode_ID", "Infection_Status", "ST", "ST_source", "ST_provider", "ST_local", "uricult_bridge_applied"))) %>%
-        distinct()
-
-    if (nrow(vf_ready_lineage) > 0) {
-        data_merged <- vf_ready_lineage
-        msg(
-            "Using canonical vf_analysis_ready.csv for lineage risk: %d episodes (%d UTI, %d Not_UTI; %d Uricult-bridged)",
-            nrow(data_merged),
-            sum(data_merged$Infection_Status == "UTI", na.rm = TRUE),
-            sum(data_merged$Infection_Status == "Not_UTI", na.rm = TRUE),
-            if ("uricult_bridge_applied" %in% names(data_merged)) sum(data_merged$uricult_bridge_applied %in% TRUE, na.rm = TRUE) else 0L
-        )
-    }
+vf_keys <- paste(vf_ready_lineage$Participant_id, vf_ready_lineage$Timepoint, sep = "|")
+if (nrow(vf_ready_lineage) != 532L || anyDuplicated(vf_keys) || !setequal(vf_keys, cohort_keys)) {
+    stop("vf_analysis_ready.csv does not exactly match the selected Longcycler cohort.")
 }
+
+data_merged <- vf_ready_lineage %>%
+    filter(Infection_Status %in% c("UTI", "Not_UTI"), !is.na(ST), ST != "") %>%
+    select(any_of(c("Participant_id", "Timepoint", "Episode_ID", "Infection_Status", "ST", "ST_source", "ST_provider", "ST_local", "uricult_bridge_applied"))) %>%
+    distinct()
+
+msg(
+    "Using selected Longcycler VF-ready lineage data: %d/%d episodes have an ST (%d UTI, %d Not_UTI)",
+    nrow(data_merged), nrow(vf_ready_lineage),
+    sum(data_merged$Infection_Status == "UTI", na.rm = TRUE),
+    sum(data_merged$Infection_Status == "Not_UTI", na.rm = TRUE)
+)
 
 msg("Linked %d episodes to ST data", nrow(data_merged))
 

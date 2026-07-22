@@ -1,28 +1,46 @@
 {
-  "generatedAt": "2026-07-09T15:28:27.542Z",
-  "sourceStarter": "/private/tmp/codex-presentations/longcycler-only-methods-summary/tmp/template-starter.pptx",
-  "outputPptx": "/Users/Aamir/Desktop/rUTIs/outputs/longcycler_only_methods_summary/Longcycler_only_methods_summary.pptx",
-  "previewDir": "/Users/Aamir/Desktop/rUTIs/outputs/longcycler_only_methods_summary/slide_previews",
-  "layoutDir": "/Users/Aamir/Desktop/rUTIs/outputs/longcycler_only_methods_summary/slide_layouts",
-  "countChecks": {
-    "current_mixed_episode_rows": 556,
-    "current_mixed_participants": 162,
-    "longcycler_episode_rows": 532,
-    "longcycler_participants": 161,
-    "longcycler_uti": 16,
-    "longcycler_not_uti": 516,
-    "longcycler_legacy_asb": 416,
-    "longcycler_legacy_uti": 33,
-    "longcycler_legacy_negative": 83,
-    "longcycler_st_called": 514,
-    "longcycler_unique_st": 80,
-    "vf_gene_columns": 227,
-    "longcycler_transitions": 371,
-    "longcycler_transition_participants": 139,
-    "longcycler_strict_same_transitions": 116,
-    "longcycler_notuti_to_uti": 9,
-    "longcycler_notuti_to_uti_strict": 7,
-    "longcycler_uti_to_notuti": 12,
-    "longcycler_uti_to_notuti_strict": 3
-  }
+  "schema_version": "longcycler_methods_decks_v2",
+  "generated_at": "2026-07-15 01:36:53 CEST",
+  "source_registry": "/Users/Aamir/Desktop/rUTIs/results/pipeline/longcycler_release_claim_registry.json",
+  "source_registry_sha256": "87f65979259a4c92545afbb74b5d3a8efffb8a3d18cd2481df165b97e5c6d30e",
+  "analysis_scope": {
+    "assembly_policy": "selected QC-passing Longcycler only",
+    "clinical_phenotype": "operational UTI phenotype",
+    "clinical_definition_version": "catheter_adjusted_sns_cfu1e3_v1",
+    "interpretation": "exploratory observational analysis; no causal claim"
+  },
+  "analytical_cohort": {
+    "episodes": 532,
+    "residents": 161,
+    "operational_UTI": 16,
+    "operational_Not_UTI": 516
+  },
+  "research_questions": {
+    "first": "RQ01",
+    "last": "RQ10",
+    "count": 10,
+    "retired_questions": 0
+  },
+  "decks": [
+    {
+      "file": "Longcycler_only_methods_summary.pptx",
+      "sha256": "3549cc28d9d805dbd4004ff81116092064e665f2c8322744ddf8a9367c2d42c4"
+    },
+    {
+      "file": "Longcycler_only_analysis_flowchart.pptx",
+      "sha256": "513784e870dbafad015c1304c285471809ac42f0ce67c91751ae5950a4eb88ec"
+    },
+    {
+      "file": "Longcycler_only_methods_summary_with_flowchart.pptx",
+      "sha256": "58599ac7adaf340bbaf48e98c1e92d1c5685e4700c879bdec5b39029b7593578"
+    }
+  ],
+  "template_contract": "same-numbered source slides cloned; inherited text rewritten; geometry unchanged",
+  "qa": [
+    "template plan validated",
+    "template fidelity passed",
+    "slide bounds passed",
+    "empty-placeholder check passed",
+    "package-content guard passed"
+  ]
 }

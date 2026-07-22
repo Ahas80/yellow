@@ -1,0 +1,28 @@
+{
+  "decks": ["v5-full", "v5-compact"],
+  "output_slide_count_each": 17,
+  "full_element_reference": "output/Longitudinal_Urinary_Ecoli_VF_Pipeline_Review_2026-05-28.pptx",
+  "compact_visual_reference": "preview/editable/slide-01.png through preview/editable/slide-17.png",
+  "excluded_authoring_source": "output/Longitudinal_Urinary_Ecoli_VF_Pipeline_Review_Compact_Onboarding_2026-05-28.pptx",
+  "reuse_mode": "artifact-tool reconstruction from audited element and visual references",
+  "slides": [
+    {"output": 1, "source": 1, "role": "title and release anchors"},
+    {"output": 2, "source": 2, "role": "plain-English loop"},
+    {"output": 3, "source": 3, "role": "denominator units"},
+    {"output": 4, "source": 4, "role": "operational phenotype"},
+    {"output": 5, "source": 5, "role": "selected analytical cohort"},
+    {"output": 6, "source": 6, "role": "VF representation"},
+    {"output": 7, "source": 7, "role": "paired gene and module repertoire"},
+    {"output": 8, "source": 8, "role": "pair-layer stability"},
+    {"output": 9, "source": 9, "role": "adjacent-transition gain and loss"},
+    {"output": 10, "source": 10, "role": "MLST context"},
+    {"output": 11, "source": 11, "role": "exploratory clinical overlay"},
+    {"output": 12, "source": 12, "role": "aggregate focused transition evidence"},
+    {"output": 13, "source": 13, "role": "evidence boundary and next steps"},
+    {"output": 14, "source": 14, "role": "operational handover"},
+    {"output": 15, "source": 15, "role": "numbered pipeline and RQ01-RQ10"},
+    {"output": 16, "source": 16, "role": "complete mechanism casebook"},
+    {"output": 17, "source": 17, "role": "robustness and lineage diagnostics"}
+  ]
+}
+

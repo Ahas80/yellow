@@ -1,20 +1,22 @@
-metric,value,source
-current_mixed_episode_rows,556,computed from current generated outputs
-current_mixed_participants,162,computed from current generated outputs
-longcycler_episode_rows,532,computed from current generated outputs
-longcycler_participants,161,computed from current generated outputs
-longcycler_uti,16,computed from current generated outputs
-longcycler_not_uti,516,computed from current generated outputs
-longcycler_legacy_asb,416,computed from current generated outputs
-longcycler_legacy_uti,33,computed from current generated outputs
-longcycler_legacy_negative,83,computed from current generated outputs
-longcycler_st_called,514,computed from current generated outputs
-longcycler_unique_st,80,computed from current generated outputs
-vf_gene_columns,227,computed from current generated outputs
-longcycler_transitions,371,computed from current generated outputs
-longcycler_transition_participants,139,computed from current generated outputs
-longcycler_strict_same_transitions,116,computed from current generated outputs
-longcycler_notuti_to_uti,9,computed from current generated outputs
-longcycler_notuti_to_uti_strict,7,computed from current generated outputs
-longcycler_uti_to_notuti,12,computed from current generated outputs
-longcycler_uti_to_notuti_strict,3,computed from current generated outputs
+analysis_unit,count,denominator_note,registry_field
+Analytical episodes,532,selected QC-passing Longcycler only,analytical_cohort.episodes
+Analytical residents,161,distinct residents in selected cohort,analytical_cohort.residents
+Operational UTI episodes,16,selected cohort,analytical_cohort.operational_UTI
+Operational Not_UTI episodes,516,selected cohort,analytical_cohort.operational_Not_UTI
+All direct within-resident pairs,893,unordered selected-cohort episode pairs,direct_pairs.all_within_resident
+Adjacent transitions,371,rebuilt from selected cohort,adjacent_transitions.pairs
+Residents with adjacent transitions,139,distinct residents in rebuilt transitions,adjacent_transitions.residents
+Adjacent transitions at ≤25 SNPs,140,direct dnadiff evidence,adjacent_transitions.at_or_below_threshold
+Not_UTI to UTI transitions,9,operational status transition,adjacent_transitions.Not_UTI_to_UTI
+Not_UTI to UTI at ≤25 SNPs,5,direct dnadiff evidence,adjacent_transitions.Not_UTI_to_UTI_at_or_below_threshold
+Mechanism casebook rows,9,focused transitions,mechanism_casebook.cases
+Mechanism casebook linked,9,exactly linked,mechanism_casebook.linked
+Mechanism casebook missing,0,must remain zero,mechanism_casebook.missing
+Near-miss audit rows,17,not operational UTI cases,near_miss_audit.rows
+VFDB binary features,227,selected cohort,genomic_dimensions.VFDB_binary_features
+MLST typed episodes,493,selected cohort,genomic_dimensions.MLST_typed_episodes
+Distinct preferred ST labels,76,typed selected episodes,genomic_dimensions.distinct_preferred_ST_labels
+Full clinical source episodes,583,attrition/QC context only,attrition_qc_context.episodes
+Full clinical source residents,166,attrition/QC context only,attrition_qc_context.residents
+Full clinical source operational UTI,18,attrition/QC context only,attrition_qc_context.operational_UTI
+Full clinical source operational Not_UTI,565,attrition/QC context only,attrition_qc_context.operational_Not_UTI

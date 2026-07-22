@@ -587,6 +587,55 @@ if (nrow(vf_ready_excluded) > 0) {
 vf_ready <- vf_ready %>%
   filter(analysis_include_primary %in% TRUE, genomics_expected_include %in% TRUE)
 
+# The primary VF export must use the exact analytical episode identifiers from
+# the selected Longcycler cohort.  status_map.csv predates assembly selection
+# and can contain otherwise-valid legacy Episode_ID values without the
+# occurrence suffix (for example, __occ1/__occ2).  Joining only on the stable
+# participant/timepoint key above is intentional, but the canonical ID and
+# operational status are release contracts and must be re-anchored here.
+if (is_primary_run) {
+  if (!file.exists(FILE_ANALYSIS_CLINICAL_COHORT)) {
+    stop("Missing ", FILE_ANALYSIS_CLINICAL_COHORT,
+         ". Rebuild the selected Longcycler clinical cohort before script 22.")
+  }
+  canonical_cohort <- read_csv(FILE_ANALYSIS_CLINICAL_COHORT, show_col_types = FALSE) %>%
+    transmute(
+      Participant_id = as.character(Participant_id),
+      tp_lab = normalise_timepoint_preserve_events(tp_lab),
+      Episode_ID_canonical = as.character(Episode_ID),
+      UTI_Status_canonical = as.character(UTI_Status)
+    )
+  if (anyDuplicated(canonical_cohort[c("Participant_id", "tp_lab")]) > 0 ||
+      anyDuplicated(canonical_cohort$Episode_ID_canonical) > 0) {
+    stop("Selected Longcycler clinical cohort contains duplicate analytical keys.")
+  }
+  vf_ready <- vf_ready %>%
+    left_join(
+      canonical_cohort,
+      by = c("Participant_id", "tp_lab"),
+      relationship = "many-to-one"
+    )
+  missing_canonical <- vf_ready %>%
+    filter(is.na(Episode_ID_canonical) | is.na(UTI_Status_canonical))
+  unused_canonical <- canonical_cohort %>%
+    anti_join(vf_ready, by = c("Participant_id", "tp_lab"))
+  status_mismatch <- vf_ready %>%
+    filter(is.na(UTI_Status) | UTI_Status != UTI_Status_canonical)
+  if (nrow(missing_canonical) > 0 || nrow(unused_canonical) > 0 ||
+      nrow(vf_ready) != nrow(canonical_cohort)) {
+    stop("VF-ready keys do not exactly match the selected Longcycler clinical cohort.")
+  }
+  if (nrow(status_mismatch) > 0) {
+    stop("VF-ready operational statuses do not match the selected Longcycler clinical cohort.")
+  }
+  vf_ready <- vf_ready %>%
+    mutate(
+      Episode_ID = Episode_ID_canonical,
+      UTI_Status = UTI_Status_canonical
+    ) %>%
+    select(-Episode_ID_canonical, -UTI_Status_canonical)
+}
+
 # ==============================================================================
 # STEP 3a-post: Duplicate safety checks
 # ==============================================================================

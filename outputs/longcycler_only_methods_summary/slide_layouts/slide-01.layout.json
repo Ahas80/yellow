@@ -2,8 +2,8 @@
   "schema": "openai.presentation.layout/v4",
   "unit": "px",
   "slide": {
-    "aid": "sl/2x4nap4r",
-    "id": "2x4nap4r",
+    "aid": "sl/y90nupkv",
+    "id": "y90nupkv",
     "slide": 1,
     "layoutId": "/ppt/slideLayouts/slideLayout1.xml",
     "layoutName": "Title Slide",
@@ -76,7 +76,7 @@
       "order": 1,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/nap4r65w",
+      "aid": "sh/i1w3yp8f",
       "id": "1",
       "name": "paper",
       "bbox": [
@@ -94,7 +94,7 @@
       "order": 2,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/cvixczed",
+      "aid": "sh/547294r6",
       "id": "2",
       "name": "rail",
       "bbox": [
@@ -112,7 +112,7 @@
       "order": 3,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/5gbq1ory",
+      "aid": "sh/k3yl0zql",
       "id": "3",
       "bbox": [
         54,
@@ -180,7 +180,7 @@
       "order": 4,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/udg7adsj",
+      "aid": "sh/7qp4be9c",
       "id": "4",
       "bbox": [
         54,
@@ -189,8 +189,8 @@
         48
       ],
       "geometry": "rect",
-      "text": "Longcycler-only is the clean primary denominator",
-      "textPreview": "Longcycler-only is the clean primary denominator",
+      "text": "Longcycler-only is now the sole analytical denominator",
+      "textPreview": "Longcycler-only is now the sole analytical denominator",
       "resolvedFontSize": 24,
       "resolvedTextStyle": {
         "anchor": 2,
@@ -211,14 +211,14 @@
         "lines": [
           {
             "index": 1,
-            "text": "Longcycler-only is the clean primary denominator"
+            "text": "Longcycler-only is now the sole analytical denominator"
           }
         ]
       },
       "paragraphs": [
         {
           "index": 1,
-          "text": "Longcycler-only is the clean primary denominator",
+          "text": "Longcycler-only is now the sole analytical denominator",
           "resolvedTextStyle": {
             "fontSize": 35,
             "typeface": "Aptos Display",
@@ -229,7 +229,7 @@
           "runs": [
             {
               "index": 1,
-              "text": "Longcycler-only is the clean primary denominator",
+              "text": "Longcycler-only is now the sole analytical denominator",
               "fontSize": 35,
               "typeface": "Aptos Display",
               "color": "#152533",
@@ -248,7 +248,7 @@
       "order": 5,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/nyd0z610",
+      "aid": "sh/65g3298r",
       "id": "5",
       "bbox": [
         54,
@@ -265,7 +265,7 @@
       "order": 6,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/cj6tovah",
+      "aid": "sh/ts7md4r2",
       "id": "6",
       "bbox": [
         54,
@@ -274,8 +274,8 @@
         32
       ],
       "geometry": "rect",
-      "text": "The analysis keeps one assembler for strain, lineage, and VF summaries; the 556-row mixed canonical set remains context.",
-      "textPreview": "The analysis keeps one assembler for strain, lineage, and VF summaries; the 556-row mixed canonical set remains context.",
+      "text": "Every genomic model, table and figure uses the selected QC-passing Longcycler cohort.",
+      "textPreview": "Every genomic model, table and figure uses the selected QC-passing Longcycler cohort.",
       "resolvedFontSize": 24,
       "resolvedTextStyle": {
         "anchor": 2,
@@ -296,14 +296,14 @@
         "lines": [
           {
             "index": 1,
-            "text": "The analysis keeps one assembler for strain, lineage, and VF summaries; the 556-row mixed canonical set remains context."
+            "text": "Every genomic model, table and figure uses the selected QC-passing Longcycler cohort."
           }
         ]
       },
       "paragraphs": [
         {
           "index": 1,
-          "text": "The analysis keeps one assembler for strain, lineage, and VF summaries; the 556-row mixed canonical set remains context.",
+          "text": "Every genomic model, table and figure uses the selected QC-passing Longcycler cohort.",
           "resolvedTextStyle": {
             "fontSize": 16,
             "typeface": "Aptos",
@@ -313,7 +313,7 @@
           "runs": [
             {
               "index": 1,
-              "text": "The analysis keeps one assembler for strain, lineage, and VF summaries; the 556-row mixed canonical set remains context.",
+              "text": "Every genomic model, table and figure uses the selected QC-passing Longcycler cohort.",
               "fontSize": 16,
               "typeface": "Aptos",
               "color": "#607587"
@@ -331,7 +331,7 @@
       "order": 7,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/54zidony",
+      "aid": "sh/sryl4zqx",
       "id": "7",
       "bbox": [
         54,
@@ -348,7 +348,7 @@
       "order": 8,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/u9knih4b",
+      "aid": "sh/fu94fe98",
       "id": "8",
       "bbox": [
         54,
@@ -357,8 +357,8 @@
         14
       ],
       "geometry": "rect",
-      "text": "Longcycler-only methods summary  |  supervisor discussion  |  9 July 2026",
-      "textPreview": "Longcycler-only methods summary  |  supervisor discussion  |  9 July 2026",
+      "text": "Longcycler-only methods summary  |  RQ01–RQ10  |  15 July 2026",
+      "textPreview": "Longcycler-only methods summary  |  RQ01–RQ10  |  15 July 2026",
       "resolvedFontSize": 24,
       "resolvedTextStyle": {
         "anchor": 2,
@@ -379,14 +379,14 @@
         "lines": [
           {
             "index": 1,
-            "text": "Longcycler-only methods summary  |  supervisor discussion  |  9 July 2026"
+            "text": "Longcycler-only methods summary  |  RQ01–RQ10  |  15 July 2026"
           }
         ]
       },
       "paragraphs": [
         {
           "index": 1,
-          "text": "Longcycler-only methods summary  |  supervisor discussion  |  9 July 2026",
+          "text": "Longcycler-only methods summary  |  RQ01–RQ10  |  15 July 2026",
           "resolvedTextStyle": {
             "fontSize": 10,
             "typeface": "Aptos",
@@ -396,7 +396,7 @@
           "runs": [
             {
               "index": 1,
-              "text": "Longcycler-only methods summary  |  supervisor discussion  |  9 July 2026",
+              "text": "Longcycler-only methods summary  |  RQ01–RQ10  |  15 July 2026",
               "fontSize": 10,
               "typeface": "Aptos",
               "color": "#607587"
@@ -414,7 +414,7 @@
       "order": 9,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/judg7ads",
+      "aid": "sh/utg3698n",
       "id": "9",
       "bbox": [
         1186,
@@ -482,7 +482,7 @@
       "order": 10,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/nyd0z610",
+      "aid": "sh/wn6dc7eh",
       "id": "10",
       "bbox": [
         66,
@@ -499,7 +499,7 @@
       "order": 11,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/udg7adsj",
+      "aid": "sh/hofulsf2",
       "id": "11",
       "bbox": [
         66,
@@ -516,7 +516,7 @@
       "order": 12,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/54zidony",
+      "aid": "sh/ul4vaxgb",
       "id": "12",
       "bbox": [
         91,
@@ -584,7 +584,7 @@
       "order": 13,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/cj6tovah",
+      "aid": "sh/vmdcj2xw",
       "id": "13",
       "bbox": [
         91,
@@ -593,8 +593,8 @@
         72
       ],
       "geometry": "rect",
-      "text": "Single-assembler denominator reduces technical variation from assembly choice.",
-      "textPreview": "Single-assembler denominator reduces technical variation from assembly choice.",
+      "text": "One selected QC-passing assembly per episode keeps strain, lineage and VF summaries on one reproducible input contract.",
+      "textPreview": "One selected QC-passing assembly per episode keeps strain, lineage and VF summaries on one reproducible input contract.",
       "resolvedFontSize": 24,
       "resolvedTextStyle": {
         "anchor": 2,
@@ -611,26 +611,34 @@
         }
       },
       "textLayout": {
-        "lineCount": 3,
+        "lineCount": 5,
         "lines": [
           {
             "index": 1,
-            "text": "Single-assembler denominator"
+            "text": "One selected QC-passing"
           },
           {
             "index": 2,
-            "text": "reduces technical variation from"
+            "text": "assembly per episode keeps"
           },
           {
             "index": 3,
-            "text": "assembly choice."
+            "text": "strain, lineage and VF summaries"
+          },
+          {
+            "index": 4,
+            "text": "on one reproducible input"
+          },
+          {
+            "index": 5,
+            "text": "contract."
           }
         ]
       },
       "paragraphs": [
         {
           "index": 1,
-          "text": "Single-assembler denominator reduces technical variation from assembly choice.",
+          "text": "One selected QC-passing assembly per episode keeps strain, lineage and VF summaries on one reproducible input contract.",
           "resolvedTextStyle": {
             "fontSize": 19,
             "typeface": "Aptos",
@@ -641,7 +649,7 @@
           "runs": [
             {
               "index": 1,
-              "text": "Single-assembler denominator reduces technical variation from assembly choice.",
+              "text": "One selected QC-passing assembly per episode keeps strain, lineage and VF summaries on one reproducible input contract.",
               "fontSize": 19,
               "typeface": "Aptos",
               "color": "#152533",
@@ -660,7 +668,7 @@
       "order": 14,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/nap4r65w",
+      "aid": "sh/4r6dg7et",
       "id": "14",
       "bbox": [
         91,
@@ -677,7 +685,7 @@
       "order": 15,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/upwb2hwf",
+      "aid": "sh/5sfepcfe",
       "id": "15",
       "bbox": [
         91,
@@ -686,8 +694,8 @@
         72
       ],
       "geometry": "rect",
-      "text": "It avoids defending equivalence between assemblers for small distance thresholds.",
-      "textPreview": "It avoids defending equivalence between assemblers for small distance thresholds.",
+      "text": "Every downstream join is checked against the same 532 episode keys.",
+      "textPreview": "Every downstream join is checked against the same 532 episode keys.",
       "resolvedFontSize": 24,
       "resolvedTextStyle": {
         "anchor": 2,
@@ -704,26 +712,22 @@
         }
       },
       "textLayout": {
-        "lineCount": 3,
+        "lineCount": 2,
         "lines": [
           {
             "index": 1,
-            "text": "It avoids defending equivalence"
+            "text": "Every downstream join is checked"
           },
           {
             "index": 2,
-            "text": "between assemblers for small"
-          },
-          {
-            "index": 3,
-            "text": "distance thresholds."
+            "text": "against the same 532 episode keys."
           }
         ]
       },
       "paragraphs": [
         {
           "index": 1,
-          "text": "It avoids defending equivalence between assemblers for small distance thresholds.",
+          "text": "Every downstream join is checked against the same 532 episode keys.",
           "resolvedTextStyle": {
             "fontSize": 18,
             "typeface": "Aptos",
@@ -733,7 +737,7 @@
           "runs": [
             {
               "index": 1,
-              "text": "It avoids defending equivalence between assemblers for small distance thresholds.",
+              "text": "Every downstream join is checked against the same 532 episode keys.",
               "fontSize": 18,
               "typeface": "Aptos",
               "color": "#152533"
@@ -751,7 +755,7 @@
       "order": 16,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/5gbq1ory",
+      "aid": "sh/ipovexwn",
       "id": "16",
       "bbox": [
         443,
@@ -768,7 +772,7 @@
       "order": 17,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/cvixczed",
+      "aid": "sh/3qxwn2x8",
       "id": "17",
       "bbox": [
         443,
@@ -785,7 +789,7 @@
       "order": 18,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/jm1cfa9w",
+      "aid": "sh/sfqdkrep",
       "id": "18",
       "bbox": [
         468,
@@ -853,7 +857,7 @@
       "order": 19,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/u18jqh0f",
+      "aid": "sh/dgzetcfa",
       "id": "19",
       "bbox": [
         468,
@@ -862,8 +866,8 @@
         72
       ],
       "geometry": "rect",
-      "text": "Primary genomic denominator becomes 532 Longcycler rows from 161 participants.",
-      "textPreview": "Primary genomic denominator becomes 532 Longcycler rows from 161 participants.",
+      "text": "The analytical cohort is 532 genome-linked episodes from 161 residents.",
+      "textPreview": "The analytical cohort is 532 genome-linked episodes from 161 residents.",
       "resolvedFontSize": 24,
       "resolvedTextStyle": {
         "anchor": 2,
@@ -884,22 +888,22 @@
         "lines": [
           {
             "index": 1,
-            "text": "Primary genomic denominator"
+            "text": "The analytical cohort is 532"
           },
           {
             "index": 2,
-            "text": "becomes 532 Longcycler rows"
+            "text": "genome-linked episodes from 161"
           },
           {
             "index": 3,
-            "text": "from 161 participants."
+            "text": "residents."
           }
         ]
       },
       "paragraphs": [
         {
           "index": 1,
-          "text": "Primary genomic denominator becomes 532 Longcycler rows from 161 participants.",
+          "text": "The analytical cohort is 532 genome-linked episodes from 161 residents.",
           "resolvedTextStyle": {
             "fontSize": 19,
             "typeface": "Aptos",
@@ -910,7 +914,7 @@
           "runs": [
             {
               "index": 1,
-              "text": "Primary genomic denominator becomes 532 Longcycler rows from 161 participants.",
+              "text": "The analytical cohort is 532 genome-linked episodes from 161 residents.",
               "fontSize": 19,
               "typeface": "Aptos",
               "color": "#152533",
@@ -929,7 +933,7 @@
       "order": 20,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/25kb6xkf",
+      "aid": "sh/1cvuxc7e",
       "id": "20",
       "bbox": [
         468,
@@ -946,7 +950,7 @@
       "order": 21,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/rqd4vmtw",
+      "aid": "sh/0bmd476t",
       "id": "21",
       "bbox": [
         468,
@@ -955,8 +959,8 @@
         72
       ],
       "geometry": "rect",
-      "text": "The 24 Flye fallback rows are excluded rather than treated as interchangeable.",
-      "textPreview": "The 24 Flye fallback rows are excluded rather than treated as interchangeable.",
+      "text": "All 893 direct pairs and 371 adjacent transitions have Longcycler endpoints.",
+      "textPreview": "All 893 direct pairs and 371 adjacent transitions have Longcycler endpoints.",
       "resolvedFontSize": 24,
       "resolvedTextStyle": {
         "anchor": 2,
@@ -977,22 +981,22 @@
         "lines": [
           {
             "index": 1,
-            "text": "The 24 Flye fallback rows are"
+            "text": "All 893 direct pairs and 371"
           },
           {
             "index": 2,
-            "text": "excluded rather than treated as"
+            "text": "adjacent transitions have"
           },
           {
             "index": 3,
-            "text": "interchangeable."
+            "text": "Longcycler endpoints."
           }
         ]
       },
       "paragraphs": [
         {
           "index": 1,
-          "text": "The 24 Flye fallback rows are excluded rather than treated as interchangeable.",
+          "text": "All 893 direct pairs and 371 adjacent transitions have Longcycler endpoints.",
           "resolvedTextStyle": {
             "fontSize": 18,
             "typeface": "Aptos",
@@ -1002,7 +1006,7 @@
           "runs": [
             {
               "index": 1,
-              "text": "The 24 Flye fallback rows are excluded rather than treated as interchangeable.",
+              "text": "All 893 direct pairs and 371 adjacent transitions have Longcycler endpoints.",
               "fontSize": 18,
               "typeface": "Aptos",
               "color": "#152533"
@@ -1020,7 +1024,7 @@
       "order": 22,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/kb6xkf6d",
+      "aid": "sh/zadcv2p8",
       "id": "22",
       "bbox": [
         820,
@@ -1037,7 +1041,7 @@
       "order": 23,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/9w3m94fu",
+      "aid": "sh/e94v2hon",
       "id": "23",
       "bbox": [
         820,
@@ -1054,7 +1058,7 @@
       "order": 24,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/2t83itgf",
+      "aid": "sh/90ve1w7q",
       "id": "24",
       "bbox": [
         845,
@@ -1122,7 +1126,7 @@
       "order": 25,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/re1w7mp0",
+      "aid": "sh/ozmd8r65",
       "id": "25",
       "bbox": [
         845,
@@ -1131,8 +1135,8 @@
         72
       ],
       "geometry": "rect",
-      "text": "Clinical UTI labels are unchanged and applied independently of assembler choice.",
-      "textPreview": "Clinical UTI labels are unchanged and applied independently of assembler choice.",
+      "text": "Clinical labels are assigned independently using the versioned operational UTI phenotype.",
+      "textPreview": "Clinical labels are assigned independently using the versioned operational UTI phenotype.",
       "resolvedFontSize": 24,
       "resolvedTextStyle": {
         "anchor": 2,
@@ -1153,22 +1157,22 @@
         "lines": [
           {
             "index": 1,
-            "text": "Clinical UTI labels are unchanged"
+            "text": "Clinical labels are assigned"
           },
           {
             "index": 2,
-            "text": "and applied independently of"
+            "text": "independently using the versioned"
           },
           {
             "index": 3,
-            "text": "assembler choice."
+            "text": "operational UTI phenotype."
           }
         ]
       },
       "paragraphs": [
         {
           "index": 1,
-          "text": "Clinical UTI labels are unchanged and applied independently of assembler choice.",
+          "text": "Clinical labels are assigned independently using the versioned operational UTI phenotype.",
           "resolvedTextStyle": {
             "fontSize": 19,
             "typeface": "Aptos",
@@ -1179,7 +1183,7 @@
           "runs": [
             {
               "index": 1,
-              "text": "Clinical UTI labels are unchanged and applied independently of assembler choice.",
+              "text": "Clinical labels are assigned independently using the versioned operational UTI phenotype.",
               "fontSize": 19,
               "typeface": "Aptos",
               "color": "#152533",
@@ -1198,7 +1202,7 @@
       "order": 26,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/kzupwb2h",
+      "aid": "sh/nydczmpk",
       "id": "26",
       "bbox": [
         845,
@@ -1215,7 +1219,7 @@
       "order": 27,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/9knih4by",
+      "aid": "sh/mx4v6hoz",
       "id": "27",
       "bbox": [
         845,
@@ -1224,8 +1228,8 @@
         72
       ],
       "geometry": "rect",
-      "text": "ST remains lineage context; ≤25 SNPs remains the strict same-strain rule.",
-      "textPreview": "ST remains lineage context; ≤25 SNPs remains the strict same-strain rule.",
+      "text": "The ≤25 SNP boundary remains an operational support rule—not a causal result.",
+      "textPreview": "The ≤25 SNP boundary remains an operational support rule—not a causal result.",
       "resolvedFontSize": 24,
       "resolvedTextStyle": {
         "anchor": 2,
@@ -1246,22 +1250,22 @@
         "lines": [
           {
             "index": 1,
-            "text": "ST remains lineage context; ≤25"
+            "text": "The ≤25 SNP boundary remains an"
           },
           {
             "index": 2,
-            "text": "SNPs remains the strict same-strain"
+            "text": "operational support rule—not a"
           },
           {
             "index": 3,
-            "text": "rule."
+            "text": "causal result."
           }
         ]
       },
       "paragraphs": [
         {
           "index": 1,
-          "text": "ST remains lineage context; ≤25 SNPs remains the strict same-strain rule.",
+          "text": "The ≤25 SNP boundary remains an operational support rule—not a causal result.",
           "resolvedTextStyle": {
             "fontSize": 18,
             "typeface": "Aptos",
@@ -1271,7 +1275,7 @@
           "runs": [
             {
               "index": 1,
-              "text": "ST remains lineage context; ≤25 SNPs remains the strict same-strain rule.",
+              "text": "The ≤25 SNP boundary remains an operational support rule—not a causal result.",
               "fontSize": 18,
               "typeface": "Aptos",
               "color": "#152533"
@@ -1289,7 +1293,7 @@
       "order": 28,
       "kind": "shape",
       "scope": "slide",
-      "aid": "sh/2p8nqxs7",
+      "aid": "sh/p4bu5s76",
       "id": "28",
       "bbox": [
         70,
@@ -1298,8 +1302,8 @@
         50
       ],
       "geometry": "rect",
-      "text": "Discussion framing: conservative methods decision, not a claim that Flye assemblies are unusable.",
-      "textPreview": "Discussion framing: conservative methods decision, not a claim that Flye assemblies are unusable.",
+      "text": "Full clinical source counts appear only as labelled attrition/QC context.",
+      "textPreview": "Full clinical source counts appear only as labelled attrition/QC context.",
       "resolvedFontSize": 24,
       "resolvedTextStyle": {
         "anchor": 2,
@@ -1320,14 +1324,14 @@
         "lines": [
           {
             "index": 1,
-            "text": "Discussion framing: conservative methods decision, not a claim that Flye assemblies are unusable."
+            "text": "Full clinical source counts appear only as labelled attrition/QC context."
           }
         ]
       },
       "paragraphs": [
         {
           "index": 1,
-          "text": "Discussion framing: conservative methods decision, not a claim that Flye assemblies are unusable.",
+          "text": "Full clinical source counts appear only as labelled attrition/QC context.",
           "resolvedTextStyle": {
             "fontSize": 20,
             "typeface": "Aptos",
@@ -1338,7 +1342,7 @@
           "runs": [
             {
               "index": 1,
-              "text": "Discussion framing: conservative methods decision, not a claim that Flye assemblies are unusable.",
+              "text": "Full clinical source counts appear only as labelled attrition/QC context.",
               "fontSize": 20,
               "typeface": "Aptos",
               "color": "#152533",

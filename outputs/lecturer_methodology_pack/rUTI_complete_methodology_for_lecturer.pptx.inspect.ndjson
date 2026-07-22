@@ -1,26 +1,21 @@
-{"kind":"deck","id":"pr/lzpshe","name":"Deck"}
-{"kind":"layout","layoutId":"/ppt/slideMasters/slideMaster1.xml","name":"","type":"master"}
-{"kind":"layout","layoutId":"/ppt/slideLayouts/slideLayout1.xml","name":"DEFAULT"}
-{"kind":"slide","id":"sl/y90nupkv","slide":1,"title":"AUDITED METHODOLOGY / LECTURER DISCUSSION","textShapes":13}
+{"kind":"slide","id":"sl/y90nupkv","slide":1,"title":"Longcycler-only methodology","textShapes":11}
 {"kind":"shape","id":"sh/547294r6","slide":1,"name":"Shape 0","bbox":[0,0,1280,720]}
 {"kind":"shape","id":"sh/k3yl0zql","slide":1,"name":"Shape 1","bbox":[0,0,15.36,720]}
-{"kind":"textbox","id":"sh/7qp4be9c","slide":1,"name":"Text 2","text":"AUDITED METHODOLOGY / LECTURER DISCUSSION","textPreview":"AUDITED METHODOLOGY / LECTURER DISCUSSION","textChars":41,"textLines":1,"bbox":[59.52,55.68,902.4,21.12]}
-{"kind":"textbox","id":"sh/65g3298r","slide":1,"name":"Text 3","text":"Audited methods for longitudinal urinary E. coli","textPreview":"Audited methods for longitudinal urinary E. coli","textChars":48,"textLines":1,"bbox":[59.52,96,1017.6,82.56]}
-{"kind":"textbox","id":"sh/ts7md4r2","slide":1,"name":"Text 4","text":"One clinical definition, one selected genome per episode, and a separate Longcycler-only sensitivity analysis","textPreview":"One clinical definition, one selected genome per episode, and a separate Longcycler-only sensitivity analysis","textChars":109,"textLines":1,"bbox":[61.44,182.4,979.2,32.64]}
+{"kind":"textbox","id":"sh/65g3298r","slide":1,"name":"Text 3","text":"Longcycler-only methodology","textPreview":"Longcycler-only methodology","textChars":27,"textLines":1,"bbox":[59.52,96,1017.6,82.56]}
+{"kind":"textbox","id":"sh/ts7md4r2","slide":1,"name":"Text 4","text":"One operational clinical phenotype and one selected Longcycler assembly per analysed episode","textPreview":"One operational clinical phenotype and one selected Longcycler assembly per analysed episode","textChars":92,"textLines":1,"bbox":[61.44,182.4,979.2,32.64]}
 {"kind":"shape","id":"sh/sryl4zqx","slide":1,"name":"Shape 5","bbox":[61.44,284.16,322.56,130.56]}
-{"kind":"textbox","id":"sh/fu94fe98","slide":1,"name":"Text 6","text":"Clinical definition","textPreview":"Clinical definition","textChars":19,"textLines":1,"bbox":[78.72,297.6,288,17.28]}
-{"kind":"textbox","id":"sh/utg3698n","slide":1,"name":"Text 7","text":"583 episodes classified before genomics","textPreview":"583 episodes classified before genomics","textChars":39,"textLines":1,"bbox":[78.72,320.64,288,34.56]}
-{"kind":"textbox","id":"sh/wn6dc7eh","slide":1,"name":"Text 8","text":"UTI requires culture support plus compatible catheter-aware symptoms.","textPreview":"UTI requires culture support plus compatible catheter-aware symptoms.","textChars":69,"textLines":1,"bbox":[78.72,357.12,288,74.88]}
+{"kind":"textbox","id":"sh/fu94fe98","slide":1,"name":"Text 6","text":"Analytical cohort","textPreview":"Analytical cohort","textChars":17,"textLines":1,"bbox":[78.72,297.6,288,17.28]}
+{"kind":"textbox","id":"sh/utg3698n","slide":1,"name":"Text 7","text":"532 episodes · 161 residents","textPreview":"532 episodes · 161 residents","textChars":28,"textLines":1,"bbox":[78.72,320.64,288,34.56]}
+{"kind":"textbox","id":"sh/wn6dc7eh","slide":1,"name":"Text 8","text":"Every episode has one selected QC-passing Longcycler assembly.","textPreview":"Every episode has one selected QC-passing Longcycler assembly.","textChars":62,"textLines":1,"bbox":[78.72,357.12,288,74.88]}
 {"kind":"shape","id":"sh/hofulsf2","slide":1,"name":"Shape 9","bbox":[422.4,284.16,322.56,130.56]}
-{"kind":"textbox","id":"sh/ul4vaxgb","slide":1,"name":"Text 10","text":"Executed analysis","textPreview":"Executed analysis","textChars":17,"textLines":1,"bbox":[439.68,297.6,288,17.28]}
-{"kind":"textbox","id":"sh/vmdcj2xw","slide":1,"name":"Text 11","text":"556 mixed-canonical genomes","textPreview":"556 mixed-canonical genomes","textChars":27,"textLines":1,"bbox":[439.68,320.64,288,34.56]}
-{"kind":"textbox","id":"sh/4r6dg7et","slide":1,"name":"Text 12","text":"The selected set contains 532 Longcycler assemblies and 24 Flye fallbacks.","textPreview":"The selected set contains 532 Longcycler assemblies and 24 Flye fallbacks.","textChars":74,"textLines":1,"bbox":[439.68,357.12,288,74.88]}
+{"kind":"textbox","id":"sh/vmdcj2xw","slide":1,"name":"Text 11","text":"16 UTI · 516 Not_UTI","textPreview":"16 UTI · 516 Not_UTI","textChars":20,"textLines":1,"bbox":[439.68,320.64,288,34.56]}
+{"kind":"textbox","id":"sh/4r6dg7et","slide":1,"name":"Text 12","text":"Versioned operational phenotype on the exact selected cohort.","textPreview":"Versioned operational phenotype on the exact selected cohort.","textChars":61,"textLines":1,"bbox":[439.68,357.12,288,74.88]}
 {"kind":"shape","id":"sh/5sfepcfe","slide":1,"name":"Shape 13","bbox":[783.36,284.16,322.56,130.56]}
-{"kind":"textbox","id":"sh/ipovexwn","slide":1,"name":"Text 14","text":"Sensitivity analysis","textPreview":"Sensitivity analysis","textChars":20,"textLines":1,"bbox":[800.64,297.6,288,17.28]}
-{"kind":"textbox","id":"sh/3qxwn2x8","slide":1,"name":"Text 15","text":"532 Longcycler-selected genomes","textPreview":"532 Longcycler-selected genomes","textChars":31,"textLines":1,"bbox":[800.64,320.64,288,34.56]}
-{"kind":"textbox","id":"sh/sfqdkrep","slide":1,"name":"Text 16","text":"This route is rebuilt separately and compared with—not substituted for—the executed mixed analysis.","textPreview":"This route is rebuilt separately and compared with—not substituted for—the executed mixed analysis.","textChars":99,"textLines":1,"bbox":[800.64,357.12,288,74.88]}
-{"kind":"textbox","id":"sh/vyp0je1s","slide":1,"name":"Text 29","text":"Internal scientific audit | regenerated 10 July 2026 | interpretation remains non-causal","textPreview":"Internal scientific audit | regenerated 10 July 2026 | interpretation remains non-causal","textChars":88,"textLines":1,"bbox":[59.52,683.52,768,17.28]}
-{"kind":"notes","id":"nt/y90nupkv","slide":1,"text":"Simple explanation: the analysis first decides what each clinical episode means, then chooses one genome to represent that episode. The 556-genome mixed set is the executed analysis; the 532-genome Longcycler set is a comparison route.\n\nTechnical detail: the executed set contains 532 selected Longcycler assemblies and 24 selected Flye fallbacks. Longcycler-only is rebuilt after restriction and must not be relabelled as the original primary pipeline.\n\nSafe wording: 'The Longcycler restriction tests sensitivity to assembler mixing; it does not prove that Longcycler is universally superior.'"}
+{"kind":"textbox","id":"sh/ipovexwn","slide":1,"name":"Text 14","text":"Longitudinal evidence","textPreview":"Longitudinal evidence","textChars":21,"textLines":1,"bbox":[800.64,297.6,288,17.28]}
+{"kind":"textbox","id":"sh/3qxwn2x8","slide":1,"name":"Text 15","text":"371 transitions · 139 residents","textPreview":"371 transitions · 139 residents","textChars":31,"textLines":1,"bbox":[800.64,320.64,288,34.56]}
+{"kind":"textbox","id":"sh/sfqdkrep","slide":1,"name":"Text 16","text":"9 Not_UTI→UTI; 5 at ≤25 SNPs","textPreview":"9 Not_UTI→UTI; 5 at ≤25 SNPs","textChars":28,"textLines":1,"bbox":[800.64,357.12,288,74.88]}
+{"kind":"textbox","id":"sh/vyp0je1s","slide":1,"name":"Text 29","text":"Longcycler-only release | RQ01–RQ10 | 15 July 2026 | exploratory, non-causal","textPreview":"Longcycler-only release | RQ01–RQ10 | 15 July 2026 | exploratory, non-causal","textChars":76,"textLines":1,"bbox":[59.52,683.52,768,17.28]}
+{"kind":"notes","id":"nt/y90nupkv","slide":1,"text":"Opening: the methodology now has one analytical genome denominator—532 selected QC-passing Longcycler episodes from 161 residents. Clinical status is operational, and all interpretation remains exploratory and non-causal."}
 {"kind":"slide","id":"sl/hwbqtkby","slide":2,"title":"PROJECT ORIENTATION","textShapes":23}
 {"kind":"shape","id":"sh/9072xkry","slide":2,"name":"Shape 0","bbox":[0,0,1280,720]}
 {"kind":"shape","id":"sh/ozy1ofad","slide":2,"name":"Shape 1","bbox":[0,0,12.48,720]}
@@ -29,661 +24,389 @@
 {"kind":"textbox","id":"sh/x4r21kru","slide":2,"name":"Text 4","text":"Before interpreting a result, name the unit, filter and denominator.","textPreview":"Before interpreting a result, name the unit, filter and denominator.","textChars":68,"textLines":1,"bbox":[53.76,103.68,1123.2,30.72]}
 {"kind":"shape","id":"sh/w3i1sfa9","slide":2,"name":"Shape 5","bbox":[53.76,141.12,1169.28,0]}
 {"kind":"shape","id":"sh/r65knqtk","slide":2,"name":"Shape 6","bbox":[53.76,675.84,1169.28,0]}
-{"kind":"textbox","id":"sh/q5wjelsz","slide":2,"name":"Text 7","text":"Sources: status map, canonical assembly selection, VF matrix and fresh pairwise outputs","textPreview":"Sources: status map, canonical assembly selection, VF matrix and fresh pairwise outputs","textChars":87,"textLines":1,"bbox":[75.76,683.52,832.4,17.28]}
+{"kind":"textbox","id":"sh/q5wjelsz","slide":2,"name":"Text 7","text":"Source: Longcycler release claim registry and claim-linked outputs","textPreview":"Source: Longcycler release claim registry and claim-linked outputs","textChars":66,"textLines":1,"bbox":[75.76,683.52,832.4,17.28]}
 {"kind":"textbox","id":"sh/ove9o7yd","slide":2,"name":"Text 8","text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[1147.2,683.52,74.88,17.28]}
 {"kind":"shape","id":"sh/9wnqhczy","slide":2,"name":"Shape 9","bbox":[72.96,172.8,1134.72,72.96]}
 {"kind":"textbox","id":"sh/mtwrmxg7","slide":2,"name":"Text 10","text":"Research question and unit rule","textPreview":"Research question and unit rule","textChars":31,"textLines":1,"bbox":[90.24,188.16,1100.16,34.56]}
-{"kind":"textbox","id":"sh/nu58f2hs","slide":2,"name":"Text 11","text":"Do closely related urinary E. coli genomes persist across a resident's sampled episodes? Every answer must name the unit, retained rows, filter and denominator.","textPreview":"Do closely related urinary E. coli genomes persist across a resident's sampled episodes? Every answer must name the unit, retained rows, ...","textChars":160,"textLines":1,"bbox":[90.24,206.4,1100.16,39.36]}
+{"kind":"textbox","id":"sh/nu58f2hs","slide":2,"name":"Text 11","text":"Do closely related urinary E. coli genomes persist across a resident's sampled episodes? Every answer must name the unit and selected-cohort denominator.","textPreview":"Do closely related urinary E. coli genomes persist across a resident's sampled episodes? Every answer must name the unit and selected-coh...","textChars":153,"textLines":1,"bbox":[90.24,206.4,1100.16,39.36]}
 {"kind":"shape","id":"sh/wjy9sry9","slide":2,"name":"Shape 12","bbox":[101.76,289.92,249.6,40.32]}
-{"kind":"textbox","id":"sh/xk7qlczu","slide":2,"name":"Text 13","text":"Clinical episodes","textPreview":"Clinical episodes","textChars":17,"textLines":1,"bbox":[119.04,305.28,215.04,19.2]}
-{"kind":"textbox","id":"sh/ahwrqhgj","slide":2,"name":"Text 14","text":"583","textPreview":"583","textChars":3,"textLines":1,"bbox":[405.12,288,153.6,34.56]}
-{"kind":"textbox","id":"sh/bip8jmho","slide":2,"name":"Text 15","text":"included visits or events with a primary UTI label","textPreview":"included visits or events with a primary UTI label","textChars":50,"textLines":1,"bbox":[564.48,294.72,518.4,19.2]}
+{"kind":"textbox","id":"sh/xk7qlczu","slide":2,"name":"Text 13","text":"Analytical episodes","textPreview":"Analytical episodes","textChars":19,"textLines":1,"bbox":[119.04,305.28,215.04,19.2]}
+{"kind":"textbox","id":"sh/ahwrqhgj","slide":2,"name":"Text 14","text":"532","textPreview":"532","textChars":3,"textLines":1,"bbox":[405.12,288,153.6,34.56]}
+{"kind":"textbox","id":"sh/bip8jmho","slide":2,"name":"Text 15","text":"selected QC-passing Longcycler genome-linked episodes","textPreview":"selected QC-passing Longcycler genome-linked episodes","textChars":53,"textLines":1,"bbox":[564.48,294.72,518.4,19.2]}
 {"kind":"shape","id":"sh/cnupgny5","slide":2,"name":"Shape 16","bbox":[101.76,349.44,249.6,40.32]}
-{"kind":"textbox","id":"sh/do3q9szq","slide":2,"name":"Text 17","text":"Selected genome rows","textPreview":"Selected genome rows","textChars":20,"textLines":1,"bbox":[119.04,364.8,215.04,19.2]}
-{"kind":"textbox","id":"sh/t8byxkn2","slide":2,"name":"Text 18","text":"556","textPreview":"556","textChars":3,"textLines":1,"bbox":[405.12,347.52,153.6,34.56]}
-{"kind":"textbox","id":"sh/s72xofmh","slide":2,"name":"Text 19","text":"one QC-passing canonical assembly per retained genomic episode","textPreview":"one QC-passing canonical assembly per retained genomic episode","textChars":62,"textLines":1,"bbox":[564.48,354.24,518.4,19.2]}
+{"kind":"textbox","id":"sh/do3q9szq","slide":2,"name":"Text 17","text":"Residents","textPreview":"Residents","textChars":9,"textLines":1,"bbox":[119.04,364.8,215.04,19.2]}
+{"kind":"textbox","id":"sh/t8byxkn2","slide":2,"name":"Text 18","text":"161","textPreview":"161","textChars":3,"textLines":1,"bbox":[405.12,347.52,153.6,34.56]}
+{"kind":"textbox","id":"sh/s72xofmh","slide":2,"name":"Text 19","text":"distinct residents represented in the analytical cohort","textPreview":"distinct residents represented in the analytical cohort","textChars":55,"textLines":1,"bbox":[564.48,354.24,518.4,19.2]}
 {"kind":"shape","id":"sh/76twva5c","slide":2,"name":"Shape 20","bbox":[101.76,408.96,249.6,40.32]}
-{"kind":"textbox","id":"sh/65kfmpor","slide":2,"name":"Text 21","text":"VFDB feature space","textPreview":"VFDB feature space","textChars":18,"textLines":1,"bbox":[119.04,424.32,215.04,19.2]}
-{"kind":"textbox","id":"sh/hcvy14ne","slide":2,"name":"Text 22","text":"227","textPreview":"227","textChars":3,"textLines":1,"bbox":[405.12,407.04,153.6,34.56]}
-{"kind":"textbox","id":"sh/gbmxszmt","slide":2,"name":"Text 23","text":"binary detected gene features measured across selected genomes","textPreview":"binary detected gene features measured across selected genomes","textChars":62,"textLines":1,"bbox":[564.48,413.76,518.4,19.2]}
+{"kind":"textbox","id":"sh/65kfmpor","slide":2,"name":"Text 21","text":"Direct genome pairs","textPreview":"Direct genome pairs","textChars":19,"textLines":1,"bbox":[119.04,424.32,215.04,19.2]}
+{"kind":"textbox","id":"sh/hcvy14ne","slide":2,"name":"Text 22","text":"893","textPreview":"893","textChars":3,"textLines":1,"bbox":[405.12,407.04,153.6,34.56]}
+{"kind":"textbox","id":"sh/gbmxszmt","slide":2,"name":"Text 23","text":"all unordered within-resident selected-genome comparisons","textPreview":"all unordered within-resident selected-genome comparisons","textChars":57,"textLines":1,"bbox":[564.48,413.76,518.4,19.2]}
 {"kind":"shape","id":"sh/fadgzu58","slide":2,"name":"Shape 24","bbox":[101.76,468.48,249.6,40.32]}
 {"kind":"textbox","id":"sh/u94fqp4n","slide":2,"name":"Text 25","text":"Adjacent transitions","textPreview":"Adjacent transitions","textChars":20,"textLines":1,"bbox":[119.04,483.84,215.04,19.2]}
-{"kind":"textbox","id":"sh/p0vy54na","slide":2,"name":"Text 26","text":"394","textPreview":"394","textChars":3,"textLines":1,"bbox":[405.12,466.56,153.6,34.56]}
-{"kind":"textbox","id":"sh/4zmxwzmp","slide":2,"name":"Text 27","text":"mixed-pipeline comparisons between adjacent retained episodes","textPreview":"mixed-pipeline comparisons between adjacent retained episodes","textChars":61,"textLines":1,"bbox":[564.48,473.28,518.4,19.2]}
+{"kind":"textbox","id":"sh/p0vy54na","slide":2,"name":"Text 26","text":"371","textPreview":"371","textChars":3,"textLines":1,"bbox":[405.12,466.56,153.6,34.56]}
+{"kind":"textbox","id":"sh/4zmxwzmp","slide":2,"name":"Text 27","text":"rebuilt neighbouring comparisons from 139 residents","textPreview":"rebuilt neighbouring comparisons from 139 residents","textChars":51,"textLines":1,"bbox":[564.48,473.28,518.4,19.2]}
 {"kind":"shape","id":"sh/mlgvq147","slide":2,"name":"Shape 28","bbox":[101.76,528,249.6,40.32]}
-{"kind":"textbox","id":"sh/nmpcj6ls","slide":2,"name":"Text 29","text":"Genome pairs","textPreview":"Genome pairs","textChars":12,"textLines":1,"bbox":[119.04,543.36,215.04,19.2]}
-{"kind":"textbox","id":"sh/onydsbmd","slide":2,"name":"Text 30","text":"963","textPreview":"963","textChars":3,"textLines":1,"bbox":[405.12,526.08,153.6,34.56]}
-{"kind":"textbox","id":"sh/9o7ulg3y","slide":2,"name":"Text 31","text":"all unordered within-participant canonical genome comparisons","textPreview":"all unordered within-participant canonical genome comparisons","textChars":61,"textLines":1,"bbox":[564.48,532.8,518.4,19.2]}
+{"kind":"textbox","id":"sh/nmpcj6ls","slide":2,"name":"Text 29","text":"Focused transitions","textPreview":"Focused transitions","textChars":19,"textLines":1,"bbox":[119.04,543.36,215.04,19.2]}
+{"kind":"textbox","id":"sh/onydsbmd","slide":2,"name":"Text 30","text":"9 | 5","textPreview":"9 | 5","textChars":5,"textLines":1,"bbox":[405.12,526.08,153.6,34.56]}
+{"kind":"textbox","id":"sh/9o7ulg3y","slide":2,"name":"Text 31","text":"Not_UTI→UTI | at ≤25 SNPs","textPreview":"Not_UTI→UTI | at ≤25 SNPs","textChars":25,"textLines":1,"bbox":[564.48,532.8,518.4,19.2]}
 {"kind":"shape","id":"sh/a9gvulkj","slide":2,"name":"Shape 32","bbox":[794.88,599.04,278.4,26.88]}
-{"kind":"textbox","id":"sh/ba9cn6l4","slide":2,"name":"Text 33","text":"One participant can contribute several episodes, genome pairs and transitions.","textPreview":"One participant can contribute several episodes, genome pairs and transitions.","textChars":78,"textLines":1,"bbox":[800.64,604.8,266.88,13.44]}
-{"kind":"notes","id":"nt/hwbqtkby","slide":2,"text":"Simple explanation: these numbers count different objects, so they are not one shrinking queue.\n\nTechnical detail: a participant may contribute multiple episodes; an episode may have multiple candidate assemblies but only one selected genome; 227 is a number of feature columns; 963 is every unordered within-participant genome pair; 394 counts adjacent retained-episode transitions.\n\nLikely question: 'Why can 963 pairs come from 556 genomes?' Answer: participants with several genomes contribute every within-person pair, not only neighbouring visits."}
-{"kind":"slide","id":"sl/ofy9wn61","slide":3,"title":"CLINICAL CLASSIFICATION","textShapes":20}
+{"kind":"textbox","id":"sh/ba9cn6l4","slide":2,"name":"Text 33","text":"One resident can contribute several episodes, direct pairs and adjacent transitions.","textPreview":"One resident can contribute several episodes, direct pairs and adjacent transitions.","textChars":84,"textLines":1,"bbox":[800.64,604.8,266.88,13.44]}
+{"kind":"notes","id":"nt/hwbqtkby","slide":2,"text":"Episodes, residents, direct pairs and transitions are not one attrition funnel. A resident can contribute several episodes, every within-resident pair, and several adjacent transitions. Always state the unit with the count."}
+{"kind":"slide","id":"sl/ofy9wn61","slide":3,"title":"CLINICAL CLASSIFICATION","textShapes":18}
 {"kind":"shape","id":"sh/cza94vmx","slide":3,"name":"Shape 0","bbox":[0,0,1280,720]}
 {"kind":"shape","id":"sh/d0jax03i","slide":3,"name":"Shape 1","bbox":[0,0,12.48,720]}
 {"kind":"textbox","id":"sh/298ryl4v","slide":3,"name":"Text 2","text":"CLINICAL CLASSIFICATION","textPreview":"CLINICAL CLASSIFICATION","textChars":23,"textLines":1,"bbox":[53.76,28.8,883.2,21.12]}
-{"kind":"textbox","id":"sh/3ah8rqlg","slide":3,"name":"Text 3","text":"UTI requires culture support plus compatible symptoms","textPreview":"UTI requires culture support plus compatible symptoms","textChars":53,"textLines":1,"bbox":[53.76,55.68,1142.4,46.08]}
-{"kind":"textbox","id":"sh/obq90bml","slide":3,"name":"Text 4","text":"The clinical label is constructed independently of assembler choice.","textPreview":"The clinical label is constructed independently of assembler choice.","textChars":68,"textLines":1,"bbox":[53.76,103.68,1123.2,30.72]}
+{"kind":"textbox","id":"sh/3ah8rqlg","slide":3,"name":"Text 3","text":"UTI uses the versioned operational culture-plus-symptom rule","textPreview":"UTI uses the versioned operational culture-plus-symptom rule","textChars":60,"textLines":1,"bbox":[53.76,55.68,1142.4,46.08]}
+{"kind":"textbox","id":"sh/obq90bml","slide":3,"name":"Text 4","text":"The phenotype is assigned before genomic analysis and is not the full published protocol.","textPreview":"The phenotype is assigned before genomic analysis and is not the full published protocol.","textChars":89,"textLines":1,"bbox":[53.76,103.68,1123.2,30.72]}
 {"kind":"shape","id":"sh/pcjqtg36","slide":3,"name":"Shape 5","bbox":[53.76,141.12,1169.28,0]}
 {"kind":"shape","id":"sh/m5cra54z","slide":3,"name":"Shape 6","bbox":[53.76,675.84,1169.28,0]}
-{"kind":"textbox","id":"sh/n6ls3alk","slide":3,"name":"Text 7","text":"      Source: results/clinical/status_map.csv | primary catheter-adjusted definition","textPreview":"Source: results/clinical/status_map.csv | primary catheter-adjusted definition","textChars":84,"textLines":1,"bbox":[75.76,683.52,832.4,17.28]}
+{"kind":"textbox","id":"sh/n6ls3alk","slide":3,"name":"Text 7","text":"      Source: selected clinical cohort | versioned operational UTI phenotype","textPreview":"Source: selected clinical cohort | versioned operational UTI phenotype","textChars":76,"textLines":1,"bbox":[75.76,683.52,832.4,17.28]}
 {"kind":"textbox","id":"sh/n2l4fq98","slide":3,"name":"Text 8","text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[1147.2,683.52,74.88,17.28]}
 {"kind":"shape","id":"sh/m1c3mlsn","slide":3,"name":"Shape 9","bbox":[82.56,182.4,303.36,149.76]}
 {"kind":"textbox","id":"sh/943mhgre","slide":3,"name":"Text 10","text":"1. Culture support","textPreview":"1. Culture support","textChars":18,"textLines":1,"bbox":[99.84,197.76,268.8,34.56]}
-{"kind":"textbox","id":"sh/83ulovat","slide":3,"name":"Text 11","text":"Recorded CFU is used where available; a documented Beoord-category lower bound is used when CFU is absent.","textPreview":"Recorded CFU is used where available; a documented Beoord-category lower bound is used when CFU is absent.","textChars":106,"textLines":1,"bbox":[99.84,234.24,268.8,94.08]}
-{"kind":"textbox","id":"sh/v6l4jq94","slide":3,"name":"Text 12","text":">=10^3 CFU/mL lower-bound rule","textPreview":">=10^3 CFU/mL lower-bound rule","textChars":30,"textLines":1,"bbox":[99.84,291.84,264,19.2]}
-{"kind":"shape","id":"sh/a5c3ql8z","slide":3,"name":"Shape 13","bbox":[405.12,259.2,80.64,0]}
+{"kind":"textbox","id":"sh/83ulovat","slide":3,"name":"Text 11","text":"Recorded CFU is used where available; a documented category lower bound is used when CFU is absent.","textPreview":"Recorded CFU is used where available; a documented category lower bound is used when CFU is absent.","textChars":99,"textLines":1,"bbox":[99.84,234.24,268.8,94.08]}
+{"kind":"textbox","id":"sh/v6l4jq94","slide":3,"name":"Text 12","text":"≥1000 CFU/mL lower-bound rule","textPreview":"≥1000 CFU/mL lower-bound rule","textChars":29,"textLines":1,"bbox":[99.84,291.84,264,19.2]}
 {"kind":"textbox","id":"sh/x8nml0ra","slide":3,"name":"Text 14","text":"+","textPreview":"+","textChars":1,"textLines":1,"bbox":[436.8,244.8,26.88,19.2]}
 {"kind":"shape","id":"sh/w7ulsvqp","slide":3,"name":"Shape 15","bbox":[506.88,182.4,303.36,149.76]}
 {"kind":"textbox","id":"sh/ja54na9g","slide":3,"name":"Text 16","text":"2. Symptom rule","textPreview":"2. Symptom rule","textChars":15,"textLines":1,"bbox":[524.16,197.76,268.8,34.56]}
 {"kind":"textbox","id":"sh/i9w3u58v","slide":3,"name":"Text 17","text":"Non-catheter: local symptoms, or flank pain plus systemic symptoms. Catheter: systemic symptoms.","textPreview":"Non-catheter: local symptoms, or flank pain plus systemic symptoms. Catheter: systemic symptoms.","textChars":96,"textLines":1,"bbox":[524.16,234.24,268.8,94.08]}
-{"kind":"textbox","id":"sh/e10f2twf","slide":3,"name":"Text 18","text":"catheter-aware symptom rule","textPreview":"catheter-aware symptom rule","textChars":27,"textLines":1,"bbox":[547.2,291.84,220.8,19.2]}
+{"kind":"textbox","id":"sh/e10f2twf","slide":3,"name":"Text 18","text":"catheter-aware operational rule","textPreview":"catheter-aware operational rule","textChars":31,"textLines":1,"bbox":[547.2,291.84,220.8,19.2]}
 {"kind":"shape","id":"sh/f29gbyx0","slide":3,"name":"Shape 19","bbox":[827.52,259.2,80.64,0]}
 {"kind":"shape","id":"sh/03ix43e5","slide":3,"name":"Shape 20","bbox":[929.28,203.52,234.24,105.6]}
 {"kind":"textbox","id":"sh/14ryd8fq","slide":3,"name":"Text 21","text":"UTI","textPreview":"UTI","textChars":3,"textLines":1,"bbox":[946.56,218.88,199.68,34.56]}
-{"kind":"textbox","id":"sh/6d0fytg3","slide":3,"name":"Text 22","text":"Both components met","textPreview":"Both components met","textChars":19,"textLines":1,"bbox":[946.56,255.36,199.68,49.92]}
+{"kind":"textbox","id":"sh/6d0fytg3","slide":3,"name":"Text 22","text":"Both operational components met","textPreview":"Both operational components met","textChars":31,"textLines":1,"bbox":[946.56,255.36,199.68,49.92]}
 {"kind":"shape","id":"sh/re9g7yxo","slide":3,"name":"Shape 23","bbox":[97.92,418.56,497.28,99.84]}
-{"kind":"textbox","id":"sh/sfix03y9","slide":3,"name":"Text 24","text":"Primary clinical denominator","textPreview":"Primary clinical denominator","textChars":28,"textLines":1,"bbox":[115.2,433.92,462.72,34.56]}
-{"kind":"textbox","id":"sh/tgry9ofu","slide":3,"name":"Text 25","text":"585 records -> 583 included from 166 participants: 18 UTI and 565 Not_UTI","textPreview":"585 records -> 583 included from 166 participants: 18 UTI and 565 Not_UTI","textChars":73,"textLines":1,"bbox":[115.2,470.4,462.72,44.16]}
+{"kind":"textbox","id":"sh/sfix03y9","slide":3,"name":"Text 24","text":"Analytical cohort denominator","textPreview":"Analytical cohort denominator","textChars":29,"textLines":1,"bbox":[115.2,433.92,462.72,34.56]}
+{"kind":"textbox","id":"sh/tgry9ofu","slide":3,"name":"Text 25","text":"532 episodes from 161 residents: 16 UTI and 516 Not_UTI","textPreview":"532 episodes from 161 residents: 16 UTI and 516 Not_UTI","textChars":55,"textLines":1,"bbox":[115.2,470.4,462.72,44.16]}
 {"kind":"shape","id":"sh/a9kfadwn","slide":3,"name":"Shape 26","bbox":[672,418.56,497.28,99.84]}
 {"kind":"textbox","id":"sh/batgjixs","slide":3,"name":"Text 27","text":"Not_UTI is not a healthy control","textPreview":"Not_UTI is not a healthy control","textChars":32,"textLines":1,"bbox":[689.28,433.92,462.72,34.56]}
-{"kind":"textbox","id":"sh/l4fi9cza","slide":3,"name":"Text 28","text":"It includes episodes below threshold or with indeterminate evidence; it must not be treated as a healthy comparator.","textPreview":"It includes episodes below threshold or with indeterminate evidence; it must not be treated as a healthy comparator.","textChars":116,"textLines":1,"bbox":[689.28,470.4,462.72,44.16]}
-{"kind":"shape","id":"sh/k3m1g7yp","slide":3,"name":"Shape 29","bbox":[395.52,580.8,148.8,26.88]}
-{"kind":"textbox","id":"sh/z2d07mh4","slide":3,"name":"Text 30","text":"Clinical label fixed","textPreview":"Clinical label fixed","textChars":20,"textLines":1,"bbox":[401.28,586.56,137.28,13.44]}
-{"kind":"shape","id":"sh/y14jehgj","slide":3,"name":"Shape 31","bbox":[552.96,594.24,82.56,0]}
-{"kind":"shape","id":"sh/x0vi5czy","slide":3,"name":"Shape 32","bbox":[647.04,580.8,148.8,26.88]}
-{"kind":"textbox","id":"sh/czmhc7id","slide":3,"name":"Text 33","text":"Genome linked later","textPreview":"Genome linked later","textChars":19,"textLines":1,"bbox":[652.8,586.56,137.28,13.44]}
-{"kind":"notes","id":"nt/ofy9wn61","slide":3,"text":"Simple explanation: a UTI label needs both bacterial-growth evidence and compatible symptoms.\n\nTechnical detail: the culture rule uses a >=10^3 CFU/mL lower bound from recorded CFU, with Beoord-category lower bounds when CFU is absent. Non-indwelling episodes qualify through a local urinary symptom or flank pain plus a systemic symptom; indwelling-catheter episodes require systemic symptoms. Unknown or incomplete evidence is Not_UTI with an indeterminate subgroup. Counts use UTI_Status: 585 records, 583 primary-included episodes, 166 participants, 18 UTI and 565 Not_UTI.\n\nSafe wording: Not_UTI is not a healthy or bacteria-free control."}
-{"kind":"slide","id":"sl/jyx0ra1s","slide":4,"title":"ASSEMBLY SELECTION / DETAILED FLOW","textShapes":42}
+{"kind":"textbox","id":"sh/l4fi9cza","slide":3,"name":"Text 28","text":"It includes episodes below the operational threshold or with indeterminate evidence; 17 near-miss rows remain a separate audit set.","textPreview":"It includes episodes below the operational threshold or with indeterminate evidence; 17 near-miss rows remain a separate audit set.","textChars":131,"textLines":1,"bbox":[689.28,470.4,462.72,44.16]}
+{"kind":"notes","id":"nt/ofy9wn61","slide":3,"text":"The clinical phenotype uses the implemented culture-plus-symptom rule. It is versioned and operational, not a reconstruction of the full published protocol. Not_UTI is not a healthy-control category."}
+{"kind":"slide","id":"sl/jyx0ra1s","slide":4,"title":"SELECTED COHORT / DETAILED FLOW","textShapes":42}
 {"kind":"shape","id":"sh/1cj2d8b6","slide":4,"name":"Shape 0","bbox":[0,0,1280,720]}
 {"kind":"shape","id":"sh/0ba143al","slide":4,"name":"Shape 1","bbox":[0,0,12.48,720]}
-{"kind":"textbox","id":"sh/rm1k7yt4","slide":4,"name":"Text 2","text":"ASSEMBLY SELECTION / DETAILED FLOW","textPreview":"ASSEMBLY SELECTION / DETAILED FLOW","textChars":34,"textLines":1,"bbox":[53.76,28.8,883.2,21.12]}
-{"kind":"textbox","id":"sh/ql8jytsj","slide":4,"name":"Text 3","text":"Two evidence tracks converge into one episode-level genomic dataset","textPreview":"Two evidence tracks converge into one episode-level genomic dataset","textChars":67,"textLines":1,"bbox":[53.76,55.68,1142.4,46.08]}
-{"kind":"textbox","id":"sh/doj29oba","slide":4,"name":"Text 4","text":"Clinical status is assigned independently; assembly alternatives are QC-screened before one genome is selected per participant-timepoint.","textPreview":"Clinical status is assigned independently; assembly alternatives are QC-screened before one genome is selected per participant-timepoint.","textChars":137,"textLines":1,"bbox":[53.76,103.68,1123.2,30.72]}
+{"kind":"textbox","id":"sh/rm1k7yt4","slide":4,"name":"Text 2","text":"SELECTED COHORT / DETAILED FLOW","textPreview":"SELECTED COHORT / DETAILED FLOW","textChars":31,"textLines":1,"bbox":[53.76,28.8,883.2,21.12]}
+{"kind":"textbox","id":"sh/ql8jytsj","slide":4,"name":"Text 3","text":"Exact Longcycler episode keys feed one release-ready analytical cohort","textPreview":"Exact Longcycler episode keys feed one release-ready analytical cohort","textChars":70,"textLines":1,"bbox":[53.76,55.68,1142.4,46.08]}
+{"kind":"textbox","id":"sh/doj29oba","slide":4,"name":"Text 4","text":"The selected assembly manifest and operational clinical phenotype are joined by exact episode key before any genomic branch runs.","textPreview":"The selected assembly manifest and operational clinical phenotype are joined by exact episode key before any genomic branch runs.","textChars":129,"textLines":1,"bbox":[53.76,103.68,1123.2,30.72]}
 {"kind":"shape","id":"sh/sna103ap","slide":4,"name":"Shape 5","bbox":[53.76,141.12,1169.28,0]}
 {"kind":"shape","id":"sh/3ihk3et8","slide":4,"name":"Shape 6","bbox":[53.76,675.84,1169.28,0]}
-{"kind":"textbox","id":"sh/ih8ju9sn","slide":4,"name":"Text 7","text":"Sources: metadata_fasta_discovery_manifest.csv; assembly_metadata.csv; canonical_assembly_selection.csv; status_map.csv","textPreview":"Sources: metadata_fasta_discovery_manifest.csv; assembly_metadata.csv; canonical_assembly_selection.csv; status_map.csv","textChars":119,"textLines":1,"bbox":[75.76,683.52,832.4,17.28]}
+{"kind":"textbox","id":"sh/ih8ju9sn","slide":4,"name":"Text 7","text":"Sources: selected manifest; analytical clinical cohort; release claim registry","textPreview":"Sources: selected manifest; analytical clinical cohort; release claim registry","textChars":78,"textLines":1,"bbox":[75.76,683.52,832.4,17.28]}
 {"kind":"textbox","id":"sh/kbm987y5","slide":4,"name":"Text 8","text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[1147.2,683.52,74.88,17.28]}
 {"kind":"shape","id":"sh/5cva1cfq","slide":4,"name":"Shape 9","bbox":[71.04,170.88,337.92,103.68]}
-{"kind":"textbox","id":"sh/i94r6xgz","slide":4,"name":"Text 10","text":"1,303 FASTAs","textPreview":"1,303 FASTAs","textChars":12,"textLines":1,"bbox":[126.32,186.24,265.36,34.56]}
-{"kind":"textbox","id":"sh/jadsz2xk","slide":4,"name":"Text 11","text":"Candidate files discovered on disk","textPreview":"Candidate files discovered on disk","textChars":34,"textLines":1,"bbox":[88.32,230.4,303.36,44.16]}
+{"kind":"textbox","id":"sh/i94r6xgz","slide":4,"name":"Text 10","text":"532 selected FASTAs","textPreview":"532 selected FASTAs","textChars":19,"textLines":1,"bbox":[126.32,186.24,265.36,34.56]}
+{"kind":"textbox","id":"sh/jadsz2xk","slide":4,"name":"Text 11","text":"One selected Longcycler input for every analytical episode","textPreview":"One selected Longcycler input for every analytical episode","textChars":58,"textLines":1,"bbox":[88.32,230.4,303.36,44.16]}
 {"kind":"shape","id":"sh/w72947yt","slide":4,"name":"Shape 12","bbox":[82.56,182.4,26.88,26.88]}
 {"kind":"textbox","id":"sh/x8vaxsfe","slide":4,"name":"Text 13","text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[82.56,187.2,26.88,9.6]}
-{"kind":"textbox","id":"sh/a5kr2xg3","slide":4,"name":"Text 14","text":"discovery manifest","textPreview":"discovery manifest","textChars":18,"textLines":1,"bbox":[120.96,209.28,268.8,13.44]}
+{"kind":"textbox","id":"sh/a5kr2xg3","slide":4,"name":"Text 14","text":"selected manifest","textPreview":"selected manifest","textChars":17,"textLines":1,"bbox":[120.96,209.28,268.8,13.44]}
 {"kind":"shape","id":"sh/g36tgryd","slide":4,"name":"Shape 16","bbox":[460.8,170.88,337.92,103.68]}
-{"kind":"textbox","id":"sh/h4fa9wfy","slide":4,"name":"Text 17","text":"1,299 metadata rows","textPreview":"1,299 metadata rows","textChars":19,"textLines":1,"bbox":[516.08,186.24,265.36,34.56]}
-{"kind":"textbox","id":"sh/p0batw72","slide":4,"name":"Text 18","text":"1,295 matched + 4 audit-only; 8 discovered FASTAs absent","textPreview":"1,295 matched + 4 audit-only; 8 discovered FASTAs absent","textChars":56,"textLines":1,"bbox":[478.08,230.4,303.36,44.16]}
+{"kind":"textbox","id":"sh/h4fa9wfy","slide":4,"name":"Text 17","text":"Content + QC verified","textPreview":"Content + QC verified","textChars":21,"textLines":1,"bbox":[516.08,186.24,265.36,34.56]}
+{"kind":"textbox","id":"sh/p0batw72","slide":4,"name":"Text 18","text":"FASTA SHA-256, 4–6 Mb, ≤200 contigs and N50 ≥20 kb","textPreview":"FASTA SHA-256, 4–6 Mb, ≤200 contigs and N50 ≥20 kb","textChars":50,"textLines":1,"bbox":[478.08,230.4,303.36,44.16]}
 {"kind":"shape","id":"sh/oz29krqh","slide":4,"name":"Shape 19","bbox":[472.32,182.4,26.88,26.88]}
 {"kind":"textbox","id":"sh/3ytsrmpw","slide":4,"name":"Text 20","text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[472.32,187.2,26.88,9.6]}
-{"kind":"textbox","id":"sh/2xkrih8b","slide":4,"name":"Text 21","text":"00_make reconciliation","textPreview":"00_make reconciliation","textChars":22,"textLines":1,"bbox":[510.72,209.28,268.8,13.44]}
+{"kind":"textbox","id":"sh/2xkrih8b","slide":4,"name":"Text 21","text":"fail-closed preflight","textPreview":"fail-closed preflight","textChars":21,"textLines":1,"bbox":[510.72,209.28,268.8,13.44]}
 {"kind":"shape","id":"sh/gv29g7q5","slide":4,"name":"Shape 23","bbox":[850.56,170.88,337.92,103.68]}
-{"kind":"textbox","id":"sh/fu9sn2p0","slide":4,"name":"Text 24","text":"1,291 candidates","textPreview":"1,291 candidates","textChars":16,"textLines":1,"bbox":[905.84,186.24,265.36,34.56]}
-{"kind":"textbox","id":"sh/et0reh8f","slide":4,"name":"Text 25","text":"Eight rows outside primary/genomics curation; 579 episode keys","textPreview":"Eight rows outside primary/genomics curation; 579 episode keys","textChars":62,"textLines":1,"bbox":[867.84,230.4,303.36,44.16]}
+{"kind":"textbox","id":"sh/fu9sn2p0","slide":4,"name":"Text 24","text":"532 exact episode keys","textPreview":"532 exact episode keys","textChars":22,"textLines":1,"bbox":[905.84,186.24,265.36,34.56]}
+{"kind":"textbox","id":"sh/et0reh8f","slide":4,"name":"Text 25","text":"No duplicates; 161 residents; selected key set locked","textPreview":"No duplicates; 161 residents; selected key set locked","textChars":53,"textLines":1,"bbox":[867.84,230.4,303.36,44.16]}
 {"kind":"shape","id":"sh/tsrqlc7u","slide":4,"name":"Shape 26","bbox":[862.08,182.4,26.88,26.88]}
 {"kind":"textbox","id":"sh/sri9s7q9","slide":4,"name":"Text 27","text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[862.08,187.2,26.88,9.6]}
-{"kind":"textbox","id":"sh/ilwf69kv","slide":4,"name":"Text 28","text":"Longcycler/Flye alternatives","textPreview":"Longcycler/Flye alternatives","textChars":28,"textLines":1,"bbox":[900.48,209.28,268.8,13.44]}
+{"kind":"textbox","id":"sh/ilwf69kv","slide":4,"name":"Text 28","text":"manifest contract","textPreview":"manifest contract","textChars":17,"textLines":1,"bbox":[900.48,209.28,268.8,13.44]}
 {"kind":"shape","id":"sh/jm5gze1g","slide":4,"name":"Shape 29","bbox":[71.04,318.72,337.92,103.68]}
-{"kind":"textbox","id":"sh/knex8j21","slide":4,"name":"Text 30","text":"1,211 QC pass","textPreview":"1,211 QC pass","textChars":13,"textLines":1,"bbox":[126.32,334.08,265.36,34.56]}
-{"kind":"textbox","id":"sh/5ony1oj6","slide":4,"name":"Text 31","text":"Eighty fail implemented QC; 556 episode keys remain","textPreview":"Eighty fail implemented QC; 556 episode keys remain","textChars":51,"textLines":1,"bbox":[88.32,378.24,303.36,44.16]}
+{"kind":"textbox","id":"sh/knex8j21","slide":4,"name":"Text 30","text":"Analytical Longcycler cohort","textPreview":"Analytical Longcycler cohort","textChars":28,"textLines":1,"bbox":[126.32,334.08,265.36,34.56]}
+{"kind":"textbox","id":"sh/5ony1oj6","slide":4,"name":"Text 31","text":"532 episodes · 161 residents; one selected QC-pass assembly per key","textPreview":"532 episodes · 161 residents; one selected QC-pass assembly per key","textChars":67,"textLines":1,"bbox":[88.32,378.24,303.36,44.16]}
 {"kind":"shape","id":"sh/axcf29kj","slide":4,"name":"Shape 32","bbox":[82.56,330.24,26.88,26.88]}
 {"kind":"textbox","id":"sh/vy5gbe14","slide":4,"name":"Text 33","text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[82.56,335.04,26.88,9.6]}
-{"kind":"textbox","id":"sh/wzex4z2p","slide":4,"name":"Text 34","text":"12a_wgs_qc.R","textPreview":"12a_wgs_qc.R","textChars":12,"textLines":1,"bbox":[120.96,357.12,268.8,13.44]}
+{"kind":"textbox","id":"sh/wzex4z2p","slide":4,"name":"Text 34","text":"selected clinical cohort","textPreview":"selected clinical cohort","textChars":24,"textLines":1,"bbox":[120.96,357.12,268.8,13.44]}
 {"kind":"shape","id":"sh/mtcfypkn","slide":4,"name":"Shape 36","bbox":[460.8,318.72,337.92,103.68]}
-{"kind":"textbox","id":"sh/nulw7u18","slide":4,"name":"Text 37","text":"556 selected genomes","textPreview":"556 selected genomes","textChars":20,"textLines":1,"bbox":[516.08,334.08,265.36,34.56]}
-{"kind":"textbox","id":"sh/fm5c3q54","slide":4,"name":"Text 38","text":"One QC-pass genome per key; 655 passing alternatives not selected","textPreview":"One QC-pass genome per key; 655 passing alternatives not selected","textChars":65,"textLines":1,"bbox":[478.08,378.24,303.36,44.16]}
+{"kind":"textbox","id":"sh/nulw7u18","slide":4,"name":"Text 37","text":"Operational status","textPreview":"Operational status","textChars":18,"textLines":1,"bbox":[516.08,334.08,265.36,34.56]}
+{"kind":"textbox","id":"sh/fm5c3q54","slide":4,"name":"Text 38","text":"16 UTI · 516 Not_UTI; phenotype frozen before genomic modelling","textPreview":"16 UTI · 516 Not_UTI; phenotype frozen before genomic modelling","textChars":63,"textLines":1,"bbox":[478.08,378.24,303.36,44.16]}
 {"kind":"shape","id":"sh/elwba54j","slide":4,"name":"Shape 39","bbox":[472.32,330.24,26.88,26.88]}
 {"kind":"textbox","id":"sh/18nu50nu","slide":4,"name":"Text 40","text":"5","textPreview":"5","textChars":1,"textLines":1,"bbox":[472.32,335.04,26.88,9.6]}
-{"kind":"textbox","id":"sh/0netcvm9","slide":4,"name":"Text 41","text":"canonical selection","textPreview":"canonical selection","textChars":19,"textLines":1,"bbox":[510.72,357.12,268.8,13.44]}
+{"kind":"textbox","id":"sh/0netcvm9","slide":4,"name":"Text 41","text":"exact key join","textPreview":"exact key join","textChars":14,"textLines":1,"bbox":[510.72,357.12,268.8,13.44]}
 {"kind":"shape","id":"sh/qhcb6l47","slide":4,"name":"Shape 43","bbox":[850.56,318.72,337.92,103.68]}
-{"kind":"textbox","id":"sh/dknu10ny","slide":4,"name":"Text 44","text":"Clinically linked set","textPreview":"Clinically linked set","textChars":21,"textLines":1,"bbox":[905.84,334.08,265.36,34.56]}
-{"kind":"textbox","id":"sh/sjut8vmd","slide":4,"name":"Text 45","text":"556 rows · 162 participants · 17 UTI · 539 Not_UTI; 532 Longcycler + 24 Flye","textPreview":"556 rows · 162 participants · 17 UTI · 539 Not_UTI; 532 Longcycler + 24 Flye","textChars":76,"textLines":1,"bbox":[867.84,378.24,303.36,44.16]}
+{"kind":"textbox","id":"sh/dknu10ny","slide":4,"name":"Text 44","text":"Release-ready cohort","textPreview":"Release-ready cohort","textChars":20,"textLines":1,"bbox":[905.84,334.08,265.36,34.56]}
+{"kind":"textbox","id":"sh/sjut8vmd","slide":4,"name":"Text 45","text":"Every row and endpoint remains in the same 532-episode key set","textPreview":"Every row and endpoint remains in the same 532-episode key set","textChars":62,"textLines":1,"bbox":[867.84,378.24,303.36,44.16]}
 {"kind":"shape","id":"sh/3elcv65w","slide":4,"name":"Shape 46","bbox":[862.08,330.24,26.88,26.88]}
 {"kind":"textbox","id":"sh/idcb2lob","slide":4,"name":"Text 47","text":"6","textPreview":"6","textChars":1,"textLines":1,"bbox":[862.08,335.04,26.88,9.6]}
-{"kind":"textbox","id":"sh/8jq9c72t","slide":4,"name":"Text 48","text":"22 joins participant + timepoint","textPreview":"22 joins participant + timepoint","textChars":32,"textLines":1,"bbox":[900.48,357.12,268.8,13.44]}
+{"kind":"textbox","id":"sh/8jq9c72t","slide":4,"name":"Text 48","text":"central contract","textPreview":"central contract","textChars":16,"textLines":1,"bbox":[900.48,357.12,268.8,13.44]}
 {"kind":"shape","id":"sh/tkjq5c3e","slide":4,"name":"Shape 49","bbox":[71.04,466.56,337.92,103.68]}
-{"kind":"textbox","id":"sh/6x8rahk3","slide":4,"name":"Text 50","text":"Independent clinical track","textPreview":"Independent clinical track","textChars":26,"textLines":1,"bbox":[126.32,481.92,265.36,34.56]}
-{"kind":"textbox","id":"sh/7ih83mlo","slide":4,"name":"Text 51","text":"583 episodes · 166 participants · 18 UTI · 565 Not_UTI; 27 lack selected WGS (4 + 23)","textPreview":"583 episodes · 166 participants · 18 UTI · 565 Not_UTI; 27 lack selected WGS (4 + 23)","textChars":85,"textLines":1,"bbox":[88.32,526.08,303.36,44.16]}
+{"kind":"textbox","id":"sh/6x8rahk3","slide":4,"name":"Text 50","text":"Clinical source context","textPreview":"Clinical source context","textChars":23,"textLines":1,"bbox":[126.32,481.92,265.36,34.56]}
+{"kind":"textbox","id":"sh/7ih83mlo","slide":4,"name":"Text 51","text":"583 episodes · 166 residents · 18 UTI · 565 Not_UTI; attrition/QC only","textPreview":"583 episodes · 166 residents · 18 UTI · 565 Not_UTI; attrition/QC only","textChars":70,"textLines":1,"bbox":[88.32,526.08,303.36,44.16]}
 {"kind":"shape","id":"sh/gna9gr25","slide":4,"name":"Shape 52","bbox":[82.56,478.08,26.88,26.88]}
 {"kind":"textbox","id":"sh/hoja9w3q","slide":4,"name":"Text 53","text":"7","textPreview":"7","textChars":1,"textLines":1,"bbox":[82.56,482.88,26.88,9.6]}
-{"kind":"textbox","id":"sh/ulsrehkz","slide":4,"name":"Text 54","text":"00a + 00b · UTI_Status","textPreview":"00a + 00b · UTI_Status","textChars":22,"textLines":1,"bbox":[120.96,504.96,268.8,13.44]}
+{"kind":"textbox","id":"sh/ulsrehkz","slide":4,"name":"Text 54","text":"operational phenotype source","textPreview":"operational phenotype source","textChars":28,"textLines":1,"bbox":[120.96,504.96,268.8,13.44]}
 {"kind":"shape","id":"sh/wr694nm1","slide":4,"name":"Shape 56","bbox":[460.8,466.56,337.92,103.68]}
-{"kind":"textbox","id":"sh/xsfqxs36","slide":4,"name":"Text 57","text":"Executed mixed route","textPreview":"Executed mixed route","textChars":20,"textLines":1,"bbox":[516.08,481.92,265.36,34.56]}
-{"kind":"textbox","id":"sh/do761ova","slide":4,"name":"Text 58","text":"Keep all 556 selected genomes; build 394 adjacent transitions","textPreview":"Keep all 556 selected genomes; build 394 adjacent transitions","textChars":61,"textLines":1,"bbox":[478.08,526.08,303.36,44.16]}
+{"kind":"textbox","id":"sh/xsfqxs36","slide":4,"name":"Text 57","text":"Direct + feature branches","textPreview":"Direct + feature branches","textChars":25,"textLines":1,"bbox":[516.08,481.92,265.36,34.56]}
+{"kind":"textbox","id":"sh/do761ova","slide":4,"name":"Text 58","text":"893 direct pairs; 227 VF features; 493 typed MLST episodes","textPreview":"893 direct pairs; 227 VF features; 493 typed MLST episodes","textChars":58,"textLines":1,"bbox":[478.08,526.08,303.36,44.16]}
 {"kind":"shape","id":"sh/cnyp8jep","slide":4,"name":"Shape 59","bbox":[472.32,478.08,26.88,26.88]}
 {"kind":"textbox","id":"sh/bmpozed4","slide":4,"name":"Text 60","text":"8","textPreview":"8","textChars":1,"textLines":1,"bbox":[472.32,482.88,26.88,9.6]}
-{"kind":"textbox","id":"sh/qlg769wj","slide":4,"name":"Text 61","text":"main analysis","textPreview":"main analysis","textChars":13,"textLines":1,"bbox":[510.72,504.96,268.8,13.44]}
+{"kind":"textbox","id":"sh/qlg769wj","slide":4,"name":"Text 61","text":"parallel evidence","textPreview":"parallel evidence","textChars":17,"textLines":1,"bbox":[510.72,504.96,268.8,13.44]}
 {"kind":"shape","id":"sh/0bipc3el","slide":4,"name":"Shape 63","bbox":[850.56,466.56,337.92,103.68]}
-{"kind":"textbox","id":"sh/zq9o3ydg","slide":4,"name":"Text 64","text":"Longcycler sensitivity","textPreview":"Longcycler sensitivity","textChars":22,"textLines":1,"bbox":[905.84,481.92,265.36,34.56]}
-{"kind":"textbox","id":"sh/yp07atwv","slide":4,"name":"Text 65","text":"Retain 532; exclude 24 Flye; rebuild 371 transitions with 9 new adjacencies","textPreview":"Retain 532; exclude 24 Flye; rebuild 371 transitions with 9 new adjacencies","textChars":75,"textLines":1,"bbox":[867.84,526.08,303.36,44.16]}
+{"kind":"textbox","id":"sh/zq9o3ydg","slide":4,"name":"Text 64","text":"Longitudinal + focused","textPreview":"Longitudinal + focused","textChars":22,"textLines":1,"bbox":[905.84,481.92,265.36,34.56]}
+{"kind":"textbox","id":"sh/yp07atwv","slide":4,"name":"Text 65","text":"371 transitions; 9 focused; 5 at ≤25; casebook 9/9 linked","textPreview":"371 transitions; 9 focused; 5 at ≤25; casebook 9/9 linked","textChars":57,"textLines":1,"bbox":[867.84,526.08,303.36,44.16]}
 {"kind":"shape","id":"sh/9grq98vi","slide":4,"name":"Shape 66","bbox":[862.08,478.08,26.88,26.88]}
 {"kind":"textbox","id":"sh/8fipg3ex","slide":4,"name":"Text 67","text":"9","textPreview":"9","textChars":1,"textLines":1,"bbox":[862.08,482.88,26.88,9.6]}
-{"kind":"textbox","id":"sh/6psve183","slide":4,"name":"Text 68","text":"separate sensitivity route","textPreview":"separate sensitivity route","textChars":26,"textLines":1,"bbox":[900.48,504.96,268.8,13.44]}
-{"kind":"textbox","id":"sh/7a1cn6po","slide":4,"text":"ASSEMBLY / QC TRACK","textPreview":"ASSEMBLY / QC TRACK","textChars":19,"textLines":1,"bbox":[70,146,260,18]}
-{"kind":"shape","id":"sh/8badgbq9","slide":4,"bbox":[408.96,222.72,51.84,0]}
-{"kind":"shape","id":"sh/tcjupg7u","slide":4,"bbox":[798.72,222.72,51.84,0]}
-{"kind":"shape","id":"sh/udcvil8z","slide":4,"bbox":[240,274.56,779.52,44.16]}
-{"kind":"shape","id":"sh/velcrqpk","slide":4,"bbox":[408.96,370.56,51.84,0]}
-{"kind":"shape","id":"sh/gfudkvq5","slide":4,"bbox":[798.72,370.56,51.84,0]}
-{"kind":"shape","id":"sh/hg3et07q","slide":4,"bbox":[240,422.4,779.52,44.16]}
-{"kind":"shape","id":"sh/ihcvml8b","slide":4,"bbox":[629.76,422.4,389.76,44.16]}
-{"kind":"shape","id":"sh/3ilwvqpw","slide":4,"bbox":[1019.52,422.4,0,44.16]}
-{"kind":"notes","id":"nt/jyx0ra1s","slide":4,"text":"Simple explanation: this is two tracks, not one shrinking funnel. Clinical labels are made independently. In parallel, several assembly files can represent one episode until QC and canonical selection leave one genome. The tracks meet only at the participant-timepoint join.\n\nTechnical detail: 1,303 candidate FASTAs reconcile to 1,299 metadata rows (1,295 matched files plus four expected/no-FASTA audit rows), then 1,291 primary candidate assembly records across 579 episode keys. Implemented QC leaves 1,211 passing assembly records across 556 episode keys. Canonical selection keeps one genome per key: 532 Longcycler plus 24 Flye. Linking to clinical status yields 556 mixed rows; 27 of 583 clinical episodes have no selected WGS.\n\nQC boundary: readability, 4-6 Mb, <=200 contigs and N50 >=20 kb. Completeness, contamination and read coverage are not applied here.\n\nLikely question: 'Why is 1,303 to 1,299 not simple attrition?' Answer: unmatched FASTAs are removed while four audit-only expected rows without FASTAs are present in metadata."}
-{"kind":"slide","id":"sl/i107q5of","slide":5,"title":"ASSEMBLER SENSITIVITY","textShapes":28}
+{"kind":"textbox","id":"sh/6psve183","slide":4,"name":"Text 68","text":"RQ01–RQ10 release","textPreview":"RQ01–RQ10 release","textChars":17,"textLines":1,"bbox":[900.48,504.96,268.8,13.44]}
+{"kind":"textbox","id":"sh/7a1cn6po","slide":4,"name":"Rectangle 70","text":"LONGCYCLER INPUT / QC TRACK","textPreview":"LONGCYCLER INPUT / QC TRACK","textChars":27,"textLines":1,"bbox":[70,146,260,18]}
+{"kind":"shape","id":"sh/903i187m","slide":4,"name":"Straight Arrow Connector 143","bbox":[408.96,222.72,51.84,0]}
+{"kind":"shape","id":"sh/ozuh8361","slide":4,"name":"Straight Arrow Connector 144","bbox":[798.72,222.72,51.84,0]}
+{"kind":"shape","id":"sh/32h0nepc","slide":4,"name":"Straight Arrow Connector 145","bbox":[240,274.56,779.52,44.16]}
+{"kind":"shape","id":"sh/218zu9or","slide":4,"name":"Straight Arrow Connector 146","bbox":[408.96,370.56,51.84,0]}
+{"kind":"shape","id":"sh/ulcza9wn","slide":4,"name":"Straight Arrow Connector 147","bbox":[798.72,370.56,51.84,0]}
+{"kind":"shape","id":"sh/vml03ex8","slide":4,"name":"Straight Arrow Connector 148","bbox":[240,422.4,779.52,44.16]}
+{"kind":"shape","id":"sh/gnuhcjed","slide":4,"name":"Elbow Connector 149","bbox":[629.76,422.4,389.76,44.16]}
+{"kind":"shape","id":"sh/ho3i5ofy","slide":4,"name":"Straight Arrow Connector 150","bbox":[1019.52,422.4,0,44.16]}
+{"kind":"notes","id":"nt/jyx0ra1s","slide":4,"text":"The selected manifest is content-bound and key-locked. The 583-episode clinical source is visible only as attrition/QC context; all analytical branches use the exact 532-episode cohort."}
+{"kind":"slide","id":"sl/i107q5of","slide":5,"title":"GENOMIC ANALYSES","textShapes":21}
 {"kind":"shape","id":"sh/dgbulwnm","slide":5,"name":"Shape 0","bbox":[0,0,1280,720]}
 {"kind":"shape","id":"sh/cf2tcr61","slide":5,"name":"Shape 1","bbox":[0,0,12.48,720]}
-{"kind":"textbox","id":"sh/z2tcnm5s","slide":5,"name":"Text 2","text":"        ASSEMBLER SENSITIVITY","textPreview":"ASSEMBLER SENSITIVITY","textChars":29,"textLines":1,"bbox":[53.76,28.8,883.2,21.12]}
-{"kind":"textbox","id":"sh/yhkbe1o7","slide":5,"name":"Text 3","text":"The executed analysis is mixed; Longcycler-only tests assembler sensitivity","textPreview":"The executed analysis is mixed; Longcycler-only tests assembler sensitivity","textChars":75,"textLines":1,"bbox":[53.76,55.68,1142.4,46.08]}
-{"kind":"textbox","id":"sh/l4bupwny","slide":5,"name":"Text 4","text":"   The restriction reduces one source of technical variation, but it can also change who and what remains represented.","textPreview":"The restriction reduces one source of technical variation, but it can also change who and what remains represented.","textChars":118,"textLines":1,"bbox":[53.76,103.68,1123.2,30.72]}
+{"kind":"textbox","id":"sh/z2tcnm5s","slide":5,"name":"Text 2","text":"GENOMIC ANALYSES","textPreview":"GENOMIC ANALYSES","textChars":16,"textLines":1,"bbox":[53.76,28.8,883.2,21.12]}
+{"kind":"textbox","id":"sh/yhkbe1o7","slide":5,"name":"Text 3","text":"All branches begin with the same 532 selected Longcycler episodes","textPreview":"All branches begin with the same 532 selected Longcycler episodes","textChars":65,"textLines":1,"bbox":[53.76,55.68,1142.4,46.08]}
+{"kind":"textbox","id":"sh/l4bupwny","slide":5,"name":"Text 4","text":"Each branch answers a different question; integration occurs only through explicit exact-key joins.","textPreview":"Each branch answers a different question; integration occurs only through explicit exact-key joins.","textChars":99,"textLines":1,"bbox":[53.76,103.68,1123.2,30.72]}
 {"kind":"shape","id":"sh/032tgr6d","slide":5,"name":"Shape 5","bbox":[53.76,141.12,1169.28,0]}
 {"kind":"shape","id":"sh/n6dcr65o","slide":5,"name":"Shape 6","bbox":[53.76,675.84,1169.28,0]}
-{"kind":"textbox","id":"sh/m5kbi1oj","slide":5,"name":"Text 7","text":"          Source: selected canonical assembly manifest and Longcycler sensitivity rebuild","textPreview":"Source: selected canonical assembly manifest and Longcycler sensitivity rebuild","textChars":89,"textLines":1,"bbox":[75.76,683.52,832.4,17.28]}
+{"kind":"textbox","id":"sh/m5kbi1oj","slide":5,"name":"Text 7","text":"      Sources: claim-linked VF, MLST, direct-pair, core-genome and pangenome outputs","textPreview":"Sources: claim-linked VF, MLST, direct-pair, core-genome and pangenome outputs","textChars":84,"textLines":1,"bbox":[75.76,683.52,832.4,17.28]}
 {"kind":"textbox","id":"sh/w32dkbuh","slide":5,"name":"Text 8","text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[1147.2,683.52,74.88,17.28]}
-{"kind":"shape","id":"sh/x4vedgvm","slide":5,"name":"Shape 9","bbox":[80.64,184.32,168.96,82.56]}
-{"kind":"textbox","id":"sh/ahkvi1cb","slide":5,"name":"Text 10","text":"556","textPreview":"556","textChars":3,"textLines":1,"bbox":[88.32,197.76,153.6,28.8]}
-{"kind":"textbox","id":"sh/v2twb6dw","slide":5,"name":"Text 11","text":"executed mixed-canonical rows","textPreview":"executed mixed-canonical rows","textChars":29,"textLines":1,"bbox":[90.24,234.24,149.76,21.12]}
-{"kind":"shape","id":"sh/k7mxovud","slide":5,"name":"Shape 12","bbox":[291.84,184.32,168.96,82.56]}
-{"kind":"textbox","id":"sh/58vehgvy","slide":5,"name":"Text 13","text":"532","textPreview":"532","textChars":3,"textLines":1,"bbox":[299.52,197.76,153.6,28.8]}
-{"kind":"textbox","id":"sh/i54fmlc7","slide":5,"name":"Text 14","text":"Longcycler-selected rows","textPreview":"Longcycler-selected rows","textChars":24,"textLines":1,"bbox":[301.44,234.24,149.76,21.12]}
-{"kind":"shape","id":"sh/j6dwfqds","slide":5,"name":"Shape 15","bbox":[503.04,184.32,168.96,82.56]}
-{"kind":"textbox","id":"sh/sb6xsvu9","slide":5,"name":"Text 16","text":"24","textPreview":"24","textChars":2,"textLines":1,"bbox":[510.72,197.76,153.6,28.8]}
-{"kind":"textbox","id":"sh/tcfel0vu","slide":5,"name":"Text 17","text":"Flye fallback rows excluded","textPreview":"Flye fallback rows excluded","textChars":27,"textLines":1,"bbox":[512.64,234.24,149.76,21.12]}
-{"kind":"shape","id":"sh/hgrmpwj2","slide":5,"name":"Shape 18","bbox":[714.24,184.32,168.96,82.56]}
-{"kind":"textbox","id":"sh/gfi5grih","slide":5,"name":"Text 19","text":"17 -> 16","textPreview":"17 -> 16","textChars":8,"textLines":1,"bbox":[721.92,197.76,153.6,28.8]}
-{"kind":"textbox","id":"sh/fe94nm1w","slide":5,"name":"Text 20","text":"UTI rows after restriction","textPreview":"UTI rows after restriction","textChars":26,"textLines":1,"bbox":[723.84,234.24,149.76,21.12]}
-{"kind":"shape","id":"sh/ud0ne10b","slide":5,"name":"Shape 21","bbox":[925.44,184.32,168.96,82.56]}
-{"kind":"textbox","id":"sh/pkr6tgjy","slide":5,"name":"Text 22","text":"9","textPreview":"9","textChars":1,"textLines":1,"bbox":[933.12,197.76,153.6,28.8]}
-{"kind":"textbox","id":"sh/4ji5kbid","slide":5,"name":"Text 23","text":"new Longcycler adjacencies","textPreview":"new Longcycler adjacencies","textChars":26,"textLines":1,"bbox":[935.04,234.24,149.76,21.12]}
-{"kind":"textbox","id":"sh/3i94r61s","slide":5,"name":"Text 24","text":"Why the timeline is rebuilt","textPreview":"Why the timeline is rebuilt","textChars":27,"textLines":1,"bbox":[97.92,334.08,288,23.04]}
-{"kind":"shape","id":"sh/2h0ni107","slide":5,"name":"Shape 25","bbox":[147.84,410.88,63.36,63.36]}
-{"kind":"textbox","id":"sh/5o7mhcju","slide":5,"name":"Text 26","text":"Longcycler","textPreview":"Longcycler","textChars":10,"textLines":1,"bbox":[138.24,432,82.56,15.36]}
-{"kind":"textbox","id":"sh/kny587i9","slide":5,"name":"Text 27","text":"retained T0","textPreview":"retained T0","textChars":11,"textLines":1,"bbox":[130.56,493.44,97.92,15.36]}
-{"kind":"shape","id":"sh/atcjidg7","slide":5,"name":"Shape 28","bbox":[222.72,442.56,122.88,0]}
-{"kind":"shape","id":"sh/vu5kbihc","slide":5,"name":"Shape 29","bbox":[359.04,410.88,63.36,63.36]}
-{"kind":"textbox","id":"sh/wve1knyx","slide":5,"name":"Text 30","text":"Longcycler","textPreview":"Longcycler","textChars":10,"textLines":1,"bbox":[349.44,432,82.56,15.36]}
-{"kind":"textbox","id":"sh/xwn2dszi","slide":5,"name":"Text 31","text":"retained T1","textPreview":"retained T1","textChars":11,"textLines":1,"bbox":[341.76,493.44,97.92,15.36]}
-{"kind":"shape","id":"sh/ihw3mxg3","slide":5,"name":"Shape 32","bbox":[433.92,442.56,122.88,0]}
-{"kind":"shape","id":"sh/ji5kf2ho","slide":5,"name":"Shape 33","bbox":[570.24,410.88,63.36,63.36]}
-{"kind":"textbox","id":"sh/kjelony9","slide":5,"name":"Text 34","text":"Flye","textPreview":"Flye","textChars":4,"textLines":1,"bbox":[560.64,432,82.56,15.36]}
-{"kind":"textbox","id":"sh/5kn2hszu","slide":5,"name":"Text 35","text":"removed T2","textPreview":"removed T2","textChars":10,"textLines":1,"bbox":[552.96,493.44,97.92,15.36]}
-{"kind":"shape","id":"sh/e1sjatgz","slide":5,"name":"Shape 36","bbox":[645.12,442.56,122.88,0]}
-{"kind":"shape","id":"sh/zmlk3yhk","slide":5,"name":"Shape 37","bbox":[781.44,410.88,63.36,63.36]}
-{"kind":"textbox","id":"sh/fid07u98","slide":5,"name":"Text 38","text":"Longcycler","textPreview":"Longcycler","textChars":10,"textLines":1,"bbox":[771.84,432,82.56,15.36]}
-{"kind":"textbox","id":"sh/ehkzepsn","slide":5,"name":"Text 39","text":"newly adjacent T3","textPreview":"newly adjacent T3","textChars":17,"textLines":1,"bbox":[764.16,493.44,97.92,15.36]}
-{"kind":"shape","id":"sh/1kvi94re","slide":5,"name":"Shape 40","bbox":[856.32,442.56,122.88,0]}
-{"kind":"shape","id":"sh/gjmhgzqt","slide":5,"name":"Shape 41","bbox":[992.64,410.88,63.36,63.36]}
-{"kind":"textbox","id":"sh/3md0bu94","slide":5,"name":"Text 42","text":"Longcycler","textPreview":"Longcycler","textChars":10,"textLines":1,"bbox":[983.04,432,82.56,15.36]}
-{"kind":"textbox","id":"sh/2l4zip8j","slide":5,"name":"Text 43","text":"retained UTI event","textPreview":"retained UTI event","textChars":18,"textLines":1,"bbox":[975.36,493.44,97.92,15.36]}
-{"kind":"shape","id":"sh/povid4ra","slide":5,"name":"Shape 44","bbox":[97.92,577.92,1065.6,63.36]}
-{"kind":"textbox","id":"sh/onmhkzqp","slide":5,"name":"Text 45","text":"Interpretation stance","textPreview":"Interpretation stance","textChars":21,"textLines":1,"bbox":[115.2,593.28,1031.04,34.56]}
-{"kind":"textbox","id":"sh/bqx0fe9g","slide":5,"name":"Text 46","text":"The restriction removes one participant and one UTI-linked row, and it creates nine new Longcycler-to-Longcycler adjacencies. Rebuild the timeline and treat fallback availability as a possible selection mechanism.","textPreview":"The restriction removes one participant and one UTI-linked row, and it creates nine new Longcycler-to-Longcycler adjacencies. Rebuild the...","textChars":213,"textLines":1,"bbox":[115.2,604.8,1031.04,36.48]}
-{"kind":"notes","id":"nt/i107q5of","slide":5,"text":"Simple explanation: using one assembler is like using one reconstruction method throughout, but removing observations can change the sampled group and which visits become neighbours.\n\nTechnical detail: the restriction removes 24 Flye fallback rows, changes 162 to 161 participants and 17 to 16 UTI rows, and creates nine new Longcycler-to-Longcycler adjacencies. Therefore the Longcycler timeline is rebuilt from 532 retained rows rather than filtered from the mixed transition table.\n\nSafe wording: report this as a sensitivity analysis and acknowledge possible selection by fallback availability."}
-{"kind":"slide","id":"sl/x8f69ofe","slide":6,"title":"GENOMIC ANALYSES","textShapes":22}
+{"kind":"shape","id":"sh/x4vedgvm","slide":5,"name":"Shape 9","bbox":[78.72,184.32,278.4,128.64]}
+{"kind":"textbox","id":"sh/ahkvi1cb","slide":5,"name":"Text 10","text":"VFDB screening","textPreview":"VFDB screening","textChars":14,"textLines":1,"bbox":[96,199.68,243.84,34.56]}
+{"kind":"textbox","id":"sh/v2twb6dw","slide":5,"name":"Text 11","text":"ABRicate/VFDB at ≥80% identity and ≥80% coverage yields 227 binary features on the selected cohort.","textPreview":"ABRicate/VFDB at ≥80% identity and ≥80% coverage yields 227 binary features on the selected cohort.","textChars":99,"textLines":1,"bbox":[96,236.16,243.84,72.96]}
+{"kind":"shape","id":"sh/k7mxovud","slide":5,"name":"Shape 12","bbox":[501.12,184.32,278.4,128.64]}
+{"kind":"textbox","id":"sh/58vehgvy","slide":5,"name":"Text 13","text":"MLST and integration","textPreview":"MLST and integration","textChars":20,"textLines":1,"bbox":[518.4,199.68,243.84,34.56]}
+{"kind":"textbox","id":"sh/i54fmlc7","slide":5,"name":"Text 14","text":"Key-linked provider calls are accepted for selected episode keys; ST remains lineage context.","textPreview":"Key-linked provider calls are accepted for selected episode keys; ST remains lineage context.","textChars":93,"textLines":1,"bbox":[518.4,236.16,243.84,72.96]}
+{"kind":"shape","id":"sh/j6dwfqds","slide":5,"name":"Shape 15","bbox":[923.52,184.32,278.4,128.64]}
+{"kind":"textbox","id":"sh/sb6xsvu9","slide":5,"name":"Text 16","text":"Direct pairs and population context","textPreview":"Direct pairs and population context","textChars":35,"textLines":1,"bbox":[940.8,199.68,243.84,34.56]}
+{"kind":"textbox","id":"sh/tcfel0vu","slide":5,"name":"Text 17","text":"All 893 direct pairs use hash-bound selected FASTAs; core and pangenome branches use the same cohort.","textPreview":"All 893 direct pairs use hash-bound selected FASTAs; core and pangenome branches use the same cohort.","textChars":101,"textLines":1,"bbox":[940.8,236.16,243.84,72.96]}
+{"kind":"shape","id":"sh/fe94nm1w","slide":5,"name":"Shape 20","bbox":[101.76,401.28,13.44,11.52]}
+{"kind":"shape","id":"sh/ud0ne10b","slide":5,"name":"Shape 21","bbox":[120,401.28,13.44,11.52]}
+{"kind":"shape","id":"sh/pkr6tgjy","slide":5,"name":"Shape 22","bbox":[138.24,401.28,13.44,11.52]}
+{"kind":"shape","id":"sh/4ji5kbid","slide":5,"name":"Shape 23","bbox":[156.48,401.28,13.44,11.52]}
+{"kind":"shape","id":"sh/3i94r61s","slide":5,"name":"Shape 24","bbox":[174.72,401.28,13.44,11.52]}
+{"kind":"shape","id":"sh/2h0ni107","slide":5,"name":"Shape 25","bbox":[192.96,401.28,13.44,11.52]}
+{"kind":"shape","id":"sh/5o7mhcju","slide":5,"name":"Shape 26","bbox":[211.2,401.28,13.44,11.52]}
+{"kind":"shape","id":"sh/kny587i9","slide":5,"name":"Shape 27","bbox":[229.44,401.28,13.44,11.52]}
+{"kind":"shape","id":"sh/atcjidg7","slide":5,"name":"Shape 28","bbox":[247.68,401.28,13.44,11.52]}
+{"kind":"shape","id":"sh/vu5kbihc","slide":5,"name":"Shape 29","bbox":[265.92,401.28,13.44,11.52]}
+{"kind":"shape","id":"sh/wve1knyx","slide":5,"name":"Shape 30","bbox":[101.76,417.6,13.44,11.52]}
+{"kind":"shape","id":"sh/xwn2dszi","slide":5,"name":"Shape 31","bbox":[120,417.6,13.44,11.52]}
+{"kind":"shape","id":"sh/ihw3mxg3","slide":5,"name":"Shape 32","bbox":[138.24,417.6,13.44,11.52]}
+{"kind":"shape","id":"sh/ji5kf2ho","slide":5,"name":"Shape 33","bbox":[156.48,417.6,13.44,11.52]}
+{"kind":"shape","id":"sh/kjelony9","slide":5,"name":"Shape 34","bbox":[174.72,417.6,13.44,11.52]}
+{"kind":"shape","id":"sh/5kn2hszu","slide":5,"name":"Shape 35","bbox":[192.96,417.6,13.44,11.52]}
+{"kind":"shape","id":"sh/e1sjatgz","slide":5,"name":"Shape 36","bbox":[211.2,417.6,13.44,11.52]}
+{"kind":"shape","id":"sh/zmlk3yhk","slide":5,"name":"Shape 37","bbox":[229.44,417.6,13.44,11.52]}
+{"kind":"shape","id":"sh/fid07u98","slide":5,"name":"Shape 38","bbox":[247.68,417.6,13.44,11.52]}
+{"kind":"shape","id":"sh/ehkzepsn","slide":5,"name":"Shape 39","bbox":[265.92,417.6,13.44,11.52]}
+{"kind":"shape","id":"sh/1kvi94re","slide":5,"name":"Shape 40","bbox":[101.76,433.92,13.44,11.52]}
+{"kind":"shape","id":"sh/gjmhgzqt","slide":5,"name":"Shape 41","bbox":[120,433.92,13.44,11.52]}
+{"kind":"shape","id":"sh/3md0bu94","slide":5,"name":"Shape 42","bbox":[138.24,433.92,13.44,11.52]}
+{"kind":"shape","id":"sh/2l4zip8j","slide":5,"name":"Shape 43","bbox":[156.48,433.92,13.44,11.52]}
+{"kind":"shape","id":"sh/povid4ra","slide":5,"name":"Shape 44","bbox":[174.72,433.92,13.44,11.52]}
+{"kind":"shape","id":"sh/onmhkzqp","slide":5,"name":"Shape 45","bbox":[192.96,433.92,13.44,11.52]}
+{"kind":"shape","id":"sh/bqx0fe9g","slide":5,"name":"Shape 46","bbox":[211.2,433.92,13.44,11.52]}
+{"kind":"shape","id":"sh/qp4jm98v","slide":5,"name":"Shape 47","bbox":[229.44,433.92,13.44,11.52]}
+{"kind":"shape","id":"sh/8f6hcj6t","slide":5,"name":"Shape 48","bbox":[247.68,433.92,13.44,11.52]}
+{"kind":"shape","id":"sh/9gfy5o7e","slide":5,"name":"Shape 49","bbox":[265.92,433.92,13.44,11.52]}
+{"kind":"shape","id":"sh/mdoza9o3","slide":5,"name":"Shape 50","bbox":[101.76,450.24,13.44,11.52]}
+{"kind":"shape","id":"sh/nexg3epo","slide":5,"name":"Shape 51","bbox":[120,450.24,13.44,11.52]}
+{"kind":"shape","id":"sh/0r6h8z6x","slide":5,"name":"Shape 52","bbox":[138.24,450.24,13.44,11.52]}
+{"kind":"shape","id":"sh/lcfy147i","slide":5,"name":"Shape 53","bbox":[156.48,450.24,13.44,11.52]}
+{"kind":"shape","id":"sh/yp4z69or","slide":5,"name":"Shape 54","bbox":[174.72,450.24,13.44,11.52]}
+{"kind":"shape","id":"sh/zqxgzupc","slide":5,"name":"Shape 55","bbox":[192.96,450.24,13.44,11.52]}
+{"kind":"shape","id":"sh/cnmh4z61","slide":5,"name":"Shape 56","bbox":[211.2,450.24,13.44,11.52]}
+{"kind":"shape","id":"sh/dovyx476","slide":5,"name":"Shape 57","bbox":[229.44,450.24,13.44,11.52]}
+{"kind":"shape","id":"sh/t8n6lwvy","slide":5,"name":"Shape 58","bbox":[247.68,450.24,13.44,11.52]}
+{"kind":"shape","id":"sh/s7u5crud","slide":5,"name":"Shape 59","bbox":[265.92,450.24,13.44,11.52]}
+{"kind":"shape","id":"sh/r6lojmds","slide":5,"name":"Shape 60","bbox":[101.76,466.56,13.44,11.52]}
+{"kind":"shape","id":"sh/65cnahc7","slide":5,"name":"Shape 61","bbox":[120,466.56,13.44,11.52]}
+{"kind":"shape","id":"sh/5436hcv2","slide":5,"name":"Shape 62","bbox":[138.24,466.56,13.44,11.52]}
+{"kind":"shape","id":"sh/43u587uh","slide":5,"name":"Shape 63","bbox":[156.48,466.56,13.44,11.52]}
+{"kind":"shape","id":"sh/j2lofmdw","slide":5,"name":"Shape 64","bbox":[174.72,466.56,13.44,11.52]}
+{"kind":"shape","id":"sh/i1cn6hcb","slide":5,"name":"Shape 65","bbox":[192.96,466.56,13.44,11.52]}
+{"kind":"shape","id":"sh/p076tgv6","slide":5,"name":"Shape 66","bbox":[211.2,466.56,13.44,11.52]}
+{"kind":"shape","id":"sh/ozepkbul","slide":5,"name":"Shape 67","bbox":[229.44,466.56,13.44,11.52]}
+{"kind":"shape","id":"sh/m583eds3","slide":5,"name":"Shape 68","bbox":[247.68,466.56,13.44,11.52]}
+{"kind":"shape","id":"sh/76hk7ito","slide":5,"name":"Shape 69","bbox":[265.92,466.56,13.44,11.52]}
+{"kind":"shape","id":"sh/87qlgna9","slide":5,"name":"Shape 70","bbox":[101.76,482.88,13.44,11.52]}
+{"kind":"shape","id":"sh/98z298bu","slide":5,"name":"Shape 71","bbox":[120,482.88,13.44,11.52]}
+{"kind":"shape","id":"sh/yho3atsr","slide":5,"name":"Shape 72","bbox":[138.24,482.88,13.44,11.52]}
+{"kind":"shape","id":"sh/zihk3ytc","slide":5,"name":"Shape 73","bbox":[156.48,482.88,13.44,11.52]}
+{"kind":"shape","id":"sh/kjqlc3ax","slide":5,"name":"Shape 74","bbox":[174.72,482.88,13.44,11.52]}
+{"kind":"shape","id":"sh/lkz258bi","slide":5,"name":"Shape 75","bbox":[192.96,482.88,13.44,11.52]}
+{"kind":"shape","id":"sh/ids3mxsb","slide":5,"name":"Shape 76","bbox":[211.2,482.88,13.44,11.52]}
+{"kind":"shape","id":"sh/je14f2tw","slide":5,"name":"Shape 77","bbox":[229.44,482.88,13.44,11.52]}
+{"kind":"shape","id":"sh/ruxkz2l0","slide":5,"name":"Shape 78","bbox":[247.68,482.88,13.44,11.52]}
+{"kind":"shape","id":"sh/qto36xkf","slide":5,"name":"Shape 79","bbox":[265.92,482.88,13.44,11.52]}
+{"kind":"textbox","id":"sh/dwz21s36","slide":5,"name":"Text 80","text":"Branches share inputs but remain methodologically distinct; the arrows show common provenance, not a sequence.","textPreview":"Branches share inputs but remain methodologically distinct; the arrows show common provenance, not a sequence.","textChars":110,"textLines":1,"bbox":[78.72,520.32,288,36.48]}
+{"kind":"shape","id":"sh/sv6l8n2l","slide":5,"name":"Shape 81","bbox":[504.96,387.84,120.96,26.88]}
+{"kind":"textbox","id":"sh/3qxkvilo","slide":5,"name":"Text 82","text":"VFDB","textPreview":"VFDB","textChars":4,"textLines":1,"bbox":[510.72,393.6,109.44,13.44]}
+{"kind":"shape","id":"sh/ipo32dk3","slide":5,"name":"Shape 83","bbox":[648.96,387.84,120.96,26.88]}
+{"kind":"textbox","id":"sh/5sf2xs3u","slide":5,"name":"Text 84","text":"MLST","textPreview":"MLST","textChars":4,"textLines":1,"bbox":[654.72,393.6,109.44,13.44]}
+{"kind":"shape","id":"sh/4r6l4n29","slide":5,"name":"Shape 85","bbox":[504.96,433.92,120.96,26.88]}
+{"kind":"textbox","id":"sh/v2dkrils","slide":5,"name":"Text 86","text":"clinical join","textPreview":"clinical join","textChars":13,"textLines":1,"bbox":[510.72,439.68,109.44,13.44]}
+{"kind":"shape","id":"sh/u14jydk7","slide":5,"name":"Shape 87","bbox":[648.96,433.92,120.96,26.88]}
+{"kind":"textbox","id":"sh/0vi9cfet","slide":5,"name":"Text 88","text":"direct pairs","textPreview":"direct pairs","textChars":12,"textLines":1,"bbox":[654.72,439.68,109.44,13.44]}
+{"kind":"shape","id":"sh/lwrqlkfe","slide":5,"name":"Shape 89","bbox":[504.96,480,120.96,26.88]}
+{"kind":"textbox","id":"sh/yt0ra5wn","slide":5,"name":"Text 90","text":"core genome","textPreview":"core genome","textChars":11,"textLines":1,"bbox":[510.72,485.76,109.44,13.44]}
+{"kind":"shape","id":"sh/zu98jax8","slide":5,"name":"Shape 91","bbox":[648.96,480,120.96,26.88]}
+{"kind":"textbox","id":"sh/8z29gfep","slide":5,"name":"Text 92","text":"pangenome","textPreview":"pangenome","textChars":9,"textLines":1,"bbox":[654.72,485.76,109.44,13.44]}
+{"kind":"shape","id":"sh/9kbqpkfa","slide":5,"name":"Shape 93","bbox":[900.48,380.16,289.92,128.64]}
+{"kind":"textbox","id":"sh/mx0repwz","slide":5,"name":"Text 94","text":"Interpretation boundary","textPreview":"Interpretation boundary","textChars":23,"textLines":1,"bbox":[917.76,395.52,255.36,34.56]}
+{"kind":"textbox","id":"sh/ny98nuxk","slide":5,"name":"Text 95","text":"Direct pair evidence is primary. Graph transitivity or ST agreement cannot override a direct distance above 25 SNPs, and no branch establishes causation.","textPreview":"Direct pair evidence is primary. Graph transitivity or ST agreement cannot override a direct distance above 25 SNPs, and no branch establ...","textChars":153,"textLines":1,"bbox":[917.76,432,255.36,72.96]}
+{"kind":"textbox","id":"sh/e1w7y5w7","slide":5,"name":"Rounded Rectangle 99","text":"532 selected Longcycler episodes","textPreview":"532 selected Longcycler episodes","textChars":32,"textLines":1,"bbox":[520,148,240,28]}
+{"kind":"shape","id":"sh/upg3adwb","slide":5,"name":"Elbow Connector 200","bbox":[217.92,176,422.08,8.32]}
+{"kind":"shape","id":"sh/2xw7yxsf","slide":5,"name":"Elbow Connector 201","bbox":[640,176,0.32,8.32]}
+{"kind":"shape","id":"sh/3y58r290","slide":5,"name":"Elbow Connector 202","bbox":[640,176,422.72,8.32]}
+{"kind":"notes","id":"nt/i107q5of","slide":5,"text":"VF, MLST, direct pair, core-genome and pangenome branches share selected inputs but answer distinct questions. Direct pair evidence has priority over graph transitivity and lineage agreement for pair-specific continuity."}
+{"kind":"slide","id":"sl/x8f69ofe","slide":6,"title":"APPENDIX / DENOMINATORS","textShapes":20}
 {"kind":"shape","id":"sh/yhg7epsj","slide":6,"name":"Shape 0","bbox":[0,0,1280,720]}
 {"kind":"shape","id":"sh/zi98nu94","slide":6,"name":"Shape 1","bbox":[0,0,12.48,720]}
-{"kind":"textbox","id":"sh/87ipkzal","slide":6,"name":"Text 2","text":"GENOMIC ANALYSES","textPreview":"GENOMIC ANALYSES","textChars":16,"textLines":1,"bbox":[53.76,28.8,883.2,21.12]}
-{"kind":"textbox","id":"sh/98rqt4r6","slide":6,"name":"Text 3","text":"Selected genomes feed parallel analysis branches","textPreview":"Selected genomes feed parallel analysis branches","textChars":48,"textLines":1,"bbox":[53.76,55.68,1142.4,46.08]}
-{"kind":"textbox","id":"sh/ml07i9sv","slide":6,"name":"Text 4","text":"Each branch answers a different question; the branches are integrated only where the analysis explicitly joins them.","textPreview":"Each branch answers a different question; the branches are integrated only where the analysis explicitly joins them.","textChars":116,"textLines":1,"bbox":[53.76,103.68,1123.2,30.72]}
+{"kind":"textbox","id":"sh/87ipkzal","slide":6,"name":"Text 2","text":"APPENDIX / DENOMINATORS","textPreview":"APPENDIX / DENOMINATORS","textChars":23,"textLines":1,"bbox":[53.76,28.8,883.2,21.12]}
+{"kind":"textbox","id":"sh/98rqt4r6","slide":6,"name":"Text 3","text":"Every analytical denominator stays inside the same selected cohort","textPreview":"Every analytical denominator stays inside the same selected cohort","textChars":66,"textLines":1,"bbox":[53.76,55.68,1142.4,46.08]}
+{"kind":"textbox","id":"sh/ml07i9sv","slide":6,"name":"Text 4","text":"Values are read directly from the final release claim registry after the full rerun.","textPreview":"Values are read directly from the final release claim registry after the full rerun.","textChars":84,"textLines":1,"bbox":[53.76,103.68,1123.2,30.72]}
 {"kind":"shape","id":"sh/7m98ru9g","slide":6,"name":"Shape 5","bbox":[53.76,141.12,1169.28,0]}
 {"kind":"shape","id":"sh/oryp8fah","slide":6,"name":"Shape 6","bbox":[53.76,675.84,1169.28,0]}
-{"kind":"textbox","id":"sh/pc76hkr2","slide":6,"name":"Text 7","text":"  Sources: scripts 02, 06, 11, 12b, 12c and 22","textPreview":"Sources: scripts 02, 06, 11, 12b, 12c and 22","textChars":46,"textLines":1,"bbox":[75.76,683.52,832.4,17.28]}
+{"kind":"textbox","id":"sh/pc76hkr2","slide":6,"name":"Text 7","text":"Source: Longcycler release claim registry and claim-linked outputs","textPreview":"Source: Longcycler release claim registry and claim-linked outputs","textChars":66,"textLines":1,"bbox":[75.76,683.52,832.4,17.28]}
 {"kind":"textbox","id":"sh/h4bupgn6","slide":6,"name":"Text 8","text":"06","textPreview":"06","textChars":2,"textLines":1,"bbox":[1147.2,683.52,74.88,17.28]}
-{"kind":"shape","id":"sh/w32twb6l","slide":6,"name":"Shape 9","bbox":[78.72,184.32,278.4,128.64]}
-{"kind":"textbox","id":"sh/v2tcn650","slide":6,"name":"Text 10","text":"VFDB screening","textPreview":"VFDB screening","textChars":14,"textLines":1,"bbox":[96,199.68,243.84,34.56]}
-{"kind":"textbox","id":"sh/u1kbu1ov","slide":6,"name":"Text 11","text":"Script 02: ABRicate at >=80% identity and >=80% coverage yields 227 binary detected features.","textPreview":"Script 02: ABRicate at >=80% identity and >=80% coverage yields 227 binary detected features.","textChars":93,"textLines":1,"bbox":[96,236.16,243.84,72.96]}
-{"kind":"shape","id":"sh/5svutgni","slide":6,"name":"Shape 12","bbox":[501.12,184.32,278.4,128.64]}
-{"kind":"textbox","id":"sh/47mt0b6x","slide":6,"name":"Text 13","text":"MLST and integration","textPreview":"MLST and integration","textChars":20,"textLines":1,"bbox":[518.4,199.68,243.84,34.56]}
-{"kind":"textbox","id":"sh/j6dcr65c","slide":6,"name":"Text 14","text":"Script 06 supplies preferred ST context; script 22 joins clinical status, VF, MLST and selected-assembly metadata.","textPreview":"Script 06 supplies preferred ST context; script 22 joins clinical status, VF, MLST and selected-assembly metadata.","textChars":114,"textLines":1,"bbox":[518.4,236.16,243.84,72.96]}
-{"kind":"shape","id":"sh/i54bylor","slide":6,"name":"Shape 15","bbox":[923.52,184.32,278.4,128.64]}
-{"kind":"textbox","id":"sh/twfux0ne","slide":6,"name":"Text 16","text":"Genome comparison and context","textPreview":"Genome comparison and context","textChars":29,"textLines":1,"bbox":[940.8,199.68,243.84,34.56]}
-{"kind":"textbox","id":"sh/svmt4v6t","slide":6,"name":"Text 17","text":"Script 11: dnadiff + Mash. Separate population branches: Parsnp/snp-dists (12b) and Prokka/Panaroo (12c).","textPreview":"Script 11: dnadiff + Mash. Separate population branches: Parsnp/snp-dists (12b) and Prokka/Panaroo (12c).","textChars":105,"textLines":1,"bbox":[940.8,236.16,243.84,72.96]}
-{"kind":"shape","id":"sh/qpwnet0b","slide":6,"name":"Shape 20","bbox":[101.76,401.28,13.44,11.52]}
-{"kind":"shape","id":"sh/bq547yhw","slide":6,"name":"Shape 21","bbox":[120,401.28,13.44,11.52]}
-{"kind":"shape","id":"sh/0fy5k3id","slide":6,"name":"Shape 22","bbox":[138.24,401.28,13.44,11.52]}
-{"kind":"shape","id":"sh/lg76d8zy","slide":6,"name":"Shape 23","bbox":[156.48,401.28,13.44,11.52]}
-{"kind":"shape","id":"sh/ydgnit07","slide":6,"name":"Shape 24","bbox":[174.72,401.28,13.44,11.52]}
-{"kind":"shape","id":"sh/zep4byhs","slide":6,"name":"Shape 25","bbox":[192.96,401.28,13.44,11.52]}
-{"kind":"shape","id":"sh/gju58ji9","slide":6,"name":"Shape 26","bbox":[211.2,401.28,13.44,11.52]}
-{"kind":"shape","id":"sh/1k3mhozu","slide":6,"name":"Shape 27","bbox":[229.44,401.28,13.44,11.52]}
-{"kind":"shape","id":"sh/jet8nm1c","slide":6,"name":"Shape 28","bbox":[247.68,401.28,13.44,11.52]}
-{"kind":"shape","id":"sh/idk7ehkr","slide":6,"name":"Shape 29","bbox":[265.92,401.28,13.44,11.52]}
-{"kind":"shape","id":"sh/50bqpcj2","slide":6,"name":"Shape 30","bbox":[101.76,417.6,13.44,11.52]}
-{"kind":"shape","id":"sh/4f2pgr2h","slide":6,"name":"Shape 31","bbox":[120,417.6,13.44,11.52]}
-{"kind":"shape","id":"sh/va98j210","slide":6,"name":"Shape 32","bbox":[138.24,417.6,13.44,11.52]}
-{"kind":"shape","id":"sh/u907axkf","slide":6,"name":"Shape 33","bbox":[156.48,417.6,13.44,11.52]}
-{"kind":"shape","id":"sh/hcrqlcj6","slide":6,"name":"Shape 34","bbox":[174.72,417.6,13.44,11.52]}
-{"kind":"shape","id":"sh/wbipc72l","slide":6,"name":"Shape 35","bbox":[192.96,417.6,13.44,11.52]}
-{"kind":"shape","id":"sh/7698f214","slide":6,"name":"Shape 36","bbox":[211.2,417.6,13.44,11.52]}
-{"kind":"shape","id":"sh/m5076xkj","slide":6,"name":"Shape 37","bbox":[229.44,417.6,13.44,11.52]}
-{"kind":"shape","id":"sh/2dkbalg3","slide":6,"name":"Shape 38","bbox":[247.68,417.6,13.44,11.52]}
-{"kind":"shape","id":"sh/netcjqxo","slide":6,"name":"Shape 39","bbox":[265.92,417.6,13.44,11.52]}
-{"kind":"shape","id":"sh/of2tcvy9","slide":6,"name":"Shape 40","bbox":[101.76,433.92,13.44,11.52]}
-{"kind":"shape","id":"sh/pgbul0fu","slide":6,"name":"Shape 41","bbox":[120,433.92,13.44,11.52]}
-{"kind":"shape","id":"sh/ep0b6lg7","slide":6,"name":"Shape 42","bbox":[138.24,433.92,13.44,11.52]}
-{"kind":"shape","id":"sh/fq9cfqxc","slide":6,"name":"Shape 43","bbox":[156.48,433.92,13.44,11.52]}
-{"kind":"shape","id":"sh/0r2t8vyx","slide":6,"name":"Shape 44","bbox":[174.72,433.92,13.44,11.52]}
-{"kind":"shape","id":"sh/1sbuh0fi","slide":6,"name":"Shape 45","bbox":[192.96,433.92,13.44,11.52]}
-{"kind":"shape","id":"sh/ql0b21gv","slide":6,"name":"Shape 46","bbox":[211.2,433.92,13.44,11.52]}
-{"kind":"shape","id":"sh/rm9sb6xg","slide":6,"name":"Shape 47","bbox":[229.44,433.92,13.44,11.52]}
-{"kind":"shape","id":"sh/9gfeh4zy","slide":6,"name":"Shape 48","bbox":[247.68,433.92,13.44,11.52]}
-{"kind":"shape","id":"sh/8f6x8jid","slide":6,"name":"Shape 49","bbox":[265.92,433.92,13.44,11.52]}
-{"kind":"shape","id":"sh/7exwfehs","slide":6,"name":"Shape 50","bbox":[101.76,450.24,13.44,11.52]}
-{"kind":"shape","id":"sh/mdof6907","slide":6,"name":"Shape 51","bbox":[120,450.24,13.44,11.52]}
-{"kind":"shape","id":"sh/lcfed4z2","slide":6,"name":"Shape 52","bbox":[138.24,450.24,13.44,11.52]}
-{"kind":"shape","id":"sh/kb6d4zih","slide":6,"name":"Shape 53","bbox":[156.48,450.24,13.44,11.52]}
-{"kind":"shape","id":"sh/zaxwbuhw","slide":6,"name":"Shape 54","bbox":[174.72,450.24,13.44,11.52]}
-{"kind":"shape","id":"sh/y94v2p0b","slide":6,"name":"Shape 55","bbox":[192.96,450.24,13.44,11.52]}
-{"kind":"shape","id":"sh/x8ve9kzq","slide":6,"name":"Shape 56","bbox":[211.2,450.24,13.44,11.52]}
-{"kind":"shape","id":"sh/c7md0zi5","slide":6,"name":"Shape 57","bbox":[229.44,450.24,13.44,11.52]}
-{"kind":"shape","id":"sh/o3a5cjud","slide":6,"name":"Shape 58","bbox":[247.68,450.24,13.44,11.52]}
-{"kind":"shape","id":"sh/p4j6loby","slide":6,"name":"Shape 59","bbox":[265.92,450.24,13.44,11.52]}
-{"kind":"shape","id":"sh/21snatc7","slide":6,"name":"Shape 60","bbox":[101.76,466.56,13.44,11.52]}
-{"kind":"shape","id":"sh/n21ojets","slide":6,"name":"Shape 61","bbox":[120,466.56,13.44,11.52]}
-{"kind":"shape","id":"sh/0zq58ju1","slide":6,"name":"Shape 62","bbox":[138.24,466.56,13.44,11.52]}
-{"kind":"shape","id":"sh/10z6hobm","slide":6,"name":"Shape 63","bbox":[156.48,466.56,13.44,11.52]}
-{"kind":"shape","id":"sh/ed8n69cb","slide":6,"name":"Shape 64","bbox":[174.72,466.56,13.44,11.52]}
-{"kind":"shape","id":"sh/fyhofetw","slide":6,"name":"Shape 65","bbox":[192.96,466.56,13.44,11.52]}
-{"kind":"shape","id":"sh/kvu5k3ul","slide":6,"name":"Shape 66","bbox":[211.2,466.56,13.44,11.52]}
-{"kind":"shape","id":"sh/lw36d8b6","slide":6,"name":"Shape 67","bbox":[229.44,466.56,13.44,11.52]}
-{"kind":"shape","id":"sh/vq58j2d8","slide":6,"name":"Shape 68","bbox":[247.68,466.56,13.44,11.52]}
-{"kind":"shape","id":"sh/upwraxwn","slide":6,"name":"Shape 69","bbox":[265.92,466.56,13.44,11.52]}
-{"kind":"shape","id":"sh/hs7qlcve","slide":6,"name":"Shape 70","bbox":[101.76,482.88,13.44,11.52]}
-{"kind":"shape","id":"sh/gre9c7et","slide":6,"name":"Shape 71","bbox":[120,482.88,13.44,11.52]}
-{"kind":"shape","id":"sh/3up8nmd4","slide":6,"name":"Shape 72","bbox":[138.24,482.88,13.44,11.52]}
-{"kind":"shape","id":"sh/itgrehwz","slide":6,"name":"Shape 73","bbox":[156.48,482.88,13.44,11.52]}
-{"kind":"shape","id":"sh/5w7qpwva","slide":6,"name":"Shape 74","bbox":[174.72,482.88,13.44,11.52]}
-{"kind":"shape","id":"sh/4vy9grep","slide":6,"name":"Shape 75","bbox":[192.96,482.88,13.44,11.52]}
-{"kind":"shape","id":"sh/zyl8bid0","slide":6,"name":"Shape 76","bbox":[211.2,482.88,13.44,11.52]}
-{"kind":"shape","id":"sh/yxc72dwf","slide":6,"name":"Shape 77","bbox":[229.44,482.88,13.44,11.52]}
-{"kind":"shape","id":"sh/m9szm1kf","slide":6,"name":"Shape 78","bbox":[247.68,482.88,13.44,11.52]}
-{"kind":"shape","id":"sh/na1gf610","slide":6,"name":"Shape 79","bbox":[265.92,482.88,13.44,11.52]}
-{"kind":"textbox","id":"sh/8bahobil","slide":6,"name":"Text 80","text":"All branches start from the selected canonical set; arrows between methods would incorrectly imply a sequence.","textPreview":"All branches start from the selected canonical set; arrows between methods would incorrectly imply a sequence.","textChars":110,"textLines":1,"bbox":[78.72,520.32,288,36.48]}
-{"kind":"shape","id":"sh/9cjyhgj6","slide":6,"name":"Shape 81","bbox":[504.96,387.84,120.96,26.88]}
-{"kind":"textbox","id":"sh/adszq10r","slide":6,"name":"Text 82","text":"VFDB / 02","textPreview":"VFDB / 02","textChars":9,"textLines":1,"bbox":[510.72,393.6,109.44,13.44]}
-{"kind":"shape","id":"sh/ve1gj61w","slide":6,"name":"Shape 83","bbox":[648.96,387.84,120.96,26.88]}
-{"kind":"textbox","id":"sh/wfahsbih","slide":6,"name":"Text 84","text":"MLST / 06","textPreview":"MLST / 06","textChars":9,"textLines":1,"bbox":[654.72,393.6,109.44,13.44]}
-{"kind":"shape","id":"sh/xg3ylgj2","slide":6,"name":"Shape 85","bbox":[504.96,433.92,120.96,26.88]}
-{"kind":"textbox","id":"sh/qh8fehk7","slide":6,"name":"Text 86","text":"join / 22","textPreview":"join / 22","textChars":9,"textLines":1,"bbox":[510.72,439.68,109.44,13.44]}
-{"kind":"shape","id":"sh/rihg7m1s","slide":6,"name":"Shape 87","bbox":[648.96,433.92,120.96,26.88]}
-{"kind":"textbox","id":"sh/tcn2dk3a","slide":6,"name":"Text 88","text":"dnadiff / 11","textPreview":"dnadiff / 11","textChars":12,"textLines":1,"bbox":[654.72,439.68,109.44,13.44]}
-{"kind":"shape","id":"sh/sbe1kf2p","slide":6,"name":"Shape 89","bbox":[504.96,480,120.96,26.88]}
-{"kind":"textbox","id":"sh/7a50bal4","slide":6,"name":"Text 90","text":"Parsnp / 12b","textPreview":"Parsnp / 12b","textChars":12,"textLines":1,"bbox":[510.72,485.76,109.44,13.44]}
-{"kind":"shape","id":"sh/69wji54z","slide":6,"name":"Shape 91","bbox":[648.96,480,120.96,26.88]}
-{"kind":"textbox","id":"sh/h072hk3m","slide":6,"name":"Text 92","text":"Panaroo / 12c","textPreview":"Panaroo / 12c","textChars":13,"textLines":1,"bbox":[654.72,485.76,109.44,13.44]}
-{"kind":"shape","id":"sh/gzy1oz21","slide":6,"name":"Shape 93","bbox":[900.48,380.16,289.92,128.64]}
-{"kind":"textbox","id":"sh/fy5kfulg","slide":6,"name":"Text 94","text":"Interpretation boundary","textPreview":"Interpretation boundary","textChars":23,"textLines":1,"bbox":[917.76,395.52,255.36,34.56]}
-{"kind":"textbox","id":"sh/udwjmpkv","slide":6,"name":"Text 95","text":"ST is lineage context. dnadiff SNPs are assembly-to-assembly. Parsnp is core-genome. wgMLST allele distances are separate and were not recalculated here.","textPreview":"ST is lineage context. dnadiff SNPs are assembly-to-assembly. Parsnp is core-genome. wgMLST allele distances are separate and were not re...","textChars":153,"textLines":1,"bbox":[917.76,432,255.36,72.96]}
-{"kind":"shape","id":"sh/x43i5032","slide":6,"name":"Shape 96","bbox":[919.68,547.2,195.84,26.88]}
-{"kind":"textbox","id":"sh/w3u1cvmh","slide":6,"name":"Text 97","text":"No genomic branch on its own establishes why a UTI occurred.","textPreview":"No genomic branch on its own establishes why a UTI occurred.","textChars":60,"textLines":1,"bbox":[925.44,552.96,184.32,13.44]}
-{"kind":"textbox","id":"sh/5s721cfe","slide":6,"text":"556 selected canonical genomes","textPreview":"556 selected canonical genomes","textChars":30,"textLines":1,"bbox":[520,148,240,28]}
-{"kind":"shape","id":"sh/4ry187et","slide":6,"bbox":[217.92,176,422.08,8.32]}
-{"kind":"shape","id":"sh/j65kz2x8","slide":6,"bbox":[640,176,0.32,8.32]}
-{"kind":"shape","id":"sh/i5wj6xwn","slide":6,"bbox":[640,176,422.72,8.32]}
-{"kind":"notes","id":"nt/x8f69ofe","slide":6,"text":"Simple explanation: the same selected genomes are examined through several different lenses. One lens does not manufacture the output of another.\n\nTechnical detail: script 02 creates the selected-canonical ABRicate/VFDB matrix; script 06 provides preferred MLST lineage context; script 22 performs the episode-level clinical/VF/MLST/assembly join. Script 11 and its helper provide hash-verified dnadiff and Mash comparisons. Scripts 12b and 12c provide separate Parsnp core-genome and Prokka/Panaroo pangenome context.\n\nSafe wording: ST is lineage context, VF is detected presence/absence and dnadiff is assembly-to-assembly. None alone explains why UTI occurred."}
-{"kind":"slide","id":"sl/gnmp4jqx","slide":7,"title":"LONGITUDINAL RESULT","textShapes":28}
+{"kind":"shape","id":"sh/5svutgni","slide":6,"name":"Shape 12","bbox":[101.76,289.92,249.6,40.32]}
+{"kind":"textbox","id":"sh/47mt0b6x","slide":6,"name":"Text 13","text":"Analytical episodes","textPreview":"Analytical episodes","textChars":19,"textLines":1,"bbox":[119.04,305.28,215.04,19.2]}
+{"kind":"textbox","id":"sh/j6dcr65c","slide":6,"name":"Text 14","text":"532","textPreview":"532","textChars":3,"textLines":1,"bbox":[405.12,288,153.6,34.56]}
+{"kind":"textbox","id":"sh/i54bylor","slide":6,"name":"Text 15","text":"selected QC-passing Longcycler only","textPreview":"selected QC-passing Longcycler only","textChars":35,"textLines":1,"bbox":[564.48,294.72,518.4,19.2]}
+{"kind":"shape","id":"sh/twfux0ne","slide":6,"name":"Shape 16","bbox":[101.76,349.44,249.6,40.32]}
+{"kind":"textbox","id":"sh/svmt4v6t","slide":6,"name":"Text 17","text":"Residents","textPreview":"Residents","textChars":9,"textLines":1,"bbox":[119.04,364.8,215.04,19.2]}
+{"kind":"textbox","id":"sh/cbe5g3ih","slide":6,"name":"Text 18","text":"161","textPreview":"161","textChars":3,"textLines":1,"bbox":[405.12,347.52,153.6,34.56]}
+{"kind":"textbox","id":"sh/dcnm98zm","slide":6,"name":"Text 19","text":"distinct residents in the analytical cohort","textPreview":"distinct residents in the analytical cohort","textChars":43,"textLines":1,"bbox":[564.48,354.24,518.4,19.2]}
+{"kind":"shape","id":"sh/qpwnet0b","slide":6,"name":"Shape 20","bbox":[101.76,408.96,249.6,40.32]}
+{"kind":"textbox","id":"sh/bq547yhw","slide":6,"name":"Text 21","text":"Operational status","textPreview":"Operational status","textChars":18,"textLines":1,"bbox":[119.04,424.32,215.04,19.2]}
+{"kind":"textbox","id":"sh/0fy5k3id","slide":6,"name":"Text 22","text":"16 | 516","textPreview":"16 | 516","textChars":8,"textLines":1,"bbox":[405.12,407.04,153.6,34.56]}
+{"kind":"textbox","id":"sh/lg76d8zy","slide":6,"name":"Text 23","text":"UTI | Not_UTI episode counts","textPreview":"UTI | Not_UTI episode counts","textChars":28,"textLines":1,"bbox":[564.48,413.76,518.4,19.2]}
+{"kind":"shape","id":"sh/ydgnit07","slide":6,"name":"Shape 24","bbox":[101.76,468.48,249.6,40.32]}
+{"kind":"textbox","id":"sh/zep4byhs","slide":6,"name":"Text 25","text":"Direct genome pairs","textPreview":"Direct genome pairs","textChars":19,"textLines":1,"bbox":[119.04,483.84,215.04,19.2]}
+{"kind":"textbox","id":"sh/gju58ji9","slide":6,"name":"Text 26","text":"893","textPreview":"893","textChars":3,"textLines":1,"bbox":[405.12,466.56,153.6,34.56]}
+{"kind":"textbox","id":"sh/1k3mhozu","slide":6,"name":"Text 27","text":"all unordered within-resident comparisons","textPreview":"all unordered within-resident comparisons","textChars":41,"textLines":1,"bbox":[564.48,473.28,518.4,19.2]}
+{"kind":"shape","id":"sh/jet8nm1c","slide":6,"name":"Shape 28","bbox":[101.76,528,249.6,40.32]}
+{"kind":"textbox","id":"sh/idk7ehkr","slide":6,"name":"Text 29","text":"Adjacent transitions","textPreview":"Adjacent transitions","textChars":20,"textLines":1,"bbox":[119.04,543.36,215.04,19.2]}
+{"kind":"textbox","id":"sh/50bqpcj2","slide":6,"name":"Text 30","text":"371","textPreview":"371","textChars":3,"textLines":1,"bbox":[405.12,526.08,153.6,34.56]}
+{"kind":"textbox","id":"sh/4f2pgr2h","slide":6,"name":"Text 31","text":"139 residents; 140 at ≤25; focused 9 → 5","textPreview":"139 residents; 140 at ≤25; focused 9 → 5","textChars":40,"textLines":1,"bbox":[564.48,532.8,518.4,19.2]}
+{"kind":"notes","id":"nt/x8f69ofe","slide":6,"text":"Use this slide when a denominator is challenged. The focused transition result is 9 total and 5 at or below 25 SNPs; the casebook is complete."}
+{"kind":"slide","id":"sl/gnmp4jqx","slide":7,"title":"APPENDIX / METHODS TABLE","textShapes":33}
 {"kind":"shape","id":"sh/cb2tkvap","slide":7,"name":"Shape 0","bbox":[0,0,1280,720]}
 {"kind":"shape","id":"sh/dcbud0ra","slide":7,"name":"Shape 1","bbox":[0,0,12.48,720]}
-{"kind":"textbox","id":"sh/ydkbm5sv","slide":7,"name":"Text 2","text":"LONGITUDINAL RESULT","textPreview":"LONGITUDINAL RESULT","textChars":19,"textLines":1,"bbox":[53.76,28.8,883.2,21.12]}
-{"kind":"textbox","id":"sh/zedcfa9g","slide":7,"name":"Text 3","text":"Longitudinal comparisons are rebuilt after changing the retained episodes","textPreview":"Longitudinal comparisons are rebuilt after changing the retained episodes","textChars":73,"textLines":1,"bbox":[53.76,55.68,1142.4,46.08]}
-{"kind":"textbox","id":"sh/kzmdova1","slide":7,"name":"Text 4","text":"Fresh SNP counts come only from SHA-256-matched current FASTAs and reports.","textPreview":"Fresh SNP counts come only from SHA-256-matched current FASTAs and reports.","textChars":75,"textLines":1,"bbox":[53.76,103.68,1123.2,30.72]}
+{"kind":"textbox","id":"sh/ydkbm5sv","slide":7,"name":"Text 2","text":"        APPENDIX / METHODS TABLE","textPreview":"APPENDIX / METHODS TABLE","textChars":32,"textLines":1,"bbox":[53.76,28.8,883.2,21.12]}
+{"kind":"textbox","id":"sh/zedcfa9g","slide":7,"name":"Text 3","text":"Report the implemented thresholds and the boundaries around them","textPreview":"Report the implemented thresholds and the boundaries around them","textChars":64,"textLines":1,"bbox":[53.76,55.68,1142.4,46.08]}
+{"kind":"textbox","id":"sh/kzmdova1","slide":7,"name":"Text 4","text":"This table describes the claim-linked Longcycler-only route; missing versions are not inferred.","textPreview":"This table describes the claim-linked Longcycler-only route; missing versions are not inferred.","textChars":95,"textLines":1,"bbox":[53.76,103.68,1123.2,30.72]}
 {"kind":"shape","id":"sh/l0vuh0rm","slide":7,"name":"Shape 5","bbox":[53.76,141.12,1169.28,0]}
 {"kind":"shape","id":"sh/eh0ba1sr","slide":7,"name":"Shape 6","bbox":[53.76,675.84,1169.28,0]}
-{"kind":"textbox","id":"sh/fi9c369c","slide":7,"name":"Text 7","text":"Sources: vf_longitudinal_transitions.csv and results/sensitivity/longcycler_only","textPreview":"Sources: vf_longitudinal_transitions.csv and results/sensitivity/longcycler_only","textChars":80,"textLines":1,"bbox":[75.76,683.52,832.4,17.28]}
+{"kind":"textbox","id":"sh/fi9c369c","slide":7,"name":"Text 7","text":"      Sources: release claim registry and claim-linked scripts","textPreview":"Sources: release claim registry and claim-linked scripts","textChars":62,"textLines":1,"bbox":[75.76,683.52,832.4,17.28]}
 {"kind":"textbox","id":"sh/baxkjqlk","slide":7,"name":"Text 8","text":"07","textPreview":"07","textChars":2,"textLines":1,"bbox":[1147.2,683.52,74.88,17.28]}
-{"kind":"shape","id":"sh/a9ojq5kz","slide":7,"name":"Shape 9","bbox":[80.64,184.32,168.96,82.56]}
-{"kind":"textbox","id":"sh/xcz2l03q","slide":7,"name":"Text 10","text":"394","textPreview":"394","textChars":3,"textLines":1,"bbox":[88.32,197.76,153.6,28.8]}
-{"kind":"textbox","id":"sh/cbq1sv25","slide":7,"name":"Text 11","text":"mixed transitions / 144 participants","textPreview":"mixed transitions / 144 participants","textChars":36,"textLines":1,"bbox":[90.24,234.24,149.76,21.12]}
-{"kind":"shape","id":"sh/n6x0fqlo","slide":7,"name":"Shape 12","bbox":[291.84,184.32,168.96,82.56]}
-{"kind":"textbox","id":"sh/25ojml43","slide":7,"name":"Text 13","text":"138 / 394","textPreview":"138 / 394","textChars":9,"textLines":1,"bbox":[299.52,197.76,153.6,28.8]}
-{"kind":"textbox","id":"sh/p8fih03e","slide":7,"name":"Text 14","text":"mixed transitions at <=25 dnadiff SNPs","textPreview":"mixed transitions at <=25 dnadiff SNPs","textChars":38,"textLines":1,"bbox":[301.44,234.24,149.76,21.12]}
-{"kind":"shape","id":"sh/o761ov2t","slide":7,"name":"Shape 15","bbox":[503.04,184.32,168.96,82.56]}
-{"kind":"textbox","id":"sh/f2d0b6lc","slide":7,"name":"Text 16","text":"371","textPreview":"371","textChars":3,"textLines":1,"bbox":[510.72,197.76,153.6,28.8]}
-{"kind":"textbox","id":"sh/eh4jil4r","slide":7,"name":"Text 17","text":"Longcycler transitions / 139 participants","textPreview":"Longcycler transitions / 139 participants","textChars":41,"textLines":1,"bbox":[512.64,234.24,149.76,21.12]}
-{"kind":"shape","id":"sh/id4ju1oz","slide":7,"name":"Shape 18","bbox":[714.24,184.32,168.96,82.56]}
-{"kind":"textbox","id":"sh/jedkn654","slide":7,"name":"Text 19","text":"140 / 371","textPreview":"140 / 371","textChars":9,"textLines":1,"bbox":[721.92,197.76,153.6,28.8]}
-{"kind":"textbox","id":"sh/4fm1wb6p","slide":7,"name":"Text 20","text":"Longcycler transitions at <=25","textPreview":"Longcycler transitions at <=25","textChars":30,"textLines":1,"bbox":[723.84,234.24,149.76,21.12]}
-{"kind":"shape","id":"sh/50v2pgna","slide":7,"name":"Shape 21","bbox":[925.44,184.32,168.96,82.56]}
-{"kind":"textbox","id":"sh/q143ylov","slide":7,"name":"Text 22","text":"5 / 9","textPreview":"5 / 9","textChars":5,"textLines":1,"bbox":[933.12,197.76,153.6,28.8]}
-{"kind":"textbox","id":"sh/r2dkrq5g","slide":7,"name":"Text 23","text":"Not_UTI-to-UTI transitions at <=25","textPreview":"Not_UTI-to-UTI transitions at <=25","textChars":34,"textLines":1,"bbox":[935.04,234.24,149.76,21.12]}
-{"kind":"textbox","id":"sh/s3ml0v61","slide":7,"name":"Text 24","text":"How the focused result is obtained","textPreview":"How the focused result is obtained","textChars":34,"textLines":1,"bbox":[97.92,334.08,288,23.04]}
-{"kind":"shape","id":"sh/d4f2t0nm","slide":7,"name":"Shape 25","bbox":[147.84,410.88,63.36,63.36]}
-{"kind":"textbox","id":"sh/e5o32lor","slide":7,"name":"Text 26","text":"Mixed timeline","textPreview":"Mixed timeline","textChars":14,"textLines":1,"bbox":[138.24,432,82.56,15.36]}
-{"kind":"textbox","id":"sh/f6xkvq5c","slide":7,"name":"Text 27","text":"394 pairs / 144 participants","textPreview":"394 pairs / 144 participants","textChars":28,"textLines":1,"bbox":[130.56,493.44,97.92,15.36]}
-{"kind":"shape","id":"sh/p0zmlk7u","slide":7,"name":"Shape 28","bbox":[222.72,442.56,122.88,0]}
-{"kind":"shape","id":"sh/ozq5szq9","slide":7,"name":"Shape 29","bbox":[359.04,410.88,63.36,63.36]}
-{"kind":"textbox","id":"sh/nyh4jupo","slide":7,"name":"Text 30","text":"Apply LC restriction","textPreview":"Apply LC restriction","textChars":20,"textLines":1,"bbox":[349.44,432,82.56,15.36]}
-{"kind":"textbox","id":"sh/2x8nqp83","slide":7,"name":"Text 31","text":"532 retained episode rows","textPreview":"532 retained episode rows","textChars":25,"textLines":1,"bbox":[341.76,493.44,97.92,15.36]}
-{"kind":"shape","id":"sh/x4j6p47q","slide":7,"name":"Shape 32","bbox":[433.92,442.56,122.88,0]}
-{"kind":"shape","id":"sh/c3a5wzq5","slide":7,"name":"Shape 33","bbox":[570.24,410.88,63.36,63.36]}
-{"kind":"textbox","id":"sh/b2h4nupk","slide":7,"name":"Text 34","text":"Rebuild","textPreview":"Rebuild","textChars":7,"textLines":1,"bbox":[560.64,432,82.56,15.36]}
-{"kind":"textbox","id":"sh/a18nup8z","slide":7,"name":"Text 35","text":"+9 newly adjacent LC pairs","textPreview":"+9 newly adjacent LC pairs","textChars":26,"textLines":1,"bbox":[552.96,493.44,97.92,15.36]}
-{"kind":"shape","id":"sh/lsj6t47m","slide":7,"name":"Shape 36","bbox":[645.12,442.56,122.88,0]}
-{"kind":"shape","id":"sh/kra50jqh","slide":7,"name":"Shape 37","bbox":[781.44,410.88,63.36,63.36]}
-{"kind":"textbox","id":"sh/wneps3ap","slide":7,"name":"Text 38","text":"LC timeline","textPreview":"LC timeline","textChars":11,"textLines":1,"bbox":[771.84,432,82.56,15.36]}
-{"kind":"textbox","id":"sh/honq18ru","slide":7,"name":"Text 39","text":"371 pairs / 139 participants","textPreview":"371 pairs / 139 participants","textChars":28,"textLines":1,"bbox":[764.16,493.44,97.92,15.36]}
-{"kind":"shape","id":"sh/ulc7qdsj","slide":7,"name":"Shape 40","bbox":[856.32,442.56,122.88,0]}
-{"kind":"shape","id":"sh/vm58zi94","slide":7,"name":"Shape 41","bbox":[992.64,410.88,63.36,63.36]}
-{"kind":"textbox","id":"sh/8jupo3ad","slide":7,"name":"Text 42","text":"UTI transition","textPreview":"UTI transition","textChars":14,"textLines":1,"bbox":[983.04,432,82.56,15.36]}
-{"kind":"textbox","id":"sh/9k3qx8ry","slide":7,"name":"Text 43","text":"5 of 9 meet <=25","textPreview":"5 of 9 meet <=25","textChars":16,"textLines":1,"bbox":[975.36,493.44,97.92,15.36]}
-{"kind":"shape","id":"sh/mxc7mts7","slide":7,"name":"Shape 44","bbox":[97.92,577.92,1065.6,63.36]}
-{"kind":"textbox","id":"sh/7yl8vy9s","slide":7,"name":"Text 45","text":"Safe interpretation","textPreview":"Safe interpretation","textChars":19,"textLines":1,"bbox":[115.2,593.28,1031.04,34.56]}
-{"kind":"textbox","id":"sh/sfy907ah","slide":7,"name":"Text 46","text":"Fresh result: 138/394 mixed and 140/371 Longcycler transitions meet the operational <=25 rule; 5/9 Longcycler Not_UTI-to-UTI transitions do. These are descriptive comparisons, not proof of uninterrupted carriage or causation.","textPreview":"Fresh result: 138/394 mixed and 140/371 Longcycler transitions meet the operational <=25 rule; 5/9 Longcycler Not_UTI-to-UTI transitions ...","textChars":225,"textLines":1,"bbox":[115.2,604.8,1031.04,36.48]}
-{"kind":"notes","id":"nt/gnmp4jqx","slide":7,"text":"Simple explanation: changing the retained visits changes the before-and-after comparisons, so both timelines must be built independently.\n\nTechnical detail: the mixed cohort has 394 transitions from 144 participants; 138 meet TotalSNPs <=25. The Longcycler rebuild has 371 transitions from 139 participants; 140 meet the rule. Of nine Longcycler Not_UTI-to-UTI transitions, five meet it. The extra strict count in the smaller set is possible because nine new adjacencies are created. Values come from current SHA-256-matched reports.\n\nSafe wording: <=25 is an operational support boundary pending citation or calibration. Adjacent sampled episodes do not prove uninterrupted carriage, and continuity does not prove causation."}
-{"kind":"slide","id":"sl/fu1gfa1s","slide":8,"title":"CONCLUSION / SUPERVISOR DECISIONS","textShapes":12}
+{"kind":"textbox","id":"sh/a9ojq5kz","slide":7,"name":"Text 9","text":"Implemented thresholds","textPreview":"Implemented thresholds","textChars":22,"textLines":1,"bbox":[82.56,165.12,249.6,23.04]}
+{"kind":"textbox","id":"sh/xcz2l03q","slide":7,"name":"Text 10","text":"Tool or branch","textPreview":"Tool or branch","textChars":14,"textLines":1,"bbox":[654.72,165.12,249.6,23.04]}
+{"kind":"shape","id":"sh/cbq1sv25","slide":7,"name":"Shape 11","bbox":[82.56,199.68,506.88,44.16]}
+{"kind":"textbox","id":"sh/n6x0fqlo","slide":7,"name":"Text 12","text":"Culture support","textPreview":"Culture support","textChars":15,"textLines":1,"bbox":[97.92,209.28,134.4,15.36]}
+{"kind":"textbox","id":"sh/25ojml43","slide":7,"name":"Text 13","text":"≥1000 CFU/mL operational lower-bound rule","textPreview":"≥1000 CFU/mL operational lower-bound rule","textChars":41,"textLines":1,"bbox":[238.08,209.28,328.32,15.36]}
+{"kind":"shape","id":"sh/p8fih03e","slide":7,"name":"Shape 14","bbox":[82.56,255.36,506.88,44.16]}
+{"kind":"textbox","id":"sh/o761ov2t","slide":7,"name":"Text 15","text":"Genome size","textPreview":"Genome size","textChars":11,"textLines":1,"bbox":[97.92,264.96,134.4,15.36]}
+{"kind":"textbox","id":"sh/f2d0b6lc","slide":7,"name":"Text 16","text":"4–6 Mb","textPreview":"4–6 Mb","textChars":6,"textLines":1,"bbox":[238.08,264.96,328.32,15.36]}
+{"kind":"shape","id":"sh/eh4jil4r","slide":7,"name":"Shape 17","bbox":[82.56,311.04,506.88,44.16]}
+{"kind":"textbox","id":"sh/id4ju1oz","slide":7,"name":"Text 18","text":"Assembly structure","textPreview":"Assembly structure","textChars":18,"textLines":1,"bbox":[97.92,320.64,134.4,15.36]}
+{"kind":"textbox","id":"sh/jedkn654","slide":7,"name":"Text 19","text":"≤200 contigs; N50 ≥20 kb; 4–6 Mb","textPreview":"≤200 contigs; N50 ≥20 kb; 4–6 Mb","textChars":32,"textLines":1,"bbox":[238.08,320.64,328.32,15.36]}
+{"kind":"shape","id":"sh/4fm1wb6p","slide":7,"name":"Shape 20","bbox":[82.56,366.72,506.88,44.16]}
+{"kind":"textbox","id":"sh/50v2pgna","slide":7,"name":"Text 21","text":"Direct strain support","textPreview":"Direct strain support","textChars":21,"textLines":1,"bbox":[97.92,376.32,134.4,15.36]}
+{"kind":"textbox","id":"sh/q143ylov","slide":7,"name":"Text 22","text":"≤25 dnadiff SNPs; operational, uncalibrated","textPreview":"≤25 dnadiff SNPs; operational, uncalibrated","textChars":43,"textLines":1,"bbox":[238.08,376.32,328.32,15.36]}
+{"kind":"shape","id":"sh/r2dkrq5g","slide":7,"name":"Shape 23","bbox":[82.56,422.4,506.88,44.16]}
+{"kind":"textbox","id":"sh/s3ml0v61","slide":7,"name":"Text 24","text":"VFDB screen","textPreview":"VFDB screen","textChars":11,"textLines":1,"bbox":[97.92,432,134.4,15.36]}
+{"kind":"textbox","id":"sh/d4f2t0nm","slide":7,"name":"Text 25","text":"≥80% identity and ≥80% coverage","textPreview":"≥80% identity and ≥80% coverage","textChars":31,"textLines":1,"bbox":[238.08,432,328.32,15.36]}
+{"kind":"shape","id":"sh/e5o32lor","slide":7,"name":"Shape 26","bbox":[82.56,478.08,506.88,44.16]}
+{"kind":"textbox","id":"sh/f6xkvq5c","slide":7,"name":"Text 27","text":"Provider MLST QC","textPreview":"Provider MLST QC","textChars":16,"textLines":1,"bbox":[97.92,487.68,134.4,15.36]}
+{"kind":"textbox","id":"sh/p0zmlk7u","slide":7,"name":"Text 28","text":"PercGoodTargets ≥95","textPreview":"PercGoodTargets ≥95","textChars":19,"textLines":1,"bbox":[238.08,487.68,328.32,15.36]}
+{"kind":"shape","id":"sh/ozq5szq9","slide":7,"name":"Shape 29","bbox":[654.72,199.68,506.88,44.16]}
+{"kind":"textbox","id":"sh/nyh4jupo","slide":7,"name":"Text 30","text":"Selected inputs","textPreview":"Selected inputs","textChars":15,"textLines":1,"bbox":[670.08,209.28,134.4,15.36]}
+{"kind":"textbox","id":"sh/2x8nqp83","slide":7,"name":"Text 31","text":"Longcycler only; one selected QC-pass assembly per episode","textPreview":"Longcycler only; one selected QC-pass assembly per episode","textChars":58,"textLines":1,"bbox":[810.24,209.28,328.32,15.36]}
+{"kind":"shape","id":"sh/x4j6p47q","slide":7,"name":"Shape 32","bbox":[654.72,255.36,506.88,44.16]}
+{"kind":"textbox","id":"sh/c3a5wzq5","slide":7,"name":"Text 33","text":"VF + clinical join","textPreview":"VF + clinical join","textChars":18,"textLines":1,"bbox":[670.08,264.96,134.4,15.36]}
+{"kind":"textbox","id":"sh/b2h4nupk","slide":7,"name":"Text 34","text":"VFDB calls joined by exact selected episode key","textPreview":"VFDB calls joined by exact selected episode key","textChars":47,"textLines":1,"bbox":[810.24,264.96,328.32,15.36]}
+{"kind":"shape","id":"sh/a18nup8z","slide":7,"name":"Shape 35","bbox":[654.72,311.04,506.88,44.16]}
+{"kind":"textbox","id":"sh/lsj6t47m","slide":7,"name":"Text 36","text":"Lineage context","textPreview":"Lineage context","textChars":15,"textLines":1,"bbox":[670.08,320.64,134.4,15.36]}
+{"kind":"textbox","id":"sh/kra50jqh","slide":7,"name":"Text 37","text":"Key-linked provider calls; labelled local fallback","textPreview":"Key-linked provider calls; labelled local fallback","textChars":50,"textLines":1,"bbox":[810.24,320.64,328.32,15.36]}
+{"kind":"shape","id":"sh/wneps3ap","slide":7,"name":"Shape 38","bbox":[654.72,366.72,506.88,44.16]}
+{"kind":"textbox","id":"sh/honq18ru","slide":7,"name":"Text 39","text":"Pairwise similarity","textPreview":"Pairwise similarity","textChars":19,"textLines":1,"bbox":[670.08,376.32,134.4,15.36]}
+{"kind":"textbox","id":"sh/ulc7qdsj","slide":7,"name":"Text 40","text":"MUMmer dnadiff + Mash; content hashes retained","textPreview":"MUMmer dnadiff + Mash; content hashes retained","textChars":46,"textLines":1,"bbox":[810.24,376.32,328.32,15.36]}
+{"kind":"shape","id":"sh/vm58zi94","slide":7,"name":"Shape 41","bbox":[654.72,422.4,506.88,44.16]}
+{"kind":"textbox","id":"sh/8jupo3ad","slide":7,"name":"Text 42","text":"Population context","textPreview":"Population context","textChars":18,"textLines":1,"bbox":[670.08,432,134.4,15.36]}
+{"kind":"textbox","id":"sh/9k3qx8ry","slide":7,"name":"Text 43","text":"Parsnp/snp-dists; Prokka/Panaroo on selected inputs","textPreview":"Parsnp/snp-dists; Prokka/Panaroo on selected inputs","textChars":51,"textLines":1,"bbox":[810.24,432,328.32,15.36]}
+{"kind":"shape","id":"sh/mxc7mts7","slide":7,"name":"Shape 44","bbox":[654.72,478.08,506.88,44.16]}
+{"kind":"textbox","id":"sh/7yl8vy9s","slide":7,"name":"Text 45","text":"RQ release","textPreview":"RQ release","textChars":10,"textLines":1,"bbox":[670.08,487.68,134.4,15.36]}
+{"kind":"textbox","id":"sh/sfy907ah","slide":7,"name":"Text 46","text":"RQ01–RQ10 form the numbered main pipeline","textPreview":"RQ01–RQ10 form the numbered main pipeline","textChars":41,"textLines":1,"bbox":[810.24,487.68,328.32,15.36]}
+{"kind":"shape","id":"sh/tg7q9sr2","slide":7,"name":"Shape 47","bbox":[193.92,587.52,892.8,51.84]}
+{"kind":"textbox","id":"sh/na9sz6tk","slide":7,"name":"Text 48","text":"Boundaries to state","textPreview":"Boundaries to state","textChars":19,"textLines":1,"bbox":[211.2,596,858.24,22]}
+{"kind":"textbox","id":"sh/290bq1cz","slide":7,"name":"Text 49","text":"Read coverage, completeness and contamination are not part of the implemented assembly-QC screen; the operational phenotype is not the full published protocol.","textPreview":"Read coverage, completeness and contamination are not part of the implemented assembly-QC screen; the operational phenotype is not the fu...","textChars":159,"textLines":1,"bbox":[211.2,618,858.24,20]}
+{"kind":"notes","id":"nt/gnmp4jqx","slide":7,"text":"Report only implemented thresholds. The 25-SNP boundary is operational and uncalibrated. The UTI phenotype is operational, and several laboratory and software provenance fields still require explicit reporting if they are not frozen elsewhere."}
+{"kind":"slide","id":"sl/fu1gfa1s","slide":8,"title":"APPENDIX / SCRIPT MAP","textShapes":41}
 {"kind":"shape","id":"sh/18byd4zy","slide":8,"name":"Shape 0","bbox":[0,0,1280,720]}
 {"kind":"shape","id":"sh/g72x4zyd","slide":8,"name":"Shape 1","bbox":[0,0,12.48,720]}
-{"kind":"textbox","id":"sh/ri9g7uhw","slide":8,"name":"Text 2","text":"CONCLUSION / SUPERVISOR DECISIONS","textPreview":"CONCLUSION / SUPERVISOR DECISIONS","textChars":33,"textLines":1,"bbox":[53.76,28.8,883.2,21.12]}
-{"kind":"textbox","id":"sh/6h0fypgb","slide":8,"name":"Text 3","text":"The claim-linked methods support cautious genomic description","textPreview":"The claim-linked methods support cautious genomic description","textChars":61,"textLines":1,"bbox":[53.76,55.68,1142.4,46.08]}
-{"kind":"textbox","id":"sh/tkby9kzm","slide":8,"name":"Text 4","text":"The analysis is strongest when the executed route, sensitivity route and interpretation limits remain separate.","textPreview":"The analysis is strongest when the executed route, sensitivity route and interpretation limits remain separate.","textChars":111,"textLines":1,"bbox":[53.76,103.68,1123.2,30.72]}
+{"kind":"textbox","id":"sh/ri9g7uhw","slide":8,"name":"Text 2","text":"APPENDIX / SCRIPT MAP","textPreview":"APPENDIX / SCRIPT MAP","textChars":21,"textLines":1,"bbox":[53.76,28.8,883.2,21.12]}
+{"kind":"textbox","id":"sh/6h0fypgb","slide":8,"name":"Text 3","text":"Direct claim-producing scripts form the traceability core","textPreview":"Direct claim-producing scripts form the traceability core","textChars":57,"textLines":1,"bbox":[53.76,55.68,1142.4,46.08]}
+{"kind":"textbox","id":"sh/tkby9kzm","slide":8,"name":"Text 4","text":"Each release claim resolves to the selected cohort, a claim-linked producer and an exact generated output.","textPreview":"Each release claim resolves to the selected cohort, a claim-linked producer and an exact generated output.","textChars":106,"textLines":1,"bbox":[53.76,103.68,1123.2,30.72]}
 {"kind":"shape","id":"sh/sjix0zy1","slide":8,"name":"Shape 5","bbox":[53.76,141.12,1169.28,0]}
 {"kind":"shape","id":"sh/je9g3ahk","slide":8,"name":"Shape 6","bbox":[53.76,675.84,1169.28,0]}
-{"kind":"textbox","id":"sh/id0fu50z","slide":8,"name":"Text 7","text":"Source: audited scripts, refreshed outputs and explicit scope boundaries","textPreview":"Source: audited scripts, refreshed outputs and explicit scope boundaries","textChars":72,"textLines":1,"bbox":[75.76,683.52,832.4,17.28]}
+{"kind":"textbox","id":"sh/id0fu50z","slide":8,"name":"Text 7","text":"Source: Longcycler release claim registry and claim-linked outputs","textPreview":"Source: Longcycler release claim registry and claim-linked outputs","textChars":66,"textLines":1,"bbox":[75.76,683.52,832.4,17.28]}
 {"kind":"textbox","id":"sh/o7ydoret","slide":8,"name":"Text 8","text":"08","textPreview":"08","textChars":2,"textLines":1,"bbox":[1147.2,683.52,74.88,17.28]}
-{"kind":"shape","id":"sh/98rehwve","slide":8,"name":"Shape 9","bbox":[82.56,184.32,328.32,263.04]}
-{"kind":"textbox","id":"sh/m5gvmhwn","slide":8,"name":"Text 10","text":"Supported evidence","textPreview":"Supported evidence","textChars":18,"textLines":1,"bbox":[99.84,199.68,293.76,34.56]}
-{"kind":"textbox","id":"sh/n6pwfmd8","slide":8,"name":"Text 11","text":"Defensible denominators; detected VFDB presence/absence; preferred MLST lineage context; fresh hash-verified dnadiff comparisons; rebuilt mixed and Longcycler timelines.","textPreview":"Defensible denominators; detected VFDB presence/absence; preferred MLST lineage context; fresh hash-verified dnadiff comparisons; rebuilt...","textChars":169,"textLines":1,"bbox":[99.84,236.16,293.76,207.36]}
-{"kind":"shape","id":"sh/0jydkreh","slide":8,"name":"Shape 12","bbox":[476.16,184.32,328.32,263.04]}
-{"kind":"textbox","id":"sh/1k7edwv2","slide":8,"name":"Text 13","text":"Interpretation boundary","textPreview":"Interpretation boundary","textChars":23,"textLines":1,"bbox":[493.44,199.68,293.76,34.56]}
-{"kind":"textbox","id":"sh/ehgvihwr","slide":8,"name":"Text 14","text":"No antibiotic, demographic, host-factor or wgMLST result was reconstructed. <=25 is operational and needs citation or calibration. Repeated observations limit simple tests.","textPreview":"No antibiotic, demographic, host-factor or wgMLST result was reconstructed. <=25 is operational and needs citation or calibration. Repeat...","textChars":172,"textLines":1,"bbox":[493.44,236.16,293.76,207.36]}
-{"kind":"shape","id":"sh/zipwbmdc","slide":8,"name":"Shape 15","bbox":[869.76,184.32,328.32,263.04]}
-{"kind":"textbox","id":"sh/kfixwbe1","slide":8,"name":"Text 16","text":"Lecturer decisions","textPreview":"Lecturer decisions","textChars":18,"textLines":1,"bbox":[887.04,199.68,293.76,34.56]}
-{"kind":"textbox","id":"sh/lgbepgvm","slide":8,"name":"Text 17","text":"Approve mixed-primary/Longcycler-sensitivity framing; decide how to calibrate <=25; complete missing laboratory, assembler, database and software provenance.","textPreview":"Approve mixed-primary/Longcycler-sensitivity framing; decide how to calibrate <=25; complete missing laboratory, assembler, database and ...","textChars":157,"textLines":1,"bbox":[887.04,236.16,293.76,207.36]}
-{"kind":"textbox","id":"sh/tw7e9gnq","slide":8,"name":"Text 18","text":"Discussion prompt: is this framing acceptable for the thesis, and what evidence should be required before making a same-strain or causal claim?","textPreview":"Discussion prompt: is this framing acceptable for the thesis, and what evidence should be required before making a same-strain or causal ...","textChars":143,"textLines":1,"bbox":[101.76,535.68,1075.2,32.64]}
-{"kind":"notes","id":"nt/fu1gfa1s","slide":8,"text":"Simple explanation: the analysis can describe what was detected and how genomes compare, but it cannot establish a cause of UTI.\n\nTechnical detail: defensible claims use the clinical definition, selected canonical inputs, detected VF features, preferred MLST context and fresh dnadiff-supported longitudinal comparisons. Antibiotic, demographic, host-factor and wgMLST claims were not reconstructed.\n\nAsk the lecturer to decide: whether the mixed-primary/Longcycler-sensitivity framing is acceptable, how <=25 should be justified, and which missing laboratory/software records can be recovered."}
-{"kind":"slide","id":"sl/udsvah03","slide":9,"title":"APPENDIX / DENOMINATORS","textShapes":23}
-{"kind":"shape","id":"sh/1cfmhgne","slide":9,"name":"Shape 0","bbox":[0,0,1280,720]}
-{"kind":"shape","id":"sh/0b65obm9","slide":9,"name":"Shape 1","bbox":[0,0,12.48,720]}
-{"kind":"textbox","id":"sh/nex4jq5k","slide":9,"name":"Text 2","text":"APPENDIX / DENOMINATORS","textPreview":"APPENDIX / DENOMINATORS","textChars":23,"textLines":1,"bbox":[53.76,28.8,883.2,21.12]}
-{"kind":"textbox","id":"sh/mdonql4z","slide":9,"name":"Text 3","text":"Key denominators keep units and filters visible","textPreview":"Key denominators keep units and filters visible","textChars":47,"textLines":1,"bbox":[53.76,55.68,1142.4,46.08]}
-{"kind":"textbox","id":"sh/9gzml0nq","slide":9,"name":"Text 4","text":"   These values are verified from current generated files after the cache-safe rerun.","textPreview":"These values are verified from current generated files after the cache-safe rerun.","textChars":85,"textLines":1,"bbox":[53.76,103.68,1123.2,30.72]}
-{"kind":"shape","id":"sh/ofq5svm5","slide":9,"name":"Shape 5","bbox":[53.76,141.12,1169.28,0]}
-{"kind":"shape","id":"sh/bih4na5w","slide":9,"name":"Shape 6","bbox":[53.76,675.84,1169.28,0]}
-{"kind":"textbox","id":"sh/ah8nu54b","slide":9,"name":"Text 7","text":"      Sources: status_map, canonical selection, VF-ready and sensitivity count tables","textPreview":"Sources: status_map, canonical selection, VF-ready and sensitivity count tables","textChars":85,"textLines":1,"bbox":[75.76,683.52,832.4,17.28]}
-{"kind":"textbox","id":"sh/oza1gfyh","slide":9,"name":"Text 8","text":"09","textPreview":"09","textChars":2,"textLines":1,"bbox":[1147.2,683.52,74.88,17.28]}
-{"kind":"shape","id":"sh/p0ji9kf2","slide":9,"name":"Shape 9","bbox":[72.96,172.8,1134.72,72.96]}
-{"kind":"textbox","id":"sh/2xsjepgb","slide":9,"name":"Text 10","text":"Rule for auditing a count","textPreview":"Rule for auditing a count","textChars":25,"textLines":1,"bbox":[90.24,188.16,1100.16,34.56]}
-{"kind":"textbox","id":"sh/3y107axw","slide":9,"name":"Text 11","text":"Record the source file, filter, denominator, formula and unit. A change in count is interpretable only after all five are stated.","textPreview":"Record the source file, filter, denominator, formula and unit. A change in count is interpretable only after all five are stated.","textChars":129,"textLines":1,"bbox":[90.24,206.4,1100.16,39.36]}
-{"kind":"shape","id":"sh/cnu1kzyd","slide":9,"name":"Shape 12","bbox":[101.76,289.92,249.6,40.32]}
-{"kind":"textbox","id":"sh/do3id4fy","slide":9,"name":"Text 13","text":"Clinical records","textPreview":"Clinical records","textChars":16,"textLines":1,"bbox":[119.04,305.28,215.04,19.2]}
-{"kind":"textbox","id":"sh/qlcjipgn","slide":9,"name":"Text 14","text":"585 -> 583","textPreview":"585 -> 583","textChars":10,"textLines":1,"bbox":[405.12,288,153.6,34.56]}
-{"kind":"textbox","id":"sh/bml0buxs","slide":9,"name":"Text 15","text":"two primary exclusions; 166 included participants; 18 UTI / 565 Not_UTI","textPreview":"two primary exclusions; 166 included participants; 18 UTI / 565 Not_UTI","textChars":71,"textLines":1,"bbox":[564.48,294.72,518.4,19.2]}
-{"kind":"shape","id":"sh/0ru1ozyp","slide":9,"name":"Shape 16","bbox":[101.76,349.44,249.6,40.32]}
-{"kind":"textbox","id":"sh/lsn2h4fa","slide":9,"name":"Text 17","text":"Assembly records","textPreview":"Assembly records","textChars":16,"textLines":1,"bbox":[119.04,364.8,215.04,19.2]}
-{"kind":"textbox","id":"sh/98ji147e","slide":9,"name":"Text 18","text":"1,291 -> 1,211","textPreview":"1,291 -> 1,211","textChars":14,"textLines":1,"bbox":[405.12,347.52,153.6,34.56]}
-{"kind":"textbox","id":"sh/87a18zqt","slide":9,"name":"Text 19","text":"candidate assembler alternatives to implemented assembly-QC pass","textPreview":"candidate assembler alternatives to implemented assembly-QC pass","textChars":64,"textLines":1,"bbox":[564.48,354.24,518.4,19.2]}
-{"kind":"shape","id":"sh/76h0zup8","slide":9,"name":"Shape 20","bbox":[101.76,408.96,249.6,40.32]}
-{"kind":"textbox","id":"sh/ml8j6p8n","slide":9,"name":"Text 21","text":"Selected genomes","textPreview":"Selected genomes","textChars":16,"textLines":1,"bbox":[119.04,424.32,215.04,19.2]}
-{"kind":"textbox","id":"sh/hcji5o7a","slide":9,"name":"Text 22","text":"556","textPreview":"556","textChars":3,"textLines":1,"bbox":[405.12,407.04,153.6,34.56]}
-{"kind":"textbox","id":"sh/wba1cjqp","slide":9,"name":"Text 23","text":"one canonical QC-passing assembly per eligible genomic episode; 162 participants; 17 UTI / 539 Not_UTI","textPreview":"one canonical QC-passing assembly per eligible genomic episode; 162 participants; 17 UTI / 539 Not_UTI","textChars":102,"textLines":1,"bbox":[564.48,413.76,518.4,19.2]}
-{"kind":"shape","id":"sh/va103ep4","slide":9,"name":"Shape 24","bbox":[101.76,468.48,249.6,40.32]}
-{"kind":"textbox","id":"sh/u9sja98z","slide":9,"name":"Text 25","text":"Longcycler sensitivity","textPreview":"Longcycler sensitivity","textChars":22,"textLines":1,"bbox":[119.04,483.84,215.04,19.2]}
-{"kind":"textbox","id":"sh/xgzitk76","slide":9,"name":"Text 26","text":"532","textPreview":"532","textChars":3,"textLines":1,"bbox":[405.12,466.56,153.6,34.56]}
-{"kind":"textbox","id":"sh/cf6h0fql","slide":9,"name":"Text 27","text":"selected Longcycler rows; 161 participants; 16 UTI / 516 Not_UTI","textPreview":"selected Longcycler rows; 161 participants; 16 UTI / 516 Not_UTI","textChars":64,"textLines":1,"bbox":[564.48,473.28,518.4,19.2]}
-{"kind":"shape","id":"sh/2l4faloj","slide":9,"name":"Shape 28","bbox":[101.76,528,249.6,40.32]}
-{"kind":"textbox","id":"sh/nmdg3q54","slide":9,"name":"Text 29","text":"Longitudinal transitions","textPreview":"Longitudinal transitions","textChars":24,"textLines":1,"bbox":[119.04,543.36,215.04,19.2]}
-{"kind":"textbox","id":"sh/onmxcv69","slide":9,"name":"Text 30","text":"394 -> 371","textPreview":"394 -> 371","textChars":10,"textLines":1,"bbox":[405.12,526.08,153.6,34.56]}
-{"kind":"textbox","id":"sh/pofy50nu","slide":9,"name":"Text 31","text":"mixed adjacent pairs to rebuilt Longcycler adjacent pairs","textPreview":"mixed adjacent pairs to rebuilt Longcycler adjacent pairs","textChars":57,"textLines":1,"bbox":[564.48,532.8,518.4,19.2]}
-{"kind":"shape","id":"sh/apofe5of","slide":9,"name":"Shape 32","bbox":[794.88,599.04,278.4,26.88]}
-{"kind":"textbox","id":"sh/bqxg7q50","slide":9,"name":"Text 33","text":"Different units explain the changes; none of these is a participant-only funnel.","textPreview":"Different units explain the changes; none of these is a participant-only funnel.","textChars":80,"textLines":1,"bbox":[800.64,604.8,266.88,13.44]}
-{"kind":"notes","id":"nt/udsvah03","slide":9,"text":"Use this slide when a denominator is challenged. State source, filter, unit and formula before interpreting a change. Clinical records, candidate assemblies, selected genomes, participants and transitions are not interchangeable. The mixed selected row count is 556 from 162 participants with 17 UTI and 539 Not_UTI; the Longcycler sensitivity has 532 rows from 161 participants with 16 UTI and 516 Not_UTI."}
-{"kind":"slide","id":"sl/m90b6t0r","slide":10,"title":"APPENDIX / METHODS TABLE","textShapes":33}
-{"kind":"shape","id":"sh/xc3mho32","slide":10,"name":"Shape 0","bbox":[0,0,1280,720]}
-{"kind":"shape","id":"sh/cbu58j2h","slide":10,"name":"Shape 1","bbox":[0,0,12.48,720]}
-{"kind":"textbox","id":"sh/zelojyl8","slide":10,"name":"Text 2","text":"APPENDIX / METHODS TABLE","textPreview":"APPENDIX / METHODS TABLE","textChars":24,"textLines":1,"bbox":[53.76,28.8,883.2,21.12]}
-{"kind":"textbox","id":"sh/ydcnatkn","slide":10,"name":"Text 3","text":"Report implemented thresholds—and criteria not actually applied","textPreview":"Report implemented thresholds—and criteria not actually applied","textChars":63,"textLines":1,"bbox":[53.76,55.68,1142.4,46.08]}
-{"kind":"textbox","id":"sh/l036l83y","slide":10,"name":"Text 4","text":"This table describes the claim-linked route; missing versions are not inferred.","textPreview":"This table describes the claim-linked route; missing versions are not inferred.","textChars":79,"textLines":1,"bbox":[53.76,103.68,1123.2,30.72]}
-{"kind":"shape","id":"sh/kzu5c32t","slide":10,"name":"Shape 5","bbox":[53.76,141.12,1169.28,0]}
-{"kind":"shape","id":"sh/725onyl4","slide":10,"name":"Shape 6","bbox":[53.76,675.84,1169.28,0]}
-{"kind":"textbox","id":"sh/m1cnetkj","slide":10,"name":"Text 7","text":"      Sources: scripts 00b, 02, 06, 11, 12a-12c, 22 and 14","textPreview":"Sources: scripts 00b, 02, 06, 11, 12a-12c, 22 and 14","textChars":58,"textLines":1,"bbox":[75.76,683.52,832.4,17.28]}
-{"kind":"textbox","id":"sh/s7yt4b21","slide":10,"name":"Text 8","text":"10","textPreview":"10","textChars":2,"textLines":1,"bbox":[1147.2,683.52,74.88,17.28]}
-{"kind":"textbox","id":"sh/d87uxg3m","slide":10,"name":"Text 9","text":"Implemented thresholds","textPreview":"Implemented thresholds","textChars":22,"textLines":1,"bbox":[82.56,165.12,249.6,23.04]}
-{"kind":"textbox","id":"sh/q5gb21kb","slide":10,"name":"Text 10","text":"Tool or branch","textPreview":"Tool or branch","textChars":14,"textLines":1,"bbox":[654.72,165.12,249.6,23.04]}
-{"kind":"shape","id":"sh/r6pcv6lw","slide":10,"name":"Shape 11","bbox":[82.56,199.68,506.88,44.16]}
-{"kind":"textbox","id":"sh/0bit8b2d","slide":10,"name":"Text 12","text":"Culture support","textPreview":"Culture support","textChars":15,"textLines":1,"bbox":[97.92,209.28,134.4,15.36]}
-{"kind":"textbox","id":"sh/1cru1g3y","slide":10,"name":"Text 13","text":">=10^3 CFU/mL lower-bound rule","textPreview":">=10^3 CFU/mL lower-bound rule","textChars":30,"textLines":1,"bbox":[238.08,209.28,328.32,15.36]}
-{"kind":"shape","id":"sh/e9gb61k7","slide":10,"name":"Shape 14","bbox":[82.56,255.36,506.88,44.16]}
-{"kind":"textbox","id":"sh/fapcz6ls","slide":10,"name":"Text 15","text":"Genome size","textPreview":"Genome size","textChars":11,"textLines":1,"bbox":[97.92,264.96,134.4,15.36]}
-{"kind":"textbox","id":"sh/ozitcv29","slide":10,"name":"Text 16","text":"4-6 Mb","textPreview":"4-6 Mb","textChars":6,"textLines":1,"bbox":[238.08,264.96,328.32,15.36]}
-{"kind":"shape","id":"sh/p0ru503u","slide":10,"name":"Shape 17","bbox":[82.56,311.04,506.88,44.16]}
-{"kind":"textbox","id":"sh/xwnupgvy","slide":10,"name":"Text 18","text":"Assembly structure","textPreview":"Assembly structure","textChars":18,"textLines":1,"bbox":[97.92,320.64,134.4,15.36]}
-{"kind":"textbox","id":"sh/wvetgbud","slide":10,"name":"Text 19","text":"<=200 contigs; N50 >=20 kb","textPreview":"<=200 contigs; N50 >=20 kb","textChars":26,"textLines":1,"bbox":[238.08,320.64,328.32,15.36]}
-{"kind":"shape","id":"sh/bu5cnqd8","slide":10,"name":"Shape 20","bbox":[82.56,366.72,506.88,44.16]}
-{"kind":"textbox","id":"sh/atwbelcn","slide":10,"name":"Text 21","text":"Same-strain support","textPreview":"Same-strain support","textChars":19,"textLines":1,"bbox":[97.92,376.32,134.4,15.36]}
-{"kind":"textbox","id":"sh/lk7ut0va","slide":10,"name":"Text 22","text":"<=25 dnadiff SNPs; operational, uncalibrated","textPreview":"<=25 dnadiff SNPs; operational, uncalibrated","textChars":44,"textLines":1,"bbox":[238.08,376.32,328.32,15.36]}
-{"kind":"shape","id":"sh/kjytkvup","slide":10,"name":"Shape 23","bbox":[82.56,422.4,506.88,44.16]}
-{"kind":"textbox","id":"sh/jypcrqd4","slide":10,"name":"Text 24","text":"VFDB screen","textPreview":"VFDB screen","textChars":11,"textLines":1,"bbox":[97.92,432,134.4,15.36]}
-{"kind":"textbox","id":"sh/yxgbilcj","slide":10,"name":"Text 25","text":">=80% identity and >=80% coverage","textPreview":">=80% identity and >=80% coverage","textChars":33,"textLines":1,"bbox":[238.08,432,328.32,15.36]}
-{"kind":"shape","id":"sh/1o3ahwvq","slide":10,"name":"Shape 26","bbox":[82.56,478.08,506.88,44.16]}
-{"kind":"textbox","id":"sh/0nut8rul","slide":10,"name":"Text 27","text":"Provider MLST QC","textPreview":"Provider MLST QC","textChars":16,"textLines":1,"bbox":[97.92,487.68,134.4,15.36]}
-{"kind":"textbox","id":"sh/q9srixs3","slide":10,"name":"Text 28","text":"PercGoodTargets >=95","textPreview":"PercGoodTargets >=95","textChars":20,"textLines":1,"bbox":[238.08,487.68,328.32,15.36]}
-{"kind":"shape","id":"sh/ru18r2to","slide":10,"name":"Shape 29","bbox":[654.72,199.68,506.88,44.16]}
-{"kind":"textbox","id":"sh/cva9k7a9","slide":10,"name":"Text 30","text":"Canonical inputs","textPreview":"Canonical inputs","textChars":16,"textLines":1,"bbox":[670.08,209.28,134.4,15.36]}
-{"kind":"textbox","id":"sh/dwjqtcbu","slide":10,"name":"Text 31","text":"Longcycler preferred; Flye fallback (12a)","textPreview":"Longcycler preferred; Flye fallback (12a)","textChars":41,"textLines":1,"bbox":[810.24,209.28,328.32,15.36]}
-{"kind":"shape","id":"sh/exsrmhsf","slide":10,"name":"Shape 32","bbox":[654.72,255.36,506.88,44.16]}
-{"kind":"textbox","id":"sh/zyl8vmt0","slide":10,"name":"Text 33","text":"VF + clinical join","textPreview":"VF + clinical join","textChars":18,"textLines":1,"bbox":[670.08,264.96,134.4,15.36]}
-{"kind":"textbox","id":"sh/0zu9ora5","slide":10,"name":"Text 34","text":"ABRicate/VFDB (02) then episode join (22)","textPreview":"ABRicate/VFDB (02) then episode join (22)","textChars":41,"textLines":1,"bbox":[810.24,264.96,328.32,15.36]}
-{"kind":"shape","id":"sh/103qxcbq","slide":10,"name":"Shape 35","bbox":[654.72,311.04,506.88,44.16]}
-{"kind":"textbox","id":"sh/u187adsv","slide":10,"name":"Text 36","text":"Lineage context","textPreview":"Lineage context","textChars":15,"textLines":1,"bbox":[670.08,320.64,134.4,15.36]}
-{"kind":"textbox","id":"sh/f2h8jitg","slide":10,"name":"Text 37","text":"Provider SeqSphere; labelled local fallback (06)","textPreview":"Provider SeqSphere; labelled local fallback (06)","textChars":48,"textLines":1,"bbox":[810.24,320.64,328.32,15.36]}
-{"kind":"shape","id":"sh/bmpgrah8","slide":10,"name":"Shape 38","bbox":[654.72,366.72,506.88,44.16]}
-{"kind":"textbox","id":"sh/algfy50n","slide":10,"name":"Text 39","text":"Pairwise similarity","textPreview":"Pairwise similarity","textChars":19,"textLines":1,"bbox":[670.08,376.32,134.4,15.36]}
-{"kind":"textbox","id":"sh/xo7ytkzy","slide":10,"name":"Text 40","text":"MUMmer dnadiff + Mash (11 + helper)","textPreview":"MUMmer dnadiff + Mash (11 + helper)","textChars":35,"textLines":1,"bbox":[810.24,376.32,328.32,15.36]}
-{"kind":"shape","id":"sh/wnyx0fit","slide":10,"name":"Shape 41","bbox":[654.72,422.4,506.88,44.16]}
-{"kind":"textbox","id":"sh/jq9gvuh4","slide":10,"name":"Text 42","text":"Population context","textPreview":"Population context","textChars":18,"textLines":1,"bbox":[670.08,432,134.4,15.36]}
-{"kind":"textbox","id":"sh/ip0f2p0j","slide":10,"name":"Text 43","text":"Parsnp/snp-dists (12b); Prokka/Panaroo (12c)","textPreview":"Parsnp/snp-dists (12b); Prokka/Panaroo (12c)","textChars":44,"textLines":1,"bbox":[810.24,432,328.32,15.36]}
-{"kind":"shape","id":"sh/5cryx4za","slide":10,"name":"Shape 44","bbox":[654.72,478.08,506.88,44.16]}
-{"kind":"textbox","id":"sh/kbix4zyp","slide":10,"name":"Text 45","text":"Exploratory model","textPreview":"Exploratory model","textChars":17,"textLines":1,"bbox":[670.08,487.68,134.4,15.36]}
-{"kind":"textbox","id":"sh/7e9gzuhg","slide":10,"name":"Text 46","text":"Participant random intercept with documented GLM fallback (14)","textPreview":"Participant random intercept with documented GLM fallback (14)","textChars":62,"textLines":1,"bbox":[810.24,487.68,328.32,15.36]}
-{"kind":"shape","id":"sh/6d0f6pgv","slide":10,"name":"Shape 47","bbox":[193.92,587.52,892.8,51.84]}
-{"kind":"textbox","id":"sh/4j2xwzet","slide":10,"name":"Text 48","text":"Criteria not applied","textPreview":"Criteria not applied","textChars":20,"textLines":1,"bbox":[211.2,596,858.24,22]}
-{"kind":"textbox","id":"sh/pkbep4fe","slide":10,"name":"Text 49","text":"Completeness, contamination and read coverage are not part of the implemented 12a assembly-QC screen.","textPreview":"Completeness, contamination and read coverage are not part of the implemented 12a assembly-QC screen.","textChars":101,"textLines":1,"bbox":[211.2,618,858.24,20]}
-{"kind":"notes","id":"nt/m90b6t0r","slide":10,"text":"These are the criteria and tools that directly support presented claims. The implemented assembly screen is readability, 4-6 Mb, <=200 contigs and N50 >=20 kb. Completeness, contamination and read coverage are not implemented by 12a and must not be reported as if they were. The <=25 dnadiff boundary is operational and uncalibrated. Versions, commands and database releases still need to be frozen."}
-{"kind":"slide","id":"sl/jetc3ut0","slide":11,"title":"APPENDIX / DISTANCE METHODS","textShapes":21}
-{"kind":"shape","id":"sh/xcryxg7y","slide":11,"name":"Shape 0","bbox":[0,0,1280,720]}
-{"kind":"shape","id":"sh/wbih4b6d","slide":11,"name":"Shape 1","bbox":[0,0,12.48,720]}
-{"kind":"textbox","id":"sh/n69grmpw","slide":11,"name":"Text 2","text":"        APPENDIX / DISTANCE METHODS","textPreview":"APPENDIX / DISTANCE METHODS","textChars":35,"textLines":1,"bbox":[53.76,28.8,883.2,21.12]}
-{"kind":"textbox","id":"sh/250zy18b","slide":11,"name":"Text 3","text":"dnadiff SNPs, core-genome SNPs and wgMLST alleles are separate measures","textPreview":"dnadiff SNPs, core-genome SNPs and wgMLST alleles are separate measures","textChars":71,"textLines":1,"bbox":[53.76,55.68,1142.4,46.08]}
-{"kind":"textbox","id":"sh/98rytw72","slide":11,"name":"Text 4","text":"Never convert one measure into another or apply a threshold across methods without validation.","textPreview":"Never convert one measure into another or apply a threshold across methods without validation.","textChars":94,"textLines":1,"bbox":[53.76,103.68,1123.2,30.72]}
-{"kind":"shape","id":"sh/o7ih0r6h","slide":11,"name":"Shape 5","bbox":[53.76,141.12,1169.28,0]}
-{"kind":"shape","id":"sh/72t03qp0","slide":11,"name":"Shape 6","bbox":[53.76,675.84,1169.28,0]}
-{"kind":"textbox","id":"sh/61kzalof","slide":11,"name":"Text 7","text":"  Sources: scripts 11 and 12b; wgMLST source data were not available for reanalysis","textPreview":"Sources: scripts 11 and 12b; wgMLST source data were not available for reanalysis","textChars":83,"textLines":1,"bbox":[75.76,683.52,832.4,17.28]}
-{"kind":"textbox","id":"sh/ofqtgnyt","slide":11,"name":"Text 8","text":"11","textPreview":"11","textChars":2,"textLines":1,"bbox":[1147.2,683.52,74.88,17.28]}
-{"kind":"shape","id":"sh/9gza9sze","slide":11,"name":"Shape 9","bbox":[78.72,184.32,278.4,128.64]}
-{"kind":"textbox","id":"sh/mdobedg3","slide":11,"name":"Text 10","text":"Pairwise dnadiff","textPreview":"Pairwise dnadiff","textChars":16,"textLines":1,"bbox":[96,199.68,243.84,34.56]}
-{"kind":"textbox","id":"sh/nehs7iho","slide":11,"name":"Text 11","text":"Compares two complete assemblies. pairwise_metrics.csv TotalSNPs comes from this branch.","textPreview":"Compares two complete assemblies. pairwise_metrics.csv TotalSNPs comes from this branch.","textChars":88,"textLines":1,"bbox":[96,236.16,243.84,72.96]}
-{"kind":"shape","id":"sh/0b6tc3yx","slide":11,"name":"Shape 12","bbox":[501.12,184.32,278.4,128.64]}
-{"kind":"textbox","id":"sh/1cfa58zi","slide":11,"name":"Text 13","text":"Parsnp core genome","textPreview":"Parsnp core genome","textChars":18,"textLines":1,"bbox":[518.4,199.68,243.84,34.56]}
-{"kind":"textbox","id":"sh/epobatgr","slide":11,"name":"Text 14","text":"Aligns the shared core across the 556 selected genomes, then snp-dists measures that alignment.","textPreview":"Aligns the shared core across the 556 selected genomes, then snp-dists measures that alignment.","textChars":95,"textLines":1,"bbox":[518.4,236.16,243.84,72.96]}
-{"kind":"shape","id":"sh/zaxs3yhc","slide":11,"name":"Shape 15","bbox":[923.52,184.32,278.4,128.64]}
-{"kind":"textbox","id":"sh/cn6t83y1","slide":11,"name":"Text 16","text":"wgMLST alleles","textPreview":"wgMLST alleles","textChars":14,"textLines":1,"bbox":[940.8,199.68,243.84,34.56]}
-{"kind":"textbox","id":"sh/dofa18z6","slide":11,"name":"Text 17","text":"Counts differing called loci under a particular scheme and QC process; not recalculated here.","textPreview":"Counts differing called loci under a particular scheme and QC process; not recalculated here.","textChars":93,"textLines":1,"bbox":[940.8,236.16,243.84,72.96]}
-{"kind":"shape","id":"sh/7650nq5s","slide":11,"name":"Shape 20","bbox":[101.76,401.28,13.44,11.52]}
-{"kind":"shape","id":"sh/65wzelo7","slide":11,"name":"Shape 21","bbox":[120,401.28,13.44,11.52]}
-{"kind":"shape","id":"sh/l43ilgn2","slide":11,"name":"Shape 22","bbox":[138.24,401.28,13.44,11.52]}
-{"kind":"shape","id":"sh/k3uhcb6h","slide":11,"name":"Shape 23","bbox":[156.48,401.28,13.44,11.52]}
-{"kind":"shape","id":"sh/j2lgjq5w","slide":11,"name":"Shape 24","bbox":[174.72,401.28,13.44,11.52]}
-{"kind":"shape","id":"sh/y1czalob","slide":11,"name":"Shape 25","bbox":[192.96,401.28,13.44,11.52]}
-{"kind":"shape","id":"sh/p07ixkn6","slide":11,"name":"Shape 26","bbox":[211.2,401.28,13.44,11.52]}
-{"kind":"shape","id":"sh/4zyhofml","slide":11,"name":"Shape 27","bbox":[229.44,401.28,13.44,11.52]}
-{"kind":"shape","id":"sh/m58fih43","slide":11,"name":"Shape 28","bbox":[247.68,401.28,13.44,11.52]}
-{"kind":"shape","id":"sh/n61wbmlo","slide":11,"name":"Shape 29","bbox":[265.92,401.28,13.44,11.52]}
-{"kind":"shape","id":"sh/o7axk7m9","slide":11,"name":"Shape 30","bbox":[101.76,417.6,13.44,11.52]}
-{"kind":"shape","id":"sh/98jedc3u","slide":11,"name":"Shape 31","bbox":[120,417.6,13.44,11.52]}
-{"kind":"shape","id":"sh/eh8fex47","slide":11,"name":"Shape 32","bbox":[138.24,417.6,13.44,11.52]}
-{"kind":"shape","id":"sh/z2hw72lc","slide":11,"name":"Shape 33","bbox":[156.48,417.6,13.44,11.52]}
-{"kind":"shape","id":"sh/03qxg7mx","slide":11,"name":"Shape 34","bbox":[174.72,417.6,13.44,11.52]}
-{"kind":"shape","id":"sh/14ze9c3i","slide":11,"name":"Shape 35","bbox":[192.96,417.6,13.44,11.52]}
-{"kind":"shape","id":"sh/ydcfq1kb","slide":11,"name":"Shape 36","bbox":[211.2,417.6,13.44,11.52]}
-{"kind":"shape","id":"sh/jylwj6lw","slide":11,"name":"Shape 37","bbox":[229.44,417.6,13.44,11.52]}
-{"kind":"shape","id":"sh/3qhsfypc","slide":11,"name":"Shape 38","bbox":[247.68,417.6,13.44,11.52]}
-{"kind":"shape","id":"sh/ip8bmtor","slide":11,"name":"Shape 39","bbox":[265.92,417.6,13.44,11.52]}
-{"kind":"shape","id":"sh/5sjah872","slide":11,"name":"Shape 40","bbox":[101.76,433.92,13.44,11.52]}
-{"kind":"shape","id":"sh/4rato36h","slide":11,"name":"Shape 41","bbox":[120,433.92,13.44,11.52]}
-{"kind":"shape","id":"sh/v2hsbyp0","slide":11,"name":"Shape 42","bbox":[138.24,433.92,13.44,11.52]}
-{"kind":"shape","id":"sh/u18bit8f","slide":11,"name":"Shape 43","bbox":[156.48,433.92,13.44,11.52]}
-{"kind":"shape","id":"sh/h4zado76","slide":11,"name":"Shape 44","bbox":[174.72,433.92,13.44,11.52]}
-{"kind":"shape","id":"sh/g3qtkj6l","slide":11,"name":"Shape 45","bbox":[192.96,433.92,13.44,11.52]}
-{"kind":"shape","id":"sh/fy1cnipk","slide":11,"name":"Shape 46","bbox":[211.2,433.92,13.44,11.52]}
-{"kind":"shape","id":"sh/exsbudoz","slide":11,"name":"Shape 47","bbox":[229.44,433.92,13.44,11.52]}
-{"kind":"shape","id":"sh/c3mpof6h","slide":11,"name":"Shape 48","bbox":[247.68,433.92,13.44,11.52]}
-{"kind":"shape","id":"sh/x4vqhknm","slide":11,"name":"Shape 49","bbox":[265.92,433.92,13.44,11.52]}
-{"kind":"shape","id":"sh/a147m5ob","slide":11,"name":"Shape 50","bbox":[101.76,450.24,13.44,11.52]}
-{"kind":"shape","id":"sh/b2d8fa5w","slide":11,"name":"Shape 51","bbox":[120,450.24,13.44,11.52]}
-{"kind":"shape","id":"sh/k7mpsfmd","slide":11,"name":"Shape 52","bbox":[138.24,450.24,13.44,11.52]}
-{"kind":"shape","id":"sh/l8fqlkny","slide":11,"name":"Shape 53","bbox":[156.48,450.24,13.44,11.52]}
-{"kind":"shape","id":"sh/y547qp47","slide":11,"name":"Shape 54","bbox":[174.72,450.24,13.44,11.52]}
-{"kind":"shape","id":"sh/z6d8ju5s","slide":11,"name":"Shape 55","bbox":[192.96,450.24,13.44,11.52]}
-{"kind":"shape","id":"sh/8b69wzm9","slide":11,"name":"Shape 56","bbox":[211.2,450.24,13.44,11.52]}
-{"kind":"shape","id":"sh/twfqp4nu","slide":11,"name":"Shape 57","bbox":[229.44,450.24,13.44,11.52]}
-{"kind":"shape","id":"sh/hgryt0b2","slide":11,"name":"Shape 58","bbox":[247.68,450.24,13.44,11.52]}
-{"kind":"shape","id":"sh/wfihkvah","slide":11,"name":"Shape 59","bbox":[265.92,450.24,13.44,11.52]}
-{"kind":"shape","id":"sh/ve9grqtw","slide":11,"name":"Shape 60","bbox":[101.76,466.56,13.44,11.52]}
-{"kind":"shape","id":"sh/ud0zi5sb","slide":11,"name":"Shape 61","bbox":[120,466.56,13.44,11.52]}
-{"kind":"shape","id":"sh/5kbyxkby","slide":11,"name":"Shape 62","bbox":[138.24,466.56,13.44,11.52]}
-{"kind":"shape","id":"sh/4j2hofad","slide":11,"name":"Shape 63","bbox":[156.48,466.56,13.44,11.52]}
-{"kind":"shape","id":"sh/jitgvats","slide":11,"name":"Shape 64","bbox":[174.72,466.56,13.44,11.52]}
-{"kind":"shape","id":"sh/ihkzm5sn","slide":11,"name":"Shape 65","bbox":[192.96,466.56,13.44,11.52]}
-{"kind":"shape","id":"sh/lo7ylgbu","slide":11,"name":"Shape 66","bbox":[211.2,466.56,13.44,11.52]}
-{"kind":"shape","id":"sh/knyxcba9","slide":11,"name":"Shape 67","bbox":[229.44,466.56,13.44,11.52]}
-{"kind":"shape","id":"sh/atwvmh87","slide":11,"name":"Shape 68","bbox":[247.68,466.56,13.44,11.52]}
-{"kind":"shape","id":"sh/bu5wfm9s","slide":11,"name":"Shape 69","bbox":[265.92,466.56,13.44,11.52]}
-{"kind":"shape","id":"sh/cfedorqx","slide":11,"name":"Shape 70","bbox":[101.76,482.88,13.44,11.52]}
-{"kind":"shape","id":"sh/xgnehwri","slide":11,"name":"Shape 71","bbox":[120,482.88,13.44,11.52]}
-{"kind":"shape","id":"sh/yhwvq183","slide":11,"name":"Shape 72","bbox":[138.24,482.88,13.44,11.52]}
-{"kind":"shape","id":"sh/zipwjm9o","slide":11,"name":"Shape 73","bbox":[156.48,482.88,13.44,11.52]}
-{"kind":"shape","id":"sh/kjyxsrq9","slide":11,"name":"Shape 74","bbox":[174.72,482.88,13.44,11.52]}
-{"kind":"shape","id":"sh/lk7elwru","slide":11,"name":"Shape 75","bbox":[192.96,482.88,13.44,11.52]}
-{"kind":"shape","id":"sh/elcvex8z","slide":11,"name":"Shape 76","bbox":[211.2,482.88,13.44,11.52]}
-{"kind":"shape","id":"sh/fmlw729k","slide":11,"name":"Shape 77","bbox":[229.44,482.88,13.44,11.52]}
-{"kind":"shape","id":"sh/jutoj2lk","slide":11,"name":"Shape 78","bbox":[247.68,482.88,13.44,11.52]}
-{"kind":"shape","id":"sh/i90nax4f","slide":11,"name":"Shape 79","bbox":[265.92,482.88,13.44,11.52]}
-{"kind":"textbox","id":"sh/5wb6ls3q","slide":11,"name":"Text 80","text":"Input and method define the distance. Similar numerical values do not make the outputs equivalent.","textPreview":"Input and method define the distance. Similar numerical values do not make the outputs equivalent.","textChars":98,"textLines":1,"bbox":[78.72,520.32,288,36.48]}
-{"kind":"shape","id":"sh/kv2pcnm5","slide":11,"name":"Shape 81","bbox":[92,336,112,27]}
-{"kind":"textbox","id":"sh/7yton2lw","slide":11,"name":"Text 82","text":"assembly pair","textPreview":"assembly pair","textChars":13,"textLines":1,"bbox":[97,342,102,15]}
-{"kind":"shape","id":"sh/6xk7ex4b","slide":11,"name":"Shape 83","bbox":[220,336,112,27]}
-{"kind":"textbox","id":"sh/t0b6pc32","slide":11,"name":"Text 84","text":"path + SHA-256","textPreview":"path + SHA-256","textChars":14,"textLines":1,"bbox":[225,342,102,15]}
-{"kind":"shape","id":"sh/sz2pg7mh","slide":11,"name":"Shape 85","bbox":[514,336,112,27]}
-{"kind":"textbox","id":"sh/n2pobils","slide":11,"name":"Text 86","text":"core alignment","textPreview":"core alignment","textChars":14,"textLines":1,"bbox":[519,342,102,15]}
-{"kind":"shape","id":"sh/m1gn2d47","slide":11,"name":"Shape 87","bbox":[642,336,112,27]}
-{"kind":"textbox","id":"sh/c7elcz2p","slide":11,"name":"Text 88","text":"reference-sensitive","textPreview":"reference-sensitive","textChars":19,"textLines":1,"bbox":[647,342,102,15]}
-{"kind":"shape","id":"sh/d8nml4ja","slide":11,"name":"Shape 89","bbox":[936,336,112,27]}
-{"kind":"textbox","id":"sh/q5w3a9kz","slide":11,"name":"Text 90","text":"scheme loci","textPreview":"scheme loci","textChars":11,"textLines":1,"bbox":[941,342,102,15]}
-{"kind":"shape","id":"sh/b65kje1k","slide":11,"name":"Shape 91","bbox":[1060,336,140,27]}
-{"kind":"textbox","id":"sh/ojel8z2t","slide":11,"name":"Text 92","text":"scheme-version-sensitive","textPreview":"scheme-version-sensitive","textChars":24,"textLines":1,"bbox":[1065,342,130,15]}
-{"kind":"shape","id":"sh/pkn2h4je","slide":11,"name":"Shape 93","bbox":[900.48,380.16,289.92,128.64]}
-{"kind":"textbox","id":"sh/2hc36pkn","slide":11,"name":"Text 94","text":"Operational rule","textPreview":"Operational rule","textChars":16,"textLines":1,"bbox":[917.76,395.52,255.36,34.56]}
-{"kind":"textbox","id":"sh/3ilkfu18","slide":11,"name":"Text 95","text":"The project uses <=25 dnadiff SNPs for strong same-strain support. This is not a universal cutoff and requires a defensible citation or dataset-specific calibration.","textPreview":"The project uses <=25 dnadiff SNPs for strong same-strain support. This is not a universal cutoff and requires a defensible citation or d...","textChars":165,"textLines":1,"bbox":[917.76,432,255.36,72.96]}
-{"kind":"shape","id":"sh/8fylk32x","slide":11,"name":"Shape 96","bbox":[919.68,547.2,195.84,26.88]}
-{"kind":"textbox","id":"sh/907mtoji","slide":11,"name":"Text 97","text":"Directional corroboration is acceptable; numerical interchangeability is not.","textPreview":"Directional corroboration is acceptable; numerical interchangeability is not.","textChars":77,"textLines":1,"bbox":[925.44,552.96,184.32,13.44]}
-{"kind":"notes","id":"nt/jetc3ut0","slide":11,"text":"Simple explanation: three relatedness methods count different things.\n\nTechnical detail: dnadiff compares an assembly pair and the current cache records both paths and SHA-256 hashes. Parsnp aligns a cohort core and is reference/alignment sensitive. wgMLST counts differing called loci under a named scheme and QC process; its source table was unavailable here.\n\nSafe wording: directional agreement can corroborate relatedness, but the numbers and thresholds are not interchangeable."}
-{"kind":"slide","id":"sl/8f2psfyx","slide":12,"title":"APPENDIX / STATISTICAL CAUTION","textShapes":12}
-{"kind":"shape","id":"sh/1gbm9s3a","slide":12,"name":"Shape 0","bbox":[0,0,1280,720]}
-{"kind":"shape","id":"sh/0f2lgnmp","slide":12,"name":"Shape 1","bbox":[0,0,12.48,720]}
-{"kind":"textbox","id":"sh/ra943il8","slide":12,"name":"Text 2","text":"       APPENDIX / STATISTICAL CAUTION","textPreview":"APPENDIX / STATISTICAL CAUTION","textChars":37,"textLines":1,"bbox":[53.76,28.8,883.2,21.12]}
-{"kind":"textbox","id":"sh/q903ad4n","slide":12,"name":"Text 3","text":"The exploratory model cannot turn sparse repeated data into causal evidence","textPreview":"The exploratory model cannot turn sparse repeated data into causal evidence","textChars":75,"textLines":1,"bbox":[53.76,55.68,1142.4,46.08]}
-{"kind":"textbox","id":"sh/dcbm583y","slide":12,"name":"Text 4","text":"Script 14 is included because its results inform the interpretation boundary.","textPreview":"Script 14 is included because its results inform the interpretation boundary.","textChars":77,"textLines":1,"bbox":[53.76,103.68,1123.2,30.72]}
-{"kind":"shape","id":"sh/sb2lcnmd","slide":12,"name":"Shape 5","bbox":[53.76,141.12,1169.28,0]}
-{"kind":"shape","id":"sh/b6d4f2lc","slide":12,"name":"Shape 6","bbox":[53.76,675.84,1169.28,0]}
-{"kind":"textbox","id":"sh/a543mx4r","slide":12,"name":"Text 7","text":"Source: 14_genotype_phenotype_model.R and current model diagnostics","textPreview":"Source: 14_genotype_phenotype_model.R and current model diagnostics","textChars":67,"textLines":1,"bbox":[75.76,683.52,832.4,17.28]}
-{"kind":"textbox","id":"sh/wvupgz6t","slide":12,"name":"Text 8","text":"12","textPreview":"12","textChars":2,"textLines":1,"bbox":[1147.2,683.52,74.88,17.28]}
-{"kind":"shape","id":"sh/xw3q94ne","slide":12,"name":"Shape 9","bbox":[82.56,184.32,328.32,263.04]}
-{"kind":"textbox","id":"sh/atc7epon","slide":12,"name":"Text 10","text":"Design","textPreview":"Design","textChars":6,"textLines":1,"bbox":[99.84,199.68,293.76,34.56]}
-{"kind":"textbox","id":"sh/bulo7u58","slide":12,"name":"Text 11","text":"The mixed dataset has 556 rows but only 17 UTI outcomes. A participant random intercept addresses repeated episodes in the mixed model.","textPreview":"The mixed dataset has 556 rows but only 17 UTI outcomes. A participant random intercept addresses repeated episodes in the mixed model.","textChars":135,"textLines":1,"bbox":[99.84,236.16,293.76,207.36]}
-{"kind":"shape","id":"sh/orapcf6h","slide":12,"name":"Shape 12","bbox":[476.16,184.32,328.32,263.04]}
-{"kind":"textbox","id":"sh/9sj65kn2","slide":12,"name":"Text 13","text":"Selection and fitting","textPreview":"Selection and fitting","textChars":21,"textLines":1,"bbox":[493.44,199.68,293.76,34.56]}
-{"kind":"textbox","id":"sh/mps7a5or","slide":12,"name":"Text 14","text":"Features at 5-95% prevalence are screened by Fisher test; p<0.10 or the top 50 enter models with timepoint and batch. GLM is the error fallback.","textPreview":"Features at 5-95% prevalence are screened by Fisher test; p<0.10 or the top 50 enter models with timepoint and batch. GLM is the error fa...","textChars":144,"textLines":1,"bbox":[493.44,236.16,293.76,207.36]}
-{"kind":"shape","id":"sh/nq1o3a5w","slide":12,"name":"Shape 15","bbox":[869.76,184.32,328.32,263.04]}
-{"kind":"textbox","id":"sh/0nap8f6l","slide":12,"name":"Text 16","text":"Interpretation","textPreview":"Interpretation","textChars":14,"textLines":1,"bbox":[887.04,199.68,293.76,34.56]}
-{"kind":"textbox","id":"sh/1oj61kn6","slide":12,"name":"Text 17","text":"Fallback models lose clustering; sparse/separated cells and singular fits remain. No feature reaches FDR <0.05, so results are exploratory.","textPreview":"Fallback models lose clustering; sparse/separated cells and singular fits remain. No feature reaches FDR <0.05, so results are exploratory.","textChars":139,"textLines":1,"bbox":[887.04,236.16,293.76,207.36]}
-{"kind":"textbox","id":"sh/hkbm5wzu","slide":12,"name":"Text 18","text":"Safe wording: describe associations and uncertainty; do not call a feature a risk factor, mechanism or cause of UTI.","textPreview":"Safe wording: describe associations and uncertainty; do not call a feature a risk factor, mechanism or cause of UTI.","textChars":116,"textLines":1,"bbox":[101.76,535.68,1075.2,32.64]}
-{"kind":"notes","id":"nt/8f2psfyx","slide":12,"text":"Simple explanation: many rows do not compensate for having only 17 UTI outcomes, especially when residents appear repeatedly.\n\nTechnical detail: script 14 screens features with 5-95% prevalence, uses Fisher p<0.10 or the top 50 for modelling, and fits feature + timepoint + batch with a participant random intercept. A standard GLM is used after fitting errors, losing clustering. Singular fits, sparse/separated cells and selected-family FDR limit inference; no feature reaches FDR <0.05.\n\nSafe wording: hypothesis-generating association, not a risk factor, mechanism or cause."}
-{"kind":"slide","id":"sl/hgzapcr6","slide":13,"title":"APPENDIX / SCRIPT MAP","textShapes":41}
-{"kind":"shape","id":"sh/q50nydsj","slide":13,"name":"Shape 0","bbox":[0,0,1280,720]}
-{"kind":"shape","id":"sh/bq9orito","slide":13,"name":"Shape 1","bbox":[0,0,12.48,720]}
-{"kind":"textbox","id":"sh/o3i5w3ad","slide":13,"name":"Text 2","text":"APPENDIX / SCRIPT MAP","textPreview":"APPENDIX / SCRIPT MAP","textChars":21,"textLines":1,"bbox":[53.76,28.8,883.2,21.12]}
-{"kind":"textbox","id":"sh/p4r6p8by","slide":13,"name":"Text 3","text":"Direct claim-producing scripts form the traceability core","textPreview":"Direct claim-producing scripts form the traceability core","textChars":57,"textLines":1,"bbox":[53.76,55.68,1142.4,46.08]}
-{"kind":"textbox","id":"sh/21gnuts7","slide":13,"name":"Text 4","text":"Other scripts may be mentioned when they clarify population context, quality checks or interpretation.","textPreview":"Other scripts may be mentioned when they clarify population context, quality checks or interpretation.","textChars":102,"textLines":1,"bbox":[53.76,103.68,1123.2,30.72]}
-{"kind":"shape","id":"sh/32ponyts","slide":13,"name":"Shape 5","bbox":[53.76,141.12,1169.28,0]}
-{"kind":"shape","id":"sh/gzy5s3a1","slide":13,"name":"Shape 6","bbox":[53.76,675.84,1169.28,0]}
-{"kind":"textbox","id":"sh/1076lobm","slide":13,"name":"Text 7","text":"      Source: claim-linked scripts and their current generated outputs","textPreview":"Source: claim-linked scripts and their current generated outputs","textChars":70,"textLines":1,"bbox":[75.76,683.52,832.4,17.28]}
-{"kind":"textbox","id":"sh/hcfy9k3u","slide":13,"name":"Text 8","text":"13","textPreview":"13","textChars":2,"textLines":1,"bbox":[1147.2,683.52,74.88,17.28]}
-{"kind":"shape","id":"sh/gb6x0zm9","slide":13,"name":"Shape 9","bbox":[71.04,170.88,337.92,103.68]}
-{"kind":"textbox","id":"sh/vaxg7ulo","slide":13,"name":"Text 10","text":"    Clinical definition","textPreview":"Clinical definition","textChars":23,"textLines":1,"bbox":[126.32,186.24,265.36,34.56]}
-{"kind":"textbox","id":"sh/u9ofyp43","slide":13,"name":"Text 11","text":"00a cleans records; 00b creates the primary UTI_Status","textPreview":"00a cleans records; 00b creates the primary UTI_Status","textChars":54,"textLines":1,"bbox":[88.32,230.4,303.36,44.16]}
-{"kind":"shape","id":"sh/t8fy5k3i","slide":13,"name":"Shape 12","bbox":[82.56,182.4,26.88,26.88]}
-{"kind":"textbox","id":"sh/876xwfmx","slide":13,"name":"Text 13","text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[82.56,187.2,26.88,9.6]}
-{"kind":"textbox","id":"sh/7mdg3als","slide":13,"name":"Text 14","text":"input to all claims","textPreview":"input to all claims","textChars":19,"textLines":1,"bbox":[120.96,209.28,268.8,13.44]}
-{"kind":"shape","id":"sh/6l4fu547","slide":13,"name":"Shape 15","bbox":[412.8,222.72,38.4,0]}
-{"kind":"shape","id":"sh/lkvy103m","slide":13,"name":"Shape 16","bbox":[460.8,170.88,337.92,103.68]}
-{"kind":"textbox","id":"sh/kjmxsfm1","slide":13,"name":"Text 17","text":"    Assembly linkage","textPreview":"Assembly linkage","textChars":20,"textLines":1,"bbox":[516.08,186.24,265.36,34.56]}
-{"kind":"textbox","id":"sh/cnqh8fux","slide":13,"name":"Text 18","text":"00_make reconciles prepared FASTAs and episode metadata","textPreview":"00_make reconciles prepared FASTAs and episode metadata","textChars":55,"textLines":1,"bbox":[478.08,230.4,303.36,44.16]}
-{"kind":"shape","id":"sh/xozyhkbi","slide":13,"name":"Shape 19","bbox":[472.32,182.4,26.88,26.88]}
-{"kind":"textbox","id":"sh/q18f65cr","slide":13,"name":"Text 20","text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[472.32,187.2,26.88,9.6]}
-{"kind":"textbox","id":"sh/bmhgfatc","slide":13,"name":"Text 21","text":"upstream input","textPreview":"upstream input","textChars":14,"textLines":1,"bbox":[510.72,209.28,268.8,13.44]}
-{"kind":"shape","id":"sh/oz6x4vul","slide":13,"name":"Shape 22","bbox":[802.56,222.72,38.4,0]}
-{"kind":"shape","id":"sh/p0zyd0b6","slide":13,"name":"Shape 23","bbox":[850.56,170.88,337.92,103.68]}
-{"kind":"textbox","id":"sh/2xof2lcv","slide":13,"name":"Text 24","text":"    QC and selection","textPreview":"QC and selection","textChars":20,"textLines":1,"bbox":[905.84,186.24,265.36,34.56]}
-{"kind":"textbox","id":"sh/3yxgbqdg","slide":13,"name":"Text 25","text":"12a applies implemented QC and selects one canonical assembly","textPreview":"12a applies implemented QC and selects one canonical assembly","textChars":61,"textLines":1,"bbox":[867.84,230.4,303.36,44.16]}
-{"kind":"shape","id":"sh/8vahgzu5","slide":13,"name":"Shape 26","bbox":[862.08,182.4,26.88,26.88]}
-{"kind":"textbox","id":"sh/9wjyp4bq","slide":13,"name":"Text 27","text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[862.08,187.2,26.88,9.6]}
-{"kind":"textbox","id":"sh/jqlkfyds","slide":13,"name":"Text 28","text":"defines 556 genomes","textPreview":"defines 556 genomes","textChars":19,"textLines":1,"bbox":[900.48,209.28,268.8,13.44]}
-{"kind":"shape","id":"sh/ipcjmtw7","slide":13,"name":"Shape 29","bbox":[71.04,318.72,337.92,103.68]}
-{"kind":"textbox","id":"sh/5cn2h8vy","slide":13,"name":"Text 30","text":"    VFDB screening","textPreview":"VFDB screening","textChars":18,"textLines":1,"bbox":[126.32,334.08,265.36,34.56]}
-{"kind":"textbox","id":"sh/4re1o3ed","slide":13,"name":"Text 31","text":"02 creates 227 selected-canonical detected features","textPreview":"02 creates 227 selected-canonical detected features","textChars":51,"textLines":1,"bbox":[88.32,378.24,303.36,44.16]}
-{"kind":"shape","id":"sh/re5kjydo","slide":13,"name":"Shape 32","bbox":[82.56,330.24,26.88,26.88]}
-{"kind":"textbox","id":"sh/6dwjqtw3","slide":13,"name":"Text 33","text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[82.56,335.04,26.88,9.6]}
-{"kind":"textbox","id":"sh/tgn2l8vu","slide":13,"name":"Text 34","text":"feature input","textPreview":"feature input","textChars":13,"textLines":1,"bbox":[120.96,357.12,268.8,13.44]}
-{"kind":"shape","id":"sh/sfe1s3e9","slide":13,"name":"Shape 35","bbox":[412.8,370.56,38.4,0]}
-{"kind":"shape","id":"sh/7i107edk","slide":13,"name":"Shape 36","bbox":[460.8,318.72,337.92,103.68]}
-{"kind":"textbox","id":"sh/mhsje9wz","slide":13,"name":"Text 37","text":"    MLST context","textPreview":"MLST context","textChars":16,"textLines":1,"bbox":[516.08,334.08,265.36,34.56]}
-{"kind":"textbox","id":"sh/y1wju94v","slide":13,"name":"Text 38","text":"06 integrates preferred provider calls and labelled local fallback","textPreview":"06 integrates preferred provider calls and labelled local fallback","textChars":66,"textLines":1,"bbox":[478.08,378.24,303.36,44.16]}
-{"kind":"shape","id":"sh/z25kne5g","slide":13,"name":"Shape 39","bbox":[472.32,330.24,26.88,26.88]}
-{"kind":"textbox","id":"sh/03e1wjm1","slide":13,"name":"Text 40","text":"5","textPreview":"5","textChars":1,"textLines":1,"bbox":[472.32,335.04,26.88,9.6]}
-{"kind":"textbox","id":"sh/l4n2po3m","slide":13,"name":"Text 41","text":"lineage input","textPreview":"lineage input","textChars":13,"textLines":1,"bbox":[510.72,357.12,268.8,13.44]}
-{"kind":"shape","id":"sh/m5gjyt4r","slide":13,"name":"Shape 42","bbox":[802.56,370.56,38.4,0]}
-{"kind":"shape","id":"sh/n6pkrelc","slide":13,"name":"Shape 43","bbox":[850.56,318.72,337.92,103.68]}
-{"kind":"textbox","id":"sh/8ry10jmx","slide":13,"name":"Text 44","text":"    Episode integration","textPreview":"Episode integration","textChars":23,"textLines":1,"bbox":[905.84,334.08,265.36,34.56]}
-{"kind":"textbox","id":"sh/9s72to3i","slide":13,"name":"Text 45","text":"22 joins clinical status, VF, MLST and selected-assembly metadata","textPreview":"22 joins clinical status, VF, MLST and selected-assembly metadata","textChars":65,"textLines":1,"bbox":[867.84,378.24,303.36,44.16]}
-{"kind":"shape","id":"sh/atgj2t43","slide":13,"name":"Shape 46","bbox":[862.08,330.24,26.88,26.88]}
-{"kind":"textbox","id":"sh/vupkvylo","slide":13,"name":"Text 47","text":"6","textPreview":"6","textChars":1,"textLines":1,"bbox":[862.08,335.04,26.88,9.6]}
-{"kind":"textbox","id":"sh/50behwr2","slide":13,"name":"Text 48","text":"analysis-ready rows","textPreview":"analysis-ready rows","textChars":19,"textLines":1,"bbox":[900.48,357.12,268.8,13.44]}
-{"kind":"shape","id":"sh/4z2d8rah","slide":13,"name":"Shape 49","bbox":[71.04,466.56,337.92,103.68]}
-{"kind":"textbox","id":"sh/jytcfmtw","slide":13,"name":"Text 50","text":"    Pairwise comparison","textPreview":"Pairwise comparison","textChars":23,"textLines":1,"bbox":[126.32,481.92,265.36,34.56]}
-{"kind":"textbox","id":"sh/ixkv6hsb","slide":13,"name":"Text 51","text":"11 + helper compare all 963 canonical within-resident genome pairs","textPreview":"11 + helper compare all 963 canonical within-resident genome pairs","textChars":66,"textLines":1,"bbox":[88.32,526.08,303.36,44.16]}
-{"kind":"shape","id":"sh/t4velwry","slide":13,"name":"Shape 52","bbox":[82.56,478.08,26.88,26.88]}
-{"kind":"textbox","id":"sh/s3mdcrad","slide":13,"name":"Text 53","text":"7","textPreview":"7","textChars":1,"textLines":1,"bbox":[82.56,482.88,26.88,9.6]}
-{"kind":"textbox","id":"sh/r2dwjm98","slide":13,"name":"Text 54","text":"fresh provenance","textPreview":"fresh provenance","textChars":16,"textLines":1,"bbox":[120.96,504.96,268.8,13.44]}
-{"kind":"shape","id":"sh/614va1sn","slide":13,"name":"Shape 55","bbox":[412.8,518.4,38.4,0]}
-{"kind":"shape","id":"sh/1svepgra","slide":13,"name":"Shape 56","bbox":[460.8,466.56,337.92,103.68]}
-{"kind":"textbox","id":"sh/g7mdgbap","slide":13,"name":"Text 57","text":"    Mixed longitudinal","textPreview":"Mixed longitudinal","textChars":22,"textLines":1,"bbox":[516.08,481.92,265.36,34.56]}
-{"kind":"textbox","id":"sh/0buxcfil","slide":13,"name":"Text 58","text":"24 orders retained episodes and builds 394 adjacent comparisons","textPreview":"24 orders retained episodes and builds 394 adjacent comparisons","textChars":63,"textLines":1,"bbox":[478.08,526.08,303.36,44.16]}
-{"kind":"shape","id":"sh/lc3ylkz6","slide":13,"name":"Shape 59","bbox":[472.32,478.08,26.88,26.88]}
-{"kind":"textbox","id":"sh/y9cfa50v","slide":13,"name":"Text 60","text":"8","textPreview":"8","textChars":1,"textLines":1,"bbox":[472.32,482.88,26.88,9.6]}
-{"kind":"textbox","id":"sh/zalgjahg","slide":13,"name":"Text 61","text":"executed route","textPreview":"executed route","textChars":14,"textLines":1,"bbox":[510.72,504.96,268.8,13.44]}
-{"kind":"shape","id":"sh/8zexgzix","slide":13,"name":"Shape 62","bbox":[802.56,518.4,38.4,0]}
-{"kind":"shape","id":"sh/90nypkzi","slide":13,"name":"Shape 63","bbox":[850.56,466.56,337.92,103.68]}
-{"kind":"textbox","id":"sh/mdwfep0r","slide":13,"name":"Text 64","text":"    Longcycler sensitivity","textPreview":"Longcycler sensitivity","textChars":26,"textLines":1,"bbox":[905.84,481.92,265.36,34.56]}
-{"kind":"textbox","id":"sh/ne5gnuhc","slide":13,"name":"Text 65","text":"rebuild_longcycler_sensitivity removes Flye rows and rebuilds adjacency","textPreview":"rebuild_longcycler_sensitivity removes Flye rows and rebuilds adjacency","textChars":71,"textLines":1,"bbox":[867.84,526.08,303.36,44.16]}
-{"kind":"shape","id":"sh/43ax4vit","slide":13,"name":"Shape 66","bbox":[862.08,478.08,26.88,26.88]}
-{"kind":"textbox","id":"sh/p4jed0zy","slide":13,"name":"Text 67","text":"9","textPreview":"9","textChars":1,"textLines":1,"bbox":[862.08,482.88,26.88,9.6]}
-{"kind":"textbox","id":"sh/7y90jy1w","slide":13,"name":"Text 68","text":"sensitivity route","textPreview":"sensitivity route","textChars":17,"textLines":1,"bbox":[900.48,504.96,268.8,13.44]}
-{"kind":"notes","id":"nt/hgzapcr6","slide":13,"text":"This is claim traceability, not a list of every R file. Read each card as 'claim or dataset -> script that creates it'. The core chain is 00a/00b, 00_make, 12a, 02, 06, 22, 11 plus its helper, 24 and the Longcycler rebuild. Parsnp/Panaroo and script 14 are mentioned on their dedicated slides because they clarify population context or statistical limits. The comprehensive register remains an audit reference, not presentation content."}
-{"kind":"slide","id":"sl/6lsnupw7","slide":14,"title":"APPENDIX / EVIDENCE STILL NEEDED","textShapes":12}
-{"kind":"shape","id":"sh/xc7eds76","slide":14,"name":"Shape 0","bbox":[0,0,1280,720]}
-{"kind":"shape","id":"sh/wbydknq1","slide":14,"name":"Shape 1","bbox":[0,0,12.48,720]}
-{"kind":"textbox","id":"sh/jepwf2pc","slide":14,"name":"Text 2","text":"       APPENDIX / EVIDENCE STILL NEEDED","textPreview":"APPENDIX / EVIDENCE STILL NEEDED","textChars":39,"textLines":1,"bbox":[53.76,28.8,883.2,21.12]}
-{"kind":"textbox","id":"sh/idgvmx8r","slide":14,"name":"Text 3","text":"State the assumptions and recover missing provenance before submission","textPreview":"State the assumptions and recover missing provenance before submission","textChars":70,"textLines":1,"bbox":[53.76,55.68,1142.4,46.08]}
-{"kind":"textbox","id":"sh/5grehs7i","slide":14,"name":"Text 4","text":"The documented workflow starts from prepared clinical exports, metadata and FASTAs—not raw reads.","textPreview":"The documented workflow starts from prepared clinical exports, metadata and FASTAs—not raw reads.","textChars":97,"textLines":1,"bbox":[53.76,103.68,1123.2,30.72]}
-{"kind":"shape","id":"sh/kfidonqx","slide":14,"name":"Shape 5","bbox":[53.76,141.12,1169.28,0]}
-{"kind":"shape","id":"sh/zi5c3y98","slide":14,"name":"Shape 6","bbox":[53.76,675.84,1169.28,0]}
-{"kind":"textbox","id":"sh/ehwvat8n","slide":14,"name":"Text 7","text":"      Source: methodology audit findings and script-level provenance review","textPreview":"Source: methodology audit findings and script-level provenance review","textChars":75,"textLines":1,"bbox":[75.76,683.52,832.4,17.28]}
-{"kind":"textbox","id":"sh/c3e1gjyd","slide":14,"name":"Text 8","text":"14","textPreview":"14","textChars":2,"textLines":1,"bbox":[1147.2,683.52,74.88,17.28]}
-{"kind":"shape","id":"sh/x4ni9ofy","slide":14,"name":"Shape 9","bbox":[82.56,184.32,328.32,263.04]}
-{"kind":"textbox","id":"sh/a1wze9g7","slide":14,"name":"Text 10","text":"Assumptions to state","textPreview":"Assumptions to state","textChars":20,"textLines":1,"bbox":[99.84,199.68,293.76,34.56]}
-{"kind":"textbox","id":"sh/b2507exs","slide":14,"name":"Text 11","text":"The clinical rule is valid; one selected assembly represents an episode; missing WGS and Flye fallback are not random; adjacent samples do not prove continuous carriage; <=25 is only an operational support rule.","textPreview":"The clinical rule is valid; one selected assembly represents an episode; missing WGS and Flye fallback are not random; adjacent samples d...","textChars":211,"textLines":1,"bbox":[99.84,236.16,293.76,207.36]}
-{"kind":"shape","id":"sh/kre1k3y9","slide":14,"name":"Shape 12","bbox":[476.16,184.32,328.32,263.04]}
-{"kind":"textbox","id":"sh/ls7idofu","slide":14,"name":"Text 13","text":"Evidence still needed","textPreview":"Evidence still needed","textChars":21,"textLines":1,"bbox":[493.44,199.68,293.76,34.56]}
-{"kind":"textbox","id":"sh/y5wjitgj","slide":14,"name":"Text 14","text":"Culture-to-colony selection, ONT chemistry, basecaller/read QC/coverage, assembler and polishing commands, database/scheme releases, software versions, code revision and frozen R environment.","textPreview":"Culture-to-colony selection, ONT chemistry, basecaller/read QC/coverage, assembler and polishing commands, database/scheme releases, soft...","textChars":191,"textLines":1,"bbox":[493.44,236.16,293.76,207.36]}
-{"kind":"shape","id":"sh/z650byxo","slide":14,"name":"Shape 15","bbox":[869.76,184.32,328.32,263.04]}
-{"kind":"textbox","id":"sh/0buh8zy5","slide":14,"name":"Text 16","text":"Claims to keep out","textPreview":"Claims to keep out","textChars":18,"textLines":1,"bbox":[887.04,199.68,293.76,34.56]}
-{"kind":"textbox","id":"sh/1w3i14fq","slide":14,"name":"Text 17","text":"Antibiotic effects, demographics, host causation, wgMLST reproduction, mutation-location conclusions and causal VF mechanisms are unsupported here.","textPreview":"Antibiotic effects, demographics, host causation, wgMLST reproduction, mutation-location conclusions and causal VF mechanisms are unsuppo...","textChars":147,"textLines":1,"bbox":[887.04,236.16,293.76,207.36]}
-{"kind":"textbox","id":"sh/hsvy50re","slide":14,"name":"Text 18","text":"Before submission: complete provenance, calibrate or cite <=25, assess missing-WGS/assembler selection, and keep the executed mixed analysis distinct from the Longcycler sensitivity analysis.","textPreview":"Before submission: complete provenance, calibrate or cite <=25, assess missing-WGS/assembler selection, and keep the executed mixed analy...","textChars":191,"textLines":1,"bbox":[101.76,535.68,1075.2,32.64]}
-{"kind":"notes","id":"nt/6lsnupw7","slide":14,"text":"Be explicit about assumptions instead of hiding them: the clinical rule is valid; one selected assembly represents the sampled episode; missing WGS and assembler fallback may be selective; adjacent samples are not continuous observation; and <=25 is only an operational support rule. Recover the culture-to-colony process, sequencing chemistry, basecalling/read QC/coverage, assembler and polishing commands, database releases, software versions, code revision and R environment. Keep antibiotic, demographic, host, wgMLST-reproduction and causal claims outside this evidence boundary."}
+{"kind":"shape","id":"sh/98rehwve","slide":8,"name":"Shape 9","bbox":[71.04,170.88,337.92,103.68]}
+{"kind":"textbox","id":"sh/m5gvmhwn","slide":8,"name":"Text 10","text":"Operational phenotype","textPreview":"Operational phenotype","textChars":21,"textLines":1,"bbox":[126.32,186.24,265.36,34.56]}
+{"kind":"textbox","id":"sh/n6pwfmd8","slide":8,"name":"Text 11","text":"00a/00b create the versioned UTI_Status","textPreview":"00a/00b create the versioned UTI_Status","textChars":39,"textLines":1,"bbox":[88.32,230.4,303.36,44.16]}
+{"kind":"shape","id":"sh/0jydkreh","slide":8,"name":"Shape 12","bbox":[82.56,182.4,26.88,26.88]}
+{"kind":"textbox","id":"sh/1k7edwv2","slide":8,"name":"Text 13","text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[82.56,187.2,26.88,9.6]}
+{"kind":"textbox","id":"sh/ehgvihwr","slide":8,"name":"Text 14","text":"clinical input","textPreview":"clinical input","textChars":14,"textLines":1,"bbox":[120.96,209.28,268.8,13.44]}
+{"kind":"shape","id":"sh/zipwbmdc","slide":8,"name":"Shape 15","bbox":[412.8,222.72,38.4,0]}
+{"kind":"shape","id":"sh/kfixwbe1","slide":8,"name":"Shape 16","bbox":[460.8,170.88,337.92,103.68]}
+{"kind":"textbox","id":"sh/lgbepgvm","slide":8,"name":"Text 17","text":"Selected cohort","textPreview":"Selected cohort","textChars":15,"textLines":1,"bbox":[516.08,186.24,265.36,34.56]}
+{"kind":"textbox","id":"sh/tw7e9gnq","slide":8,"name":"Text 18","text":"12a publishes the exact 532-row manifest and clinical cohort","textPreview":"12a publishes the exact 532-row manifest and clinical cohort","textChars":60,"textLines":1,"bbox":[478.08,230.4,303.36,44.16]}
+{"kind":"shape","id":"sh/svydgb65","slide":8,"name":"Shape 19","bbox":[472.32,182.4,26.88,26.88]}
+{"kind":"textbox","id":"sh/7u5w765k","slide":8,"name":"Text 20","text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[472.32,187.2,26.88,9.6]}
+{"kind":"textbox","id":"sh/6twve1oz","slide":8,"name":"Text 21","text":"input contract","textPreview":"input contract","textChars":14,"textLines":1,"bbox":[510.72,209.28,268.8,13.44]}
+{"kind":"shape","id":"sh/5sne5wne","slide":8,"name":"Shape 22","bbox":[802.56,222.72,38.4,0]}
+{"kind":"shape","id":"sh/kredcr6t","slide":8,"name":"Shape 23","bbox":[850.56,170.88,337.92,103.68]}
+{"kind":"textbox","id":"sh/jq5w365o","slide":8,"name":"Text 24","text":"VFDB screening","textPreview":"VFDB screening","textChars":14,"textLines":1,"bbox":[905.84,186.24,265.36,34.56]}
+{"kind":"textbox","id":"sh/i5wva1o3","slide":8,"name":"Text 25","text":"02 creates 227 binary features on selected inputs","textPreview":"02 creates 227 binary features on selected inputs","textChars":49,"textLines":1,"bbox":[867.84,230.4,303.36,44.16]}
+{"kind":"shape","id":"sh/x4ne1wni","slide":8,"name":"Shape 26","bbox":[862.08,182.4,26.88,26.88]}
+{"kind":"textbox","id":"sh/w3ed8r6x","slide":8,"name":"Text 27","text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[862.08,187.2,26.88,9.6]}
+{"kind":"textbox","id":"sh/m9sb2x4v","slide":8,"name":"Text 28","text":"feature input","textPreview":"feature input","textChars":13,"textLines":1,"bbox":[900.48,209.28,268.8,13.44]}
+{"kind":"shape","id":"sh/na1sb2lg","slide":8,"name":"Shape 29","bbox":[71.04,318.72,337.92,103.68]}
+{"kind":"textbox","id":"sh/8bat47ml","slide":8,"name":"Text 30","text":"MLST context","textPreview":"MLST context","textChars":12,"textLines":1,"bbox":[126.32,334.08,265.36,34.56]}
+{"kind":"textbox","id":"sh/9w3uds36","slide":8,"name":"Text 31","text":"06 uses key-linked provider calls and labelled local fallback","textPreview":"06 uses key-linked provider calls and labelled local fallback","textChars":61,"textLines":1,"bbox":[88.32,378.24,303.36,44.16]}
+{"kind":"shape","id":"sh/y5sbed4j","slide":8,"name":"Shape 32","bbox":[82.56,330.24,26.88,26.88]}
+{"kind":"textbox","id":"sh/z61s7il4","slide":8,"name":"Text 33","text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[82.56,335.04,26.88,9.6]}
+{"kind":"textbox","id":"sh/07atgnmp","slide":8,"name":"Text 34","text":"lineage input","textPreview":"lineage input","textChars":13,"textLines":1,"bbox":[120.96,357.12,268.8,13.44]}
+{"kind":"shape","id":"sh/l8ja9s3a","slide":8,"name":"Shape 35","bbox":[412.8,370.56,38.4,0]}
+{"kind":"shape","id":"sh/q18bad4n","slide":8,"name":"Shape 36","bbox":[460.8,318.72,337.92,103.68]}
+{"kind":"textbox","id":"sh/b2hs3il8","slide":8,"name":"Text 37","text":"Direct pairs","textPreview":"Direct pairs","textChars":12,"textLines":1,"bbox":[516.08,334.08,265.36,34.56]}
+{"kind":"textbox","id":"sh/3u18fepo","slide":8,"name":"Text 38","text":"11 + helper publish 893 hash-bound comparisons","textPreview":"11 + helper publish 893 hash-bound comparisons","textChars":46,"textLines":1,"bbox":[478.08,378.24,303.36,44.16]}
+{"kind":"shape","id":"sh/2ts769o3","slide":8,"name":"Shape 39","bbox":[472.32,330.24,26.88,26.88]}
+{"kind":"textbox","id":"sh/pwjqho7u","slide":8,"name":"Text 40","text":"5","textPreview":"5","textChars":1,"textLines":1,"bbox":[472.32,335.04,26.88,9.6]}
+{"kind":"textbox","id":"sh/4vap8j69","slide":8,"name":"Text 41","text":"direct evidence","textPreview":"direct evidence","textChars":15,"textLines":1,"bbox":[510.72,357.12,268.8,13.44]}
+{"kind":"shape","id":"sh/fq1obeps","slide":8,"name":"Shape 42","bbox":[802.56,370.56,38.4,0]}
+{"kind":"shape","id":"sh/up872987","slide":8,"name":"Shape 43","bbox":[850.56,318.72,337.92,103.68]}
+{"kind":"textbox","id":"sh/hsjqd47y","slide":8,"name":"Text 44","text":"Adjacent transitions","textPreview":"Adjacent transitions","textChars":20,"textLines":1,"bbox":[905.84,334.08,265.36,34.56]}
+{"kind":"textbox","id":"sh/grap4zqd","slide":8,"name":"Text 45","text":"24 rebuilds 371 pairs from 139 residents","textPreview":"24 rebuilds 371 pairs from 139 residents","textChars":40,"textLines":1,"bbox":[867.84,378.24,303.36,44.16]}
+{"kind":"shape","id":"sh/72ho7upg","slide":8,"name":"Shape 46","bbox":[862.08,330.24,26.88,26.88]}
+{"kind":"textbox","id":"sh/6187yp8b","slide":8,"name":"Text 47","text":"6","textPreview":"6","textChars":1,"textLines":1,"bbox":[862.08,335.04,26.88,9.6]}
+{"kind":"textbox","id":"sh/cvmdsb2h","slide":8,"name":"Text 48","text":"longitudinal evidence","textPreview":"longitudinal evidence","textChars":21,"textLines":1,"bbox":[900.48,357.12,268.8,13.44]}
+{"kind":"shape","id":"sh/xwvelwj2","slide":8,"name":"Shape 49","bbox":[71.04,466.56,337.92,103.68]}
+{"kind":"textbox","id":"sh/at4vq1kr","slide":8,"name":"Text 50","text":"Focused casebook","textPreview":"Focused casebook","textChars":16,"textLines":1,"bbox":[126.32,481.92,265.36,34.56]}
+{"kind":"textbox","id":"sh/budwj61c","slide":8,"name":"Text 51","text":"9 cases; 9 linked; 0 missing","textPreview":"9 cases; 9 linked; 0 missing","textChars":28,"textLines":1,"bbox":[88.32,526.08,303.36,44.16]}
+{"kind":"shape","id":"sh/kjmdwbit","slide":8,"name":"Shape 52","bbox":[82.56,478.08,26.88,26.88]}
+{"kind":"textbox","id":"sh/lkvepgje","slide":8,"name":"Text 53","text":"7","textPreview":"7","textChars":1,"textLines":1,"bbox":[82.56,482.88,26.88,9.6]}
+{"kind":"textbox","id":"sh/yx4vu10n","slide":8,"name":"Text 54","text":"mechanism traceability","textPreview":"mechanism traceability","textChars":22,"textLines":1,"bbox":[120.96,504.96,268.8,13.44]}
+{"kind":"shape","id":"sh/zidwn618","slide":8,"name":"Shape 55","bbox":[412.8,518.4,38.4,0]}
+{"kind":"shape","id":"sh/0n2dkr2p","slide":8,"name":"Shape 56","bbox":[460.8,466.56,337.92,103.68]}
+{"kind":"textbox","id":"sh/1obudcju","slide":8,"name":"Text 57","text":"Near-miss audit","textPreview":"Near-miss audit","textChars":15,"textLines":1,"bbox":[516.08,481.92,265.36,34.56]}
+{"kind":"textbox","id":"sh/hk3ah8by","slide":8,"name":"Text 58","text":"17 rows remain separate from operational UTI cases","textPreview":"17 rows remain separate from operational UTI cases","textChars":50,"textLines":1,"bbox":[478.08,526.08,303.36,44.16]}
+{"kind":"shape","id":"sh/gjuto3ud","slide":8,"name":"Shape 59","bbox":[472.32,478.08,26.88,26.88]}
+{"kind":"textbox","id":"sh/filsfyts","slide":8,"name":"Text 60","text":"8","textPreview":"8","textChars":1,"textLines":1,"bbox":[472.32,482.88,26.88,9.6]}
+{"kind":"textbox","id":"sh/uhsbmtc7","slide":8,"name":"Text 61","text":"audit boundary","textPreview":"audit boundary","textChars":14,"textLines":1,"bbox":[510.72,504.96,268.8,13.44]}
+{"kind":"shape","id":"sh/po3ulsbu","slide":8,"name":"Shape 62","bbox":[802.56,518.4,38.4,0]}
+{"kind":"shape","id":"sh/4nutsnu9","slide":8,"name":"Shape 63","bbox":[850.56,466.56,337.92,103.68]}
+{"kind":"textbox","id":"sh/3mlcjit4","slide":8,"name":"Text 64","text":"RQ release","textPreview":"RQ release","textChars":10,"textLines":1,"bbox":[905.84,481.92,265.36,34.56]}
+{"kind":"textbox","id":"sh/2lcbqdcj","slide":8,"name":"Text 65","text":"RQ01–RQ10 publish the numbered main analysis layer","textPreview":"RQ01–RQ10 publish the numbered main analysis layer","textChars":50,"textLines":1,"bbox":[867.84,526.08,303.36,44.16]}
+{"kind":"shape","id":"sh/dcnupsb6","slide":8,"name":"Shape 66","bbox":[862.08,478.08,26.88,26.88]}
+{"kind":"textbox","id":"sh/cbetwnul","slide":8,"name":"Text 67","text":"9","textPreview":"9","textChars":1,"textLines":1,"bbox":[862.08,482.88,26.88,9.6]}
+{"kind":"textbox","id":"sh/axo7qps3","slide":8,"name":"Text 68","text":"release completion","textPreview":"release completion","textChars":18,"textLines":1,"bbox":[900.48,504.96,268.8,13.44]}
+{"kind":"notes","id":"nt/fu1gfa1s","slide":8,"text":"This is claim traceability, not an inventory of every file. The central chain is the operational phenotype, selected cohort, VF and MLST integration, direct pairs, rebuilt transitions, focused casebook, near-miss audit and RQ01–RQ10 release."}

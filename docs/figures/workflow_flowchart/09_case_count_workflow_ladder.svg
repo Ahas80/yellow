@@ -11,33 +11,33 @@
 <rect x="104.0" y="351.1" width="436.8" height="283.8" rx="32.0" fill="#FFF7ED" stroke="#FED7AA" stroke-width="2.4"/>
 <rect x="119.6" y="371.6" width="93.6" height="67.3" rx="8.0" fill="#D55E00" stroke="#D55E00" stroke-width="0.0"/>
 <text x="166.4" y="439.8" font-family="Arial, Helvetica, sans-serif" font-size="17.0" fill="#FFFFFF" font-weight="700" text-anchor="middle"><tspan x="166.4" dy="0.0">1</tspan></text>
-<text x="234.0" y="427.7" font-family="Arial, Helvetica, sans-serif" font-size="21.0" fill="#0F172A" font-weight="700" text-anchor="start"><tspan x="234.0" dy="0.0">Classified clinical</tspan><tspan x="234.0" dy="20.0">visits</tspan></text>
+<text x="234.0" y="427.7" font-family="Arial, Helvetica, sans-serif" font-size="21.0" fill="#0F172A" font-weight="700" text-anchor="start"><tspan x="234.0" dy="0.0">Classified source</tspan><tspan x="234.0" dy="20.0">visits (QC)</tspan></text>
 <text x="156.0" y="561.8" font-family="Arial, Helvetica, sans-serif" font-size="38.0" fill="#D55E00" font-weight="700" text-anchor="start"><tspan x="156.0" dy="0.0">585 visits</tspan></text>
-<text x="156.0" y="616.8" font-family="Arial, Helvetica, sans-serif" font-size="17.0" fill="#64748B" font-weight="400" text-anchor="start"><tspan x="156.0" dy="0.0">167 participants; 18 UTI, 567</tspan><tspan x="156.0" dy="18.4">Not_UTI before exclusions</tspan></text>
+<text x="156.0" y="616.8" font-family="Arial, Helvetica, sans-serif" font-size="17.0" fill="#64748B" font-weight="400" text-anchor="start"><tspan x="156.0" dy="0.0">167 participants; 18 UTI, 567 Not</tspan><tspan x="156.0" dy="18.4">UTI before exclusions</tspan></text>
 <rect x="603.2" y="351.1" width="436.8" height="283.8" rx="32.0" fill="#FFF7ED" stroke="#FED7AA" stroke-width="2.4"/>
 <rect x="618.8" y="371.6" width="93.6" height="67.3" rx="8.0" fill="#D55E00" stroke="#D55E00" stroke-width="0.0"/>
 <text x="665.6" y="439.8" font-family="Arial, Helvetica, sans-serif" font-size="17.0" fill="#FFFFFF" font-weight="700" text-anchor="middle"><tspan x="665.6" dy="0.0">2</tspan></text>
-<text x="733.2" y="427.7" font-family="Arial, Helvetica, sans-serif" font-size="21.0" fill="#0F172A" font-weight="700" text-anchor="start"><tspan x="733.2" dy="0.0">Included clinical</tspan><tspan x="733.2" dy="20.0">visits</tspan></text>
+<text x="733.2" y="427.7" font-family="Arial, Helvetica, sans-serif" font-size="21.0" fill="#0F172A" font-weight="700" text-anchor="start"><tspan x="733.2" dy="0.0">Source-eligible visits</tspan><tspan x="733.2" dy="20.0">(QC)</tspan></text>
 <text x="655.2" y="561.8" font-family="Arial, Helvetica, sans-serif" font-size="38.0" fill="#D55E00" font-weight="700" text-anchor="start"><tspan x="655.2" dy="0.0">583 visits</tspan></text>
-<text x="655.2" y="616.8" font-family="Arial, Helvetica, sans-serif" font-size="17.0" fill="#64748B" font-weight="400" text-anchor="start"><tspan x="655.2" dy="0.0">166 participants; 18 UTI, 565</tspan><tspan x="655.2" dy="18.4">Not_UTI; 2 exclusions</tspan></text>
+<text x="655.2" y="616.8" font-family="Arial, Helvetica, sans-serif" font-size="17.0" fill="#64748B" font-weight="400" text-anchor="start"><tspan x="655.2" dy="0.0">166 participants; 18 UTI, 565 Not</tspan><tspan x="655.2" dy="18.4">UTI; 2 exclusions</tspan></text>
 <rect x="1102.4" y="351.1" width="436.8" height="283.8" rx="32.0" fill="#E0F2FE" stroke="#BAE6FD" stroke-width="2.4"/>
 <rect x="1118.0" y="371.6" width="93.6" height="67.3" rx="8.0" fill="#0072B2" stroke="#0072B2" stroke-width="0.0"/>
 <text x="1164.8" y="439.8" font-family="Arial, Helvetica, sans-serif" font-size="17.0" fill="#FFFFFF" font-weight="700" text-anchor="middle"><tspan x="1164.8" dy="0.0">3</tspan></text>
 <text x="1232.4" y="427.7" font-family="Arial, Helvetica, sans-serif" font-size="21.0" fill="#0F172A" font-weight="700" text-anchor="start"><tspan x="1232.4" dy="0.0">Assembly candidates</tspan><tspan x="1232.4" dy="20.0">for QC</tspan></text>
-<text x="1154.4" y="561.8" font-family="Arial, Helvetica, sans-serif" font-size="38.0" fill="#0072B2" font-weight="700" text-anchor="start"><tspan x="1154.4" dy="0.0">1,291</tspan></text>
-<text x="1154.4" y="616.8" font-family="Arial, Helvetica, sans-serif" font-size="17.0" fill="#64748B" font-weight="400" text-anchor="start"><tspan x="1154.4" dy="0.0">Assembler alternatives stay</tspan><tspan x="1154.4" dy="18.4">explicit here; these are not extra</tspan><tspan x="1154.4" dy="18.4">visits</tspan></text>
+<text x="1154.4" y="561.8" font-family="Arial, Helvetica, sans-serif" font-size="38.0" fill="#0072B2" font-weight="700" text-anchor="start"><tspan x="1154.4" dy="0.0">592</tspan></text>
+<text x="1154.4" y="616.8" font-family="Arial, Helvetica, sans-serif" font-size="17.0" fill="#64748B" font-weight="400" text-anchor="start"><tspan x="1154.4" dy="0.0">Candidate assembly records stay</tspan><tspan x="1154.4" dy="18.4">explicit here; these are source QC</tspan><tspan x="1154.4" dy="18.4">rows, not extra visits</tspan></text>
 <rect x="1601.6" y="351.1" width="436.8" height="283.8" rx="32.0" fill="#E0F2FE" stroke="#BAE6FD" stroke-width="2.4"/>
 <rect x="1617.2" y="371.6" width="93.6" height="67.3" rx="8.0" fill="#0072B2" stroke="#0072B2" stroke-width="0.0"/>
 <text x="1664.0" y="439.8" font-family="Arial, Helvetica, sans-serif" font-size="17.0" fill="#FFFFFF" font-weight="700" text-anchor="middle"><tspan x="1664.0" dy="0.0">4</tspan></text>
 <text x="1731.6" y="427.7" font-family="Arial, Helvetica, sans-serif" font-size="21.0" fill="#0F172A" font-weight="700" text-anchor="start"><tspan x="1731.6" dy="0.0">Selected genomic</tspan><tspan x="1731.6" dy="20.0">profiles</tspan></text>
-<text x="1653.6" y="561.8" font-family="Arial, Helvetica, sans-serif" font-size="38.0" fill="#0072B2" font-weight="700" text-anchor="start"><tspan x="1653.6" dy="0.0">556 profiles</tspan></text>
-<text x="1653.6" y="616.8" font-family="Arial, Helvetica, sans-serif" font-size="17.0" fill="#64748B" font-weight="400" text-anchor="start"><tspan x="1653.6" dy="0.0">162 participants; VF calls; one</tspan><tspan x="1653.6" dy="18.4">profile per usable visit</tspan></text>
+<text x="1653.6" y="561.8" font-family="Arial, Helvetica, sans-serif" font-size="38.0" fill="#0072B2" font-weight="700" text-anchor="start"><tspan x="1653.6" dy="0.0">532 profiles</tspan></text>
+<text x="1653.6" y="616.8" font-family="Arial, Helvetica, sans-serif" font-size="17.0" fill="#64748B" font-weight="400" text-anchor="start"><tspan x="1653.6" dy="0.0">161 participants; VF calls; one</tspan><tspan x="1653.6" dy="18.4">profile per usable visit</tspan></text>
 <rect x="2100.8" y="351.1" width="436.8" height="283.8" rx="32.0" fill="#ECFDF5" stroke="#BBF7D0" stroke-width="2.4"/>
 <rect x="2116.4" y="371.6" width="93.6" height="67.3" rx="8.0" fill="#009E73" stroke="#009E73" stroke-width="0.0"/>
 <text x="2163.2" y="439.8" font-family="Arial, Helvetica, sans-serif" font-size="17.0" fill="#FFFFFF" font-weight="700" text-anchor="middle"><tspan x="2163.2" dy="0.0">5</tspan></text>
 <text x="2230.8" y="427.7" font-family="Arial, Helvetica, sans-serif" font-size="21.0" fill="#0F172A" font-weight="700" text-anchor="start"><tspan x="2230.8" dy="0.0">VF/model-ready</tspan><tspan x="2230.8" dy="20.0">profiles</tspan></text>
-<text x="2152.8" y="561.8" font-family="Arial, Helvetica, sans-serif" font-size="38.0" fill="#009E73" font-weight="700" text-anchor="start"><tspan x="2152.8" dy="0.0">556 profiles</tspan></text>
-<text x="2152.8" y="616.8" font-family="Arial, Helvetica, sans-serif" font-size="17.0" fill="#64748B" font-weight="400" text-anchor="start"><tspan x="2152.8" dy="0.0">17 UTI, 539 Not_UTI; 27 included</tspan><tspan x="2152.8" dy="18.4">visits lack VF-ready evidence</tspan></text>
+<text x="2152.8" y="561.8" font-family="Arial, Helvetica, sans-serif" font-size="38.0" fill="#009E73" font-weight="700" text-anchor="start"><tspan x="2152.8" dy="0.0">532 profiles</tspan></text>
+<text x="2152.8" y="616.8" font-family="Arial, Helvetica, sans-serif" font-size="17.0" fill="#64748B" font-weight="400" text-anchor="start"><tspan x="2152.8" dy="0.0">16 UTI, 516 Not UTI; 51</tspan><tspan x="2152.8" dy="18.4">source-eligible visits are outside</tspan><tspan x="2152.8" dy="18.4">this selected VF-ready set</tspan></text>
 <line x1="548.6" y1="493.0" x2="595.4" y2="493.0" stroke="#94A3B8" stroke-width="4.0" stroke-linecap="round" marker-end="url(#arrowhead)"/>
 <line x1="1047.8" y1="493.0" x2="1094.6" y2="493.0" stroke="#94A3B8" stroke-width="4.0" stroke-linecap="round" marker-end="url(#arrowhead)"/>
 <line x1="1547.0" y1="493.0" x2="1593.8" y2="493.0" stroke="#94A3B8" stroke-width="4.0" stroke-linecap="round" marker-end="url(#arrowhead)"/>
@@ -46,17 +46,17 @@
 <rect x="592.8" y="993.4" width="93.6" height="67.3" rx="8.0" fill="#0072B2" stroke="#0072B2" stroke-width="0.0"/>
 <text x="639.6" y="1061.6" font-family="Arial, Helvetica, sans-serif" font-size="17.0" fill="#FFFFFF" font-weight="700" text-anchor="middle"><tspan x="639.6" dy="0.0">6</tspan></text>
 <text x="707.2" y="1049.5" font-family="Arial, Helvetica, sans-serif" font-size="21.0" fill="#0F172A" font-weight="700" text-anchor="start"><tspan x="707.2" dy="0.0">Longitudinal visit</tspan><tspan x="707.2" dy="20.0">subset</tspan></text>
-<text x="629.2" y="1183.5" font-family="Arial, Helvetica, sans-serif" font-size="38.0" fill="#0072B2" font-weight="700" text-anchor="start"><tspan x="629.2" dy="0.0">538 visits</tspan></text>
-<text x="629.2" y="1238.6" font-family="Arial, Helvetica, sans-serif" font-size="17.0" fill="#64748B" font-weight="400" text-anchor="start"><tspan x="629.2" dy="0.0">144 participants; 394 consecutive</tspan><tspan x="629.2" dy="18.4">visit pairs</tspan></text>
+<text x="629.2" y="1183.5" font-family="Arial, Helvetica, sans-serif" font-size="38.0" fill="#0072B2" font-weight="700" text-anchor="start"><tspan x="629.2" dy="0.0">510 visits</tspan></text>
+<text x="629.2" y="1238.6" font-family="Arial, Helvetica, sans-serif" font-size="17.0" fill="#64748B" font-weight="400" text-anchor="start"><tspan x="629.2" dy="0.0">139 participants; 371 consecutive</tspan><tspan x="629.2" dy="18.4">visit pairs</tspan></text>
 <rect x="1414.4" y="972.9" width="665.6" height="254.6" rx="32.0" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="2.4"/>
 <rect x="1430.0" y="993.4" width="93.6" height="67.3" rx="8.0" fill="#D55E00" stroke="#D55E00" stroke-width="0.0"/>
 <text x="1476.8" y="1061.6" font-family="Arial, Helvetica, sans-serif" font-size="17.0" fill="#FFFFFF" font-weight="700" text-anchor="middle"><tspan x="1476.8" dy="0.0">7</tspan></text>
-<text x="1544.4" y="1049.5" font-family="Arial, Helvetica, sans-serif" font-size="21.0" fill="#0F172A" font-weight="700" text-anchor="start"><tspan x="1544.4" dy="0.0">Not_UTI -&gt; UTI</tspan><tspan x="1544.4" dy="20.0">transitions</tspan></text>
-<text x="1466.4" y="1183.5" font-family="Arial, Helvetica, sans-serif" font-size="38.0" fill="#D55E00" font-weight="700" text-anchor="start"><tspan x="1466.4" dy="0.0">11 transitions</tspan></text>
-<text x="1466.4" y="1238.6" font-family="Arial, Helvetica, sans-serif" font-size="17.0" fill="#64748B" font-weight="400" text-anchor="start"><tspan x="1466.4" dy="0.0">10 WGS/VF-linked; 1 missing</tspan><tspan x="1466.4" dy="18.4">endpoint</tspan></text>
+<text x="1544.4" y="1049.5" font-family="Arial, Helvetica, sans-serif" font-size="21.0" fill="#0F172A" font-weight="700" text-anchor="start"><tspan x="1544.4" dy="0.0">Not UTI -&gt; UTI</tspan><tspan x="1544.4" dy="20.0">transitions</tspan></text>
+<text x="1466.4" y="1183.5" font-family="Arial, Helvetica, sans-serif" font-size="38.0" fill="#D55E00" font-weight="700" text-anchor="start"><tspan x="1466.4" dy="0.0">9 transitions</tspan></text>
+<text x="1466.4" y="1238.6" font-family="Arial, Helvetica, sans-serif" font-size="17.0" fill="#64748B" font-weight="400" text-anchor="start"><tspan x="1466.4" dy="0.0">9 WGS/VF-linked; 0 missing endpoint</tspan></text>
 <line x1="2319.2" y1="649.6" x2="910.0" y2="958.3" stroke="#94A3B8" stroke-width="4.0" stroke-linecap="round" marker-end="url(#arrowhead)"/>
 <line x1="2319.2" y1="649.6" x2="1747.2" y2="958.3" stroke="#94A3B8" stroke-width="4.0" stroke-linecap="round" marker-end="url(#arrowhead)"/>
 <rect x="175.5" y="1265.5" width="2249.0" height="117.0" rx="24.0" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.8"/>
-<text x="221.0" y="1306.6" font-family="Arial, Helvetica, sans-serif" font-size="19.2" fill="#475569" font-weight="400" text-anchor="start"><tspan x="221.0" dy="0.0">Reading rule: do not compare these as one shrinking group. Each number answers a different question: clinical visit</tspan><tspan x="221.0" dy="21.5">inclusion, assembly QC, selected profiles, consecutive visit pairs, or Not_UTI -&gt; UTI transitions.</tspan></text>
+<text x="221.0" y="1306.6" font-family="Arial, Helvetica, sans-serif" font-size="19.2" fill="#475569" font-weight="400" text-anchor="start"><tspan x="221.0" dy="0.0">Reading rule: do not compare these as one shrinking group. Each number answers a different question: clinical visit</tspan><tspan x="221.0" dy="21.5">inclusion, assembly QC, selected profiles, consecutive visit pairs, or Not UTI -&gt; UTI transitions.</tspan></text>
 <text x="117.0" y="1428.2" font-family="Arial, Helvetica, sans-serif" font-size="16.4" fill="#64748B" font-weight="400" text-anchor="start"><tspan x="117.0" dy="0.0">Sources: table_01_cohort_episode_flow.csv; pipeline_denominator_summary.csv; vf_longitudinal_transitions.csv; vf_transition_case_index.csv</tspan></text>
 </svg>

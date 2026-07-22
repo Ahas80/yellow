@@ -60,26 +60,14 @@ normalise_tp_label <- function(x) {
 }
 
 load_active_longcycler_keys <- function() {
-  canonical_file <- file.path(DIR_QC, "canonical_assembly_selection.csv")
-  selection <- read_csv(require_file(canonical_file, "canonical Longcycler selection"), show_col_types = FALSE)
-  assembler_col <- intersect(c("assembler", "Assembler"), names(selection))[1]
-  if (is.na(assembler_col) ||
-      !all(c("selected_canonical", "QC_PASS", "Participant_id", "tp_lab") %in% names(selection))) {
-    stop("Canonical assembly selection lacks Longcycler-primary selection fields: ", canonical_file)
-  }
-  keys <- selection %>%
+  cohort <- read_csv(require_file(FILE_ANALYSIS_CLINICAL_COHORT, "selected Longcycler analysis cohort"), show_col_types = FALSE)
+  keys <- cohort %>%
     mutate(
       Participant_id = as.character(.data$Participant_id),
-      tp_lab = normalise_tp_label(.data$tp_lab),
-      selected_canonical = as_pipeline_bool(.data$selected_canonical),
-      QC_PASS = as_pipeline_bool(.data$QC_PASS),
-      active_assembler = str_to_lower(as.character(.data[[assembler_col]]))
+      tp_lab = normalise_tp_label(.data$tp_lab)
     ) %>%
-    filter(.data$selected_canonical %in% TRUE,
-           .data$QC_PASS %in% TRUE,
-           .data$active_assembler == "longcycler") %>%
     distinct(.data$Participant_id, .data$tp_lab)
-  if (nrow(keys) == 0) stop("Canonical manifest contains no selected QC-passing Longcycler episode keys.")
+  if (nrow(keys) != nrow(cohort)) stop("Selected Longcycler analysis cohort has duplicate episode keys")
   keys
 }
 
@@ -191,16 +179,23 @@ read_current_vf_ready <- function() {
 # LOAD CURRENT INPUTS AND VALIDATE DENOMINATORS
 # ==============================================================================
 
-status_primary <- read_csv(require_file(FILE_STATUS_MAP), show_col_types = FALSE) %>%
+status_primary <- read_csv(require_file(FILE_ANALYSIS_CLINICAL_COHORT), show_col_types = FALSE) %>%
   prefer_primary_uti_status(allow_legacy_fallback = FALSE) %>%
-  apply_manual_sample_curation(context = "36_status") %>%
-  filter_primary_analysis() %>%
   mutate(Participant_id = as.character(Participant_id),
          tp_lab = normalise_tp_label(tp_lab))
 
 active_longcycler_keys <- load_active_longcycler_keys()
-expected_active_status <- status_primary %>%
-  semi_join(active_longcycler_keys, by = c("Participant_id", "tp_lab"))
+canonical_transitions <- read_csv(
+  require_file(file.path(DIR_RESULTS, "longitudinal", "longcycler_transitions.csv"),
+               "canonical Longcycler transitions"),
+  show_col_types = FALSE
+)
+if (nrow(canonical_transitions) != 371L ||
+    sum(canonical_transitions$status_from == "Not_UTI" & canonical_transitions$status_to == "UTI", na.rm = TRUE) != 9L ||
+    any(is.na(canonical_transitions$TotalSNPs))) {
+  stop("Canonical Longcycler transition export failed the 371/9/direct-SNP contract")
+}
+expected_active_status <- status_primary
 if (nrow(expected_active_status) != nrow(active_longcycler_keys)) {
   stop("Not every active selected QC-pass Longcycler key has one primary clinical status row.")
 }
@@ -208,10 +203,12 @@ expected_active_total <- nrow(active_longcycler_keys)
 expected_active_uti <- sum(expected_active_status$UTI_Status == "UTI", na.rm = TRUE)
 expected_active_not_uti <- sum(expected_active_status$UTI_Status == "Not_UTI", na.rm = TRUE)
 
-vf_ready <- read_current_vf_ready() %>%
-  semi_join(active_longcycler_keys, by = c("Participant_id", "tp_lab"))
-if (nrow(vf_ready) != expected_active_total) {
-  stop("VF-ready data do not contain every active selected QC-pass Longcycler episode key.")
+vf_ready <- read_current_vf_ready()
+vf_keys <- vf_ready %>% distinct(.data$Participant_id, .data$tp_lab)
+if (nrow(vf_ready) != expected_active_total ||
+    nrow(anti_join(active_longcycler_keys, vf_keys, by = c("Participant_id", "tp_lab"))) ||
+    nrow(anti_join(vf_keys, active_longcycler_keys, by = c("Participant_id", "tp_lab")))) {
+  stop("VF-ready keys do not exactly equal the selected Longcycler analysis cohort.")
 }
 
 score_path <- require_file(file.path(DIR_VF, "vf_score_table.csv"))
@@ -223,8 +220,13 @@ scores <- read_csv(score_path, show_col_types = FALSE) %>%
     Participant_id = as.character(Participant_id),
     tp_lab = normalise_tp_label(tp_lab),
     ST = if ("ST" %in% names(.)) normalise_st_label(ST) else NA_character_
-  ) %>%
-  semi_join(active_longcycler_keys, by = c("Participant_id", "tp_lab"))
+  )
+score_keys <- scores %>% distinct(.data$Participant_id, .data$tp_lab)
+if (nrow(score_keys) != nrow(scores) ||
+    nrow(anti_join(active_longcycler_keys, score_keys, by = c("Participant_id", "tp_lab"))) ||
+    nrow(anti_join(score_keys, active_longcycler_keys, by = c("Participant_id", "tp_lab")))) {
+  stop("VF score keys do not exactly equal the selected Longcycler analysis cohort")
+}
 
 if (any(is.na(scores$UTI_Status))) {
   scores <- scores %>%
@@ -455,6 +457,20 @@ case_summary <- read_csv(require_file(file.path(DIR_VF, "vf_transition_case_summ
     case_id = as.character(case_id),
     transition_type_simple = str_replace_all(as.character(transition_type), "→", "->")
   )
+if (nrow(case_summary) != 371L ||
+    sum(case_summary$transition_type_simple == "Not_UTI->UTI", na.rm = TRUE) != 9L ||
+    any(!(case_summary$has_vf_pair %in% TRUE)) || any(is.na(case_summary$SNPs))) {
+  stop("Statistical transition inputs must be the 371 fully linked selected Longcycler adjacent pairs")
+}
+case_keys <- case_summary %>%
+  transmute(key = paste(as.character(.data$Participant_id),
+                        normalise_tp_label(.data$from_tp), normalise_tp_label(.data$to_tp), sep = "|"))
+canonical_keys <- canonical_transitions %>%
+  transmute(key = paste(as.character(.data$Participant_id),
+                        normalise_tp_label(.data$tp_from), normalise_tp_label(.data$tp_to), sep = "|"))
+if (!setequal(case_keys$key, canonical_keys$key)) {
+  stop("Statistical transition inputs do not match the canonical Longcycler transition keys")
+}
 
 module_changes <- read_csv(require_file(file.path(DIR_VF, "vf_transition_module_changes.csv")),
                            show_col_types = FALSE) %>%
@@ -851,8 +867,8 @@ has_no_stale_stated_counts <- function(path) {
 
 validation <- tibble(
   check = c(
-    "primary clinical denominator is 583 rows",
-    "primary clinical counts are 18 UTI and 565 Not_UTI",
+    sprintf("selected Longcycler denominator is %d rows", expected_active_total),
+    sprintf("selected Longcycler counts are %d UTI and %d Not_UTI", expected_active_uti, expected_active_not_uti),
     sprintf("active selected QC-pass Longcycler VF/model denominator is %d rows", expected_active_total),
     sprintf("active Longcycler VF/model counts are %d UTI and %d Not_UTI", expected_active_uti, expected_active_not_uti),
     "participant-collapsed supplementary endpoint tests include BH q-values",
@@ -862,9 +878,9 @@ validation <- tibble(
     "new summary contains no stale 12-UTI or legacy ASB-vs-UTI wording"
   ),
   status = c(
-    ifelse(nrow(status_primary) == 583, "PASS", "FAIL"),
-    ifelse(sum(status_primary$UTI_Status == "UTI", na.rm = TRUE) == 18 &&
-             sum(status_primary$UTI_Status == "Not_UTI", na.rm = TRUE) == 565, "PASS", "FAIL"),
+    ifelse(nrow(status_primary) == expected_active_total, "PASS", "FAIL"),
+    ifelse(sum(status_primary$UTI_Status == "UTI", na.rm = TRUE) == expected_active_uti &&
+             sum(status_primary$UTI_Status == "Not_UTI", na.rm = TRUE) == expected_active_not_uti, "PASS", "FAIL"),
     ifelse(nrow(vf_ready) == expected_active_total, "PASS", "FAIL"),
     ifelse(sum(vf_ready$UTI_Status == "UTI", na.rm = TRUE) == expected_active_uti &&
              sum(vf_ready$UTI_Status == "Not_UTI", na.rm = TRUE) == expected_active_not_uti,
@@ -899,7 +915,7 @@ summary_lines <- c(
   "",
   "## Denominators",
   "",
-  sprintf("- Primary clinical denominator: **%d** rows = **%d UTI**, **%d Not_UTI**.",
+  sprintf("- Selected QC-pass Longcycler denominator: **%d** rows = **%d UTI**, **%d Not_UTI**.",
           nrow(status_primary),
           sum(status_primary$UTI_Status == "UTI", na.rm = TRUE),
           sum(status_primary$UTI_Status == "Not_UTI", na.rm = TRUE)),

@@ -1,0 +1,996 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/y90nupkv",
+    "id": "y90nupkv",
+    "slide": 1,
+    "layoutId": "/ppt/slideLayouts/slideLayout1.xml",
+    "layoutName": "DEFAULT",
+    "masterLayoutId": "/ppt/slideMasters/slideMaster1.xml",
+    "backgroundColor": "#FFFFFF",
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "Office",
+    "colors": {
+      "accent1": "#4472C4",
+      "accent2": "#ED7D31",
+      "accent3": "#A5A5A5",
+      "accent4": "#FFC000",
+      "accent5": "#5B9BD5",
+      "accent6": "#70AD47",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#44546A",
+      "lt2": "#E7E6E6",
+      "hlink": "#0563C1",
+      "folHlink": "#954F72"
+    },
+    "fontScheme": {
+      "name": "Office",
+      "majorFont": {
+        "latinTypeface": "Aptos Display"
+      },
+      "minorFont": {
+        "latinTypeface": "Aptos"
+      }
+    },
+    "typefaces": [
+      "Aptos",
+      "Aptos Display"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "/ppt/slideLayouts/slideLayout1.xml",
+      "name": "DEFAULT",
+      "parentLayoutId": "/ppt/slideMasters/slideMaster1.xml",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "/ppt/slideMasters/slideMaster1.xml",
+      "type": "master",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/547294r6",
+      "id": "2",
+      "name": "Shape 0",
+      "bbox": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "geometry": "rect",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Aptos",
+        "color": "tx1",
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "#FFFFFF",
+      "lineColor": "rgba(255, 255, 255, 0)",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/k3yl0zql",
+      "id": "3",
+      "name": "Shape 1",
+      "bbox": [
+        0,
+        0,
+        15.36,
+        720
+      ],
+      "geometry": "rect",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Aptos",
+        "color": "tx1",
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "#2B6CB0",
+      "lineColor": "rgba(255, 255, 255, 0)",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 3,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/65g3298r",
+      "id": "5",
+      "name": "Text 3",
+      "bbox": [
+        59.52,
+        96,
+        1017.6,
+        82.56
+      ],
+      "geometry": "rect",
+      "text": "Longcycler-only methodology",
+      "textPreview": "Longcycler-only methodology",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Aptos",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0.05,
+          "right": 0.05,
+          "bottom": 0.05,
+          "left": 0.05
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Longcycler-only methodology"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Longcycler-only methodology",
+          "marginLeft": 0,
+          "indent": 0,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Longcycler-only methodology",
+              "fontSize": 41.33,
+              "typeface": "Aptos Display",
+              "color": "#111827",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": ""
+        }
+      ]
+    },
+    {
+      "order": 4,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ts7md4r2",
+      "id": "6",
+      "name": "Text 4",
+      "bbox": [
+        61.44,
+        182.4,
+        979.2,
+        32.64
+      ],
+      "geometry": "rect",
+      "text": "One operational clinical phenotype and one selected Longcycler assembly per analysed episode",
+      "textPreview": "One operational clinical phenotype and one selected Longcycler assembly per analysed episode",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Aptos",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0.05,
+          "right": 0.05,
+          "bottom": 0.05,
+          "left": 0.05
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "One operational clinical phenotype and one selected Longcycler assembly per analysed episode"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "One operational clinical phenotype and one selected Longcycler assembly per analysed episode",
+          "marginLeft": 0,
+          "indent": 0,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "One operational clinical phenotype and one selected Longcycler assembly per analysed episode",
+              "fontSize": 17.33,
+              "typeface": "Aptos",
+              "color": "#64748B"
+            }
+          ],
+          "bulletCharacter": ""
+        }
+      ]
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/sryl4zqx",
+      "id": "7",
+      "name": "Shape 5",
+      "bbox": [
+        61.44,
+        284.16,
+        322.56,
+        130.56
+      ],
+      "geometry": "roundRect",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Aptos",
+        "color": "tx1",
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "#E8F1FA",
+      "lineColor": "#B9D5F0",
+      "lineWidth": 1.07
+    },
+    {
+      "order": 6,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/fu94fe98",
+      "id": "8",
+      "name": "Text 6",
+      "bbox": [
+        78.72,
+        297.6,
+        288,
+        17.28
+      ],
+      "geometry": "rect",
+      "text": "Analytical cohort",
+      "textPreview": "Analytical cohort",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Aptos",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0.05,
+          "right": 0.05,
+          "bottom": 0.05,
+          "left": 0.05
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Analytical cohort"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Analytical cohort",
+          "marginLeft": 0,
+          "indent": 0,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Analytical cohort",
+              "fontSize": 10.13,
+              "typeface": "Aptos",
+              "color": "#2B6CB0",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": ""
+        }
+      ]
+    },
+    {
+      "order": 7,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/utg3698n",
+      "id": "9",
+      "name": "Text 7",
+      "bbox": [
+        78.72,
+        320.64,
+        288,
+        34.56
+      ],
+      "geometry": "rect",
+      "text": "532 episodes · 161 residents",
+      "textPreview": "532 episodes · 161 residents",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Aptos",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0.05,
+          "right": 0.05,
+          "bottom": 0.05,
+          "left": 0.05
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "532 episodes · 161 residents"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "532 episodes · 161 residents",
+          "marginLeft": 0,
+          "indent": 0,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "532 episodes · 161 residents",
+              "fontSize": 17.33,
+              "typeface": "Aptos",
+              "color": "#111827",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": ""
+        }
+      ]
+    },
+    {
+      "order": 8,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/wn6dc7eh",
+      "id": "10",
+      "name": "Text 8",
+      "bbox": [
+        78.72,
+        357.12,
+        288,
+        74.88
+      ],
+      "geometry": "rect",
+      "text": "Every episode has one selected QC-passing Longcycler assembly.",
+      "textPreview": "Every episode has one selected QC-passing Longcycler assembly.",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Aptos",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0.05,
+          "right": 0.05,
+          "bottom": 0.05,
+          "left": 0.05
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Every episode has one selected QC-passing"
+          },
+          {
+            "index": 2,
+            "text": "Longcycler assembly."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Every episode has one selected QC-passing Longcycler assembly.",
+          "marginLeft": 0,
+          "indent": 0,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Every episode has one selected QC-passing Longcycler assembly.",
+              "fontSize": 12.53,
+              "typeface": "Aptos",
+              "color": "#64748B"
+            }
+          ],
+          "bulletCharacter": ""
+        }
+      ]
+    },
+    {
+      "order": 9,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/hofulsf2",
+      "id": "11",
+      "name": "Shape 9",
+      "bbox": [
+        422.4,
+        284.16,
+        322.56,
+        130.56
+      ],
+      "geometry": "roundRect",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Aptos",
+        "color": "tx1",
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "#EAF7EF",
+      "lineColor": "#BCE4C9",
+      "lineWidth": 1.07
+    },
+    {
+      "order": 10,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/vmdcj2xw",
+      "id": "13",
+      "name": "Text 11",
+      "bbox": [
+        439.68,
+        320.64,
+        288,
+        34.56
+      ],
+      "geometry": "rect",
+      "text": "16 UTI · 516 Not_UTI",
+      "textPreview": "16 UTI · 516 Not_UTI",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Aptos",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0.05,
+          "right": 0.05,
+          "bottom": 0.05,
+          "left": 0.05
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "16 UTI · 516 Not_UTI"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "16 UTI · 516 Not_UTI",
+          "marginLeft": 0,
+          "indent": 0,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "16 UTI · 516 Not_UTI",
+              "fontSize": 17.33,
+              "typeface": "Aptos",
+              "color": "#111827",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": ""
+        }
+      ]
+    },
+    {
+      "order": 11,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/4r6dg7et",
+      "id": "14",
+      "name": "Text 12",
+      "bbox": [
+        439.68,
+        357.12,
+        288,
+        74.88
+      ],
+      "geometry": "rect",
+      "text": "Versioned operational phenotype on the exact selected cohort.",
+      "textPreview": "Versioned operational phenotype on the exact selected cohort.",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Aptos",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0.05,
+          "right": 0.05,
+          "bottom": 0.05,
+          "left": 0.05
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Versioned operational phenotype on the exact"
+          },
+          {
+            "index": 2,
+            "text": "selected cohort."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Versioned operational phenotype on the exact selected cohort.",
+          "marginLeft": 0,
+          "indent": 0,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Versioned operational phenotype on the exact selected cohort.",
+              "fontSize": 12.53,
+              "typeface": "Aptos",
+              "color": "#64748B"
+            }
+          ],
+          "bulletCharacter": ""
+        }
+      ]
+    },
+    {
+      "order": 12,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/5sfepcfe",
+      "id": "15",
+      "name": "Shape 13",
+      "bbox": [
+        783.36,
+        284.16,
+        322.56,
+        130.56
+      ],
+      "geometry": "roundRect",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Aptos",
+        "color": "tx1",
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "#FFF4E6",
+      "lineColor": "#F4C98A",
+      "lineWidth": 1.07
+    },
+    {
+      "order": 13,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ipovexwn",
+      "id": "16",
+      "name": "Text 14",
+      "bbox": [
+        800.64,
+        297.6,
+        288,
+        17.28
+      ],
+      "geometry": "rect",
+      "text": "Longitudinal evidence",
+      "textPreview": "Longitudinal evidence",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Aptos",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0.05,
+          "right": 0.05,
+          "bottom": 0.05,
+          "left": 0.05
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Longitudinal evidence"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Longitudinal evidence",
+          "marginLeft": 0,
+          "indent": 0,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Longitudinal evidence",
+              "fontSize": 10.13,
+              "typeface": "Aptos",
+              "color": "#D97706",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": ""
+        }
+      ]
+    },
+    {
+      "order": 14,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/3qxwn2x8",
+      "id": "17",
+      "name": "Text 15",
+      "bbox": [
+        800.64,
+        320.64,
+        288,
+        34.56
+      ],
+      "geometry": "rect",
+      "text": "371 transitions · 139 residents",
+      "textPreview": "371 transitions · 139 residents",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Aptos",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0.05,
+          "right": 0.05,
+          "bottom": 0.05,
+          "left": 0.05
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "371 transitions · 139 residents"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "371 transitions · 139 residents",
+          "marginLeft": 0,
+          "indent": 0,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "371 transitions · 139 residents",
+              "fontSize": 17.33,
+              "typeface": "Aptos",
+              "color": "#111827",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": ""
+        }
+      ]
+    },
+    {
+      "order": 15,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/sfqdkrep",
+      "id": "18",
+      "name": "Text 16",
+      "bbox": [
+        800.64,
+        357.12,
+        288,
+        74.88
+      ],
+      "geometry": "rect",
+      "text": "9 Not_UTI→UTI; 5 at ≤25 SNPs",
+      "textPreview": "9 Not_UTI→UTI; 5 at ≤25 SNPs",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Aptos",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0.05,
+          "right": 0.05,
+          "bottom": 0.05,
+          "left": 0.05
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "9 Not_UTI→UTI; 5 at ≤25 SNPs"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "9 Not_UTI→UTI; 5 at ≤25 SNPs",
+          "marginLeft": 0,
+          "indent": 0,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "9 Not_UTI→UTI; 5 at ≤25 SNPs",
+              "fontSize": 12.53,
+              "typeface": "Aptos",
+              "color": "#64748B"
+            }
+          ],
+          "bulletCharacter": ""
+        }
+      ]
+    },
+    {
+      "order": 16,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/vyp0je1s",
+      "id": "31",
+      "name": "Text 29",
+      "bbox": [
+        59.52,
+        683.52,
+        768,
+        17.28
+      ],
+      "geometry": "rect",
+      "text": "Longcycler-only release | RQ01–RQ10 | 15 July 2026 | exploratory, non-causal",
+      "textPreview": "Longcycler-only release | RQ01–RQ10 | 15 July 2026 | exploratory, non-causal",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Aptos",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0.05,
+          "right": 0.05,
+          "bottom": 0.05,
+          "left": 0.05
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Longcycler-only release | RQ01–RQ10 | 15 July 2026 | exploratory, non-causal"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Longcycler-only release | RQ01–RQ10 | 15 July 2026 | exploratory, non-causal",
+          "marginLeft": 0,
+          "indent": 0,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Longcycler-only release | RQ01–RQ10 | 15 July 2026 | exploratory, non-causal",
+              "fontSize": 10.67,
+              "typeface": "Aptos",
+              "color": "#64748B"
+            }
+          ],
+          "bulletCharacter": ""
+        }
+      ]
+    }
+  ],
+  "composeRuns": []
+}

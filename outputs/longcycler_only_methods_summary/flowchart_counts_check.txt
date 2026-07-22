@@ -1,28 +1,8 @@
-Flowchart count recomputation check
-Generated: 2026-07-09 17:39:37.805027
-
-All expected anchors passed.
-
-clinical_rows = 583
-clinical_participants = 166
-clinical_uti = 18
-clinical_not_uti = 565
-assembly_qc_rows = 1291
-mixed_rows = 556
-mixed_participants = 162
-mixed_uti = 17
-mixed_not_uti = 539
-selected_flye_rows = 24
-selected_longcycler_rows = 532
-longcycler_rows = 532
-longcycler_participants = 161
-longcycler_uti = 16
-longcycler_not_uti = 516
-mlst_typed_rows = 514
-unique_sts = 80
-vf_gene_columns = 227
-longcycler_transitions = 371
-longcycler_transition_participants = 139
-strict_same_transitions = 116
-notuti_to_uti = 9
-notuti_to_uti_strict = 7
+PASS: analytical cohort = 532 episodes / 161 residents / 16 UTI / 516 Not_UTI
+PASS: direct pairs = 893
+PASS: adjacent transitions = 371 from 139 residents; 140 at or below the operational threshold
+PASS: focused transitions = 9 total; 5 at or below the operational threshold
+PASS: mechanism casebook = 9 cases / 9 linked / 0 missing
+PASS: near-miss audit = 17 separate rows
+PASS: numbered research-question layer = RQ01–RQ10
+PASS: full clinical source is labelled attrition/QC context only

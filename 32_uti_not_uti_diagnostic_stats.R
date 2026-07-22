@@ -110,40 +110,17 @@ status_all <- safe_read(FILE_STATUS_MAP, required = TRUE) %>%
   prefer_primary_uti_status(allow_legacy_fallback = FALSE) %>%
   apply_manual_sample_curation(context = "32_status_all")
 
-status_primary <- filter_primary_analysis(status_all)
-
-canonical_file <- file.path(DIR_QC, "canonical_assembly_selection.csv")
-canonical_selection <- safe_read(canonical_file, required = TRUE)
-assembler_col <- intersect(c("assembler", "Assembler"), names(canonical_selection))[1]
-if (is.na(assembler_col) ||
-    !all(c("selected_canonical", "QC_PASS", "Participant_id", "tp_lab") %in% names(canonical_selection))) {
-  stop("Canonical assembly selection lacks Longcycler-primary selection fields: ", canonical_file)
-}
-active_longcycler_keys <- canonical_selection %>%
-  mutate(
-    Participant_id = as.character(.data$Participant_id),
-    tp_lab = normalise_timepoint_preserve_events(.data$tp_lab),
-    selected_canonical = as_pipeline_bool(.data$selected_canonical),
-    QC_PASS = as_pipeline_bool(.data$QC_PASS),
-    active_assembler = str_to_lower(as.character(.data[[assembler_col]]))
-  ) %>%
-  filter(.data$selected_canonical %in% TRUE,
-         .data$QC_PASS %in% TRUE,
-         .data$active_assembler == "longcycler") %>%
-  distinct(.data$Participant_id, .data$tp_lab)
-if (nrow(active_longcycler_keys) == 0) {
-  stop("Canonical manifest contains no selected QC-passing Longcycler episode keys.")
-}
-
-expected_vf_status <- status_primary %>%
+status_primary <- safe_read(FILE_ANALYSIS_CLINICAL_COHORT, required = TRUE) %>%
+  prefer_primary_uti_status(allow_legacy_fallback = FALSE) %>%
   mutate(
     Participant_id = as.character(.data$Participant_id),
     tp_lab = normalise_timepoint_preserve_events(.data$tp_lab)
-  ) %>%
-  semi_join(active_longcycler_keys, by = c("Participant_id", "tp_lab"))
-if (nrow(expected_vf_status) != nrow(active_longcycler_keys)) {
-  stop("Not every active selected QC-pass Longcycler key has one primary clinical status row.")
+  )
+active_longcycler_keys <- status_primary %>% distinct(.data$Participant_id, .data$tp_lab)
+if (nrow(active_longcycler_keys) != nrow(status_primary)) {
+  stop("Selected Longcycler analysis cohort contains duplicate episode keys")
 }
+expected_vf_status <- status_primary
 
 vf_all <- safe_read(FILE_VF_READY, required = TRUE) %>%
   mutate(
@@ -153,41 +130,43 @@ vf_all <- safe_read(FILE_VF_READY, required = TRUE) %>%
   prefer_primary_uti_status() %>%
   apply_manual_sample_curation(context = "32_vf_ready_all")
 
-vf_primary_all <- filter_primary_genomics(vf_all) %>%
+vf <- filter_primary_genomics(vf_all) %>%
   mutate(tp_lab = normalise_timepoint_preserve_events(.data$tp_lab))
-vf <- vf_primary_all %>%
-  semi_join(active_longcycler_keys, by = c("Participant_id", "tp_lab"))
-missing_active_vf <- active_longcycler_keys %>%
-  anti_join(vf %>% distinct(.data$Participant_id, .data$tp_lab),
-            by = c("Participant_id", "tp_lab"))
-if (nrow(missing_active_vf) > 0) {
-  stop("VF-ready data are missing ", nrow(missing_active_vf),
-       " active selected QC-pass Longcycler episode key(s).")
-}
-excluded_non_longcycler_vf <- vf_primary_all %>%
-  anti_join(active_longcycler_keys, by = c("Participant_id", "tp_lab"))
-if (nrow(excluded_non_longcycler_vf) > 0) {
-  msg("Excluded %d non-Longcycler-primary VF-ready row(s) from script 32.",
-      nrow(excluded_non_longcycler_vf))
+vf_keys <- vf %>% distinct(.data$Participant_id, .data$tp_lab)
+missing_active_vf <- anti_join(active_longcycler_keys, vf_keys, by = c("Participant_id", "tp_lab"))
+extra_vf <- anti_join(vf_keys, active_longcycler_keys, by = c("Participant_id", "tp_lab"))
+if (nrow(vf_keys) != nrow(vf) || nrow(missing_active_vf) || nrow(extra_vf)) {
+  stop("VF-ready keys do not exactly equal the selected Longcycler analysis cohort: missing=",
+       nrow(missing_active_vf), ", extra=", nrow(extra_vf))
 }
 
 score_file <- file.path(DIR_VF, "vf_score_table.csv")
 score_raw <- safe_read(score_file)
 score_df <- if (nrow(score_raw) > 0) {
-  clean_keyed(score_raw, context = "32_score_table", genomics = TRUE) %>%
-    semi_join(active_longcycler_keys, by = c("Participant_id", "tp_lab"))
+  clean_keyed(score_raw, context = "32_score_table", genomics = TRUE)
 } else {
   vf
 }
+score_keys <- score_df %>% distinct(.data$Participant_id, .data$tp_lab)
+if (nrow(score_keys) != nrow(score_df) ||
+    nrow(anti_join(active_longcycler_keys, score_keys, by = c("Participant_id", "tp_lab"))) ||
+    nrow(anti_join(score_keys, active_longcycler_keys, by = c("Participant_id", "tp_lab")))) {
+  stop("VF score table does not exactly equal the selected Longcycler analysis cohort")
+}
 
 model_denom <- safe_read(file.path(DIR_MODELS, "model_dataset_denominator.csv")) %>%
-  { if (nrow(.) > 0) clean_keyed(., context = "32_model_denominator", genomics = TRUE) %>%
-      semi_join(active_longcycler_keys, by = c("Participant_id", "tp_lab")) else . }
+  { if (nrow(.) > 0) clean_keyed(., context = "32_model_denominator", genomics = TRUE) else . }
 
 manual_exclusions <- safe_read(file.path(DIR_AUDIT, "primary_clinical_manual_exclusions.csv"))
 vf_manual_exclusions <- safe_read(file.path(DIR_AUDIT, "primary_vf_manual_exclusions.csv"))
 quarantined_fastas <- safe_read(file.path(DIR_AUDIT, "quarantined_failed_or_not_expected_fastas.csv"))
 transition_score_changes <- safe_read(file.path(DIR_VF, "vf_transition_score_changes.csv"))
+canonical_transitions <- safe_read(file.path(DIR_RESULTS, "longitudinal", "longcycler_transitions.csv"), required = TRUE)
+if (nrow(canonical_transitions) != 371L ||
+    sum(canonical_transitions$status_from == "Not_UTI" & canonical_transitions$status_to == "UTI", na.rm = TRUE) != 9L ||
+    any(is.na(canonical_transitions$TotalSNPs))) {
+  stop("Canonical Longcycler transition export failed the 371/9/direct-SNP contract")
+}
 
 clinical_counts <- status_primary %>%
   count(UTI_Status, name = "n") %>%
@@ -198,7 +177,10 @@ vf_counts <- vf %>%
   count(UTI_Status, name = "n") %>%
   tidyr::complete(UTI_Status = c("UTI", "Not_UTI", "<missing>"), fill = list(n = 0L))
 
-expected_clinical <- c(UTI = 18L, Not_UTI = 565L)
+expected_clinical <- c(
+  UTI = sum(expected_vf_status$UTI_Status == "UTI", na.rm = TRUE),
+  Not_UTI = sum(expected_vf_status$UTI_Status == "Not_UTI", na.rm = TRUE)
+)
 expected_vf <- c(
   UTI = sum(expected_vf_status$UTI_Status == "UTI", na.rm = TRUE),
   Not_UTI = sum(expected_vf_status$UTI_Status == "Not_UTI", na.rm = TRUE),
@@ -208,7 +190,7 @@ expected_vf <- c(
 clinical_named <- setNames(clinical_counts$n, clinical_counts$UTI_Status)
 vf_named <- setNames(vf_counts$n, vf_counts$UTI_Status)
 if (!all(clinical_named[names(expected_clinical)] == expected_clinical)) {
-  stop("Primary clinical counts changed unexpectedly. Expected 18 UTI and 565 Not_UTI.")
+  stop("Selected Longcycler clinical counts do not match the canonical cohort.")
 }
 if (!all(vf_named[names(expected_vf)] == expected_vf)) {
   stop(
@@ -249,10 +231,10 @@ score_small <- score_df %>%
 
 clinical_flow <- tibble::tribble(
   ~stage_order, ~stage, ~n, ~stage_group, ~interpretation,
-  1L, "Raw status-map rows", nrow(status_all), "source",
-  "All classified rows retained for audit before primary manual exclusions.",
-  2L, "Primary clinical rows", nrow(status_primary), "primary",
-  "Rows with analysis_include_primary == TRUE.",
+  1L, "Source QC only", nrow(status_all), "source",
+  "Source clinical inventory retained only for attrition and duplicate QC.",
+  2L, "Selected Longcycler clinical rows", nrow(status_primary), "primary",
+  "Exact selected QC-pass Longcycler analytical cohort.",
   3L, "Culture supports UTI", sum(status_primary$culture_supports_uti %in% TRUE, na.rm = TRUE), "rule",
   "Primary rows where the culture side of the UTI rule is met.",
   4L, "Symptom compatible", sum(status_primary$symptom_compatible_uti %in% TRUE, na.rm = TRUE), "rule",
@@ -319,6 +301,9 @@ near_miss <- status_primary %>%
     "Episode_ID"
   )))
 write_csv(near_miss, file.path(DIR_AUDIT, "uti_not_uti_near_miss_rows.csv"))
+if (nrow(near_miss) != 17L) {
+  stop("Expected 17 near-miss rows within the selected Longcycler cohort; observed ", nrow(near_miss))
+}
 
 evidence_cols <- intersect(
   c(
@@ -376,14 +361,14 @@ clinical_without_vf <- status_primary %>%
 
 attrition <- tibble::tribble(
   ~stage_order, ~stage, ~n, ~category, ~interpretation,
-  1L, "Primary clinical rows", nrow(status_primary), "starting denominator",
-  "Clinical primary denominator after manual primary exclusions.",
-  2L, "Primary clinical UTI", sum(status_primary$UTI_Status == "UTI", na.rm = TRUE), "clinical subset",
-  "Clinical rows meeting the primary culture plus symptom rule.",
-  3L, "Primary clinical Not_UTI", sum(status_primary$UTI_Status == "Not_UTI", na.rm = TRUE), "clinical subset",
-  "Clinical rows not meeting both primary UTI rule components.",
-  4L, "Clinical rows without primary VF/model row", nrow(clinical_without_vf), "loss category",
-  "Primary clinical rows absent from the VF/model denominator after genomics filters.",
+  1L, "Selected Longcycler rows", nrow(status_primary), "starting denominator",
+  "Exact selected QC-pass Longcycler analytical cohort.",
+  2L, "Selected Longcycler UTI", sum(status_primary$UTI_Status == "UTI", na.rm = TRUE), "clinical subset",
+  "Selected rows meeting the primary culture plus symptom rule.",
+  3L, "Selected Longcycler Not_UTI", sum(status_primary$UTI_Status == "Not_UTI", na.rm = TRUE), "clinical subset",
+  "Selected rows not meeting both primary UTI rule components.",
+  4L, "Selected rows without VF/model row", nrow(clinical_without_vf), "loss category",
+  "Required to be zero because the selected clinical and VF cohorts have identical keys.",
   5L, "Manual primary exclusions", nrow(manual_exclusions), "loss category",
   "Rows retained for audit but excluded from primary analyses.",
   6L, "Quarantined failed/not-expected FASTA rows", nrow(quarantined_fastas), "loss category",
@@ -1011,12 +996,12 @@ write_csv(interpretation_table, file.path(DIR_VF, "uti_not_uti_test_interpretati
 
 diagnostic_summary <- tibble::tribble(
   ~metric, ~value, ~source, ~interpretation,
-  "primary_clinical_total", nrow(status_primary), FILE_STATUS_MAP,
-  "Clinical primary denominator after manual exclusions.",
-  "primary_clinical_uti", sum(status_primary$UTI_Status == "UTI", na.rm = TRUE), FILE_STATUS_MAP,
-  "Clinical rows meeting culture support plus symptom compatibility.",
-  "primary_clinical_not_uti", sum(status_primary$UTI_Status == "Not_UTI", na.rm = TRUE), FILE_STATUS_MAP,
-  "Clinical rows not meeting both primary UTI rule components.",
+  "primary_clinical_total", nrow(status_primary), FILE_ANALYSIS_CLINICAL_COHORT,
+  "Selected QC-pass Longcycler analytical denominator.",
+  "primary_clinical_uti", sum(status_primary$UTI_Status == "UTI", na.rm = TRUE), FILE_ANALYSIS_CLINICAL_COHORT,
+  "Selected Longcycler rows meeting culture support plus symptom compatibility.",
+  "primary_clinical_not_uti", sum(status_primary$UTI_Status == "Not_UTI", na.rm = TRUE), FILE_ANALYSIS_CLINICAL_COHORT,
+  "Selected Longcycler rows not meeting both primary UTI rule components.",
   "primary_vf_model_total", nrow(vf), FILE_VF_READY,
   "VF/model denominator after primary and genomics filters.",
   "primary_vf_model_uti", vf_n_uti, FILE_VF_READY,
@@ -1069,6 +1054,23 @@ figure_metadata <- tibble::tribble(
 write_csv(figure_metadata, file.path(DIR_VF, "uti_not_uti_diagnostic_figure_metadata.csv"))
 
 msg("Wrote UTI/Not_UTI diagnostic outputs.")
-msg("Clinical primary: %d UTI, %d Not_UTI.", expected_clinical[["UTI"]], expected_clinical[["Not_UTI"]])
+msg("Selected Longcycler cohort: %d UTI, %d Not_UTI.", expected_clinical[["UTI"]], expected_clinical[["Not_UTI"]])
 msg("VF/model primary: %d UTI, %d Not_UTI, %d missing status.",
     expected_vf[["UTI"]], expected_vf[["Not_UTI"]], expected_vf[["<missing>"]])
+
+# Keep the detailed count explanation in the same transactional diagnostic
+# step.  This matters for resumed/older orchestrators as well as direct runs of
+# script 32: the report must never remain at a prior cohort while the diagnostic
+# tables have been refreshed.
+count_audit_script <- file.path("scripts", "audit_uti_status_count_explanation.R")
+if (!file.exists(count_audit_script)) {
+  stop("Selected-cohort count audit script is missing: ", count_audit_script, call. = FALSE)
+}
+count_audit_status <- system2(
+  file.path(R.home("bin"), "Rscript"),
+  count_audit_script
+)
+if (!identical(as.integer(count_audit_status), 0L)) {
+  stop("Selected-cohort count audit failed with exit status ", count_audit_status, ".", call. = FALSE)
+}
+msg("Selected-cohort UTI/Not_UTI count audit refreshed.")

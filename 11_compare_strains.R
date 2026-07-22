@@ -243,6 +243,19 @@ if (!is.na(opt$min_vf_prev)) {
 }
 
 inc_pa <- core$inc_pa
+mob_profiles <- core$mob_profiles
+if (is.null(inc_pa) || is.null(mob_profiles)) {
+  stop(
+    "Script 11 requires completed script-09 gene-level PlasmidFinder calls ",
+    "and script-09b MOB episode profiles."
+  )
+}
+if (nrow(inc_pa) != 532L || anyDuplicated(inc_pa$Isolate_ID) ||
+    nrow(mob_profiles) != 532L || anyDuplicated(mob_profiles$Isolate_ID) ||
+    !setequal(inc_pa$Isolate_ID, core$assemblies$Isolate_ID) ||
+    !setequal(mob_profiles$Isolate_ID, core$assemblies$Isolate_ID)) {
+  stop("Plasmid profile inputs do not match the exact 532 selected assemblies.")
+}
 
 # ----- resolve a per-sample row for each side ---------------------------------
 resolve_side <- function(pid, tp) {
@@ -325,41 +338,36 @@ compute_pair <- function(pidA, tpA, pidB, tpB) {
     }
   }
 
-  # Inc Jaccard (replicons)
-  inc_j <- list(jaccard = NA_real_, n_int = NA_integer_, n_union = NA_integer_)
-  if (!is.null(inc_pa)) {
-    inc_join <- inc_pa
-    # apply prevalence filtering if requested
-    inc_cols <- setdiff(names(inc_join), "Isolate_ID")
-    if (!is.na(opt$min_inc_prev) && length(inc_cols)) {
-      prev <- colMeans((inc_join[, inc_cols, drop = FALSE] > 0), na.rm = TRUE)
-      keep <- names(prev)[prev >= opt$min_inc_prev]
-      inc_cols <- intersect(inc_cols, keep)
-    }
-    if (length(inc_cols)) {
-      # map Isolate_ID to SampleKey
-      map_df <- bind_rows(A %>% select(Isolate_ID, SampleKey), B %>% select(Isolate_ID, SampleKey)) %>% distinct()
-      inc_samp <- inc_join %>%
-        inner_join(map_df, by = "Isolate_ID") %>%
-        select(SampleKey, all_of(inc_cols))
-      # widen to include both rows for SampleKey
-      inc_samp <- inc_samp %>%
-        mutate(dummy = 1L) %>%
-        pivot_wider(names_from = SampleKey, values_from = dummy, values_fill = 0L)
-      # reconstruct a small df_wide with two rows
-      inc_rows <- inc_join %>%
-        filter(Isolate_ID %in% c(A$Isolate_ID, B$Isolate_ID)) %>%
-        mutate(SampleKey = map_df$SampleKey[match(Isolate_ID, map_df$Isolate_ID)]) %>%
-        select(SampleKey, all_of(inc_cols))
-      if (nrow(inc_rows) >= 2) {
-        inc_rows <- inc_rows %>% distinct(SampleKey, .keep_all = TRUE)
-        # create fake pid/tp by splitting SampleKey
-        split_keys <- strsplit(inc_rows$SampleKey, "__", fixed = TRUE)
-        inc_rows$Participant_id <- vapply(split_keys, `[[`, character(1), 1)
-        inc_rows$tp_lab <- vapply(split_keys, `[[`, character(1), 2)
-        inc_j <- jaccard_from_wide(inc_rows, row_key_cols = c("Participant_id", "tp_lab"), sampleA = A$SampleKey, sampleB = B$SampleKey)
-      }
-    }
+  # Corrected gene-level PlasmidFinder marker profile. Both complete empty
+  # profiles are identical (Jaccard 1) and explicitly flagged.
+  inc_cols <- setdiff(names(inc_pa), "Isolate_ID")
+  if (!is.na(opt$min_inc_prev) && length(inc_cols)) {
+    prev <- colMeans((inc_pa[, inc_cols, drop = FALSE] > 0), na.rm = TRUE)
+    inc_cols <- names(prev)[prev >= opt$min_inc_prev]
+  }
+  inc_j <- binary_profile_metrics(
+    inc_pa, A$Isolate_ID[[1]], B$Isolate_ID[[1]], feature_cols = inc_cols
+  )
+
+  # MOB-cluster profile from assembly-based predicted plasmid bins.
+  mob_j <- delimited_profile_metrics(
+    mob_profiles,
+    A$Isolate_ID[[1]], B$Isolate_ID[[1]],
+    value_col = "mob_primary_clusters"
+  )
+  mob_idx_a <- match(A$Isolate_ID[[1]], mob_profiles$Isolate_ID)
+  mob_idx_b <- match(B$Isolate_ID[[1]], mob_profiles$Isolate_ID)
+  plasmid_count_a <- suppressWarnings(as.integer(mob_profiles$predicted_plasmid_count[mob_idx_a]))
+  plasmid_count_b <- suppressWarnings(as.integer(mob_profiles$predicted_plasmid_count[mob_idx_b]))
+  mob_high_a <- if ("mob_high_confidence_profile" %in% names(mob_profiles)) {
+    as.logical(mob_profiles$mob_high_confidence_profile[mob_idx_a])
+  } else {
+    NA
+  }
+  mob_high_b <- if ("mob_high_confidence_profile" %in% names(mob_profiles)) {
+    as.logical(mob_profiles$mob_high_confidence_profile[mob_idx_b])
+  } else {
+    NA
   }
 
   # pMLST equality counts
@@ -431,6 +439,31 @@ compute_pair <- function(pidA, tpA, pidB, tpB) {
     VF_Overlap_B = vf_j$n_int, # symmetric
     VF_Union = vf_j$n_union,
     Inc_Jaccard = inc_j$jaccard,
+    Replicon_Jaccard = inc_j$jaccard,
+    Replicon_Intersection = inc_j$n_intersection,
+    Replicon_Union = inc_j$n_union,
+    Replicon_Both_Empty = inc_j$both_empty,
+    Replicon_Profile_Available = inc_j$available,
+    Replicon_Gains = inc_j$gains,
+    Replicon_Losses = inc_j$losses,
+    Replicon_Gain_Count = inc_j$n_gains,
+    Replicon_Loss_Count = inc_j$n_losses,
+    MOB_Cluster_Jaccard = mob_j$jaccard,
+    MOB_Cluster_Intersection = mob_j$n_intersection,
+    MOB_Cluster_Union = mob_j$n_union,
+    MOB_Cluster_Both_Empty = mob_j$both_empty,
+    MOB_Profile_Available = mob_j$available,
+    MOB_Cluster_Gains = mob_j$gains,
+    MOB_Cluster_Losses = mob_j$losses,
+    MOB_Cluster_Gain_Count = mob_j$n_gains,
+    MOB_Cluster_Loss_Count = mob_j$n_losses,
+    Predicted_Plasmid_Count_A = plasmid_count_a,
+    Predicted_Plasmid_Count_B = plasmid_count_b,
+    Predicted_Plasmid_Count_Difference = plasmid_count_b - plasmid_count_a,
+    MOB_High_Confidence_Profile_A = mob_high_a,
+    MOB_High_Confidence_Profile_B = mob_high_b,
+    MOB_High_Confidence_Profile_Both =
+      !is.na(mob_high_a) & !is.na(mob_high_b) & mob_high_a & mob_high_b,
     pST_equal_n = pmlst_equal_n,
     pST_equal_schemes = pmlst_equal_schemes
   )
@@ -467,9 +500,15 @@ apply_class <- function(...) {
 cls <- purrr::pmap_df(pair_metrics, apply_class)
 pair_metrics <- bind_cols(pair_metrics, cls)
 
-# within vs between label
+# Canonical strain interpretation uses direct SNP evidence. The prior
+# ST/accessory composite is retained under explicit legacy names and aliases
+# only for compatibility with non-canonical historical consumers.
 pair_metrics <- pair_metrics %>%
   mutate(
+    legacy_accessory_composite_classification = Classification,
+    legacy_accessory_composite_rule = RuleUsed,
+    Classification_is_canonical = FALSE,
+    strict_same_strain = !is.na(TotalSNPs) & TotalSNPs <= opt$snp_thresh,
     within_participant = Participant_id_A == Participant_id_B,
     ST_A_context = normalise_strain_st_label(ST_A),
     ST_B_context = normalise_strain_st_label(ST_B),
@@ -488,15 +527,15 @@ pair_metrics <- pair_metrics %>%
         "Conflict: SNP same-strain but ST differs",
       snp_strain_context == "Strong same strain" ~
         "Strong same strain",
-      snp_strain_context != "Strong same strain" &
-        (Classification == "Different" | st_lineage_context == "Different ST") ~
-        "Replacement likely",
+      snp_strain_context == "Above same-strain SNP threshold" &
+        st_lineage_context == "Different ST" ~
+        "Replacement supported by SNP and ST",
       snp_strain_context == "Above same-strain SNP threshold" & st_lineage_context == "Same ST" ~
         "Same lineage, not same strain by SNP",
       snp_strain_context == "Missing SNP evidence" & st_lineage_context == "Same ST" ~
         "ST-consistent, SNP missing",
-      snp_strain_context == "Missing SNP evidence" & st_lineage_context == "Missing ST evidence" &
-        (is.na(Classification) | Classification == "") ~
+      snp_strain_context == "Missing SNP evidence" &
+        st_lineage_context == "Missing ST evidence" ~
         "Missing strain metrics",
       snp_strain_context == "Above same-strain SNP threshold" ~
         "Above same-strain SNP threshold",
@@ -513,10 +552,10 @@ pair_metrics <- pair_metrics %>%
                  "ST-consistent, SNP missing",
                  "Above same-strain SNP threshold",
                  "Missing SNP evidence",
-                 "Replacement likely",
+                 "Replacement supported by SNP and ST",
                  "Missing strain metrics")
     ),
-    replacement_flag = pair_interpretation == "Replacement likely"
+    replacement_flag = pair_interpretation == "Replacement supported by SNP and ST"
   ) %>%
   select(-ST_A_context, -ST_B_context)
 
@@ -584,13 +623,13 @@ if (tools$dnadiff && any(!cache_ok)) {
 safe_write_csv(pair_metrics, file.path(outdir, "pairwise_metrics.csv"))
 
 sum_counts <- pair_metrics %>%
-  count(Classification, name = "n") %>%
+  count(pair_interpretation, name = "n") %>%
   arrange(desc(n))
 safe_write_csv(sum_counts, file.path(outdir, "summary_counts.csv"))
 
 by_participant <- pair_metrics %>%
   mutate(Participant = ifelse(within_participant, Participant_id_A, "(between)")) %>%
-  count(Participant, Classification, name = "n")
+  count(Participant, pair_interpretation, name = "n")
 safe_write_csv(by_participant, file.path(outdir, "summary_by_participant.csv"))
 
 # ----- plots ------------------------------------------------------------------
@@ -621,7 +660,10 @@ if (any(!is.na(pair_metrics$Inc_Jaccard))) {
 
 # Identity vs SNPs
 if (any(!is.na(pair_metrics$AvgIdentity) & !is.na(pair_metrics$TotalSNPs))) {
-  g <- ggplot(pair_metrics, aes(AvgIdentity, TotalSNPs, color = Classification, shape = within_participant)) +
+  g <- ggplot(
+    pair_metrics,
+    aes(AvgIdentity, TotalSNPs, color = pair_interpretation, shape = within_participant)
+  ) +
     geom_point(size = 2, alpha = 0.8) +
     scale_y_continuous(transform = "log1p") +
     labs(title = "Genomic Identity vs. SNP Distance", x = "AvgIdentity (%)", y = "Total SNPs (log1p)") +
@@ -644,7 +686,7 @@ if (requireNamespace("igraph", quietly = TRUE) && requireNamespace("ggraph", qui
   igraph <- asNamespace("igraph")
   ggraph <- asNamespace("ggraph")
   edges <- pair_metrics %>%
-    filter(Classification == "Same") %>%
+    filter(strict_same_strain) %>%
     transmute(from = SampleKey_A, to = SampleKey_B)
   if (nrow(edges)) {
     nodes <- tibble(name = unique(c(edges$from, edges$to)))
@@ -653,7 +695,8 @@ if (requireNamespace("igraph", quietly = TRUE) && requireNamespace("ggraph", qui
       ggraph$geom_edge_link(alpha = .4) +
       ggraph$geom_node_point(size = 4, colour = "steelblue") +
       ggraph$geom_node_text(ggplot2::aes(label = name), repel = TRUE, size = 3) +
-      ggplot2::theme_void() + ggplot2::ggtitle("Network of Same-Strain Isolates")
+      ggplot2::theme_void() +
+      ggplot2::ggtitle("Network of direct SNP-supported same-strain isolates")
     ggsave_safe(file.path(plots_dir, "network_same_strain.png"), p, width = 7, height = 6)
   }
 }
@@ -666,7 +709,7 @@ if (nrow(within_pairs)) {
   # attempt to order timepoints numerically when possible
   ord <- function(tp) suppressWarnings(as.integer(stringr::str_extract(tp, "\\d+")))
   within_pairs <- within_pairs %>% mutate(tpA_num = ord(Timepoint_A), tpB_num = ord(Timepoint_B))
-  g <- ggplot(within_pairs, aes(x = tpA_num, xend = tpB_num, y = pid, yend = pid, color = Classification)) +
+  g <- ggplot(within_pairs, aes(x = tpA_num, xend = tpB_num, y = pid, yend = pid, color = pair_interpretation)) +
     geom_segment(linewidth = 1.2, alpha = 0.8) +
     scale_x_continuous(breaks = sort(unique(c(within_pairs$tpA_num, within_pairs$tpB_num))), limits = c(min(within_pairs$tpA_num, na.rm = TRUE) - 0.5, max(within_pairs$tpB_num, na.rm = TRUE) + 0.5)) +
     labs(title = "Longitudinal Strain Classification Timeline", x = "Numeric timepoint", y = "Participant") +
@@ -697,7 +740,8 @@ compute_kappa <- function(st_equal, classification) {
   (po - pe) / (1 - pe)
 }
 
-pair_metrics <- pair_metrics %>% mutate(Same_vs_not = ifelse(Classification == "Same", "Same", "NotSame"))
+pair_metrics <- pair_metrics %>%
+  mutate(Same_vs_not = ifelse(strict_same_strain, "Same", "NotSame"))
 
 # within vs between Wilcoxon tests
 wilcox_metric <- function(metric) {

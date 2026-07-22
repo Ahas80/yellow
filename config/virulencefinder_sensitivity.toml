@@ -1,0 +1,111 @@
+# VirulenceFinder 3.2.1 sensitivity-analysis configuration.
+#
+# HOW TO USE THIS FILE
+# --------------------
+# Ordinary user-tunable settings are labelled "USER-TUNABLE" below. Changing
+# any analytical setting changes the cache context automatically, so results
+# produced under an older setting cannot be silently reused.
+#
+# Safety/reproducibility contracts are labelled "LOCKED CONTRACT". They are
+# still visible and technically editable, but should change only when starting
+# a deliberately new cohort or software/database release. A changed contract
+# must be described as a new analysis, not as a resume of the current one.
+
+schema_version = 1 # LOCKED CONTRACT: parser/cache schema for this workflow.
+
+[paths]
+# USER-TUNABLE: input/output locations, interpreted relative to the project root.
+manifest = "results/qc/analysis_assembly_manifest.csv"
+clinical_status = "results/clinical/status_map.csv"
+primary_release_dir = "results/research_questions"
+primary_vf_presence_absence = "results/research_questions/_inputs/vf_presence_absence_532.csv"
+primary_episode_metrics = "results/research_questions/_inputs/episode_vf_metrics_532.csv"
+direct_pairs = "results/research_questions/_inputs/direct_pair_metrics_893.csv"
+# USER-TUNABLE path, LOCKED CONTENT: approved 371-pair RQ06 table. Pointing
+# elsewhere deliberately changes the sensitivity-analysis input and must still
+# pass every denominator and endpoint-hash gate.
+adjacent_pairs = "results/research_questions/_inputs/adjacent_pair_metrics_371.csv"
+database = "data/virulencefinder_runtime/database"
+python = "data/virulencefinder_runtime/venv/bin/python"
+blastn = "/opt/homebrew/bin/blastn"
+output = "results/virulencefinder_cge_3_2_1"
+
+[software]
+# LOCKED CONTRACT: exact versions and hashes used for the approved analysis.
+# Update these only when intentionally creating a new software/database release.
+virulencefinder_version = "3.2.1"
+python_version = "3.14.0"
+blast_version_prefix = "blastn: 2.17.0+"
+database_version = "2.1.0"
+database_commit = "065b8d1ea87d1a3373f494833805136a9fb6141e"
+database_config_sha256 = "59b32eaed13072295b60ef9f96e548e3713419da9299f30d3a026d9bf19202f7"
+virulence_ecoli_sha256 = "e94e6c6d4dae1ca6b126edcd1572edda7c9a92efe14b42dd1663f971524fe2de"
+stx_sha256 = "d38530ec5605612ce1e6309092c21e3bd88d2c8e1df062ee4667efa85d66830f"
+virulencefinder_main_sha256 = "895637c0f662becb69b772d4f2c175b0fedcbaf144206a7d62d96354648ebe78"
+databases = ["virulence_ecoli", "stx"]
+
+[cohort]
+# LOCKED CONTRACT: denominator and provenance guards for the current study.
+expected_assemblies = 532
+expected_residents = 161
+expected_uti = 16
+expected_not_uti = 516
+expected_adjacent_pairs = 371
+expected_adjacent_residents = 139
+expected_direct_pairs = 893
+expected_event_samples = 32
+expected_event_residents = 29
+expected_event_uti = 15
+expected_event_not_uti = 17
+expected_paired_residents = 12
+required_assembler = "longcycler"
+required_organism = "Escherichia coli"
+forbidden_path_fragments = ["Rowenas analysis"]
+expected_ecoli_gene_families = 680
+expected_stx_gene_families = 2
+# LOCKED CONTRACT: stx2 is intentionally present in both selected databases,
+# so 680 + 2 reference-family entries collapse to 681 unique PA columns.
+expected_combined_gene_families = 681
+expected_cross_database_family_overlap = ["stx2"]
+known_duplicate_reference_header = "csuA:1:AY283611"
+
+[profiles.web_default_id90_cov60]
+# USER-TUNABLE: mirrors the current VirulenceFinder web defaults.
+minimum_identity = 0.90 # Fraction from 0 to 1; 0.90 means at least 90% identity.
+minimum_coverage = 0.60 # Fraction from 0 to 1; 0.60 means at least 60% reference coverage.
+
+[profiles.matched_id80_cov80]
+# USER-TUNABLE: numerically matches the primary ABRicate/VFDB 80/80 screen.
+minimum_identity = 0.80
+minimum_coverage = 0.80
+
+[execution]
+# USER-TUNABLE: operational controls; these do not change biological definitions.
+workers = 4 # Maximum simultaneous single-isolate VirulenceFinder processes.
+workers_when_heavy_job_detected = 2 # Safer concurrency when another large pipeline is active.
+min_free_gib = 20 # Refuse to start below this free-disk threshold.
+retry_failures = 1 # Number of additional sequential attempts after an initial failure.
+progress_every_jobs = 25 # Emit a checkpoint after this many completed jobs.
+progress_every_seconds = 60 # Also emit a checkpoint after this many seconds.
+resume = true # Reuse only cache entries whose complete context and JSON validate.
+overlap_nt = 30 # Maximum permitted overlap between competing detected genes.
+heavy_process_patterns = ["RUN_COMPLETE_ANALYSIS", "12b_core_snp", "panaroo", "dnadiff"]
+
+[analysis]
+# USER-TUNABLE scientific sensitivity settings. Changes create a new context.
+seed = 20260712
+bootstrap_reps = 10000 # Final release value; smaller values are development-only.
+bootstrap_workers = 4 # Parallel resident-bootstrap processes; affects speed, not the fixed resamples.
+confidence_level = 0.95 # Two-sided percentile interval level; 0.95 means a 95% confidence interval.
+primary_snp_threshold = 25
+snp_thresholds = [10, 25, 50]
+spline_degrees_freedom = 3
+
+[markers]
+# USER-TUNABLE only with biological justification. These are available CGE
+# representatives and are explicitly NOT the primary five-marker VFDB score.
+pap = ["papC"]
+sfa_foc = ["sfaD", "sfaE"]
+afa_dra = ["afaB", "afaC"]
+aerobactin = ["iutA"]
+capsule = ["kpsM"]

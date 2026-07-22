@@ -68,35 +68,16 @@ status_all <- read_csv("results/clinical/status_map.csv", show_col_types = FALSE
     tp_lab = as.character(tp_lab)
   ) %>%
   apply_manual_sample_curation(context = "uti_count_audit_status")
-status <- filter_primary_analysis(status_all)
-
-canonical_file <- file.path("results", "qc", "canonical_assembly_selection.csv")
-canonical_selection <- read_csv(canonical_file, show_col_types = FALSE)
-assembler_col <- intersect(c("assembler", "Assembler"), names(canonical_selection))[1]
-if (is.na(assembler_col) ||
-    !all(c("selected_canonical", "QC_PASS", "Participant_id", "tp_lab") %in% names(canonical_selection))) {
-  stop("Canonical assembly selection lacks Longcycler-primary selection fields: ", canonical_file)
-}
-selected_active <- canonical_selection %>%
+status <- read_csv(FILE_ANALYSIS_CLINICAL_COHORT, show_col_types = FALSE) %>%
+  prefer_primary_uti_status(allow_legacy_fallback = FALSE) %>%
   mutate(
     Participant_id = as.character(.data$Participant_id),
-    tp_lab = normalise_timepoint_preserve_events(.data$tp_lab),
-    selected_canonical = as_pipeline_bool(.data$selected_canonical),
-    QC_PASS = as_pipeline_bool(.data$QC_PASS),
-    active_assembler = str_to_lower(as.character(.data[[assembler_col]]))
-  ) %>%
-  filter(.data$selected_canonical %in% TRUE, .data$QC_PASS %in% TRUE)
-selected_non_longcycler <- selected_active %>%
-  filter(.data$active_assembler != "longcycler" | is.na(.data$active_assembler))
-if (nrow(selected_non_longcycler) > 0) {
-  stop("Canonical manifest still selects ", nrow(selected_non_longcycler),
-       " non-Longcycler QC-pass row(s); refusing a mixed-assembler primary audit.")
-}
-active_longcycler_keys <- selected_active %>%
-  filter(.data$active_assembler == "longcycler") %>%
+    tp_lab = normalise_timepoint_preserve_events(.data$tp_lab)
+  )
+active_longcycler_keys <- status %>%
   distinct(.data$Participant_id, .data$tp_lab)
-if (nrow(active_longcycler_keys) == 0) {
-  stop("Canonical manifest contains no selected QC-passing Longcycler episode keys.")
+if (nrow(active_longcycler_keys) != nrow(status)) {
+  stop("Selected Longcycler analysis cohort contains duplicate episode keys.")
 }
 
 vf_all <- read_csv("results/vf/vf_analysis_ready.csv", show_col_types = FALSE) %>%
@@ -106,10 +87,12 @@ vf_all <- read_csv("results/vf/vf_analysis_ready.csv", show_col_types = FALSE) %
   ) %>%
   apply_manual_sample_curation(context = "uti_count_audit_vf")
 vf <- filter_primary_genomics(vf_all) %>%
-  mutate(tp_lab = normalise_timepoint_preserve_events(.data$tp_lab)) %>%
-  semi_join(active_longcycler_keys, by = c("Participant_id", "tp_lab"))
-if (nrow(vf) != nrow(active_longcycler_keys)) {
-  stop("VF-ready data do not contain every active selected QC-pass Longcycler episode key.")
+  mutate(tp_lab = normalise_timepoint_preserve_events(.data$tp_lab))
+vf_keys <- vf %>% distinct(.data$Participant_id, .data$tp_lab)
+if (nrow(vf) != nrow(active_longcycler_keys) ||
+    nrow(anti_join(active_longcycler_keys, vf_keys, by = c("Participant_id", "tp_lab"))) ||
+    nrow(anti_join(vf_keys, active_longcycler_keys, by = c("Participant_id", "tp_lab")))) {
+  stop("VF-ready keys do not exactly equal the selected Longcycler analysis cohort.")
 }
 
 bridge <- read_csv("results/qc/uricult_bridge_audit.csv", show_col_types = FALSE) %>%
@@ -134,8 +117,13 @@ vf_pa <- read_csv("results/vf/vf_pa_all.csv", show_col_types = FALSE) %>%
   ) %>%
   apply_manual_sample_curation(context = "uti_count_audit_vf_pa") %>%
   filter_primary_genomics() %>%
-  mutate(tp_lab = normalise_timepoint_preserve_events(.data$tp_lab)) %>%
-  semi_join(active_longcycler_keys, by = c("Participant_id", "tp_lab"))
+  mutate(tp_lab = normalise_timepoint_preserve_events(.data$tp_lab))
+vf_pa_keys <- vf_pa %>% distinct(.data$Participant_id, .data$tp_lab)
+if (nrow(vf_pa_keys) != nrow(vf_pa) ||
+    nrow(anti_join(active_longcycler_keys, vf_pa_keys, by = c("Participant_id", "tp_lab"))) ||
+    nrow(anti_join(vf_pa_keys, active_longcycler_keys, by = c("Participant_id", "tp_lab")))) {
+  stop("VF presence/absence keys do not exactly equal the selected Longcycler analysis cohort.")
+}
 
 clinical_excluded_primary <- status_all %>%
   filter(!(analysis_include_primary %in% TRUE)) %>%
@@ -565,17 +553,17 @@ bridge_text <- if (direct_unmatched_n == 0) {
 count_logic_reference <- tibble::tribble(
   ~count_name, ~row_unit, ~source_table, ~logic_followed,
   "primary clinical_status_map total",
-  "clinical episode",
-  "results/clinical/status_map.csv",
-  "Count rows after 00b collapses cleaned batch input rows by Participant_id + Timepoint/tp_lab into one clinical episode, then keep analysis_include_primary == TRUE.",
+  "selected genomic episode",
+  "results/clinical/analysis_cohort_longcycler.csv",
+  "Count the exact selected QC-pass Longcycler participant-timepoint keys after one-to-one clinical status linkage.",
   "primary clinical UTI",
   "clinical episode",
-  "results/clinical/status_map.csv",
-  "Within primary-included rows, count rows where UTI_Status == 'UTI'. This requires culture_supports_uti == TRUE and symptom_compatible_uti == TRUE. Culture support uses CFU >=1e3, or Beoord fallback + = 1e3, ++ = 1e4, +++ = 1e5 when CFU is missing.",
+  "results/clinical/analysis_cohort_longcycler.csv",
+  "Within selected Longcycler rows, count UTI_Status == 'UTI'. This requires culture_supports_uti == TRUE and symptom_compatible_uti == TRUE.",
   "primary clinical Not_UTI",
   "clinical episode",
-  "results/clinical/status_map.csv",
-  "Within primary-included rows, count rows where UTI_Status == 'Not_UTI'. This includes culture-positive rows without required symptoms, culture-negative/below-threshold rows, and unknown/indeterminate rows.",
+  "results/clinical/analysis_cohort_longcycler.csv",
+  "Within selected Longcycler rows, count UTI_Status == 'Not_UTI'.",
   "primary VF-ready total",
   "sequenced VF participant-timepoint",
   "results/vf/vf_analysis_ready.csv",
@@ -618,12 +606,12 @@ write_csv(count_logic_reference, file.path(out_dir, "uti_count_logic_reference.c
 report <- c(
   "# UTI / Not_UTI Count Audit",
   "",
-  "Generated from current outputs in `results/clinical/status_map.csv`, `results/vf/vf_analysis_ready.csv`, `results/qc/uricult_bridge_audit.csv`, `results/vf/vf_pa_all.csv`, and `assembly_metadata.csv`.",
+  "Generated from the selected cohort in `results/clinical/analysis_cohort_longcycler.csv` and its matching VF outputs. The broader status map and assembly metadata are used only for source attrition/QC.",
   "",
   "## Bottom line",
   "",
   sprintf(
-    "- The primary clinical denominator has %d clinical episodes after manual exclusions: %d `UTI`, %d `Not_UTI`, and %d missing primary statuses.",
+    "- The selected QC-pass Longcycler denominator has %d episodes: %d `UTI`, %d `Not_UTI`, and %d missing primary statuses.",
     clinical_total, clinical_uti, clinical_not_uti, clinical_missing
   ),
   sprintf(
@@ -649,7 +637,7 @@ report <- c(
   "",
   "## Current counts",
   "",
-  "Primary clinical status map:",
+  "Selected Longcycler analysis cohort:",
   md_table(clinical_counts),
   "",
   "Primary VF analysis-ready table:",
@@ -682,13 +670,13 @@ report <- c(
   "### Clinical episode rows",
   "",
   sprintf(
-    "- The primary clinical denominator is `nrow(status_map.csv |> filter(analysis_include_primary == TRUE))`: currently %d rows.",
+    "- The analytical denominator is `nrow(analysis_cohort_longcycler.csv)`: currently %d rows.",
     clinical_total
   ),
   "- `00b_classify_episodes.R` groups cleaned clinical rows into one row per `Participant_id + Timepoint` / `tp_lab` episode.",
   "- It computes `UTI_Status` first, then applies `data/manual_sample_curation.csv` to set primary inclusion flags.",
-  "- The count `primary clinical UTI` is not based on the old `Infection_Status_legacy` column. It is `sum(UTI_Status == 'UTI')` within `analysis_include_primary == TRUE` rows.",
-  "- The count `primary clinical Not_UTI` is `sum(UTI_Status == 'Not_UTI')` within `analysis_include_primary == TRUE` rows.",
+  "- The count `primary clinical UTI` is `sum(UTI_Status == 'UTI')` within the selected Longcycler cohort.",
+  "- The count `primary clinical Not_UTI` is `sum(UTI_Status == 'Not_UTI')` within the selected Longcycler cohort.",
   "- Excluded rows keep their computed clinical status in the audit table; they are not relabelled.",
   "",
   "### Primary UTI rule",
@@ -734,7 +722,7 @@ report <- c(
   "### VF-ready rows",
   "",
   sprintf(
-    "- The active VF denominator is `nrow(vf_analysis_ready.csv |> filter(active selected canonical key, QC_PASS == TRUE, assembler == 'longcycler'))`: currently %d rows.",
+    "- The active VF denominator is the exact key-matched selected Longcycler cohort: currently %d rows.",
     vf_total
   ),
   "- Each row is a sequenced VF participant-timepoint from `vf_pa_all.csv`.",
@@ -780,8 +768,8 @@ report <- c(
   "Key reading of these diagnostics:",
   "",
   sprintf(
-    "- The clinical decision-flow and denominator plots explain the `583 = 18 UTI + 565 Not_UTI` clinical denominator and the active selected QC-pass Longcycler VF/model denominator `%d = %d UTI + %d Not_UTI`.",
-    vf_total, vf_uti, vf_not_uti
+    "- The decision-flow and denominator plots use the selected Longcycler analytical denominator `%d = %d UTI + %d Not_UTI`; the broader `%d`-row status map appears only as source attrition/QC.",
+    vf_total, vf_uti, vf_not_uti, clinical_raw_total
   ),
   "- The near-miss table/heatmap identifies rows that look clinically suspicious under legacy logic but remain `Not_UTI` because the current symptom rule is not met or is unknown.",
   "- The bootstrap, Fisher, paired, transition, and leave-one-UTI-out outputs are conservative interpretation tools for sparse UTI counts. They are useful for effect sizes, uncertainty, and stability, but not for definitive causal claims.",

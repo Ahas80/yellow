@@ -19,7 +19,7 @@
 #
 # Input:
 #   - results/longitudinal/phenotype_switch_candidates.csv
-#   - results/longitudinal/nucmer_cache/*.snps
+#   - results/longitudinal/evolution_events.csv (exact SHA-bound .snps paths)
 #
 # Output:
 #   - results/longitudinal/annotated_snps.csv
@@ -54,9 +54,13 @@ candidates <- candidates %>%
 # [P1] [SUB] [SUB] [P2] [BUFF] [DIST] [LEN R] [LEN Q] [FRM] [TAGS]
 # We need to handle the headerless format usually output by dnadiff.
 
-parse_snps <- function(snps_file, pid, tA, tB) {
-    if (!file.exists(snps_file)) {
-        return(NULL)
+parse_snps <- function(snps_file, expected_sha256, pid, tA, tB,
+                       reference_fasta, reference_sha256,
+                       query_fasta, query_sha256) {
+    if (!file.exists(snps_file)) stop("Recorded SNP file is missing: ", snps_file)
+    observed_sha256 <- unname(digest::digest(snps_file, algo = "sha256", file = TRUE))
+    if (is.na(expected_sha256) || !identical(observed_sha256, expected_sha256)) {
+        stop("SNP file content hash does not match evolution_events.csv: ", snps_file)
     }
 
     # Read raw lines
@@ -83,11 +87,18 @@ parse_snps <- function(snps_file, pid, tA, tB) {
     # ...
 
     df %>%
-        select(Pos_Ref = X1, Ref_Base = X2, Qry_Base = X3, Pos_Qry = X4) %>%
+        select(Pos_Ref = X1, Ref_Base = X2, Qry_Base = X3, Pos_Qry = X4,
+               Ref_Seqid = X11, Qry_Seqid = X12) %>%
         mutate(
             Participant_id = pid,
             From_Time = tA,
             To_Time = tB,
+            SNP_Path = normalizePath(snps_file, winslash = "/", mustWork = TRUE),
+            SNP_SHA256 = observed_sha256,
+            Reference_FASTA_Path = reference_fasta,
+            Reference_FASTA_SHA256 = reference_sha256,
+            Query_FASTA_Path = query_fasta,
+            Query_FASTA_SHA256 = query_sha256,
             Type = case_when(
                 Ref_Base == "." ~ "Insertion",
                 Qry_Base == "." ~ "Deletion",
@@ -98,21 +109,63 @@ parse_snps <- function(snps_file, pid, tA, tB) {
 
 # 3. Iterate Candidates
 # ------------------------------------------------------------------------------
-cache_dir <- file.path(DIR_RESULTS, "longitudinal", "nucmer_cache")
+events_file <- file.path(DIR_RESULTS, "longitudinal", "evolution_events.csv")
+if (!file.exists(events_file)) stop("Missing exact SNP provenance table: ", events_file, ". Run 16_within_host_evolution.R first.")
+events <- read_csv(events_file, show_col_types = FALSE) %>%
+    mutate(
+        Participant_id = as.character(Participant_id),
+        From_Time = normalise_timepoint_preserve_events(From_Time),
+        To_Time = normalise_timepoint_preserve_events(To_Time)
+    )
+required_provenance <- c(
+    "SNP_Path", "SNP_SHA256", "Fasta_Path_A", "Fasta_SHA256_A",
+    "Fasta_Path_B", "Fasta_SHA256_B"
+)
+missing_provenance <- setdiff(required_provenance, names(events))
+if (length(missing_provenance)) stop("evolution_events.csv lacks SNP provenance: ", paste(missing_provenance, collapse = ", "))
+event_dupes <- events %>% count(Participant_id, From_Time, To_Time, name = "n") %>% filter(n != 1L)
+if (nrow(event_dupes)) stop("evolution_events.csv must contain exactly one provenance row per candidate pair.")
+
+pair_manifest <- candidates %>%
+    select(Participant_id, From_Time, To_Time) %>%
+    left_join(
+        events %>% select(Participant_id, From_Time, To_Time, all_of(required_provenance)),
+        by = c("Participant_id", "From_Time", "To_Time"), relationship = "one-to-one"
+    )
+if (any(is.na(pair_manifest$SNP_Path) | is.na(pair_manifest$SNP_SHA256))) {
+    stop("One or more phenotype-switch pairs lack an exact SNP path/hash. Rerun script 16 and inspect dnadiff failures.")
+}
+
+analysis_manifest <- load_analysis_assemblies(FILE_ANALYSIS_ASSEMBLY_MANIFEST, require_files = TRUE) %>%
+    mutate(
+        full_path = normalizePath(full_path, winslash = "/", mustWork = TRUE),
+        fasta_sha256 = vapply(full_path, digest::digest, character(1), algo = "sha256", file = TRUE)
+    )
+for (side in c("A", "B")) {
+    path_col <- paste0("Fasta_Path_", side)
+    sha_col <- paste0("Fasta_SHA256_", side)
+    selected_key <- paste(pair_manifest[[path_col]], pair_manifest[[sha_col]], sep = "\n")
+    current_key <- paste(analysis_manifest$full_path, analysis_manifest$fasta_sha256, sep = "\n")
+    if (any(!selected_key %in% current_key)) stop("SNP provenance contains a reference/query FASTA not in the current Longcycler analysis manifest.")
+}
+
 all_variants <- list()
 
-for (i in seq_len(nrow(candidates))) {
-    row <- candidates[i, ]
+for (i in seq_len(nrow(pair_manifest))) {
+    row <- pair_manifest[i, ]
     pid <- row$Participant_id
     tA <- row$From_Time
     tB <- row$To_Time
 
-    key <- paste0(pid, "__", tA, "_vs_", tB)
-    snps_file <- file.path(cache_dir, paste0(key, ".snps"))
+    snps_file <- row$SNP_Path
 
     msg("Checking %s", snps_file)
 
-    vars <- parse_snps(snps_file, pid, tA, tB)
+    vars <- parse_snps(
+        snps_file, row$SNP_SHA256, pid, tA, tB,
+        row$Fasta_Path_A, row$Fasta_SHA256_A,
+        row$Fasta_Path_B, row$Fasta_SHA256_B
+    )
     if (!is.null(vars)) {
         all_variants[[length(all_variants) + 1]] <- vars
     }
@@ -123,9 +176,17 @@ empty_variants <- tibble::tibble(
     Ref_Base = character(),
     Qry_Base = character(),
     Pos_Qry = integer(),
+    Ref_Seqid = character(),
+    Qry_Seqid = character(),
     Participant_id = character(),
     From_Time = character(),
     To_Time = character(),
+    SNP_Path = character(),
+    SNP_SHA256 = character(),
+    Reference_FASTA_Path = character(),
+    Reference_FASTA_SHA256 = character(),
+    Query_FASTA_Path = character(),
+    Query_FASTA_SHA256 = character(),
     Type = character()
 )
 

@@ -1,0 +1,13 @@
+# Deviation log — Longcycler-only v5 review decks
+
+## Intentional departures
+- The compact source package is not reused because it renders with corrupted black regions. The clean compact PNG references and the full editable deck define the element-level reconstruction.
+- Both decks are authored from a shared artifact-tool engine so every explanatory element is editable and all claims share one release registry.
+- Slide 12 uses aggregate focused-transition evidence (9 transitions; 5 at or below 25 SNPs; 9/9/0 casebook) instead of a single participant example.
+- Slide 17 combines robustness and lineage diagnostics; the dense full longitudinal lookup is omitted from the canonical 17-slide story.
+- The 17-row near-miss audit remains explicitly separate from operational UTI cases.
+
+## Media policy
+- Current-run registered PNG plots are embedded without external links.
+- No empty inherited placeholders or hidden source content are retained.
+

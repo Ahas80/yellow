@@ -34,41 +34,31 @@ read_optional <- function(path) {
 
 status <- read_optional(FILE_STATUS_MAP)
 poster <- read_optional(FILE_STATUS_MAP_POSTER)
+analysis_cohort <- read_optional(FILE_ANALYSIS_CLINICAL_COHORT)
 vf_ready <- read_optional(FILE_VF_READY)
-canonical_file <- file.path(DIR_QC, "canonical_assembly_selection.csv")
-canonical_selection <- read_optional(canonical_file)
 table02 <- read_optional(file.path(DIR_RESULTS, "summary", "table_02_clinical_status_counts.csv"))
 table10 <- read_optional(file.path(DIR_RESULTS, "summary", "table_10_not_uti_uti_transition_cases.csv"))
+transition_index <- read_optional(file.path(DIR_VF, "vf_transition_case_index.csv"))
+canonical_transitions <- read_optional(file.path(DIR_RESULTS, "longitudinal", "longcycler_transitions.csv"))
 
 active_longcycler_keys <- NULL
-selected_non_longcycler <- NULL
-add_check("canonical assembly selection exists", !is.null(canonical_selection), canonical_file)
-if (!is.null(canonical_selection)) {
-  assembler_col <- intersect(c("assembler", "Assembler"), names(canonical_selection))[1]
-  canonical_fields_ok <- !is.na(assembler_col) &&
-    all(c("selected_canonical", "QC_PASS", "Participant_id", "tp_lab") %in% names(canonical_selection))
-  add_check("canonical selection has Longcycler-primary fields", canonical_fields_ok,
-            paste(setdiff(c("selected_canonical", "QC_PASS", "Participant_id", "tp_lab"),
-                          names(canonical_selection)), collapse = ", "))
-  if (canonical_fields_ok) {
-    selected_active <- canonical_selection %>%
-      mutate(
-        Participant_id = as.character(.data$Participant_id),
-        tp_lab = normalise_timepoint_preserve_events(.data$tp_lab),
-        selected_canonical = as_pipeline_bool(.data$selected_canonical),
-        QC_PASS = as_pipeline_bool(.data$QC_PASS),
-        active_assembler = str_to_lower(as.character(.data[[assembler_col]]))
-      ) %>%
-      filter(.data$selected_canonical %in% TRUE, .data$QC_PASS %in% TRUE)
-    selected_non_longcycler <- selected_active %>%
-      filter(.data$active_assembler != "longcycler" | is.na(.data$active_assembler))
-    active_longcycler_keys <- selected_active %>%
-      filter(.data$active_assembler == "longcycler") %>%
-      distinct(.data$Participant_id, .data$tp_lab)
-    add_check("selected QC-pass primary assemblies are Longcycler only",
-              nrow(selected_non_longcycler) == 0,
-              sprintf("%d selected non-Longcycler row(s)", nrow(selected_non_longcycler)))
-  }
+add_check("selected Longcycler analysis cohort exists", !is.null(analysis_cohort), FILE_ANALYSIS_CLINICAL_COHORT)
+if (!is.null(analysis_cohort)) {
+  analysis_cohort <- analysis_cohort %>%
+    mutate(Participant_id = as.character(.data$Participant_id),
+           tp_lab = normalise_timepoint_preserve_events(.data$tp_lab))
+  active_longcycler_keys <- analysis_cohort %>% distinct(.data$Participant_id, .data$tp_lab)
+  add_check("selected Longcycler cohort keys are unique",
+            nrow(active_longcycler_keys) == nrow(analysis_cohort),
+            sprintf("rows=%d unique_keys=%d", nrow(analysis_cohort), nrow(active_longcycler_keys)))
+  add_check("selected Longcycler cohort contract is 532 rows, 161 residents, 16 UTI, 516 Not_UTI",
+            nrow(analysis_cohort) == 532L && n_distinct(analysis_cohort$Participant_id) == 161L &&
+              sum(analysis_cohort$UTI_Status == "UTI", na.rm = TRUE) == 16L &&
+              sum(analysis_cohort$UTI_Status == "Not_UTI", na.rm = TRUE) == 516L,
+            sprintf("n=%d residents=%d UTI=%d Not_UTI=%d", nrow(analysis_cohort),
+                    n_distinct(analysis_cohort$Participant_id),
+                    sum(analysis_cohort$UTI_Status == "UTI", na.rm = TRUE),
+                    sum(analysis_cohort$UTI_Status == "Not_UTI", na.rm = TRUE)))
 }
 
 add_check("status_map exists", !is.null(status), FILE_STATUS_MAP)
@@ -99,7 +89,7 @@ if (!is.null(status)) {
     add_check("all UTI rows have culture support", nrow(bad_culture) == 0, sprintf("%d bad row(s)", nrow(bad_culture)))
     add_check("all UTI rows have symptom support", nrow(bad_symptom) == 0, sprintf("%d bad row(s)", nrow(bad_symptom)))
   }
-  add_check("primary clinical denominator expected after manual exclusions",
+  add_check("source clinical denominator retained for attrition/QC only",
             nrow(status_primary) == 583 &&
               sum(status_primary$UTI_Status == "UTI", na.rm = TRUE) == 18 &&
               sum(status_primary$UTI_Status == "Not_UTI", na.rm = TRUE) == 565,
@@ -129,16 +119,12 @@ poster_ok <- !is.null(poster) &&
   !status_map_is_stale(FILE_STATUS_MAP_POSTER, FILE_STATUS_MAP)
 add_check("status_map_with_poster_tp current and primary", poster_ok, FILE_STATUS_MAP_POSTER)
 
-if (!is.null(status) && !is.null(table02) && all(c("dataset_layer", "Infection_Status", "n_episodes") %in% names(table02))) {
-  clinical_uti <- table02 %>% filter(dataset_layer == "all_batch_clinical", Infection_Status == "UTI") %>% pull(n_episodes)
-  poster_uti <- table02 %>% filter(dataset_layer == "ordered_poster_clinical", Infection_Status == "UTI") %>% pull(n_episodes)
-  expected_uti <- sum(filter_primary_analysis(status)$UTI_Status == "UTI", na.rm = TRUE)
-  add_check("summary table all-batch UTI count matches status_map",
+if (!is.null(analysis_cohort) && !is.null(table02) && all(c("dataset_layer", "Infection_Status", "n_episodes") %in% names(table02))) {
+  clinical_uti <- table02 %>% filter(dataset_layer == "selected_longcycler_analysis_cohort", Infection_Status == "UTI") %>% pull(n_episodes)
+  expected_uti <- sum(analysis_cohort$UTI_Status == "UTI", na.rm = TRUE)
+  add_check("summary table selected-cohort UTI count matches analysis cohort",
             length(clinical_uti) == 1 && clinical_uti == expected_uti,
             sprintf("table=%s expected=%d", paste(clinical_uti, collapse = ","), expected_uti))
-  add_check("summary table ordered-poster UTI count is not legacy",
-            length(poster_uti) == 0 || poster_uti == expected_uti,
-            sprintf("poster=%s expected=%d", paste(poster_uti, collapse = ","), expected_uti))
 }
 
 if (!is.null(vf_ready)) {
@@ -152,18 +138,13 @@ if (!is.null(vf_ready)) {
                   "genomics_expected_include") %in% names(vf_ready)),
             paste(setdiff(c("analysis_include_primary", "analysis_exclusion_reason",
                             "duplicate_role", "genomics_expected_include"), names(vf_ready)), collapse = ", "))
-  if (!is.null(active_longcycler_keys) && !is.null(status)) {
+  if (!is.null(active_longcycler_keys) && !is.null(analysis_cohort)) {
     vf_primary <- vf_primary %>%
       mutate(
         Participant_id = as.character(.data$Participant_id),
         tp_lab = normalise_timepoint_preserve_events(.data$tp_lab)
       )
-    expected_active_status <- filter_primary_analysis(status) %>%
-      mutate(
-        Participant_id = as.character(.data$Participant_id),
-        tp_lab = normalise_timepoint_preserve_events(.data$tp_lab)
-      ) %>%
-      semi_join(active_longcycler_keys, by = c("Participant_id", "tp_lab"))
+    expected_active_status <- analysis_cohort
     expected_active_total <- nrow(active_longcycler_keys)
     expected_active_uti <- sum(expected_active_status$UTI_Status == "UTI", na.rm = TRUE)
     expected_active_not_uti <- sum(expected_active_status$UTI_Status == "Not_UTI", na.rm = TRUE)
@@ -209,6 +190,46 @@ if (!is.null(table10) && nrow(table10) > 0 && all(c("from_status", "to_status") 
   add_check("table_10 contains only Not_UTI->UTI transitions",
             nrow(bad_t10) == 0,
             sprintf("%d non-target row(s)", nrow(bad_t10)))
+  add_check("table_10 contains all 9 selected Longcycler Not_UTI->UTI transitions with paired evidence",
+            nrow(table10) == 9L && all(table10$has_vf_pair %in% TRUE) && all(!is.na(table10$SNPs)),
+            sprintf("n=%d linked=%d direct_snp=%d", nrow(table10),
+                    sum(table10$has_vf_pair %in% TRUE), sum(!is.na(table10$SNPs))))
+}
+if (!is.null(transition_index)) {
+  add_check("transition index contains 371 selected adjacent pairs and 9 Not_UTI->UTI cases",
+            nrow(transition_index) == 371L &&
+              sum(transition_index$is_not_uti_to_uti %in% TRUE) == 9L &&
+              all(transition_index$has_vf_pair %in% TRUE),
+            sprintf("n=%d target=%d linked=%d", nrow(transition_index),
+                    sum(transition_index$is_not_uti_to_uti %in% TRUE),
+                    sum(transition_index$has_vf_pair %in% TRUE)))
+}
+add_check("canonical Longcycler transition export exists", !is.null(canonical_transitions),
+          file.path(DIR_RESULTS, "longitudinal", "longcycler_transitions.csv"))
+if (!is.null(canonical_transitions)) {
+  canonical_keys <- canonical_transitions %>%
+    transmute(key = paste(as.character(.data$Participant_id),
+                          normalise_timepoint_preserve_events(.data$tp_from),
+                          normalise_timepoint_preserve_events(.data$tp_to), sep = "|"))
+  add_check("canonical transition export satisfies 371/9/direct-SNP contract",
+            nrow(canonical_transitions) == 371L &&
+              sum(canonical_transitions$status_from == "Not_UTI" &
+                    canonical_transitions$status_to == "UTI", na.rm = TRUE) == 9L &&
+              all(!is.na(canonical_transitions$TotalSNPs)) &&
+              !anyDuplicated(canonical_keys$key),
+            sprintf("n=%d target=%d direct_snp=%d", nrow(canonical_transitions),
+                    sum(canonical_transitions$status_from == "Not_UTI" &
+                          canonical_transitions$status_to == "UTI", na.rm = TRUE),
+                    sum(!is.na(canonical_transitions$TotalSNPs))))
+  if (!is.null(transition_index)) {
+    index_keys <- transition_index %>%
+      transmute(key = paste(as.character(.data$Participant_id),
+                            normalise_timepoint_preserve_events(.data$from_tp),
+                            normalise_timepoint_preserve_events(.data$to_tp), sep = "|"))
+    add_check("transition case index keys equal canonical transition keys",
+              setequal(index_keys$key, canonical_keys$key),
+              sprintf("index=%d canonical=%d", nrow(index_keys), nrow(canonical_keys)))
+  }
 }
 
 current_legacy_outputs <- c(

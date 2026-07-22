@@ -1,12 +1,11 @@
 #!/usr/bin/env Rscript
 # ==============================================================================
-# Verify the Longcycler-primary denominator and rebuild compatibility exports
+# Rebuild the canonical selected-Longcycler transition export
 # ==============================================================================
 # The primary genomic workflow is now selected QC-passing Longcycler only.
-# This script independently rebuilds its episode and transition tables, verifies
-# exact compatibility with the primary timeline, and preserves the historical
-# results/sensitivity/longcycler_only export paths for downstream compatibility.
-# It must never create a second restriction, rescue Flye, or alter clinical labels.
+# This script independently rebuilds the episode and adjacent-transition tables
+# from the canonical analysis cohort and verifies direct pairwise provenance.
+# The historical filename is retained only so existing launchers keep working.
 
 suppressPackageStartupMessages({
   library(dplyr)
@@ -17,7 +16,7 @@ suppressPackageStartupMessages({
 
 source("00_config.R")
 
-outdir <- file.path("results", "sensitivity", "longcycler_only")
+outdir <- file.path(DIR_RESULTS, "longitudinal")
 dir.create(outdir, recursive = TRUE, showWarnings = FALSE)
 
 as_flag <- function(x) {
@@ -60,8 +59,7 @@ unordered_pair_key <- function(pid_a, tp_a, pid_b, tp_b) {
 }
 
 required_files <- c(
-  canonical = file.path(DIR_QC, "canonical_assembly_selection.csv"),
-  status = FILE_STATUS_MAP,
+  cohort = FILE_ANALYSIS_CLINICAL_COHORT,
   vf_ready = FILE_VF_READY,
   vf_pa = FILE_VF_PA,
   mlst = FILE_MLST_CANONICAL,
@@ -70,12 +68,15 @@ required_files <- c(
 missing_files <- required_files[!file.exists(required_files)]
 if (length(missing_files)) stop("Missing required file(s): ", paste(missing_files, collapse = ", "))
 
-canonical <- read_csv(required_files[["canonical"]], show_col_types = FALSE) %>%
+longcycler_raw <- read_csv(required_files[["cohort"]], show_col_types = FALSE)
+if (!all(c("Participant_id", "tp_lab", "fasta_path", "fasta_sha256") %in% names(longcycler_raw))) {
+  stop("Selected Longcycler analysis cohort lacks endpoint path/hash provenance")
+}
+longcycler <- longcycler_raw %>%
+  prefer_primary_uti_status(allow_legacy_fallback = FALSE) %>%
   mutate(
     Participant_id = as.character(Participant_id),
-    tp_lab = as.character(tp_lab),
-    selected_canonical = as_flag(selected_canonical),
-    QC_PASS = as_flag(QC_PASS),
+    tp_lab = normalise_timepoint_preserve_events(tp_lab),
     assembler = str_to_lower(coalesce(
       if ("assembler" %in% names(.)) as.character(assembler) else NA_character_,
       if ("Assembler" %in% names(.)) as.character(Assembler) else NA_character_
@@ -83,52 +84,53 @@ canonical <- read_csv(required_files[["canonical"]], show_col_types = FALSE) %>%
     fasta_path = coalesce(
       if ("fasta_path" %in% names(.)) as.character(fasta_path) else NA_character_,
       if ("full_path" %in% names(.)) as.character(full_path) else NA_character_
-    )
+    ),
+    fasta_sha256 = as.character(.data$fasta_sha256)
   )
 
-selected <- canonical %>%
-  filter(selected_canonical, QC_PASS)
-
-if (nrow(selected) == 0) stop("Canonical manifest contains no selected QC-passing primary rows")
-if (any(is.na(selected$assembler) | selected$assembler != "longcycler")) {
-  stop("Longcycler-primary verification found selected Flye, combined, or unknown assembler rows")
+if (nrow(longcycler) == 0) stop("Selected Longcycler analysis cohort is empty")
+if (any(is.na(longcycler$assembler) | longcycler$assembler != ANALYSIS_ASSEMBLER)) {
+  stop("Analysis cohort contains an assembler outside the selected Longcycler policy")
 }
-if (any(is.na(selected$fasta_path) | !file.exists(selected$fasta_path))) {
+if (any(is.na(longcycler$fasta_path) | !file.exists(longcycler$fasta_path))) {
   stop("Longcycler-primary manifest contains a missing selected FASTA")
 }
-if (anyDuplicated(selected[c("Participant_id", "tp_lab")])) {
+longcycler <- longcycler %>%
+  mutate(fasta_path = normalizePath(.data$fasta_path, winslash = "/", mustWork = TRUE))
+current_cohort_hashes <- file_content_sha256(longcycler$fasta_path)
+if (any(is.na(longcycler$fasta_sha256) | !nzchar(longcycler$fasta_sha256)) ||
+    any(is.na(current_cohort_hashes)) ||
+    any(tolower(longcycler$fasta_sha256) != tolower(current_cohort_hashes))) {
+  stop("Selected Longcycler cohort FASTA hashes do not match current file content")
+}
+if (anyDuplicated(longcycler[c("Participant_id", "tp_lab")])) {
   stop("Longcycler-primary manifest contains duplicate participant-timepoint rows")
 }
 
-# Compatibility alias: this is the complete primary manifest, not a restriction.
-longcycler <- selected %>% distinct(Participant_id, tp_lab, .keep_all = TRUE)
-if (nrow(longcycler) != nrow(selected)) {
-  stop("Longcycler compatibility alias changed the primary denominator")
-}
-
-status <- read_csv(required_files[["status"]], show_col_types = FALSE) %>%
-  prefer_primary_uti_status() %>%
-  mutate(
-    Participant_id = as.character(Participant_id),
-    tp_lab = as.character(tp_lab),
-    analysis_include_primary = as_flag(analysis_include_primary)
-  )
-
 vf_ready <- read_csv(required_files[["vf_ready"]], show_col_types = FALSE) %>%
-  mutate(Participant_id = as.character(Participant_id), tp_lab = as.character(tp_lab))
+  mutate(Participant_id = as.character(Participant_id),
+         tp_lab = normalise_timepoint_preserve_events(tp_lab))
+vf_keys <- vf_ready %>% distinct(Participant_id, tp_lab)
+cohort_keys <- longcycler %>% distinct(Participant_id, tp_lab)
+if (nrow(vf_keys) != nrow(vf_ready) ||
+    nrow(anti_join(cohort_keys, vf_keys, by = c("Participant_id", "tp_lab"))) ||
+    nrow(anti_join(vf_keys, cohort_keys, by = c("Participant_id", "tp_lab")))) {
+  stop("VF-ready keys do not exactly equal the selected Longcycler analysis cohort")
+}
 
 vf_pa <- read_csv(required_files[["vf_pa"]], show_col_types = FALSE)
 gene_cols <- canonical_vf_gene_cols(names(vf_pa), vf_pa_file = required_files[["vf_pa"]])
 
 mlst <- read_csv(required_files[["mlst"]], show_col_types = FALSE) %>%
-  mutate(Participant_id = as.character(Participant_id), tp_lab = as.character(tp_lab), ST = normalise_st(ST))
+  mutate(Participant_id = as.character(Participant_id),
+         tp_lab = normalise_timepoint_preserve_events(tp_lab), ST = normalise_st(ST))
 
 pairwise <- read_csv(required_files[["pairwise"]], show_col_types = FALSE) %>%
   mutate(
     Participant_id_A = as.character(Participant_id_A),
     Participant_id_B = as.character(Participant_id_B),
-    Timepoint_A = as.character(Timepoint_A),
-    Timepoint_B = as.character(Timepoint_B),
+    Timepoint_A = normalise_timepoint_preserve_events(Timepoint_A),
+    Timepoint_B = normalise_timepoint_preserve_events(Timepoint_B),
     pair_key = unordered_pair_key(Participant_id_A, Timepoint_A, Participant_id_B, Timepoint_B)
   )
 
@@ -151,9 +153,28 @@ provenance_cols <- c(
   "dnadiff_sidecar_path", "dnadiff_report_sha256", "dnadiff_cache_signature",
   "dnadiff_cache_status", "dnadiff_version"
 )
+plasmid_pair_cols <- c(
+  "Replicon_Jaccard", "Replicon_Both_Empty",
+  "Replicon_Profile_Available", "Replicon_Gains", "Replicon_Losses",
+  "Replicon_Gain_Count", "Replicon_Loss_Count",
+  "MOB_Cluster_Jaccard", "MOB_Cluster_Both_Empty",
+  "MOB_Profile_Available", "MOB_Cluster_Gains", "MOB_Cluster_Losses",
+  "MOB_Cluster_Gain_Count", "MOB_Cluster_Loss_Count",
+  "Predicted_Plasmid_Count_A", "Predicted_Plasmid_Count_B",
+  "Predicted_Plasmid_Count_Difference",
+  "MOB_High_Confidence_Profile_A", "MOB_High_Confidence_Profile_B",
+  "MOB_High_Confidence_Profile_Both"
+)
 missing_provenance <- setdiff(provenance_cols, names(pairwise))
 if (length(missing_provenance)) {
   stop("Pairwise output lacks required cache-provenance columns: ", paste(missing_provenance, collapse = ", "))
+}
+missing_plasmid_pair <- setdiff(plasmid_pair_cols, names(pairwise))
+if (length(missing_plasmid_pair)) {
+  stop(
+    "Pairwise output lacks required corrected plasmid columns: ",
+    paste(missing_plasmid_pair, collapse = ", ")
+  )
 }
 if (any(is.na(pairwise$Fasta_SHA256_A) | pairwise$Fasta_SHA256_A == "" |
         is.na(pairwise$Fasta_SHA256_B) | pairwise$Fasta_SHA256_B == "")) {
@@ -165,12 +186,47 @@ if (any(str_to_lower(pairwise$Assembler_A) != "longcycler" |
   stop("Primary pairwise output contains a non-Longcycler endpoint")
 }
 
+cohort_endpoint_lookup <- longcycler %>%
+  transmute(
+    endpoint_key = paste(.data$Participant_id, .data$tp_lab, sep = "|"),
+    cohort_path = .data$fasta_path,
+    cohort_sha256 = tolower(.data$fasta_sha256)
+  )
+audit_pairwise_endpoint <- function(key_pid, key_tp, pair_path, pair_hash, label) {
+  pair_path <- as.character(pair_path)
+  pair_path_norm <- vapply(pair_path, function(p) {
+    if (is.na(p) || !nzchar(p) || !file.exists(p)) return(NA_character_)
+    normalizePath(p, winslash = "/", mustWork = TRUE)
+  }, character(1))
+  endpoint <- tibble(
+    endpoint_key = paste(as.character(key_pid), normalise_timepoint_preserve_events(key_tp), sep = "|"),
+    pair_path = pair_path_norm,
+    pair_sha256 = tolower(as.character(pair_hash))
+  ) %>%
+    left_join(cohort_endpoint_lookup, by = "endpoint_key", relationship = "many-to-one")
+  bad <- endpoint %>%
+    filter(is.na(.data$cohort_path) | is.na(.data$pair_path) |
+             .data$pair_path != .data$cohort_path |
+             is.na(.data$pair_sha256) | .data$pair_sha256 != .data$cohort_sha256)
+  if (nrow(bad) > 0) {
+    stop("Pairwise endpoint ", label, " has ", nrow(bad),
+         " key/path/hash row(s) outside the exact selected Longcycler cohort")
+  }
+  invisible(TRUE)
+}
+audit_pairwise_endpoint(pairwise$Participant_id_A, pairwise$Timepoint_A,
+                        pairwise$Fasta_path_A, pairwise$Fasta_SHA256_A, "A")
+audit_pairwise_endpoint(pairwise$Participant_id_B, pairwise$Timepoint_B,
+                        pairwise$Fasta_path_B, pairwise$Fasta_SHA256_B, "B")
+
 lc_rows <- vf_ready %>%
+  select(-any_of(c("Assembly_ID", "assembler", "Assembler", "fasta_path", "full_path"))) %>%
   inner_join(
     longcycler %>%
-      select(Participant_id, tp_lab, Assembly_ID, Isolate_ID_canonical = Isolate_ID,
-             assembler, fasta_path, QC_PASS, selected_canonical),
-    by = c("Participant_id", "tp_lab")
+      transmute(Participant_id, tp_lab, Assembly_ID,
+                Isolate_ID_canonical = if ("Isolate_ID" %in% names(.)) as.character(Isolate_ID) else NA_character_,
+                assembler, fasta_path),
+    by = c("Participant_id", "tp_lab"), relationship = "one-to-one"
   )
 
 if (nrow(lc_rows) != nrow(longcycler)) {
@@ -180,6 +236,11 @@ if (nrow(lc_rows) != nrow(longcycler)) {
   )
 }
 if (anyDuplicated(lc_rows[c("Participant_id", "tp_lab")])) stop("Duplicate Longcycler episode keys")
+if (nrow(lc_rows) != 532L || n_distinct(lc_rows$Participant_id) != 161L ||
+    sum(lc_rows$Infection_Status == "UTI", na.rm = TRUE) != 16L ||
+    sum(lc_rows$Infection_Status == "Not_UTI", na.rm = TRUE) != 516L) {
+  stop("Selected Longcycler cohort contract failed: expected 532 episodes, 161 residents, 16 UTI, and 516 Not_UTI")
+}
 
 lc_rows <- lc_rows %>%
   mutate(
@@ -243,14 +304,22 @@ transitions <- lc_rows %>%
   ) %>%
   left_join(
     pairwise %>%
-      select(pair_key, AvgIdentity, TotalSNPs, MashDistance, Classification, RuleUsed,
-             snp_strain_context, st_lineage_context, pair_interpretation,
-             all_of(provenance_cols)),
+      select(
+        pair_key, AvgIdentity, TotalSNPs, MashDistance,
+        Classification, RuleUsed,
+        legacy_accessory_composite_classification,
+        legacy_accessory_composite_rule,
+        strict_same_strain,
+        snp_strain_context, st_lineage_context, pair_interpretation,
+        all_of(plasmid_pair_cols),
+        all_of(provenance_cols)),
     by = "pair_key"
   ) %>%
   mutate(
     same_strain_snp_threshold = strain_snp_threshold(),
-    strict_same_strain = !is.na(TotalSNPs) & TotalSNPs <= same_strain_snp_threshold
+    strict_same_strain = !is.na(TotalSNPs) &
+      TotalSNPs <= same_strain_snp_threshold,
+    Classification_is_canonical = FALSE
   )
 
 expected_transition_n <- lc_rows %>%
@@ -268,12 +337,18 @@ if (nrow(transitions) != expected_transition_n) {
 if (n_distinct(transitions$Participant_id) != expected_transition_participants) {
   stop("Rebuilt Longcycler-primary transition participant count is inconsistent with the episode manifest")
 }
+if (nrow(transitions) != 371L || n_distinct(transitions$Participant_id) != 139L) {
+  stop("Selected Longcycler transition contract failed: expected 371 transitions from 139 residents")
+}
 if (any(is.na(transitions$TotalSNPs))) stop("Fresh pairwise SNP evidence is missing for one or more Longcycler transitions")
 if (any(transitions$Assembler_A != "longcycler" | transitions$Assembler_B != "longcycler")) {
   stop("Longcycler transition joined to a non-Longcycler pairwise endpoint")
 }
 
 not_uti_to_uti <- transitions %>% filter(status_from == "Not_UTI", status_to == "UTI")
+if (nrow(not_uti_to_uti) != 9L) {
+  stop("Selected Longcycler transition contract failed: expected 9 Not_UTI-to-UTI transitions")
+}
 
 target_checks <- tibble::tribble(
   ~Participant_id, ~tp_from, ~tp_to, ~expected_snps,
@@ -303,42 +378,19 @@ threshold_sensitivity <- tidyr::crossing(
   ) %>%
   ungroup()
 
-clinical_primary <- status %>% filter(analysis_include_primary)
 typed_lc <- lc_rows %>% mutate(ST = normalise_st(ST)) %>% filter(!is.na(ST))
-mixed_transitions <- read_csv(file.path(DIR_VF, "vf_longitudinal_transitions.csv"), show_col_types = FALSE)
-if ("cohort" %in% names(mixed_transitions)) mixed_transitions <- mixed_transitions %>% filter(cohort == "all")
-mixed_transitions <- mixed_transitions %>%
-  mutate(
-    Participant_id = as.character(Participant_id),
-    pair_key = unordered_pair_key(Participant_id, as.character(tp_from), Participant_id, as.character(tp_to))
-  )
-n_new_longcycler_adjacencies <- sum(!transitions$pair_key %in% mixed_transitions$pair_key)
-if (n_new_longcycler_adjacencies != 9L) {
-  stop("Expected 9 newly adjacent Longcycler pairs after removing Flye rows; observed ", n_new_longcycler_adjacencies)
-}
 
 count_rows <- tibble::tribble(
   ~metric, ~value, ~unit, ~source_file, ~filter, ~denominator, ~formula, ~verification_status,
-  "clinical_records_before_primary_exclusions", nrow(status), "clinical records", required_files[["status"]], "none", "all status-map rows", "nrow(status_map)", "verified",
-  "primary_clinical_episodes", nrow(clinical_primary), "clinical episodes", required_files[["status"]], "analysis_include_primary == TRUE", "eligible clinical episodes", "sum(analysis_include_primary)", "verified",
-  "primary_clinical_participants", n_distinct(clinical_primary$Participant_id), "participants", required_files[["status"]], "analysis_include_primary == TRUE", "eligible clinical participants", "n_distinct(Participant_id)", "verified",
-  "primary_clinical_uti", sum(clinical_primary$Infection_Status == "UTI", na.rm = TRUE), "episodes", required_files[["status"]], "analysis_include_primary == TRUE; Infection_Status == UTI", "583 primary clinical episodes", "sum(condition)", "verified",
-  "primary_clinical_not_uti", sum(clinical_primary$Infection_Status == "Not_UTI", na.rm = TRUE), "episodes", required_files[["status"]], "analysis_include_primary == TRUE; Infection_Status == Not_UTI", "583 primary clinical episodes", "sum(condition)", "verified",
-  "candidate_assembly_records", nrow(canonical), "assembly records", required_files[["canonical"]], "none", "all candidate assembler alternatives", "nrow(canonical selection table)", "verified",
-  "mixed_canonical_rows", nrow(selected), "genome-linked episode rows", required_files[["canonical"]], "selected_canonical == TRUE; QC_PASS == TRUE; FASTA exists", "selected mixed-canonical analysis", "nrow(selected)", "verified",
-  "mixed_canonical_participants", n_distinct(selected$Participant_id), "participants", required_files[["canonical"]], "selected canonical QC-pass", "556 mixed rows", "n_distinct(Participant_id)", "verified",
-  "selected_longcycler_rows", nrow(longcycler), "genome-linked episode rows", required_files[["canonical"]], "selected canonical QC-pass; assembler == longcycler", "Longcycler sensitivity set", "nrow(longcycler)", "verified",
-  "selected_longcycler_participants", n_distinct(longcycler$Participant_id), "participants", required_files[["canonical"]], "selected canonical QC-pass; assembler == longcycler", "532 Longcycler rows", "n_distinct(Participant_id)", "verified",
-  "longcycler_uti", sum(lc_rows$Infection_Status == "UTI", na.rm = TRUE), "episode rows", required_files[["vf_ready"]], "Longcycler keys; Infection_Status == UTI", "532 Longcycler rows", "sum(condition)", "verified",
-  "longcycler_not_uti", sum(lc_rows$Infection_Status == "Not_UTI", na.rm = TRUE), "episode rows", required_files[["vf_ready"]], "Longcycler keys; Infection_Status == Not_UTI", "532 Longcycler rows", "sum(condition)", "verified",
-  "longcycler_mlst_typed_rows", nrow(typed_lc), "episode rows", required_files[["mlst"]], "Longcycler keys; preferred ST non-missing", "532 Longcycler rows", "sum(!is.na(ST))", "verified",
-  "longcycler_distinct_st", n_distinct(typed_lc$ST), "ST labels", required_files[["mlst"]], "Longcycler keys; preferred ST non-missing", "514 typed Longcycler-selected rows", "n_distinct(ST)", "verified",
+  "selected_longcycler_rows", nrow(longcycler), "genome-linked episode rows", required_files[["cohort"]], "canonical analysis cohort", "selected QC-pass Longcycler rows", "nrow(cohort)", "verified",
+  "selected_longcycler_participants", n_distinct(longcycler$Participant_id), "participants", required_files[["cohort"]], "canonical analysis cohort", "selected QC-pass Longcycler rows", "n_distinct(Participant_id)", "verified",
+  "longcycler_uti", sum(lc_rows$Infection_Status == "UTI", na.rm = TRUE), "episode rows", required_files[["cohort"]], "Infection_Status == UTI", "selected Longcycler rows", "sum(condition)", "verified",
+  "longcycler_not_uti", sum(lc_rows$Infection_Status == "Not_UTI", na.rm = TRUE), "episode rows", required_files[["cohort"]], "Infection_Status == Not_UTI", "selected Longcycler rows", "sum(condition)", "verified",
+  "longcycler_mlst_typed_rows", nrow(typed_lc), "episode rows", required_files[["mlst"]], "preferred ST non-missing", "selected Longcycler rows", "sum(!is.na(ST))", "verified",
+  "longcycler_distinct_st", n_distinct(typed_lc$ST), "ST labels", required_files[["mlst"]], "preferred ST non-missing", "typed selected Longcycler rows", "n_distinct(ST)", "verified",
   "vf_binary_features", length(gene_cols), "VFDB-derived binary features", required_files[["vf_pa"]], "canonical VF gene columns", "feature columns, not rows", "length(canonical_vf_gene_cols)", "verified",
-  "mixed_longitudinal_transitions", nrow(mixed_transitions), "transitions", file.path(DIR_VF, "vf_longitudinal_transitions.csv"), "cohort == all when present", "mixed 556-row timeline", "nrow(filtered transition table)", "verified",
-  "longcycler_longitudinal_transitions", nrow(transitions), "transitions", file.path(outdir, "longcycler_transitions.csv"), "adjacent after Longcycler restriction", "532 Longcycler rows", "sum(n_i - 1) for participants with n_i >= 2", "verified",
+  "longcycler_longitudinal_transitions", nrow(transitions), "transitions", file.path(outdir, "longcycler_transitions.csv"), "adjacent selected episodes", "selected Longcycler rows", "sum(n_i - 1) for participants with n_i >= 2", "verified",
   "longcycler_transition_participants", n_distinct(transitions$Participant_id), "participants", file.path(outdir, "longcycler_transitions.csv"), "participants with >=2 retained episodes", "371 transitions", "n_distinct(Participant_id)", "verified",
-  "longcycler_transitions_already_adjacent_in_mixed", nrow(transitions) - n_new_longcycler_adjacencies, "transitions", file.path(outdir, "longcycler_transitions.csv"), "Longcycler pair key also present in mixed transition table", "371 rebuilt Longcycler transitions", "sum(pair_key %in% mixed_pair_keys)", "verified",
-  "new_longcycler_adjacencies_after_restriction", n_new_longcycler_adjacencies, "transitions", file.path(outdir, "longcycler_transitions.csv"), "Longcycler pair key absent from mixed transition table", "371 rebuilt Longcycler transitions", "sum(!pair_key %in% mixed_pair_keys)", "verified",
   "longcycler_strict_same_strain_transitions", sum(transitions$strict_same_strain), "transitions", file.path(outdir, "longcycler_transitions.csv"), "TotalSNPs <= 25", "371 Longcycler transitions", "sum(TotalSNPs <= 25)", "verified_after_fresh_dnadiff_rerun",
   "longcycler_not_uti_to_uti", nrow(not_uti_to_uti), "transitions", file.path(outdir, "not_uti_to_uti_transitions.csv"), "status_from == Not_UTI; status_to == UTI", "371 Longcycler transitions", "nrow(filtered transitions)", "verified",
   "longcycler_not_uti_to_uti_strict", sum(not_uti_to_uti$strict_same_strain), "transitions", file.path(outdir, "not_uti_to_uti_transitions.csv"), "Not_UTI to UTI; TotalSNPs <= 25", "9 Not_UTI-to-UTI transitions", "sum(TotalSNPs <= 25)", "verified_after_fresh_dnadiff_rerun"
@@ -347,25 +399,22 @@ count_rows <- tibble::tribble(
 write_csv(lc_rows, file.path(outdir, "longcycler_episode_manifest.csv"))
 write_csv(transitions, file.path(outdir, "longcycler_transitions.csv"))
 write_csv(not_uti_to_uti, file.path(outdir, "not_uti_to_uti_transitions.csv"))
-write_csv(threshold_sensitivity, file.path(outdir, "snp_threshold_sensitivity.csv"))
+write_csv(threshold_sensitivity, file.path(outdir, "snp_threshold_context.csv"))
 write_csv(target_checks, file.path(outdir, "targeted_dnadiff_regression_checks.csv"))
-write_csv(count_rows, file.path(outdir, "denominator_counts.csv"))
+write_csv(count_rows, file.path(outdir, "longcycler_denominator_counts.csv"))
 
 summary_lines <- c(
-  "Longcycler-only sensitivity analysis",
+  "Selected Longcycler transition analysis",
   sprintf("Generated: %s", format(Sys.time(), "%Y-%m-%d %H:%M:%S %Z")),
-  "Framing: executed mixed-canonical pipeline plus a restricted Longcycler-only sensitivity analysis.",
-  sprintf("Selected mixed canonical rows: %d", nrow(selected)),
   sprintf("Selected Longcycler rows: %d from %d participants", nrow(longcycler), n_distinct(longcycler$Participant_id)),
   sprintf("Longcycler clinical labels: %d UTI; %d Not_UTI", sum(lc_rows$Infection_Status == "UTI"), sum(lc_rows$Infection_Status == "Not_UTI")),
   sprintf("Preferred MLST calls linked to Longcycler-selected episodes: %d typed rows; %d ST labels", nrow(typed_lc), n_distinct(typed_lc$ST)),
   sprintf("VFDB-derived binary features: %d", length(gene_cols)),
   sprintf("Longcycler transitions: %d from %d participants", nrow(transitions), n_distinct(transitions$Participant_id)),
-  sprintf("New Longcycler-to-Longcycler adjacencies created by rebuilding after restriction: %d", n_new_longcycler_adjacencies),
   sprintf("Operational <=%d dnadiff-SNP rule: %d/%d Longcycler transitions", strain_snp_threshold(), sum(transitions$strict_same_strain), nrow(transitions)),
   sprintf("Not_UTI-to-UTI: %d transitions; %d meet the operational <=%d dnadiff-SNP rule", nrow(not_uti_to_uti), sum(not_uti_to_uti$strict_same_strain), strain_snp_threshold()),
   "Interpretation boundary: assembly-to-assembly dnadiff SNP differences are not Parsnp core-genome SNP distances or wgMLST allele distances."
 )
-writeLines(summary_lines, file.path(outdir, "longcycler_sensitivity_summary.txt"))
+writeLines(summary_lines, file.path(outdir, "longcycler_transition_summary.txt"))
 
-message("Longcycler-only sensitivity rebuild complete: ", outdir)
+message("Selected Longcycler transition rebuild complete: ", outdir)

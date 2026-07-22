@@ -1,26 +1,20 @@
-# Template Audit
+# Template audit — Longcycler-only v3 review
 
-Source PPTX: /Users/Aamir/Desktop/rUTIs/outputs/manual-20260527-current-review/presentations/ruti-current-results-scientific-review-v2/output/rUTI_Current_Results_VF_Focused_Review_2026-05-27.pptx
-Workspace: /Users/Aamir/Desktop/rUTIs/outputs/manual-20260527-current-review/presentations/ruti-longitudinal-vf-pipeline-review-v3
+## Sources inspected
+- Visual fidelity source: output/Longitudinal_Urinary_Ecoli_VF_Pipeline_Review_2026-05-27.pptx (22 flattened slides).
+- Element-level reference: output/Longitudinal_Urinary_Ecoli_VF_Pipeline_Review_2026-05-27_EDITABLE_GENERATED_REPAIR_WARNING.pptx (22 clean editable slides).
+- Every source slide was inspected at full size before authoring.
 
-## Source Structure
-- 22-slide media-safe academic report deck.
-- White canvas, slim vertical rail, compact header/footer, and large evidence objects.
-- Packaged media in the source deck are PNG assets; no inherited SVG-in-.bin media should be reused.
+## Preserved system
+- 1280 × 720 white academic-report canvas.
+- Slim blue left rail, compact uppercase eyebrow, dark title, quiet subtitle, thin header/footer rules, two-digit slide number.
+- Pale blue, green, orange, rust, and slate evidence cards; analytical plots remain the dominant evidence object.
+- Aptos Display/Aptos hierarchy and the source deck's restrained spacing rhythm.
 
-## Reuse Contract
-- Output slide count remains 22.
-- Each output slide starts from the corresponding duplicated source slide.
-- Content is intentionally replaced because the narrative centre shifts from recurrent UTI review to longitudinal urinary E. coli VF pipeline analysis.
-- Native editable PowerPoint shapes/text are used for explanatory graphics.
-- Current analytical PNG figures are embedded directly; no external links are allowed.
+## Release contract
+- Exactly 22 editable slides.
+- All analytical claims come from results/pipeline/longcycler_release_claim_registry.json.
+- Current-run registered plots are embedded; explanatory diagrams use native PowerPoint shapes and text.
+- Analytical cohort: 532 episodes, 161 residents, 16 operational UTI, 516 operational Not_UTI.
+- Source 583/166/18/565 appears only as attrition/QC context.
 
-## Typography And Layout Rules
-- Preserve the v2 report-style hierarchy: concise uppercase section label, strong title, quiet subtitle, evidence label, and footer source line.
-- Avoid dense prose grids in the spoken slides.
-- Keep UTI-specific material as a later clinical annotation/application, not the opening thesis.
-
-## Known Deviations
-- Previous rUTI-led title and early clinical motivation slides are replaced with VF-first framing.
-- Main Figures 2-4 move out of the spoken story except where used as appendices.
-- AMR is restricted to one appendix backup slide.

@@ -71,8 +71,16 @@ safe_ggsave <- function(filename, plot = last_plot(), width = 7, height = 5, dpi
 
   tryCatch(
     ggsave(path, plot = plot, width = width, height = height, dpi = dpi),
-    error = function(e) warning("Failed to save plot: ", path, "\n", e$message)
+    error = function(e) {
+      msg("ERROR saving plot %s: %s", path, conditionMessage(e))
+      stop(e)
+    }
   )
+  size <- file.size(path)
+  if (!file.exists(path) || is.na(size) || size <= 0) {
+    stop("Plot save returned without creating a non-empty file: ", path, call. = FALSE)
+  }
+  invisible(path)
 }
 
 # Timepoint Normalization
@@ -320,19 +328,15 @@ if (has_pkg("ComplexUpset")) {
       file.path(DIR_RESULTS, glue::glue("persistence_P{pid}.csv"))
     )
 
-    # Plot
-    try(
-      {
-        p <- ComplexUpset::upset(
-          df,
-          intersect = tp_sets, min_size = 1,
-          name = paste("P", pid, "genes"),
-          base_annotations = list("Intersection size" = intersection_size(text = list(size = 3)))
-        )
-        safe_ggsave(file.path("persistence", glue::glue("upset_P{pid}.png")), p, width = 10, height = 6)
-      },
-      silent = TRUE
+    # Plot. Failures propagate so the canonical run cannot report success while
+    # silently omitting a participant-level output.
+    p <- ComplexUpset::upset(
+      df,
+      intersect = tp_sets, min_size = 1,
+      name = paste("P", pid, "genes"),
+      base_annotations = list("Intersection size" = intersection_size(text = list(size = 3)))
     )
+    safe_ggsave(file.path("persistence", glue::glue("upset_P{pid}.png")), p, width = 10, height = 6)
 
     tibble::tibble(
       Participant_id   = pid,
@@ -433,7 +437,13 @@ if (file.exists(FILE_TREE) && has_pkg("ape")) {
   ensure_dir(file.path(DIR_PLOTS, "phylogeny"))
   use_pkg("ape")
 
-  tree <- tryCatch(read.tree(FILE_TREE), error = function(e) NULL)
+  tree <- tryCatch(
+    read.tree(FILE_TREE),
+    error = function(e) {
+      msg("ERROR reading phylogeny for plotting (%s): %s", FILE_TREE, conditionMessage(e))
+      stop(e)
+    }
+  )
 
   if (!is.null(tree)) {
     if (file.exists(FILE_STATUS_MAP) && !is.null(meta_map)) {
@@ -475,20 +485,18 @@ if (file.exists(FILE_TREE) && has_pkg("ape")) {
 
       if (has_pkg("ggtree")) {
         use_pkg("ggtree")
-        try({
-          if (nrow(annot) > 0) {
-            p <- ggtree(tree, layout = "rectangular") %<+% annot +
-              geom_tippoint(aes(color = Infection_Status), size = 2, alpha = 0.8) +
-              scale_colour_uti_status() +
-              theme_tree2() +
-              labs(title = "Core Genome Phylogeny of E. coli Isolates", color = "Primary UTI status")
-          } else {
-            p <- ggtree(tree, layout = "rectangular") +
-              theme_tree2() +
-              labs(title = "Core Genome Phylogeny of E. coli Isolates")
-          }
-          safe_ggsave("phylogeny/core_tree_phenotype.png", p, width = 8, height = 10)
-        })
+        if (nrow(annot) > 0) {
+          p <- ggtree(tree, layout = "rectangular") %<+% annot +
+            geom_tippoint(aes(color = Infection_Status), size = 2, alpha = 0.8) +
+            scale_colour_uti_status() +
+            theme_tree2() +
+            labs(title = "Core Genome Phylogeny of E. coli Isolates", color = "Primary UTI status")
+        } else {
+          p <- ggtree(tree, layout = "rectangular") +
+            theme_tree2() +
+            labs(title = "Core Genome Phylogeny of E. coli Isolates")
+        }
+        safe_ggsave("phylogeny/core_tree_phenotype.png", p, width = 8, height = 10)
       } else {
         png(file.path(DIR_PLOTS, "phylogeny", "core_tree_base.png"), width = 800, height = 1000)
         plot(tree, show.tip.label = FALSE, main = "Core-genome Phylogeny")
@@ -691,39 +699,37 @@ if (file.exists(FILE_PAIR_STATS) && has_pkg("igraph") && has_pkg("ggraph")) {
       select(from = SampleA, to = SampleB, weight)
 
     if (nrow(edges) > 0) {
-      try({
-        g_net <- graph_from_data_frame(edges, directed = FALSE)
+      g_net <- graph_from_data_frame(edges, directed = FALSE)
 
-        if (file.exists(FILE_STATUS_MAP) && !is.null(meta_map)) {
-          status <- read_csv(FILE_STATUS_MAP, show_col_types = FALSE) %>%
-            ensure_tp_lab() %>%
-            prefer_primary_uti_status()
+      if (file.exists(FILE_STATUS_MAP) && !is.null(meta_map)) {
+        status <- read_csv(FILE_STATUS_MAP, show_col_types = FALSE) %>%
+          ensure_tp_lab() %>%
+          prefer_primary_uti_status()
 
-          # Map SampleID (isolate_ID) -> Infection_Status
-          annot <- meta_map %>%
-            inner_join(status, by = c("Participant_id", "Timepoint" = "tp_lab")) %>%
-            transmute(isolate_ID, Infection_Status = UTI_Status) %>%
-            distinct()
+        # Map SampleID (isolate_ID) -> Infection_Status
+        annot <- meta_map %>%
+          inner_join(status, by = c("Participant_id", "Timepoint" = "tp_lab")) %>%
+          transmute(isolate_ID, Infection_Status = UTI_Status) %>%
+          distinct()
 
-          # Match IDs. The edges use basenames or whatever was in path_A.
-          # We might need to clean IDs.
-          # For now, try direct match.
-          V(g_net)$Phenotype <- annot$Infection_Status[match(V(g_net)$name, annot$isolate_ID)]
-          V(g_net)$Phenotype[is.na(V(g_net)$Phenotype)] <- "Unknown"
-        } else {
-          V(g_net)$Phenotype <- "Unknown"
-        }
+        # Match IDs. The edges use basenames or whatever was in path_A.
+        # We might need to clean IDs.
+        # For now, try direct match.
+        V(g_net)$Phenotype <- annot$Infection_Status[match(V(g_net)$name, annot$isolate_ID)]
+        V(g_net)$Phenotype[is.na(V(g_net)$Phenotype)] <- "Unknown"
+      } else {
+        V(g_net)$Phenotype <- "Unknown"
+      }
 
-        p <- ggraph(g_net, layout = "fr") +
-          geom_edge_link(aes(alpha = 0.5), show.legend = FALSE) +
-          geom_node_point(aes(color = Phenotype), size = 3) +
-          scale_colour_uti_status() +
-          theme_graph() +
-          labs(title = paste("Transmission Network (SNPs <=", SNP_THRESHOLD, ")"),
-               color = "Primary UTI status")
+      p <- ggraph(g_net, layout = "fr") +
+        geom_edge_link(aes(alpha = 0.5), show.legend = FALSE) +
+        geom_node_point(aes(color = Phenotype), size = 3) +
+        scale_colour_uti_status() +
+        theme_graph() +
+        labs(title = paste("Transmission Network (SNPs <=", SNP_THRESHOLD, ")"),
+             color = "Primary UTI status")
 
-        safe_ggsave("epidemiology/transmission_network.png", p, width = 8, height = 8)
-      })
+      safe_ggsave("epidemiology/transmission_network.png", p, width = 8, height = 8)
     }
   }
 }
@@ -781,7 +787,8 @@ if (file.exists(FILE_NITRATE) && exists("vf_pa_all") && has_pkg("pheatmap")) {
       }
     },
     error = function(e) {
-      message("Skipping heatmap due to error: ", e$message)
+      msg("ERROR generating genomics/virulence_nitrate_heatmap.png: %s", conditionMessage(e))
+      stop(e)
     }
   )
 }

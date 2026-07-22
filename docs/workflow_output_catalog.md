@@ -742,13 +742,38 @@ Use this file when you need to answer practical questions such as:
 
 ### `29_vf_amr_combined_profile.R`
 
-- Role: VF plus plasmid or true AMR context, depending on available data.
-- Reads: VF-ready data, VF endpoint tables, plasmid/replicon tables, assembly
-  metadata, pairwise metrics, and AMR outputs if they truly exist.
-- Main work: audits AMR availability, avoids inventing AMR data, combines VF
-  and plasmid/AMR context, summarizes replicon burden by status and ST, tests
-  VF-plasmid correlations, and plots scope.
+- Role: authoritative genomic-AMR analysis and VF/plasmid integration.
+- Reads: the exact 532-assembly Longcycler manifest, matched Prokka
+  FAA/FFN/FNA/GFF annotations, the 371-pair canonical transition table,
+  VF-ready endpoints and plasmid/replicon tables.
+- Main work: validates sequence-equivalent annotations; runs SHA-bound
+  ABRicate-ResFinder at 80/80, AMRFinderPlus 4.2.7 with organism
+  `Escherichia`, and ResFinder 4.7.2 with PointFinder; harmonizes determinants;
+  audits caller discrepancies without voting; builds episode/resident
+  prevalence and adjacent-pair profiles; performs the resident-bootstrap
+  longitudinal comparison; and joins AMR to VF/plasmid context.
 - Tables/reports:
+  - `results/amr/provenance/input_manifest.csv`
+  - `results/amr/provenance/run_manifest.csv`
+  - `results/amr/provenance/tool_database_versions.csv`
+  - `results/amr/provenance/published_output_manifest.csv`
+  - `results/amr/harmonized_determinants_long.csv`
+  - `results/amr/episode_amr_profiles.csv`
+  - `results/amr/resident_amr_profiles.csv`
+  - `results/amr/caller_concordance_discrepancies.csv`
+  - `results/amr/caller_coverage_summary.csv`
+  - `results/amr/caller_determinant_count_summary.csv`
+  - `results/amr/gene_prevalence_episode_resident.csv`
+  - `results/amr/class_prevalence_episode_resident.csv`
+  - `results/amr/mutation_prevalence_episode_resident.csv`
+  - `results/amr/resfinder_predicted_phenotypes_genomic_not_ast.csv`
+  - `results/amr/adjacent_pair_amr_profiles_371.csv`
+  - `results/amr/not_uti_to_uti_amr_profiles_9.csv`
+  - `results/amr/longitudinal_resident_bootstrap_inference.csv`
+  - `results/amr/longitudinal_summary_by_snp_context.csv`
+  - `results/amr/validation_checks.csv`
+  - `results/amr/interpretation_report.md`
+  - `results/amr/RUN_COMPLETE.txt`
   - `results/vf_amr/vf_amr_input_availability_report.txt`
   - `results/vf_amr/vf_plasmid_combined_profile.csv`
   - `results/vf_amr/vf_amr_combined_profile_table.csv`
@@ -758,15 +783,24 @@ Use this file when you need to answer practical questions such as:
   - `results/vf_amr/vf_amr_score_summary_by_ST.csv`
   - `results/vf_amr/vf_amr_profile_groups.csv`
   - `results/vf_amr/vf_plasmid_correlation.csv`
-- Statistics: Spearman correlations between supplementary VF endpoints and replicon burden
-  when enough paired data exist.
+- Statistics: primary informative acquired-gene gain/loss across 371 adjacent
+  pairs, plus acquired-gene Jaccard similarity, class change and mutation
+  change. The ≤25 versus >25 SNP comparison uses 10,000 resident-cluster
+  bootstrap replicates (seed 20260712) and adjusts for days between samples.
+  The nine Not_UTI-to-UTI transitions are descriptive only.
 - Images:
+  - `plots/amr/most_prevalent_informative_acquired_genes.png`
+  - `plots/amr/amr_profile_stability_by_direct_snp_context.png`
+  - `plots/amr/caller_concordance_by_determinant_class.png`
   - `plots/vf_amr/replicon_burden_by_status.png`
   - `plots/vf_amr/vf_vs_replicon_scatter.png`
   - `plots/vf_amr/replicon_heatmap_top_STs.png`
   - `plots/vf_amr/vf_plasmid_analysis_scope.png`
-- Guardrail: plasmid summaries are not true AMR unless AMR screening inputs are
-  explicitly available.
+- Guardrail: AMRFinderPlus defines the primary profile; ResFinder/PointFinder is
+  complementary and ABRicate is the legacy comparison. `mdf(A)` remains raw
+  and in sensitivity/QC fields but is excluded from primary burden, gain/loss
+  and Jaccard calculations. Outputs are genomic predictions, not phenotypic
+  AST, and AMR remains supplementary to RQ01-RQ10.
 
 ### `32_uti_not_uti_diagnostic_stats.R`
 
@@ -813,16 +847,12 @@ Use this file when you need to answer practical questions such as:
 - Role: mechanism-first synthesis for Not_UTI to UTI transitions.
 - Reads: transition case outputs, VF-ready data, status maps, module/score
   changes, strain context, host context, variant annotations, Panaroo accessory
-  data, plasmid context, and optional AMR/ResFinder data.
+  data, plasmid context, and script 29's validated episode/focused AMR profiles.
 - Main work: builds an evidence casebook, attaches host/strain/VF/module/accessory
-  evidence, scans optional AMR files when present, summarizes transition
+  evidence, consumes the nine validated focused AMR profiles, summarizes transition
   mechanisms, and writes validation checks.
 - Tables/reports:
   - `results/mechanism/accessory_gene_transition_changes.csv`
-  - `results/mechanism/amr_screen_report.txt`
-  - `results/mechanism/amr_resfinder_hits_long.csv`
-  - `results/mechanism/amr_presence_by_episode.csv`
-  - `results/mechanism/amr_transition_changes.csv`
   - `results/mechanism/not_uti_to_uti_casebook.csv`
   - `results/mechanism/transition_mechanism_summary.csv`
   - `results/mechanism/host_context_transition_summary.csv`
@@ -926,8 +956,7 @@ Use this file when you need to answer practical questions such as:
   - `results/summary/table_10_all_transition_context.csv`
   - `results/summary/table_11_lineage_context_summary.csv`
   - `results/summary/table_12_missing_data_audit.csv`
-  - `results/summary/table_13_optional_vf_amr_summary.csv`
-  - `results/summary/table_13_optional_vf_plasmid_summary.csv`
+  - `results/summary/table_13_genomic_amr_summary.csv`
   - `results/summary/table_14_uti_not_uti_diagnostics.csv`
   - `results/summary/table_15_uti_not_uti_test_interpretation.csv`
   - `results/summary/table_16_uti_not_uti_diagnostic_figures.csv`

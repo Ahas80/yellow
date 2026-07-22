@@ -1,6 +1,0 @@
-feature,absent_n,absent_positive,absent_negative,present_n,present_positive,present_negative,absent_positive_pct,present_positive_pct,haldane_or_present_vs_absent,fisher_p_value,bh_q_value,significant_bh_0_05
-nar_regulators_complete,12,4,8,546,317,229,33.3,58.1,2.613,0.13698766807824544,0.6849383403912273,FALSE
-narA_complete,6,2,4,552,319,233,33.3,57.8,2.463,0.4093040993591786,0.9616106378428225,FALSE
-all_screened_genes_present,30,16,14,528,305,223,53.3,57.8,1.201,0.7053645437742503,0.9616106378428225,FALSE
-csgD_present,12,6,6,546,315,231,50,57.7,1.363,0.769288510274258,0.9616106378428225,FALSE
-narZ_complete_available_refs,20,12,8,538,309,229,60,57.4,0.917,1.0000000000000002,1,FALSE

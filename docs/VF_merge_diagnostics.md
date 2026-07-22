@@ -1,69 +1,51 @@
-# VF Merge Diagnostics
+# VF merge diagnostics: selected Longcycler cohort
 
-## Source Files
+VF release tables are accepted only when their participant-timepoint keys and selected FASTA provenance agree with the analytical manifest.
 
-| File | Rows | Unique Participants | Key Columns |
-|------|------|-------------------|-------------|
-| `results/vf/vf_pa_all.csv` | 183 | 87 | Participant_id, tp_lab |
-| `status_map.csv` | 276 | 97 | Participant_id, Timepoint |
+## Required merge checks
 
-## Duplicate Checks
+| Check | Requirement |
+|---|---|
+| Cohort rows | Exact analytical episode count below |
+| Key uniqueness | One row per participant-timepoint |
+| Manifest coverage | Every cohort key has one selected FASTA |
+| VF coverage | Every analytical key has one VF profile |
+| Content provenance | FASTA SHA-256 agrees with the selected manifest |
+| Clinical labels | Operational UTI or operational Not_UTI only |
 
-| Dataset | Duplicate join keys (Participant_id × tp_lab) |
-|---------|-----------------------------------------------|
-| `vf_pa_all.csv` | **0** — no duplicates |
-| `status_map.csv` | **0** — no duplicates after tp normalization |
+## Canonical merge inputs
 
-## Join Results
+- `results/clinical/analysis_cohort_longcycler.csv`
+- `results/qc/analysis_assembly_manifest.csv`
+- `results/vf/vf_pa_all.csv`
 
-| Metric | Count |
-|--------|-------|
-| VF rows matched to status | **183** (100%) |
-| VF rows NOT in status_map | **0** |
-| Status rows NOT in VF data | **93** |
-| → These are clinical episodes without sequenced VF data | |
+## Audited release contract
 
-### Unmatched Status Rows (clinical episodes without VF data)
+- Scope: Longcycler-only selected QC-passing assemblies; one selected assembly per analytical episode.
+- Clinical definition: operational UTI phenotype. It is a versioned culture-plus-compatible-symptom rule, not a reconstruction of the full published protocol.
+- Analytical cohort: 532/161/16/516 (episodes/residents/operational UTI/operational Not_UTI).
+- Direct evidence: 893 all within-resident pairs.
+- Adjacent evidence: 371/139/140 (pairs/residents/pairs at or below 25 SNP).
+- Focused transitions: 9 Not_UTI -> UTI; 5/9 at or below 25 SNP.
+- Mechanism casebook: 9/9/0 (cases/linked/missing).
+- Near-miss audit: 17 rows; these are not operational UTI cases.
+- Attrition/QC context only: 583/166/18/565 (full-source episodes/residents/operational UTI/operational Not_UTI); these are not analytical denominators.
+- Research-question boundary: RQ01-RQ10 only.
+- Interpretation: exploratory, observational and non-causal.
 
-These 93 clinical episodes exist in `status_map.csv` but have no corresponding VF data — either no assembly was available or the participant was not sequenced at that timepoint.
+## Methods fixed by the registry
 
-| Status | Count |
-|--------|-------|
-| ASB | 77 |
-| Negative | 9 |
-| UTI | 6 |
-| Culture-positive | 1 |
+- Operational phenotype: culture lower bound >=1,000 CFU/mL plus compatible symptoms under the versioned rule.
+- Assembly QC: <=200 contigs, N50 >=20,000 bp and genome size 4,000,000-6,000,000 bp; read coverage, completeness and contamination are excluded metrics.
+- VF calls: ABRicate with VFDB at >=80% identity and >=80% coverage, SHA-bound to the selected Longcycler FASTA manifest.
+- MLST: lineage context only; provider calls require >=95% good targets. Policy: provider_qc95 call key/path-linked to the selected Longcycler episode; local fallback excluded. When required, local calls are labelled and use the same selected FASTA.
+- Pair-specific evidence: dnadiff is primary, with an operational threshold of <=25 SNP; MLST or graph context cannot overrule a conflicting direct pair.
+- Population context: Parsnp core-genome and Panaroo pangenome outputs provide context, not pair-specific continuity proof.
 
-## Final Analysis-Ready Dataset
+## Provenance
 
-| Metric | Value |
-|--------|-------|
-| Output file | `results/vf/vf_analysis_ready.csv` |
-| Total rows | **183** |
-| Rows with clinical status | **183** (100% match) |
-| Rows without status | **0** |
-| Unique participants | **87** |
-| Species | All *E. coli* (382/382 in assembly_metadata.csv) |
+- Claim registry: `results/pipeline/longcycler_release_claim_registry.json`
+- Registry SHA-256: `87f65979259a4c92545afbb74b5d3a8efffb8a3d18cd2481df165b97e5c6d30e`
+- Registry generated: 2026-07-15 01:36:53 CEST
+- This file is generated; edit the registry-producing analysis or this writer rather than hand-editing release claims.
 
-### Status Breakdown in Analysis-Ready Dataset
-
-| Infection_Status | n episodes |
-|-----------------|-----------|
-| ASB | 136 |
-| Negative | 31 |
-| UTI | 16 |
-
-### Timepoints Present
-
-| Timepoint | In VF data | In status_map |
-|-----------|-----------|--------------|
-| T0 | ✅ | ✅ |
-| T1 | ✅ | ✅ |
-| T2 | ✅ | ✅ |
-| Uricult | ✅ | ✅ |
-
-## Methodology Note
-
-- **Join key normalization**: `status_map.csv` uses "Timepoint" column; `vf_pa_all.csv` uses "tp_lab". Both were normalized using regex: Uricult-like → "Uricult", digit-containing → "T{n}".
-- **Deduplication in VF matrix**: The pipeline's `02_gene_presence_analysis.R` constructs `vf_pa_all.csv` by `distinct(Participant_id, tp_lab, GENE)` before pivoting — so a VF gene is marked present if detected in *any* assembler (flye or longcycler) for that participant-timepoint pair.
-- **No VF data loss**: All 183 VF rows matched a clinical status; the 93 unmatched status rows represent clinical episodes for which no sequenced isolate/assembly exists.

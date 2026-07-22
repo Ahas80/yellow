@@ -1,26 +1,19 @@
-# Template Audit
+# Template audit — Longcycler-only v4 onboarding review
 
-Source PPTX: /Users/Aamir/Desktop/rUTIs/outputs/manual-20260527-current-review/presentations/ruti-current-results-scientific-review-v2/output/rUTI_Current_Results_VF_Focused_Review_2026-05-27.pptx
-Workspace: /Users/Aamir/Desktop/rUTIs/outputs/manual-20260527-current-review/presentations/ruti-longitudinal-vf-pipeline-review-v3
+## Sources inspected
+- Visual fidelity source: output/Longitudinal_Urinary_Ecoli_VF_Pipeline_Review_With_Onboarding_2026-05-28.pptx (25 flattened slides).
+- Element-level base reference: output/Longitudinal_Urinary_Ecoli_VF_Pipeline_Review_With_Onboarding_BASE_SHIFTED_EDITABLE_GENERATED_REPAIR_WARNING.pptx (22 base slides).
+- Clean onboarding element reference: ../ruti-longitudinal-vf-pipeline-review-v5/output/Longitudinal_Urinary_Ecoli_VF_Pipeline_Review_2026-05-28.pptx, slides 2–4.
+- Every source slide was inspected; the three onboarding frames were inspected individually at full size.
 
-## Source Structure
-- 22-slide media-safe academic report deck.
-- White canvas, slim vertical rail, compact header/footer, and large evidence objects.
-- Packaged media in the source deck are PNG assets; no inherited SVG-in-.bin media should be reused.
+## Preserved system
+- The v3/v4 white report canvas, slim blue rail, uppercase eyebrow, dark title, quiet subtitle, thin rules, and pale evidence-card palette.
+- The canonical 25-slide story order: title; three onboarding frames; 21-slide scientific review continuation.
+- Native editable PowerPoint shapes/text for orientation diagrams and current-run registered PNG plots for analytical evidence.
 
-## Reuse Contract
-- Output slide count remains 22.
-- Each output slide starts from the corresponding duplicated source slide.
-- Content is intentionally replaced because the narrative centre shifts from recurrent UTI review to longitudinal urinary E. coli VF pipeline analysis.
-- Native editable PowerPoint shapes/text are used for explanatory graphics.
-- Current analytical PNG figures are embedded directly; no external links are allowed.
+## Release contract
+- Exactly 25 editable slides.
+- All analytical claims come from results/pipeline/longcycler_release_claim_registry.json.
+- The first three content slides teach the loop, denominator units, and operational phenotype before analytical results.
+- 583/166/18/565 is attrition/QC context only; analytical claims use 532/161/16/516.
 
-## Typography And Layout Rules
-- Preserve the v2 report-style hierarchy: concise uppercase section label, strong title, quiet subtitle, evidence label, and footer source line.
-- Avoid dense prose grids in the spoken slides.
-- Keep UTI-specific material as a later clinical annotation/application, not the opening thesis.
-
-## Known Deviations
-- Previous rUTI-led title and early clinical motivation slides are replaced with VF-first framing.
-- Main Figures 2-4 move out of the spoken story except where used as appendices.
-- AMR is restricted to one appendix backup slide.

@@ -14,6 +14,7 @@ project_root <- normalizePath(getwd(), winslash = "/", mustWork = TRUE)
 if (!file.exists(file.path(project_root, "00_config.R"))) {
   stop("Run this script from the rUTIs project root.", call. = FALSE)
 }
+source(file.path(project_root, "R", "pipeline_qc_helpers.R"))
 
 seed <- 20260712L
 n_boot <- suppressWarnings(as.integer(Sys.getenv("RQ_BOOTSTRAP_REPS", "10000")))
@@ -24,9 +25,7 @@ dir.create(out_root, recursive = TRUE, showWarnings = FALSE)
 
 status_path <- file.path(project_root, "results", "clinical", "status_map.csv")
 manifest_path <- file.path(project_root, "results", "qc", "analysis_assembly_manifest.csv")
-transition_path <- file.path(
-  project_root, "results", "sensitivity", "longcycler_only", "longcycler_transitions.csv"
-)
+transition_path <- file.path(project_root, "results", "longitudinal", "longcycler_transitions.csv")
 input_paths <- c(status_path, manifest_path, transition_path)
 
 if (any(grepl("Rowenas analysis", input_paths, fixed = TRUE))) {
@@ -99,7 +98,16 @@ transitions <- read_csv(transition_path, show_col_types = FALSE) %>%
     tp_from = as.character(.data$tp_from),
     tp_to = as.character(.data$tp_to),
     days_between_samples = as.numeric(.data$days_between_samples),
-    TotalSNPs = as.numeric(.data$TotalSNPs)
+    TotalSNPs = as.numeric(.data$TotalSNPs),
+    Replicon_Jaccard = as.numeric(.data$Replicon_Jaccard),
+    Replicon_Both_Empty = as_flag(.data$Replicon_Both_Empty),
+    Replicon_Profile_Available =
+      as_flag(.data$Replicon_Profile_Available),
+    MOB_Cluster_Jaccard = as.numeric(.data$MOB_Cluster_Jaccard),
+    MOB_Cluster_Both_Empty = as_flag(.data$MOB_Cluster_Both_Empty),
+    MOB_Profile_Available = as_flag(.data$MOB_Profile_Available),
+    MOB_High_Confidence_Profile_Both =
+      as_flag(.data$MOB_High_Confidence_Profile_Both)
   )
 
 stopifnot(
@@ -116,13 +124,44 @@ stopifnot(
   all(!is.na(transitions$days_between_samples)),
   sum(transitions$TotalSNPs <= 25) == 140L
 )
+required_plasmid_transition_columns <- c(
+  "Replicon_Jaccard", "Replicon_Both_Empty",
+  "Replicon_Profile_Available", "MOB_Cluster_Jaccard",
+  "MOB_Cluster_Both_Empty", "MOB_Profile_Available",
+  "MOB_High_Confidence_Profile_Both"
+)
+if (
+  !all(required_plasmid_transition_columns %in% names(transitions)) ||
+    sum(transitions$Replicon_Profile_Available) != 371L ||
+    sum(transitions$MOB_Profile_Available) != 371L ||
+    anyNA(transitions$Replicon_Jaccard) ||
+    anyNA(transitions$MOB_Cluster_Jaccard)
+) {
+  stop(
+    "RQ01 requires complete corrected replicon and MOB profiles for all ",
+    "371 adjacent pairs.", call. = FALSE
+  )
+}
+
+analysis_status <- status %>%
+  semi_join(
+    manifest %>% distinct(.data$Participant_id, .data$tp_lab),
+    by = c("Participant_id", "tp_lab")
+  )
+stopifnot(
+  nrow(analysis_status) == 532L,
+  n_distinct(analysis_status$Participant_id) == 161L,
+  sum(analysis_status$UTI_Status == "UTI") == 16L,
+  sum(analysis_status$UTI_Status == "Not_UTI") == 516L,
+  !anyDuplicated(analysis_status[c("Participant_id", "tp_lab")])
+)
 
 manifest_assembler <- tolower(if ("assembler" %in% names(manifest)) manifest$assembler else manifest$Assembler)
 if (any(manifest_assembler != "longcycler" | is.na(manifest_assembler))) {
   stop("The authoritative analysis manifest is not Longcycler-only.", call. = FALSE)
 }
 
-episode_context <- status %>%
+episode_context <- analysis_status %>%
   select(Participant_id, tp_lab, Event_type, UTI_Status)
 
 transitions <- transitions %>%
@@ -147,7 +186,13 @@ transitions <- transitions %>%
       .data$event_from == "UTI_event" & .data$event_to == "Routine" ~ "UTI_event->Routine",
       .data$event_from == "UTI_event" & .data$event_to == "UTI_event" ~ "UTI_event->UTI_event",
       TRUE ~ "Unknown"
-    )
+    ),
+    any_replicon_profile_change =
+      .data$Replicon_Profile_Available &
+      .data$Replicon_Jaccard < 1,
+    any_mob_cluster_change =
+      .data$MOB_Profile_Available &
+      .data$MOB_Cluster_Jaccard < 1
   )
 
 if (any(is.na(transitions$event_from) | is.na(transitions$event_to))) {
@@ -336,6 +381,141 @@ rq1_context <- transitions %>%
   )
 atomic_write_csv(rq1_context, file.path(rq, "st_mash_context.csv"))
 
+rq1_plasmid_fit_stat <- function(d, w, outcome, threshold) {
+  failure <- c(odds_ratio = NA_real_, adjusted_risk_difference = NA_real_)
+  z <- d %>%
+    mutate(
+      .outcome = as.integer(.data[[outcome]]),
+      .close = as.integer(.data$TotalSNPs <= threshold),
+      .weight = as.numeric(w)
+    ) %>%
+    filter(
+      !is.na(.data$.outcome), !is.na(.data$.close),
+      is.finite(.data$days_between_samples),
+      is.finite(.data$.weight), .data$.weight > 0
+    )
+  if (
+    nrow(z) < 20L ||
+      n_distinct(z$.outcome) != 2L ||
+      n_distinct(z$.close) != 2L
+  ) {
+    return(failure)
+  }
+  fit <- tryCatch(
+    suppressWarnings(glm(
+      .outcome ~ .close + ns(days_between_samples, df = 3),
+      data = z, weights = .weight, family = binomial(),
+      control = glm.control(maxit = 100)
+    )),
+    error = function(e) NULL
+  )
+  if (
+    is.null(fit) || !".close" %in% names(coef(fit)) ||
+      !is.finite(coef(fit)[[".close"]])
+  ) {
+    return(failure)
+  }
+  close <- z
+  distant <- z
+  close$.close <- 1L
+  distant$.close <- 0L
+  p_close <- suppressWarnings(
+    predict(fit, newdata = close, type = "response")
+  )
+  p_distant <- suppressWarnings(
+    predict(fit, newdata = distant, type = "response")
+  )
+  c(
+    odds_ratio = exp(unname(coef(fit)[[".close"]])),
+    adjusted_risk_difference = weighted.mean(
+      p_close - p_distant, z$.weight, na.rm = TRUE
+    )
+  )
+}
+
+rq1_plasmid_inference <- function(
+    data, outcome, threshold, analysis, seed_offset) {
+  outcome_name <- outcome
+  outcome_event_count <- sum(data[[outcome_name]] %in% TRUE)
+  boot <- bootstrap_glm_stat(
+    data,
+    function(d, w) {
+      rq1_plasmid_fit_stat(d, w, outcome = outcome, threshold = threshold)
+    },
+    seed_offset = seed_offset
+  )
+  summarise_boot_vector(boot$point, boot$replicates) %>%
+    mutate(
+      analysis = analysis,
+      outcome = outcome_name,
+      exposure = paste0("direct_SNP_le_", threshold),
+      n_pairs = nrow(data),
+      n_residents = n_distinct(data$Participant_id),
+      n_close = sum(data$TotalSNPs <= threshold),
+      outcome_events = outcome_event_count,
+      model = paste0(
+        outcome_name, " ~ direct SNP<=", threshold,
+        " + natural spline(days, df=3)"
+      ),
+      interpretation =
+        "assembly-based plasmid predictions; not transfer or transmission evidence",
+      .before = 1
+    )
+}
+
+rq1_plasmid_primary <- bind_rows(
+  rq1_plasmid_inference(
+    transitions, "any_replicon_profile_change", 25L,
+    "primary_replicon_change", 1600L
+  ),
+  rq1_plasmid_inference(
+    transitions, "any_mob_cluster_change", 25L,
+    "primary_mob_cluster_change", 1610L
+  )
+)
+rq1_plasmid_thresholds <- bind_rows(lapply(
+  c("any_replicon_profile_change", "any_mob_cluster_change"),
+  function(outcome) {
+    bind_rows(lapply(c(10L, 25L, 50L), function(threshold) {
+      rq1_plasmid_inference(
+        transitions, outcome, threshold,
+        paste0("threshold_", outcome),
+        1700L + threshold +
+          ifelse(outcome == "any_mob_cluster_change", 100L, 0L)
+      )
+    }))
+  }
+))
+rq1_plasmid_sensitivity <- bind_rows(
+  rq1_plasmid_inference(
+    filter(transitions, !.data$Replicon_Both_Empty),
+    "any_replicon_profile_change", 25L,
+    "exclude_both_empty_replicon_profiles", 1900L
+  ),
+  rq1_plasmid_inference(
+    filter(transitions, !.data$MOB_Cluster_Both_Empty),
+    "any_mob_cluster_change", 25L,
+    "exclude_both_empty_mob_profiles", 1910L
+  ),
+  rq1_plasmid_inference(
+    filter(transitions, .data$MOB_High_Confidence_Profile_Both),
+    "any_mob_cluster_change", 25L,
+    "high_confidence_mob_profiles_only", 1920L
+  )
+)
+atomic_write_csv(
+  rq1_plasmid_primary,
+  file.path(rq, "plasmid_change_primary_inference.csv")
+)
+atomic_write_csv(
+  rq1_plasmid_thresholds,
+  file.path(rq, "plasmid_change_snp_threshold_sensitivity.csv")
+)
+atomic_write_csv(
+  rq1_plasmid_sensitivity,
+  file.path(rq, "plasmid_change_profile_sensitivity.csv")
+)
+
 p_rq1 <- ggplot(rq1_curve, aes(.data$days_between_samples, .data$predicted_probability)) +
   geom_rug(data = transitions, aes(x = .data$days_between_samples), inherit.aes = FALSE, alpha = 0.18) +
   geom_line(linewidth = 1, colour = "#1B6CA8") +
@@ -501,11 +681,45 @@ write_analysis_status(rq, "RQ02", "371 adjacent intervals: 322 routine-to-routin
 rq <- file.path(out_root, "RQ03")
 dir.create(rq, recursive = TRUE, showWarnings = FALSE)
 
+rq3_plasmid_path <- file.path(
+  project_root, "results", "plasmids", "mob_suite",
+  "not_uti_to_uti_plasmid_metrics_9.csv"
+)
+if (!file.exists(rq3_plasmid_path)) {
+  stop(
+    "RQ03 requires the validated nine-case predicted-plasmid table from ",
+    "numbered Script 29."
+  )
+}
+rq3_plasmid <- read_csv(
+  rq3_plasmid_path, show_col_types = FALSE, progress = FALSE
+) %>%
+  mutate(
+    Participant_id = as.character(Participant_id),
+    tp_from = normalise_timepoint_preserve_events(tp_from),
+    tp_to = normalise_timepoint_preserve_events(tp_to)
+  )
+if (
+  nrow(rq3_plasmid) != 9L ||
+    anyDuplicated(rq3_plasmid[c("Participant_id", "tp_from", "tp_to")])
+) {
+  stop("RQ03 predicted-plasmid table is not exactly nine unique transitions.")
+}
+
 rq3 <- transitions %>%
   filter(.data$status_from == "Not_UTI", .data$status_to == "UTI") %>%
+  left_join(
+    rq3_plasmid,
+    by = c("Participant_id", "tp_from", "tp_to"),
+    relationship = "one-to-one",
+    suffix = c("", "_plasmid")
+  ) %>%
   arrange(.data$collection_date_to, .data$days_between_samples, .data$TotalSNPs) %>%
   mutate(Case_ID = sprintf("Case_%02d", row_number()))
-stopifnot(nrow(rq3) == 9L, sum(rq3$close25) == 5L)
+stopifnot(
+  nrow(rq3) == 9L, sum(rq3$close25) == 5L,
+  all(rq3$TotalSNPs == rq3$TotalSNPs_plasmid)
+)
 
 bt <- binom.test(sum(rq3$close25), nrow(rq3))
 rq3_primary <- tibble(
@@ -542,10 +756,49 @@ rq3_case_table <- rq3 %>%
     days_between_samples = .data$days_between_samples,
     ST_concordant = !is.na(.data$ST_from) & !is.na(.data$ST_to) & as.character(.data$ST_from) == as.character(.data$ST_to),
     DNAdiff_SNPs = .data$TotalSNPs, Mash_distance = .data$MashDistance,
-    ANI_percent = .data$AvgIdentity, relatedness_classification = .data$Classification,
-    at_or_below_25_SNPs = .data$close25
+    ANI_percent = .data$AvgIdentity,
+    pair_interpretation = .data$pair_interpretation,
+    legacy_accessory_composite_classification = .data$Classification,
+    at_or_below_25_SNPs = .data$close25,
+    corrected_replicon_jaccard = .data$replicon_jaccard,
+    corrected_replicon_both_empty = .data$replicon_both_empty,
+    replicons_gained = coalesce(.data$replicons_gained, ""),
+    replicons_lost = coalesce(.data$replicons_lost, ""),
+    mob_cluster_jaccard = .data$mob_cluster_jaccard,
+    mob_cluster_both_empty = .data$mob_cluster_both_empty,
+    mob_clusters_gained = coalesce(.data$mob_clusters_gained, ""),
+    mob_clusters_lost = coalesce(.data$mob_clusters_lost, ""),
+    predicted_plasmid_count_from = .data$predicted_plasmid_count_from,
+    predicted_plasmid_count_to = .data$predicted_plasmid_count_to,
+    predicted_plasmid_count_difference =
+      .data$predicted_plasmid_count_difference,
+    plasmid_binned_vf_genes_gained =
+      coalesce(.data$plasmid_binned_vf_genes_gained, ""),
+    plasmid_binned_vf_genes_lost =
+      coalesce(.data$plasmid_binned_vf_genes_lost, ""),
+    plasmid_binned_informative_amr_genes_gained = coalesce(
+      .data$plasmid_binned_informative_amr_genes_gained, ""
+    ),
+    plasmid_binned_informative_amr_genes_lost = coalesce(
+      .data$plasmid_binned_informative_amr_genes_lost, ""
+    ),
+    mob_high_confidence_profiles_both =
+      .data$mob_high_confidence_profiles_both,
+    interpretation_scope =
+      "descriptive assembly-based plasmid predictions; no transfer or causal claim"
   )
 atomic_write_csv(rq3_case_table, file.path(rq, "deidentified_case_matrix.csv"))
+atomic_write_csv(
+  rq3_case_table %>%
+    select(
+      Case_ID, DNAdiff_SNPs, pair_interpretation,
+      starts_with("corrected_replicon"),
+      starts_with("replicons_"), starts_with("mob_"),
+      starts_with("predicted_plasmid"),
+      starts_with("plasmid_binned"), interpretation_scope
+    ),
+  file.path(rq, "deidentified_plasmid_mechanism_table.csv")
+)
 
 p_rq3 <- ggplot(rq3_case_table, aes(x = reorder(.data$Case_ID, .data$DNAdiff_SNPs),
                                     y = .data$DNAdiff_SNPs, fill = .data$at_or_below_25_SNPs)) +
@@ -556,6 +809,59 @@ p_rq3 <- ggplot(rq3_case_table, aes(x = reorder(.data$Case_ID, .data$DNAdiff_SNP
        caption = "Nine de-identified adjacent transitions; the 25-SNP line is an operational reference.") +
   theme_rq()
 atomic_ggsave(file.path(rq, "deidentified_case_snp_distances.png"), p_rq3, width = 7, height = 5)
+
+rq3_plasmid_plot <- rq3_case_table %>%
+  transmute(
+    Case_ID,
+    `Replicon profile` = if_else(
+      nzchar(replicons_gained) | nzchar(replicons_lost),
+      "Changed", "Stable"
+    ),
+    `MOB cluster profile` = if_else(
+      nzchar(mob_clusters_gained) | nzchar(mob_clusters_lost),
+      "Changed", "Stable"
+    ),
+    `Predicted plasmid count` = if_else(
+      predicted_plasmid_count_difference != 0,
+      "Changed", "Stable"
+    ),
+    `Plasmid-binned VF` = if_else(
+      nzchar(plasmid_binned_vf_genes_gained) |
+        nzchar(plasmid_binned_vf_genes_lost),
+      "Changed", "Stable"
+    ),
+    `Plasmid-binned AMR` = if_else(
+      nzchar(plasmid_binned_informative_amr_genes_gained) |
+        nzchar(plasmid_binned_informative_amr_genes_lost),
+      "Changed", "Stable"
+    )
+  ) %>%
+  pivot_longer(-Case_ID, names_to = "mechanism", values_to = "state") %>%
+  mutate(
+    Case_ID = factor(Case_ID, levels = rev(unique(Case_ID))),
+    state = factor(state, levels = c("Stable", "Changed"))
+  )
+p_rq3_plasmid <- ggplot(
+  rq3_plasmid_plot, aes(mechanism, Case_ID, fill = state)
+) +
+  geom_tile(colour = "white") +
+  geom_text(aes(label = state), size = 2.7) +
+  scale_fill_manual(values = c(Stable = "#DCE8F2", Changed = "#D55E00")) +
+  labs(
+    title = "Predicted plasmid mechanism context in nine transitions",
+    subtitle = "Deidentified descriptive cases; no regression is fitted",
+    x = NULL, y = NULL, fill = "Predicted state",
+    caption = paste(
+      "MOB bins and same-bin VF/AMR placement are assembly-based predictions;",
+      "they do not establish transfer, transmission or causality."
+    )
+  ) +
+  theme_rq() +
+  theme(axis.text.x = element_text(angle = 25, hjust = 1))
+atomic_ggsave(
+  file.path(rq, "deidentified_plasmid_mechanism.png"),
+  p_rq3_plasmid, width = 8.5, height = 5.5
+)
 
 atomic_write_lines(c(
   "RQ03 interpretation boundary",
@@ -572,7 +878,7 @@ write_analysis_status(rq, "RQ03", "9 adjacent Not_UTI-to-UTI comparisons from 9 
 rq <- file.path(out_root, "RQ04")
 dir.create(rq, recursive = TRUE, showWarnings = FALSE)
 
-phenotype <- status %>%
+phenotype <- analysis_status %>%
   mutate(
     current_symptom = .data$symptom_compatible_uti %in% TRUE,
     expanded_symptom = case_when(
@@ -610,7 +916,7 @@ rq4_summary <- bind_rows(lapply(seq_len(nrow(rule_grid)), function(i) {
     no_longer_uti_vs_primary = sum(!x & phenotype$UTI_Status == "UTI")
   )
 }))
-stopifnot(identical(rq4_summary$n_uti_episodes, c(18L, 18L, 17L, 20L, 20L, 19L)))
+stopifnot(identical(rq4_summary$n_uti_episodes, c(16L, 16L, 16L, 18L, 18L, 18L)))
 atomic_write_csv(rq4_summary, file.path(rq, "six_rule_summary.csv"))
 
 rq4_reclass <- bind_rows(lapply(names(rule_values), function(rule) {
@@ -667,7 +973,7 @@ atomic_write_lines(c(
 ), file.path(rq, "interpretation.txt"))
 write_common(rq, "RQ04_operational_phenotype_robustness", nrow(phenotype), n_distinct(phenotype$Participant_id),
              tibble(field = "case_table_privacy", value = "Episode movements use generated PhenotypeCase_ID"))
-write_analysis_status(rq, "RQ04", "583 eligible E. coli-positive episodes from 166 residents")
+write_analysis_status(rq, "RQ04", "532 Longcycler-linked episodes from 161 residents")
 
 # -----------------------------------------------------------------------------
 # RQ05 -- Selection into the genomic analysis
@@ -732,10 +1038,17 @@ atomic_ggsave(file.path(rq, "wgs_selection_by_status.png"), p_rq5, width = 6.5, 
 
 atomic_write_lines(c(
   "RQ05 interpretation boundary",
-  "This analysis assesses differential inclusion in the genomic subset.",
+  "This is a non-analytical attrition and selection-quality audit.",
+  "The full clinical source cohort appears here only to account for selection into the 532-episode Longcycler-linked analysis cohort.",
   "Batch, event type, and collection method summaries are missingness diagnostics, not causal adjustment models."
 ), file.path(rq, "interpretation.txt"))
-write_common(rq, "RQ05_WGS_selection_by_operational_status", nrow(selection), n_distinct(selection$Participant_id))
-write_analysis_status(rq, "RQ05", "583 eligible episodes; 532 selected QC-passing Longcycler genomes")
+write_common(
+  rq,
+  "RQ05_non_analytical_selection_attrition_audit",
+  nrow(selection),
+  n_distinct(selection$Participant_id),
+  tibble(field = "analysis_role", value = "attrition/QC only; not an analytical denominator")
+)
+write_analysis_status(rq, "RQ05", "attrition/QC audit: 583 source episodes to 532 Longcycler-linked episodes")
 
 message("RQ01--RQ05 analyses complete.")

@@ -1,8 +1,8 @@
 #!/usr/bin/env Rscript
 
-# Compare Longcycler-local MLST calls with Longcycler provider SeqSphere/wgMLST
-# calls. Flye provider rows are inventoried as excluded audit evidence but can
-# never enter provider_mlst_normalized.csv, the active integration input.
+# Compare Longcycler-local MLST calls with explicitly source-labelled
+# Longcycler provider SeqSphere/wgMLST calls linked to the exact selected
+# Longcycler manifest key and FASTA path/SHA-256.
 
 suppressPackageStartupMessages({
   library(dplyr)
@@ -16,30 +16,26 @@ suppressPackageStartupMessages({
 if (!file.exists("00_config.R")) {
   stop("Run this script from the project root: /Users/Aamir/Desktop/rUTIs")
 }
+source("00_config.R")
 
 out_dir <- file.path("results", "mlst_source_comparison")
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
+legacy_excluded_audit <- file.path(out_dir, "provider_mlst_non_longcycler_excluded.csv")
+if (file.exists(legacy_excluded_audit)) unlink(legacy_excluded_audit)
 
-local_mlst_path <- file.path("results", "mlst", "mlst_with_meta.csv")
-canonical_path <- file.path("results", "qc", "canonical_assembly_selection.csv")
+local_mlst_path <- FILE_MLST_LOCAL_CANONICAL
+canonical_path <- FILE_ANALYSIS_ASSEMBLY_MANIFEST
 
 provider_files <- tibble(
   provider_source = c(
     "batch1_2_first_158_bsr_mlst",
     "batch1_2_repeat_34_bsr_mlst",
     "batch3_seqsphere_bsr_mlst",
-    "batch4_6_bsr_mlst_longcycler",
-    "batch4_6_bsr_mlst_flye"
+    "batch4_6_bsr_mlst_longcycler"
   ),
-  provider_scope = c("Batch1+2 first 158", "Batch1+2 repeat 34", "Batch3", "Batch4-6", "Batch4-6"),
-  expected_batches = c("1;2", "1;2", "3", "4;5;6", "4;5;6"),
-  provider_role = c(
-    "active_mixed_file_row_filtered",
-    "active_mixed_file_row_filtered",
-    "active_mixed_file_row_filtered",
-    "active_longcycler_file",
-    "audit_only_flye_file"
-  ),
+  provider_scope = c("Batch1+2 first 158", "Batch1+2 repeat 34", "Batch3", "Batch4-6"),
+  expected_batches = c("1;2", "1;2", "3", "4;5;6"),
+  provider_role = rep("selected_manifest_key_linked", 4),
   provider_path = c(
     file.path(
       "archive", "cleanup_2026-05-14", "put_away_later", "zipped files",
@@ -56,10 +52,6 @@ provider_files <- tibble(
     file.path(
       "archive", "cleanup_2026-05-14", "put_away_later", "zipped files",
       "batch4-6", "wgMLST", "wgMLST-Eco-BSR_MLST_longcycler.csv"
-    ),
-    file.path(
-      "archive", "cleanup_2026-05-14", "put_away_later", "zipped files",
-      "batch4-6", "wgMLST", "wgMLST-Eco-BSR_MLST_flye.csv"
     )
   )
 )
@@ -161,8 +153,7 @@ provider_file_inventory <- provider_files %>%
   )
 write_csv(provider_file_inventory, file.path(out_dir, "provider_file_inventory.csv"))
 
-required_provider_missing <- provider_file_inventory %>%
-  filter(provider_role != "audit_only_flye_file", !exists)
+required_provider_missing <- provider_file_inventory %>% filter(!exists)
 if (nrow(required_provider_missing) > 0) {
   stop(
     "One or more Longcycler-eligible provider source files are missing. See ",
@@ -174,7 +165,7 @@ if (!file.exists(canonical_path)) {
   stop("Canonical assembly selection is mandatory: ", canonical_path)
 }
 
-canonical_all <- read_csv(canonical_path, show_col_types = FALSE)
+canonical_all <- load_analysis_assemblies(canonical_path, require_files = TRUE)
 required_canonical_cols <- c(
   "Batch", "Participant_id", "tp_lab", "Isolate_ID", "Assembly_ID",
   "selected_canonical", "QC_PASS", "full_path"
@@ -202,7 +193,8 @@ canonical_all <- canonical_all %>%
     Participant_id = as.character(Participant_id),
     tp_lab = as.character(tp_lab),
     Isolate_ID = as.character(Isolate_ID),
-    full_path = normalizePath(as.character(full_path), winslash = "/", mustWork = FALSE)
+    full_path = normalizePath(as.character(full_path), winslash = "/", mustWork = TRUE),
+    fasta_sha256 = vapply(full_path, digest::digest, character(1), algo = "sha256", file = TRUE)
   )
 
 canonical <- canonical_all %>%
@@ -227,7 +219,7 @@ if (anyDuplicated(canonical$canonical_norm_id)) {
 canonical <- canonical %>%
   select(
     Batch, Participant_id, tp_lab, Isolate_ID, Assembly_ID, Assembly_Base_ID,
-    canonical_norm_id, canonical_assembler, file_name, full_path
+    canonical_norm_id, canonical_assembler, file_name, full_path, fasta_sha256
   )
 
 if (!file.exists(local_mlst_path)) {
@@ -294,38 +286,27 @@ provider_raw_all <- provider_file_inventory %>%
   select(provider_source, provider_scope, expected_batches, provider_role, provider_path) %>%
   pmap_dfr(read_provider_file)
 
-provider_excluded <- provider_raw_all %>%
-  filter(is.na(provider_assembler) | provider_assembler != "longcycler") %>%
-  mutate(
-    exclusion_reason = case_when(
-      provider_assembler == "flye" ~ "Flye provider result excluded from Longcycler-only MLST",
-      TRUE ~ "Unknown provider assembler excluded from Longcycler-only MLST"
-    )
-  )
-write_csv(provider_excluded, file.path(out_dir, "provider_mlst_non_longcycler_excluded.csv"))
-
 provider_raw <- provider_raw_all %>%
   filter(provider_assembler == "longcycler")
-if (nrow(provider_raw) == 0) stop("No Longcycler provider MLST rows were found.")
-if (any(provider_raw$provider_assembler != "longcycler")) {
-  stop("Internal error: non-Longcycler provider row survived the active filter.")
+if (nrow(provider_raw) == 0) stop("No explicitly source-labelled Longcycler provider MLST rows were found.")
+if (any(is.na(provider_raw$provider_assembler) | provider_raw$provider_assembler != "longcycler")) {
+  stop("Internal error: a non-Longcycler or missing source label survived provider filtering.")
 }
 
 canonical_lookup <- canonical %>%
   select(
     canonical_norm_id, Batch, Participant_id, tp_lab, Isolate_ID, Assembly_ID,
-    Assembly_Base_ID, canonical_assembler
+    Assembly_Base_ID, canonical_assembler, file_name, full_path, fasta_sha256
   )
 
 provider_normalized <- provider_raw %>%
-  left_join(canonical_lookup, by = c("provider_norm_id" = "canonical_norm_id")) %>%
+  inner_join(canonical_lookup, by = c("provider_norm_id" = "canonical_norm_id")) %>%
   left_join(
     canonical_local %>% select(canonical_norm_id, canonical_assembler, local_ST, local_scheme),
     by = c("provider_norm_id" = "canonical_norm_id")
   ) %>%
   mutate(
-    assembler_matches_canonical = !is.na(canonical_assembler.x) &
-      !is.na(canonical_assembler.y) &
+    assembler_matches_canonical = provider_assembler == "longcycler" &
       provider_assembler == canonical_assembler.x &
       provider_assembler == canonical_assembler.y,
     matched_canonical = !is.na(Isolate_ID) & assembler_matches_canonical,
@@ -336,7 +317,8 @@ provider_normalized <- provider_raw %>%
       TRUE ~ FALSE
     ),
     canonical_assembler = coalesce(canonical_assembler.x, canonical_assembler.y),
-    provider_scheme_note = "Active provider rows are Longcycler-only and matched to a selected QC-passing Longcycler canonical isolate; local-vs-provider numeric equality is not assumed."
+    provider_match_basis = "explicit_source_longcycler_label_plus_unique_selected_manifest_normalized_key;current_manifest_path_sha256_attached_after_match",
+    provider_scheme_note = "Provider rows require an explicit Longcycler source label and a unique selected-manifest key match. Current path/SHA-256 provenance is attached after that match and does not independently prove the bytes analysed externally. Provider ST is the classic seven-locus call emitted alongside SeqSphere wgMLST results."
   ) %>%
   select(
     provider_source, provider_scope, expected_batches, provider_role, provider_file, provider_path,
@@ -344,13 +326,23 @@ provider_normalized <- provider_raw %>%
     provider_CC, provider_Profile, provider_PercGoodTargets, provider_qc_ge_90,
     provider_qc_ge_95, provider_ST_called, provider_has_classic_7_loci,
     provider_delimiter, matched_canonical, assembler_matches_canonical, expected_batch_match, Batch,
-    Participant_id, tp_lab, Isolate_ID, Assembly_ID, Assembly_Base_ID,
+    Participant_id, tp_lab, Isolate_ID, Assembly_ID, Assembly_Base_ID, file_name, full_path, fasta_sha256,
     canonical_assembler, local_ST, local_scheme, provider_scheme_note,
+    provider_match_basis,
     provider_n_rows_in_file, provider_n_cols_in_file
   )
 
 if (any(provider_normalized$provider_assembler != "longcycler")) {
   stop("Active provider-normalized MLST contains non-Longcycler provenance.")
+}
+if (anyDuplicated(provider_normalized$provider_norm_id)) {
+  stop("Active provider-normalized MLST contains duplicate selected-manifest keys.")
+}
+if (
+  nrow(provider_normalized) != nrow(canonical) ||
+    !setequal(provider_normalized$provider_norm_id, canonical$canonical_norm_id)
+) {
+  stop("Active provider-normalized rows do not exactly cover the selected Longcycler manifest keys.")
 }
 matched_provider <- provider_normalized %>% filter(matched_canonical)
 if (nrow(matched_provider) > 0 && any(matched_provider$canonical_assembler != "longcycler")) {
@@ -702,9 +694,8 @@ summary_lines <- c(
   "",
   "## Caveats",
   "",
-  "- Active coverage and integration use only provider rows explicitly labelled `longcycler` and matched to the selected QC-passing Longcycler canonical manifest.",
-  "- Flye and unknown-assembler provider rows are excluded from active normalization and retained only in `provider_mlst_non_longcycler_excluded.csv`.",
-  "- Provider and local numeric ST labels may use different E. coli MLST schemes/nomenclature. Numeric ST disagreement is therefore reported as an audit note, not as an automatic error.",
+  "- Active coverage and integration use only explicitly source-labelled Longcycler provider rows with a unique selected-manifest key match. Current FASTA path/SHA-256 provenance is attached after matching; it does not independently prove the bytes analysed externally.",
+  "- Provider and local ST labels are accepted into one active classic seven-locus layer only when all dual-usable calls agree; the integration gate fails on any discordance.",
   "- The primary coverage comparison is isolate-level: a usable ST is any non-missing ST after treating `\"\"`, `-`, `?`, and `NA`-like values as missing.",
   "- Provider calls with `PercGoodTargets >= 95` are treated as the default high-confidence provider calls.",
   "- This audit does not switch pipeline source files or overwrite `results/mlst/mlst_with_meta.csv`.",
@@ -712,7 +703,6 @@ summary_lines <- c(
   "## Output Files",
   "",
   "- `provider_mlst_normalized.csv`",
-  "- `provider_mlst_non_longcycler_excluded.csv`",
   "- `mlst_coverage_by_batch.csv`",
   "- `mlst_coverage_by_qc_threshold.csv`",
   "- `mlst_rescue_cases.csv`",

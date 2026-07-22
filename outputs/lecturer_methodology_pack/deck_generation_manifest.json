@@ -1,0 +1,37 @@
+{
+  "schema_version": "lecturer_methodology_pack_v2",
+  "generated_at": "2026-07-15 01:36:53 CEST",
+  "source_registry": "/Users/Aamir/Desktop/rUTIs/results/pipeline/longcycler_release_claim_registry.json",
+  "source_registry_sha256": "87f65979259a4c92545afbb74b5d3a8efffb8a3d18cd2481df165b97e5c6d30e",
+  "analysis_scope": {
+    "assembly_policy": "selected QC-passing Longcycler only",
+    "clinical_phenotype": "operational UTI phenotype",
+    "clinical_definition_version": "catheter_adjusted_sns_cfu1e3_v1",
+    "interpretation": "exploratory observational analysis; no causal claim"
+  },
+  "analytical_cohort": {
+    "episodes": 532,
+    "residents": 161,
+    "operational_UTI": 16,
+    "operational_Not_UTI": 516
+  },
+  "research_questions": {
+    "first": "RQ01",
+    "last": "RQ10",
+    "count": 10,
+    "retired_questions": 0
+  },
+  "deck": {
+    "file": "rUTI_complete_methodology_for_lecturer.pptx",
+    "slides": 8,
+    "sha256": "0b77c2a99a37707cd4b188d1c4008600ec6febd44a9889c662934300ad0b59af"
+  },
+  "template_contract": "eight same-numbered source slides cloned; inherited text rewritten; geometry unchanged",
+  "qa": [
+    "template plan validated",
+    "template fidelity passed",
+    "slide bounds passed",
+    "empty-placeholder check passed",
+    "package-content guard passed"
+  ]
+}

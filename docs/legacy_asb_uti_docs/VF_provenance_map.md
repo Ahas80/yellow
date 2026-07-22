@@ -1,68 +1,50 @@
-# VF Provenance Map
+# Current VF provenance map
 
-## VF Detection Method
+This file's location is retained for links, but its content describes only the active Longcycler-only operational-phenotype release.
 
-| Parameter | Value |
-|-----------|-------|
-| Tool | **Abricate** |
-| Database | **VFDB** (Virulence Factor Database) |
-| Min Identity | 80% |
-| Min Coverage | 80% |
-| Script | [02_gene_presence_analysis.R](file:///Users/Aamir/Desktop/rUTIs/02_gene_presence_analysis.R) |
-| Cache format | `{basename}.vfdb.id80.cov80.tsv` |
-
-## Data Flow
+## Data flow
 
 ```mermaid
-graph TD
-    A["ONT FASTA assemblies<br>(ont-yellow-routine-fastas/)"] --> B["Abricate VFDB scan<br>(02_gene_presence_analysis.R)"]
-    B --> C["Per-assembly TSV cache<br>(results/vf/abricate/*.tsv)"]
-    C --> D["vf_hits_all.rds<br>(long table: 1 row per gene hit)"]
-    D --> E["vf_pa_all.csv<br>(P/A matrix: Participant×Timepoint)"]
-    D --> F["04_gene_breakdown.R"]
-    F --> G["gene_map.csv<br>(Gene → Category mapping)"]
-    F --> H["annotated_gene_table.csv<br>(hits + Category/Subcategory)"]
-    F --> I["diff_focus_genes_UTI_vs_ASB_glmm.csv"]
-    E --> J["16_within_host_evolution.R<br>(VF gain/loss for switch pairs)"]
-    E --> K["11_compare_strains.R<br>(Jaccard similarity)"]
-    H --> L["get_stratified_vf_stats.R"]
-    D --> M["14_genotype_phenotype_model.R<br>(GLMM: VF → UTI)"]
+flowchart LR
+  A[Selected cohort keys] --> B[Selected Longcycler FASTA manifest and SHA-256]
+  B --> C[ABRicate VFDB calls]
+  C --> D[Binary VF matrix]
+  D --> E[RQ06-RQ08 exploratory analyses]
+  B --> F[Direct pair evidence]
+  F --> E
 ```
 
-## Key Files
+## Provenance rule
 
-| File | Path | Rows | Cols | Key Columns | Role |
-|------|------|------|------|-------------|------|
-| VF hits (long) | `results/vf/vf_hits_all.rds` | ~22K | many | Participant_id, Timepoint, GENE | Raw Abricate output, unnested |
-| VF P/A matrix | `results/vf/vf_pa_all.csv` | 183 | 166 | Participant_id, tp_lab, +164 gene cols | **Primary anchor**: binary VF presence |
-| Gene map | `results/vf/gene_map.csv` | 209 | 3 | Gene, Category, Subcategory | Heuristic annotation |
-| Annotated hits | `results/vf/annotated_gene_table.csv` | 22,102 | 24 | Isolate_ID, Gene, Category | Full hits with categories |
-| Gene stats | `results/vf/stats_gene_level.csv` | 164 | 2 | GENE, n_participants | Per-gene prevalence |
-| GLMM results | `results/vf/diff_focus_genes_UTI_vs_ASB_glmm.csv` | 7 | 12 | Gene, OR, p | Focus gene GLMM |
-| Abricate cache | `results/vf/abricate/` | ~100 files | — | — | Per-assembly TSVs |
+A VF row is publishable only when its participant-timepoint key and selected FASTA content hash remain within the analytical manifest.
 
-## VF Recognition Logic (from script reading)
+## Audited release contract
 
-1. **Assembly input**: All FASTAs in `ont-yellow-routine-fastas/` — 382 assemblies, **all *E. coli*** (confirmed from `assembly_metadata.csv` Organism column: 382/382 = "Escherichia coli")
-2. **Abricate call**: `abricate --quiet --db vfdb --mincov 80 --minid 80 {fasta} > {cache}` — run in parallel via `furrr::future_map`
-3. **Gene column standardization**: Script checks for GENE/GENE_NAME/NAME/PRODUCT columns in Abricate output
-4. **P/A matrix construction**: `distinct(Participant_id, tp_lab, GENE)` then `pivot_wider` — if a gene is detected in *any* assembler (flye or longcycler) for a participant-timepoint, it is marked present
-5. **Category annotation**: `04_gene_breakdown.R` uses heuristic regex patterns to categorize genes:
-   - `^(fim|fml|pil|foc|sfa|pap|afa|dra|cfa)` → Adhesion/Fimbriae
-   - `^(kps|kfi|neu|ugd|rmpA|caps|wzx|wzy)` → Capsule/Surface
-   - `^(iut|iuc|iro|irp|fyuA|chu|fep|ent|fec|ybt)` → Iron acquisition
-   - `^(hly|cnf|sat|vat|cdt|astA|subAB|stx|lt|st)` → Toxins
-   - `^(omp|iss|ibe|tra|usp|malX)` → Invasion/Evasion
-   - Anything else → Unassigned
+- Scope: Longcycler-only selected QC-passing assemblies; one selected assembly per analytical episode.
+- Clinical definition: operational UTI phenotype. It is a versioned culture-plus-compatible-symptom rule, not a reconstruction of the full published protocol.
+- Analytical cohort: 532/161/16/516 (episodes/residents/operational UTI/operational Not_UTI).
+- Direct evidence: 893 all within-resident pairs.
+- Adjacent evidence: 371/139/140 (pairs/residents/pairs at or below 25 SNP).
+- Focused transitions: 9 Not_UTI -> UTI; 5/9 at or below 25 SNP.
+- Mechanism casebook: 9/9/0 (cases/linked/missing).
+- Near-miss audit: 17 rows; these are not operational UTI cases.
+- Attrition/QC context only: 583/166/18/565 (full-source episodes/residents/operational UTI/operational Not_UTI); these are not analytical denominators.
+- Research-question boundary: RQ01-RQ10 only.
+- Interpretation: exploratory, observational and non-causal.
 
-## Downstream Consumers
+## Methods fixed by the registry
 
-| Script | Reads | Purpose |
-|--------|-------|---------|
-| `04_gene_breakdown.R` | `vf_hits_all.rds` | Annotate genes, GLMM focus gene analysis |
-| `05_gene_overview_plots.R` | `vf_pa_all.csv` | VF prevalence barplots, heatmaps |
-| `11_compare_strains.R` | `vf_pa_all.csv` | Pairwise VF Jaccard similarity |
-| `14_genotype_phenotype_model.R` | `vf_hits_all.rds` | GLMM genotype-phenotype model |
-| `16_within_host_evolution.R` | `vf_pa_all.csv` | VF gain/loss for phenotype-switch pairs |
-| `get_stratified_vf_stats.R` | `annotated_gene_table.csv` | Stratified VF burden stats |
-| `compute_vf_abstract_stats.R` | `vf_pa_all.csv`, `gene_map.csv` | **This analysis** |
+- Operational phenotype: culture lower bound >=1,000 CFU/mL plus compatible symptoms under the versioned rule.
+- Assembly QC: <=200 contigs, N50 >=20,000 bp and genome size 4,000,000-6,000,000 bp; read coverage, completeness and contamination are excluded metrics.
+- VF calls: ABRicate with VFDB at >=80% identity and >=80% coverage, SHA-bound to the selected Longcycler FASTA manifest.
+- MLST: lineage context only; provider calls require >=95% good targets. Policy: provider_qc95 call key/path-linked to the selected Longcycler episode; local fallback excluded. When required, local calls are labelled and use the same selected FASTA.
+- Pair-specific evidence: dnadiff is primary, with an operational threshold of <=25 SNP; MLST or graph context cannot overrule a conflicting direct pair.
+- Population context: Parsnp core-genome and Panaroo pangenome outputs provide context, not pair-specific continuity proof.
+
+## Provenance
+
+- Claim registry: `results/pipeline/longcycler_release_claim_registry.json`
+- Registry SHA-256: `87f65979259a4c92545afbb74b5d3a8efffb8a3d18cd2481df165b97e5c6d30e`
+- Registry generated: 2026-07-15 01:36:53 CEST
+- This file is generated; edit the registry-producing analysis or this writer rather than hand-editing release claims.
+

@@ -5,7 +5,8 @@ This document explains what happens in the analysis pipeline in simple bullet po
 ## Sources Used
 
 - Main run order: `RUN_COMPLETE_ANALYSIS.sh`
-- Pipeline explanations: `docs/pipeline_architecture.md`, `docs/workflow_flowchart.md`, `docs/workflow_output_catalog.md`, `docs/analysis_outputs_guide.md`, `docs/methods_draft.md`
+- Current pipeline explanations: `FOLDER_MAP.md`, `docs/LECTURER_README.md`, `docs/pipeline_architecture.md`, `docs/workflow_flowchart.md`, and `docs/workflow_output_catalog.md`
+- Superseded drafts and older output guidance are retained under `docs/legacy_asb_uti_docs/superseded_2025_2026/` for historical reference only.
 - Shared setup and helper files: `00_config.R`, `R/clinical_helpers.R`, `R/wgs_helpers.R`, `R/pipeline_qc_helpers.R`, `R/plot_helpers.R`, `11_compare_strains_helpers.R`
 - WGS prerequisite files: `00_make_assembly_metadata.r`, `assembly_metadata.csv`
 - Clinical runner scripts: `00a_load_clean_clinical.R`, `00b_classify_episodes.R`, `00d_derive_plot_timepoints.R`, `00c_plot_clinical_summary.R`
@@ -611,27 +612,53 @@ This document explains what happens in the analysis pipeline in simple bullet po
 - Why it matters:
   - This creates a clinical-first view of what changed around important transitions.
 
-### Step 33: Add plasmid or AMR context
+### Step 33: Run genomic AMR and integrate VF/plasmid context
 
 - Script/tool: `29_vf_amr_combined_profile.R`
 - What goes in:
   - VF-ready data.
   - VF endpoint tables.
   - Plasmid/replicon tables.
-  - AMR outputs if true AMR screening files exist.
+  - The exact 532 selected Longcycler FASTAs and matched Prokka annotations.
+  - The canonical 371 adjacent-pair table.
 - What happens:
-  - The script checks whether true AMR data are present.
-  - If not, it clearly treats the output as VF plus plasmid context, not true AMR.
-  - Replicon burden, VF/plasmid profiles, and correlations are summarized.
+  - SHA-bound ABRicate-ResFinder, AMRFinderPlus 4.2.7 and
+    ResFinder/PointFinder 4.7.2 calls are run or reused from valid caches.
+  - AMRFinderPlus uses Prokka annotation mode, organism `Escherichia`, and the
+    pinned project-local database recorded under `data/amr_runtime/databases`.
+  - AMRFinderPlus acquired genes and known mutations define the primary profile.
+  - Calls are harmonized and discrepancies are audited without a voting rule.
+  - Episode/resident prevalence and all 371 adjacent-pair profiles are built.
+  - The ≤25 versus >25 SNP comparison uses 10,000 resident bootstraps and
+    time-between-samples adjustment.
+  - The nine Not_UTI-to-UTI transitions are described without regression.
+  - VF and plasmid context are joined to the validated episode AMR profiles.
 - What comes out:
+  - `results/amr/episode_amr_profiles.csv`
+  - `results/amr/resident_amr_profiles.csv`
+  - `results/amr/harmonized_determinants_long.csv`
+  - `results/amr/caller_coverage_summary.csv`
+  - `results/amr/gene_prevalence_episode_resident.csv`
+  - `results/amr/class_prevalence_episode_resident.csv`
+  - `results/amr/mutation_prevalence_episode_resident.csv`
+  - `results/amr/resfinder_predicted_phenotypes_genomic_not_ast.csv`
+  - `results/amr/adjacent_pair_amr_profiles_371.csv`
+  - `results/amr/not_uti_to_uti_amr_profiles_9.csv`
+  - `results/amr/longitudinal_resident_bootstrap_inference.csv`
+  - `results/amr/validation_checks.csv`
+  - `results/amr/interpretation_report.md`
+  - `results/summary/table_13_genomic_amr_summary.csv`
   - `results/vf_amr/vf_amr_input_availability_report.txt`
   - `results/vf_amr/vf_plasmid_combined_profile.csv`
   - `results/vf_amr/vf_amr_combined_profile_table.csv`
   - Plasmid/AMR-context plots.
 - Why it matters:
-  - This checks whether accessory genome or AMR context helps explain VF/status patterns.
+  - This adds genomic resistance mechanism and longitudinal context to RQ01-RQ10
+    without creating another research question.
 - Guardrail:
-  - The script does not invent AMR data.
+  - `mdf(A)` is retained raw and in sensitivity metrics but excluded from
+    primary acquired-gene burden, gain/loss and Jaccard calculations.
+  - These are genomic predictions, not phenotypic AST.
 
 ### Step 34: Diagnose the UTI versus Not_UTI denominator
 
@@ -667,10 +694,10 @@ This document explains what happens in the analysis pipeline in simple bullet po
   - Host context.
   - Variant annotations.
   - Panaroo accessory gene data.
-  - Plasmid context and optional AMR data.
+  - Plasmid context and validated script-29 AMR profiles.
 - What happens:
   - Not_UTI -> UTI transitions are organized into evidence buckets.
-  - Host, strain, VF, module, accessory-gene, plasmid, variant, and optional AMR evidence are combined.
+  - Host, strain, VF, module, accessory-gene, plasmid, variant, and validated genomic-AMR evidence are combined.
   - A readable casebook is written.
 - What comes out:
   - `results/mechanism/not_uti_to_uti_casebook.csv`
@@ -866,7 +893,8 @@ This document explains what happens in the analysis pipeline in simple bullet po
 - Display-only Uricult/poster timepoints are for visual explanation, not modelling.
 - Many VF status tests are exploratory because UTI counts are sparse and repeated participant episodes are not independent.
 - Participant-aware GLMMs and sensitivity analyses are used where possible, but sparse-data caveats still apply.
-- AMR is only interpreted when true AMR screening output exists; otherwise outputs are VF plus plasmid context.
+- Script 29 requires complete genomic-AMR profiles for all 532 assemblies;
+  genomic determinants and predicted phenotypes are not measured susceptibility.
 
 ## One-Sentence Version
 

@@ -3,7 +3,7 @@
 # ==============================================================================
 # RQ06-RQ08: VF stability, event-sample VF burden, and ST proxy performance
 # ==============================================================================
-# This module is deliberately isolated from the legacy 556-genome outputs.
+# This module is isolated from superseded output generations.
 # It rebuilds VFDB calls for the authoritative 532-row Longcycler manifest,
 # binds every cache entry to the FASTA SHA-256 and VFDB/tool settings, and only
 # uses pairwise rows whose endpoint paths and SHA-256 values match that manifest.
@@ -45,9 +45,13 @@ EXPECTED_EVENT_NOT_UTI <- 17L
 EXPECTED_PAIRED_RESIDENTS <- 12L
 VFDB_MIN_ID <- 80
 VFDB_MIN_COV <- 80
-BOOT_REPS <- suppressWarnings(as.integer(Sys.getenv("RQ_BOOT_REPS", "2000")))
-if (is.na(BOOT_REPS) || BOOT_REPS < 200L) BOOT_REPS <- 2000L
-RQ_SEED <- 20260712L
+PROVIDER_MLST_MIN_GOOD_TARGETS <- 95
+BOOT_REPS <- suppressWarnings(as.integer(Sys.getenv("RQ_BOOTSTRAP_REPS", "10000")))
+if (is.na(BOOT_REPS) || BOOT_REPS < 100L) {
+  stop("RQ_BOOTSTRAP_REPS must be at least 100.", call. = FALSE)
+}
+RQ_SEED <- suppressWarnings(as.integer(Sys.getenv("RQ_SEED", "20260712")))
+if (is.na(RQ_SEED)) RQ_SEED <- 20260712L
 RQ_WORKERS <- suppressWarnings(as.integer(Sys.getenv("RQ_WORKERS", "8")))
 if (is.na(RQ_WORKERS) || RQ_WORKERS < 1L) RQ_WORKERS <- 1L
 detected_cores <- suppressWarnings(parallel::detectCores(logical = FALSE))
@@ -463,6 +467,30 @@ vfdb_run_list <- if (.Platform$OS.type == "unix" && RQ_WORKERS > 1L) {
   lapply(seq_len(nrow(manifest)), run_vfdb_one)
 }
 vfdb_run <- bind_rows(vfdb_run_list)
+
+# ABRicate can fail transiently under a large parallel launch. Retry only failed
+# calls once, sequentially, while preserving both attempt statuses for audit.
+retry_keys <- vfdb_run %>%
+  filter(.data$call_status == "error") %>%
+  pull(.data$episode_key)
+if (length(retry_keys)) {
+  messagef("Retrying %d transient VFDB call(s) sequentially", length(retry_keys))
+  retry_idx <- match(retry_keys, manifest$episode_key)
+  retry_run <- bind_rows(lapply(retry_idx, run_vfdb_one))
+  atomic_write_csv(
+    bind_rows(
+      vfdb_run %>%
+        filter(.data$episode_key %in% retry_keys) %>%
+        mutate(attempt = "parallel_initial"),
+      retry_run %>% mutate(attempt = "sequential_retry")
+    ),
+    file.path(dir_inputs, "vfdb_retry_diagnostics.csv")
+  )
+  vfdb_run <- bind_rows(
+    vfdb_run %>% filter(!.data$episode_key %in% retry_keys),
+    retry_run
+  ) %>% arrange(match(.data$episode_key, manifest$episode_key))
+}
 atomic_write_csv(vfdb_run, file.path(dir_inputs, "vfdb_run_manifest_532.csv"))
 if (nrow(vfdb_run) != EXPECTED_EPISODES || any(vfdb_run$call_status == "error")) {
   block("vfdb_complete", "532 successful explicit hit/zero-hit results",
@@ -494,7 +522,14 @@ read_vfdb_tab <- function(tab_path, episode_key_value, pid, tp, assembly_id, fas
 }
 
 vf_hits <- pmap_dfr(
-  vfdb_run %>% select(cache_file, episode_key, Participant_id, tp_lab, Assembly_ID, fasta_sha256),
+  vfdb_run %>% transmute(
+    tab_path = cache_file,
+    episode_key_value = episode_key,
+    pid = Participant_id,
+    tp = tp_lab,
+    assembly_id = Assembly_ID,
+    fasta_sha = fasta_sha256
+  ),
   read_vfdb_tab
 )
 if (nrow(vf_hits) && any(is.na(vf_hits$GENE) | !nzchar(trimws(vf_hits$GENE)))) {
@@ -624,7 +659,13 @@ require_columns(
   pairwise,
   c("Participant_id_A", "Timepoint_A", "Participant_id_B", "Timepoint_B",
     "Fasta_path_A", "Fasta_path_B", "Fasta_SHA256_A", "Fasta_SHA256_B",
-    "TotalSNPs", "MashDistance", "VF_Jaccard"),
+    "TotalSNPs", "MashDistance", "VF_Jaccard",
+    "Replicon_Jaccard", "Replicon_Both_Empty",
+    "Replicon_Profile_Available", "MOB_Cluster_Jaccard",
+    "MOB_Cluster_Both_Empty", "MOB_Profile_Available",
+    "Predicted_Plasmid_Count_A", "Predicted_Plasmid_Count_B",
+    "MOB_High_Confidence_Profile_Both", "strict_same_strain",
+    "pair_interpretation"),
   "pairwise_metrics"
 )
 pairwise <- pairwise %>%
@@ -659,13 +700,12 @@ record_check("pairwise_endpoint_identity", "PASS", EXPECTED_ALL_PAIRS, sum(endpo
              "Every endpoint path and SHA-256 equals the selected FASTA")
 
 mlst <- read_csv(path_mlst, show_col_types = FALSE, progress = FALSE)
-require_columns(mlst, c("full_path", "ST_source", "ST_provider", "provider_assembler"), "provider_mlst")
+require_columns(mlst, c("full_path", "ST_source", "ST_provider"), "provider_mlst")
 mlst <- mlst %>%
   mutate(
     full_path = norm_path(full_path, must_work = FALSE),
     ST_source = as.character(ST_source),
-    ST_provider = as.character(ST_provider),
-    provider_assembler = str_to_lower(as.character(provider_assembler))
+    ST_provider = as.character(ST_provider)
   ) %>%
   filter(full_path %in% episode$full_path)
 if (anyDuplicated(mlst$full_path)) {
@@ -674,11 +714,14 @@ if (anyDuplicated(mlst$full_path)) {
 }
 provider_map <- episode %>%
   select(episode_key, full_path) %>%
-  left_join(mlst %>% select(full_path, ST_source, ST_provider, provider_assembler),
+  left_join(mlst %>% select(full_path, ST_source, ST_provider),
             by = "full_path", relationship = "one-to-one") %>%
   mutate(
-    provider_ST = if_else(ST_source == "provider_qc95" & provider_assembler == "longcycler" &
-                            !is.na(ST_provider) & nzchar(ST_provider), ST_provider, NA_character_)
+    provider_ST = if_else(
+      ST_source == "provider_qc95" & !is.na(ST_provider) & nzchar(ST_provider),
+      ST_provider,
+      NA_character_
+    )
   )
 record_check("provider_mlst_unique_path", "PASS", "unique selected paths", nrow(mlst),
              paste(sum(!is.na(provider_map$provider_ST)), "provider-only typed episodes"))
@@ -689,7 +732,19 @@ pair_dat <- pairwise %>%
     key_A, key_B, pair_id,
     TotalSNPs = as.numeric(TotalSNPs),
     MashDistance = as.numeric(MashDistance),
-    pairwise_VF_Jaccard = as.numeric(VF_Jaccard)
+    pairwise_VF_Jaccard = as.numeric(VF_Jaccard),
+    Replicon_Jaccard = as.numeric(Replicon_Jaccard),
+    Replicon_Both_Empty = as_bool(Replicon_Both_Empty),
+    Replicon_Profile_Available = as_bool(Replicon_Profile_Available),
+    MOB_Cluster_Jaccard = as.numeric(MOB_Cluster_Jaccard),
+    MOB_Cluster_Both_Empty = as_bool(MOB_Cluster_Both_Empty),
+    MOB_Profile_Available = as_bool(MOB_Profile_Available),
+    Predicted_Plasmid_Count_A = as.integer(Predicted_Plasmid_Count_A),
+    Predicted_Plasmid_Count_B = as.integer(Predicted_Plasmid_Count_B),
+    MOB_High_Confidence_Profile_Both =
+      as_bool(MOB_High_Confidence_Profile_Both),
+    strict_same_strain = as_bool(strict_same_strain),
+    pair_interpretation = as.character(pair_interpretation)
   ) %>%
   mutate(
     provider_ST_A = provider_map$provider_ST[match(key_A, provider_map$episode_key)],
@@ -842,10 +897,11 @@ model_binary_standardized <- function(df, exposure) {
 }
 
 binary_model_inference <- function(df, exposure, label, seed_offset = 0L) {
-  point <- model_binary_standardized(df, exposure)
+  exposure_name <- exposure
+  point <- model_binary_standardized(df, exposure_name)
   draws <- bootstrap_vector(
     df,
-    function(z) model_binary_standardized(z, exposure),
+    function(z) model_binary_standardized(z, exposure_name),
     c("log_or", "adjusted_rd"),
     seed = RQ_SEED + seed_offset
   )
@@ -857,10 +913,10 @@ binary_model_inference <- function(df, exposure, label, seed_offset = 0L) {
   ) %>%
     mutate(
       analysis = label,
-      exposure = exposure,
+      exposure = exposure_name,
       n_pairs = nrow(df),
       n_residents = n_distinct(df$Participant_id),
-      n_exposed = sum(df[[exposure]] %in% TRUE, na.rm = TRUE),
+      n_exposed = sum(df[[exposure_name]] %in% TRUE, na.rm = TRUE),
       outcome_events = sum(df$any_vf_difference %in% TRUE, na.rm = TRUE),
       model = "any binary VF difference ~ exposure + natural spline(days, df=3)",
       .before = 1
@@ -1469,14 +1525,29 @@ p_rq08_metrics <- ggplot(metric_plot, aes(metric, estimate)) +
   theme(axis.text.x = element_text(angle = 25, hjust = 1))
 atomic_ggsave(p_rq08_metrics, file.path(dir_rq08, "rq08_provider_st_performance.png"), 7, 5)
 
+# Prespecified predicted-plasmid extension. The sourced module uses only the
+# already validated 532/893/371 universes and blocks on partial script-09b/29
+# outputs.
+source(file.path(
+  root, "scripts", "research_questions",
+  "plasmid_mechanism_addon_rq06_08.R"
+))
+
 # ----------------------------------------------------------------------------
 # Reproducibility manifests and concise question summaries
 # ----------------------------------------------------------------------------
 input_manifest <- tibble(
   role = c("analysis_assembly_manifest", "clinical_status_map", "pairwise_metrics",
-           "provider_mlst", "gene_module_map", "analysis_script"),
+           "provider_mlst", "gene_module_map", "mob_episode_profiles",
+           "episode_mechanism_profiles", "analysis_script",
+           "plasmid_addon_script"),
   path = c(path_manifest, path_status, path_pairwise, path_mlst, path_module_map,
-           file.path(root, "scripts", "research_questions", "run_rq06_08.R"))
+           path_mob_profiles, path_mechanism_profiles,
+           file.path(root, "scripts", "research_questions", "run_rq06_08.R"),
+           file.path(
+             root, "scripts", "research_questions",
+             "plasmid_mechanism_addon_rq06_08.R"
+           ))
 ) %>%
   mutate(
     exists = file.exists(path),
@@ -1490,16 +1561,21 @@ method_manifest <- tibble(
   parameter = c(
     "expected_episodes", "expected_all_pairs", "expected_adjacent_pairs",
     "vfdb_min_identity_pct", "vfdb_min_coverage_pct", "same_strain_snp_threshold",
-    "bootstrap_unit", "bootstrap_reps", "random_seed", "provider_st_policy",
+    "bootstrap_unit", "bootstrap_reps", "random_seed",
+    "provider_mlst_min_good_targets_pct", "provider_st_policy",
     "abricate_version", "vfdb_database_record", "abricate_database_list_sha256",
-    "vfdb_cache_context_sha256"
+    "vfdb_cache_context_sha256", "plasmid_interpretation",
+    "plasmid_composite_selection_rule"
   ),
   value = c(
     EXPECTED_EPISODES, EXPECTED_ALL_PAIRS, EXPECTED_ADJACENT_PAIRS,
     VFDB_MIN_ID, VFDB_MIN_COV, 25,
     "resident/Participant_id", BOOT_REPS, RQ_SEED,
-    "provider_qc95 Longcycler only; local fallback excluded",
-    abricate_version, vfdb_line[1], db_list_sha256, cache_context
+    PROVIDER_MLST_MIN_GOOD_TARGETS,
+    "provider_qc95 call key/path-linked to the selected Longcycler episode; local fallback excluded",
+    abricate_version, vfdb_line[1], db_list_sha256, cache_context,
+    "assembly-based predicted plasmid context; not confirmed circularity, transfer or transmission",
+    "add plasmid metric only if resident-bootstrap paired delta-AUC 95% interval is above zero"
   )
 )
 atomic_write_csv(method_manifest, file.path(dir_inputs, "method_manifest.csv"))
@@ -1512,6 +1588,7 @@ atomic_write_lines(c(
   "- Primary exposure: direct assembly SNP distance <=25.",
   "- Primary outcome: any binary fresh-VFDB profile difference.",
   "- Inference: resident-cluster bootstrap GLM with a natural spline for days between samples.",
+  "- Plasmid extension: any corrected replicon-profile change and any MOB primary-cluster change; 10/25/50-SNP, both-empty and high-confidence sensitivities.",
   "- Gene difference tables are descriptive only; no broad gene-level tests are performed."
 ), file.path(dir_rq06, "README.md"))
 
@@ -1522,6 +1599,7 @@ atomic_write_lines(c(
           nrow(event_samples), n_distinct(event_samples$Participant_id),
           sum(event_samples$UTI_Status == "UTI"), sum(event_samples$UTI_Status == "Not_UTI")),
   "- Frozen endpoints: curated VF burden and five-marker ExPEC count.",
+  "- Exploratory plasmid endpoints: predicted plasmid count and plasmid-binned informative VF/AMR burden only.",
   "- Inference: resident-cluster bootstrap median differences; two optional tail-area p-values use Holm correction.",
   "- Sensitivities: earliest UTI-event per resident and nearest within-resident UTI/Not_UTI pair."
 ), file.path(dir_rq07, "README.md"))
@@ -1534,8 +1612,40 @@ atomic_write_lines(c(
   "- Operational reference: direct assembly SNP distance <=25.",
   "- Metrics: sensitivity, specificity, PPV, NPV, balanced accuracy, and resident-bootstrap intervals.",
   "- Continuous proxies: Mash distance and fresh VF Jaccard. Composite predictions use leave-one-resident-out logistic regression.",
+  "- Plasmid proxies: corrected replicon and MOB-cluster Jaccard; a plasmid metric enters the selected composite only if its paired resident-bootstrap delta-AUC interval supports improvement.",
   "- Sensitivities: SNP cutoffs 10/25/50 and adjacent-pair restriction."
 ), file.path(dir_rq08, "README.md"))
+
+write_analysis_status <- function(path, rq, detail) {
+  atomic_write_csv(
+    tibble(
+      research_question = rq,
+      status = "complete",
+      reason = "analysis_completed",
+      detail = detail,
+      run_timestamp_utc = format(Sys.time(), tz = "UTC", usetz = TRUE)
+    ),
+    file.path(path, "analysis_status.csv")
+  )
+}
+
+write_analysis_status(
+  dir_rq06,
+  "RQ06",
+  sprintf("%d adjacent Longcycler-linked direct pairs", nrow(adjacent))
+)
+write_analysis_status(
+  dir_rq07,
+  "RQ07",
+  sprintf("%d Longcycler-linked UTI-event samples from %d residents",
+          nrow(event_samples), n_distinct(event_samples$Participant_id))
+)
+write_analysis_status(
+  dir_rq08,
+  "RQ08",
+  sprintf("%d Longcycler-linked direct pairs; %d provider-ST evaluable pairs",
+          nrow(pair_dat), nrow(provider_pairs))
+)
 
 record_check("rq06_outputs", "PASS", "models/tables/plots", "written",
              "No gene-level hypothesis testing")

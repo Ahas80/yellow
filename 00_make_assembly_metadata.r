@@ -365,6 +365,7 @@ if (requireNamespace("Biostrings", quietly = TRUE)) {
 }
 
 out_meta <- meta %>%
+  filter(found %in% TRUE, Assembler == ANALYSIS_ASSEMBLER) %>%
   select(
     Assembly_ID, Assembly_Base_ID, Isolate_ID, Participant_id, tp_lab, Timepoint, Event_type,
     Episode_ID, Batch, Assembler, assembler, file_name, full_path, fasta_path,
@@ -407,5 +408,5 @@ append_denominator_summary(found_unexpected, "00_make_assembly_metadata.r", "une
                            "Unlinked candidate FASTAs excluded from episode-level analyses")
 
 msg("✓ Master metadata generated: %s", FILE_METADATA)
-msg("✓ Pipeline is ready. Downstream scripts will gracefully skip the %d active missing expected isolate rows; %d failed/not-expected sequence rows are quarantined separately.",
+msg("✓ Pipeline is ready. The Longcycler-only metadata excludes %d active expected isolate rows without a Longcycler FASTA; %d failed/not-expected sequence rows are quarantined separately.",
     nrow(missing_expected), nrow(quarantined_genomics_expected))

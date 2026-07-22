@@ -94,6 +94,13 @@ analyze_pair <- function(i) {
     key <- paste0(pid, "__", tA, "_vs_", tB)
 
     dna_res <- run_dnadiff(sampA$full_path, sampB$full_path, cache_dir, key)
+    snps_path <- if (!is.na(dna_res$dnadiff_report_path[1])) {
+        sub("\\.report$", ".snps", dna_res$dnadiff_report_path[1])
+    } else {
+        NA_character_
+    }
+    snps_path <- if (!is.na(snps_path) && file.exists(snps_path)) normalizePath(snps_path, winslash = "/", mustWork = TRUE) else NA_character_
+    snps_sha256 <- if (!is.na(snps_path)) unname(digest::digest(snps_path, algo = "sha256", file = TRUE)) else NA_character_
 
     # B. VF Changes
     get_genes <- function(pa_df, p, t) {
@@ -147,6 +154,16 @@ analyze_pair <- function(i) {
         From_Status = row$From_Status,
         To_Status = row$To_Status,
         Strain_ID = row$Strain_ID,
+        Assembly_ID_A = as.character(sampA$Assembly_ID),
+        Assembly_ID_B = as.character(sampB$Assembly_ID),
+        Fasta_Path_A = as.character(sampA$full_path),
+        Fasta_Path_B = as.character(sampB$full_path),
+        Fasta_SHA256_A = as.character(sampA$fasta_sha256),
+        Fasta_SHA256_B = as.character(sampB$fasta_sha256),
+        SNP_Path = snps_path,
+        SNP_SHA256 = snps_sha256,
+        Dnadiff_Cache_Signature = dna_res$dnadiff_cache_signature,
+        Dnadiff_Sidecar_Path = dna_res$dnadiff_sidecar_path,
         SNPs = dna_res$TotalSNPs,
         AvgIdentity = dna_res$AvgIdentity,
         VF_Gain_Count = length(vf_gain),

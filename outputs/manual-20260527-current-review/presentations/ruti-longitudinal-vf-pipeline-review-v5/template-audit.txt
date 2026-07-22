@@ -1,0 +1,19 @@
+# Template audit — Longcycler-only v5 review decks
+
+## Sources inspected
+- Full element-level source: output/Longitudinal_Urinary_Ecoli_VF_Pipeline_Review_2026-05-28.pptx (17 slides).
+- Compact visual source: preview/editable/slide-01.png through slide-17.png.
+- Compact package: output/Longitudinal_Urinary_Ecoli_VF_Pipeline_Review_Compact_Onboarding_2026-05-28.pptx was inspected but excluded as an authoring source because its render is corrupted.
+- All 17 full slides and all 17 clean compact visual references were inspected individually at full size.
+
+## Preserved system
+- 1280 × 720 white report canvas with slim blue rail, compact uppercase eyebrow, dark Aptos Display title, quiet subtitle, header/footer rules, and two-digit slide number.
+- Pale evidence cards and analytical plots dominate the evidence area.
+- Both outputs use the same 17-slide narrative and differ only in audience label/footer and presenter guide framing.
+
+## Release contract
+- Two editable 17-slide decks: full review and compact onboarding review.
+- All analytical claims come from results/pipeline/longcycler_release_claim_registry.json.
+- Slide 17 is a useful robustness-plus-lineage diagnostic, replacing the dense lookup frame.
+- 583/166/18/565 appears only as attrition/QC context.
+

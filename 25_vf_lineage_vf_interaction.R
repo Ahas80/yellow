@@ -709,9 +709,15 @@ if (file.exists(qc_bias_file)) {
 status_map <- if (file.exists(FILE_STATUS_MAP)) {
   read_csv(FILE_STATUS_MAP, show_col_types = FALSE) %>%
     prefer_primary_uti_status() %>%
+    apply_manual_sample_curation(context = "vf_denominator_attrition_context") %>%
+    filter_primary_analysis() %>%
     mutate(Participant_id = as.character(Participant_id))
 } else {
   NULL
+}
+if (!is.null(status_map) &&
+    (nrow(status_map) != 583L || n_distinct(status_map$Participant_id) != 166L)) {
+  stop("VF denominator flow requires the labelled 583-episode clinical source attrition/QC context.")
 }
 vf_pa <- if (file.exists(FILE_VF_PA)) {
   read_csv(FILE_VF_PA, show_col_types = FALSE) %>%
@@ -724,7 +730,7 @@ flow_rows <- bind_rows(
   if (!is.null(status_map)) {
     status_map %>%
       filter(!is.na(Infection_Status)) %>%
-      count(stage = "Primary UTI status map", Infection_Status, name = "n")
+      count(stage = "Clinical source (attrition/QC only)", Infection_Status, name = "n")
   },
   if (!is.null(vf_pa)) {
     tibble(stage = "Raw VF P/A matrix", Infection_Status = "All VF rows before clinical join", n = nrow(vf_pa))
@@ -736,7 +742,7 @@ flow_rows <- bind_rows(
     filter(Infection_Status %in% c("UTI", "Not_UTI")) %>%
     count(stage = "UTI/Not_UTI VF subset", Infection_Status, name = "n")
 ) %>%
-  mutate(stage = factor(stage, levels = c("Primary UTI status map", "Raw VF P/A matrix",
+  mutate(stage = factor(stage, levels = c("Clinical source (attrition/QC only)", "Raw VF P/A matrix",
                                           "Canonical VF-ready table", "UTI/Not_UTI VF subset")))
 
 if (nrow(flow_rows) > 0) {

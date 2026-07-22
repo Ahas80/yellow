@@ -92,17 +92,56 @@ if (any(tolower(pairwise$Assembler_A) != ANALYSIS_ASSEMBLER |
 }
 msg("Loaded %d pairwise comparisons", nrow(pairwise))
 
+canonical_transition_file <- file.path(DIR_RESULTS, "longitudinal", "longcycler_transitions.csv")
+if (!file.exists(canonical_transition_file)) {
+    stop("Missing canonical selected-Longcycler transition export: ", canonical_transition_file)
+}
+canonical_transitions <- read_csv(canonical_transition_file, show_col_types = FALSE) %>%
+    mutate(
+        Participant_id = as.character(.data$Participant_id),
+        tp_from = normalise_timepoint_preserve_events(.data$tp_from),
+        tp_to = normalise_timepoint_preserve_events(.data$tp_to),
+        from_sample_key = paste0(.data$Participant_id, "__", .data$tp_from),
+        to_sample_key = paste0(.data$Participant_id, "__", .data$tp_to),
+        pair_key = if_else(
+            .data$from_sample_key <= .data$to_sample_key,
+            paste(.data$from_sample_key, .data$to_sample_key, sep = "||"),
+            paste(.data$to_sample_key, .data$from_sample_key, sep = "||")
+        )
+    )
+if (nrow(canonical_transitions) != 371L || anyDuplicated(canonical_transitions$pair_key)) {
+    stop("Canonical selected-Longcycler transition export must contain 371 unique adjacent pairs")
+}
+canonical_transition_join_cols <- c(
+    "pair_key", "TotalSNPs", "AvgIdentity", "strict_same_strain",
+    "legacy_accessory_composite_classification",
+    "legacy_accessory_composite_rule",
+    "snp_strain_context", "st_lineage_context", "pair_interpretation",
+    "Assembler_A", "Assembler_B", "Fasta_SHA256_A", "Fasta_SHA256_B"
+)
+missing_transition_join_cols <- setdiff(
+    canonical_transition_join_cols,
+    names(canonical_transitions)
+)
+if (length(missing_transition_join_cols)) {
+    stop(
+        "Canonical selected-Longcycler transition export lacks required join column(s): ",
+        paste(missing_transition_join_cols, collapse = ", ")
+    )
+}
+
 # 2. Assign Global Strain IDs (Graph Clustering)
 # ------------------------------------------------------------------------------
-msg("Assigning Strain IDs based on 'Same' classification...")
+msg("Assigning strain-context components from direct SNP-supported edges...")
 
 # Graph components provide lineage context only. Every adjacent transition below
 # is classified from its own direct pairwise SNP record; component membership is
 # never substituted for missing direct evidence and never defines Same_Strain.
 
-# Filter for "Same" edges
+# Only direct pairwise SNP evidence defines a same-strain edge. The historical
+# accessory composite remains available as a non-canonical compatibility field.
 edges <- pairwise %>%
-    filter(Classification == "Same") %>%
+    filter(strict_same_strain %in% TRUE) %>%
     transmute(
         from = as.character(SampleKey_A),
         to = as.character(SampleKey_B)
@@ -151,7 +190,8 @@ parse_time_order <- function(tp) {
     num <- suppressWarnings(readr::parse_number(tp))
     case_when(
         str_detect(tp, regex("^T[0-9]+$", ignore_case = TRUE)) ~ as.numeric(num),
-        str_detect(tp, regex("uricult", ignore_case = TRUE)) ~ NA_real_,
+        str_detect(tp, regex("uricult", ignore_case = TRUE)) ~ 99,
+        str_detect(tp, regex("^UTI-[0-9]+$", ignore_case = TRUE)) ~ 100 + as.numeric(num),
         TRUE ~ NA_real_
     )
 }
@@ -179,6 +219,9 @@ timeline <- timeline %>%
     # Poster half-step labels are display-only; they are not used as statistical covariates here.
     filter(!is.na(Time_Order)) %>%
     arrange(Participant_id, Time_Order, tp_lab)
+if (nrow(timeline) != nrow(status_map)) {
+    stop("Every selected Longcycler episode must have a usable longitudinal order")
+}
 
 # Identify adjacent selected-episode transitions and attach the direct pair
 # record in orientation-independent form.
@@ -202,13 +245,8 @@ transitions <- timeline %>%
         )
     ) %>%
     left_join(
-        pairwise %>%
-            select(.data$pair_key, .data$TotalSNPs, .data$AvgIdentity,
-                   .data$Classification, .data$RuleUsed,
-                   .data$snp_strain_context, .data$st_lineage_context,
-                   .data$pair_interpretation, .data$same_strain_evidence,
-                   .data$Assembler_A, .data$Assembler_B,
-                   .data$Fasta_SHA256_A, .data$Fasta_SHA256_B),
+        canonical_transitions %>%
+            select(all_of(canonical_transition_join_cols)),
         by = "pair_key", relationship = "many-to-one"
     ) %>%
     mutate(
@@ -231,6 +269,10 @@ expected_transitions <- timeline %>%
     pull(.data$n)
 if (nrow(transitions) != expected_transitions) {
     stop("Adjacent transition count is inconsistent with the selected Longcycler timeline")
+}
+if (nrow(transitions) != 371L ||
+    sum(transitions$Prev_Status == "Not_UTI" & transitions$Status_Simple == "UTI", na.rm = TRUE) != 9L) {
+    stop("Selected Longcycler transition contract failed: expected 371 adjacent pairs and 9 Not_UTI-to-UTI pairs")
 }
 if (any(!transitions$Direct_Pair_Evidence)) {
     stop("One or more selected Longcycler adjacent transitions lack direct pairwise SNP evidence")

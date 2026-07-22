@@ -5,45 +5,45 @@
   </marker>
 </defs>
 <rect x="0" y="0" width="2600" height="1463" fill="#FFFFFF"/>
-<text x="117.0" y="113.8" font-family="Arial, Helvetica, sans-serif" font-size="48.0" fill="#0F172A" font-weight="700" text-anchor="start"><tspan x="117.0" dy="0.0">Transition funnel: status comparisons to linked Not_UTI -&gt; UTI transitions</tspan></text>
+<text x="117.0" y="113.8" font-family="Arial, Helvetica, sans-serif" font-size="48.0" fill="#0F172A" font-weight="700" text-anchor="start"><tspan x="117.0" dy="0.0">Transition funnel: status comparisons to linked Not UTI -&gt; UTI transitions</tspan></text>
 <text x="117.0" y="162.0" font-family="Arial, Helvetica, sans-serif" font-size="23.0" fill="#64748B" font-weight="400" text-anchor="start"><tspan x="117.0" dy="0.0">This companion view separates the transition question from the broader clinical-to-genomics workflow.</tspan></text>
 <line x1="117.0" y1="212.1" x2="2483.0" y2="212.1" stroke="#CBD5E1" stroke-width="2.2" stroke-linecap="round"/>
 <polygon points="273,307.2 1859,307.2 1716,567.6 416,567.6" fill="#E0F2FE" stroke="#BAE6FD" stroke-width="2.4"/>
 <rect x="322.4" y="327.7" width="93.6" height="67.3" rx="8.0" fill="#0072B2" stroke="#0072B2" stroke-width="0.0"/>
 <text x="369.2" y="395.9" font-family="Arial, Helvetica, sans-serif" font-size="17.0" fill="#FFFFFF" font-weight="700" text-anchor="middle"><tspan x="369.2" dy="0.0">1</tspan></text>
 <text x="455.0" y="395.6" font-family="Arial, Helvetica, sans-serif" font-size="24.0" fill="#0F172A" font-weight="700" text-anchor="start"><tspan x="455.0" dy="0.0">All consecutive status comparisons</tspan></text>
-<text x="1066.0" y="529.9" font-family="Arial, Helvetica, sans-serif" font-size="50.0" fill="#0072B2" font-weight="700" text-anchor="middle"><tspan x="1066.0" dy="0.0">417 comparisons</tspan></text>
-<text x="1066.0" y="580.3" font-family="Arial, Helvetica, sans-serif" font-size="18.5" fill="#475569" font-weight="400" text-anchor="middle"><tspan x="1066.0" dy="0.0">152 participants with consecutive clinical visits</tspan></text>
+<text x="1066.0" y="529.9" font-family="Arial, Helvetica, sans-serif" font-size="50.0" fill="#0072B2" font-weight="700" text-anchor="middle"><tspan x="1066.0" dy="0.0">371 comparisons</tspan></text>
+<text x="1066.0" y="580.3" font-family="Arial, Helvetica, sans-serif" font-size="18.5" fill="#475569" font-weight="400" text-anchor="middle"><tspan x="1066.0" dy="0.0">139 participants with adjacent selected episodes</tspan></text>
 <polygon points="507,655.4 1625,655.4 1521,896.8 611,896.8" fill="#FFF7ED" stroke="#FED7AA" stroke-width="2.4"/>
 <rect x="556.4" y="675.9" width="93.6" height="67.3" rx="8.0" fill="#D55E00" stroke="#D55E00" stroke-width="0.0"/>
 <text x="603.2" y="744.1" font-family="Arial, Helvetica, sans-serif" font-size="17.0" fill="#FFFFFF" font-weight="700" text-anchor="middle"><tspan x="603.2" dy="0.0">2</tspan></text>
-<text x="689.0" y="743.8" font-family="Arial, Helvetica, sans-serif" font-size="24.0" fill="#0F172A" font-weight="700" text-anchor="start"><tspan x="689.0" dy="0.0">Not_UTI -&gt; UTI transitions</tspan></text>
-<text x="1066.0" y="878.1" font-family="Arial, Helvetica, sans-serif" font-size="50.0" fill="#D55E00" font-weight="700" text-anchor="middle"><tspan x="1066.0" dy="0.0">11 transitions</tspan></text>
-<text x="1066.0" y="928.5" font-family="Arial, Helvetica, sans-serif" font-size="18.5" fill="#475569" font-weight="400" text-anchor="middle"><tspan x="1066.0" dy="0.0">Status comparisons where a Not_UTI visit is followed by a UTI</tspan><tspan x="1066.0" dy="20.7">visit</tspan></text>
+<text x="689.0" y="743.8" font-family="Arial, Helvetica, sans-serif" font-size="24.0" fill="#0F172A" font-weight="700" text-anchor="start"><tspan x="689.0" dy="0.0">Not UTI -&gt; UTI transitions</tspan></text>
+<text x="1066.0" y="878.1" font-family="Arial, Helvetica, sans-serif" font-size="50.0" fill="#D55E00" font-weight="700" text-anchor="middle"><tspan x="1066.0" dy="0.0">9 transitions</tspan></text>
+<text x="1066.0" y="928.5" font-family="Arial, Helvetica, sans-serif" font-size="18.5" fill="#475569" font-weight="400" text-anchor="middle"><tspan x="1066.0" dy="0.0">Status comparisons where a Not UTI visit is followed by a UTI</tspan><tspan x="1066.0" dy="20.7">visit</tspan></text>
 <polygon points="663,972.9 1469,972.9 1391,1192.3 741,1192.3" fill="#ECFDF5" stroke="#BBF7D0" stroke-width="2.4"/>
 <rect x="712.4" y="993.4" width="93.6" height="67.3" rx="8.0" fill="#009E73" stroke="#009E73" stroke-width="0.0"/>
 <text x="759.2" y="1061.6" font-family="Arial, Helvetica, sans-serif" font-size="17.0" fill="#FFFFFF" font-weight="700" text-anchor="middle"><tspan x="759.2" dy="0.0">3</tspan></text>
 <text x="845.0" y="1061.3" font-family="Arial, Helvetica, sans-serif" font-size="24.0" fill="#0F172A" font-weight="700" text-anchor="start"><tspan x="845.0" dy="0.0">WGS/VF-linked transitions</tspan></text>
-<text x="1066.0" y="1195.5" font-family="Arial, Helvetica, sans-serif" font-size="50.0" fill="#009E73" font-weight="700" text-anchor="middle"><tspan x="1066.0" dy="0.0">10 transitions</tspan></text>
-<text x="1066.0" y="1246.0" font-family="Arial, Helvetica, sans-serif" font-size="18.5" fill="#475569" font-weight="400" text-anchor="middle"><tspan x="1066.0" dy="0.0">1 transition is missing a usable VF-ready endpoint</tspan></text>
+<text x="1066.0" y="1195.5" font-family="Arial, Helvetica, sans-serif" font-size="50.0" fill="#009E73" font-weight="700" text-anchor="middle"><tspan x="1066.0" dy="0.0">9 transitions</tspan></text>
+<text x="1066.0" y="1246.0" font-family="Arial, Helvetica, sans-serif" font-size="18.5" fill="#475569" font-weight="400" text-anchor="middle"><tspan x="1066.0" dy="0.0">0 transition is missing a usable VF-ready endpoint</tspan></text>
 <line x1="1066.0" y1="592.5" x2="1066.0" y2="636.4" stroke="#94A3B8" stroke-width="4.0" stroke-linecap="round" marker-end="url(#arrowhead)"/>
 <line x1="1066.0" y1="918.8" x2="1066.0" y2="953.9" stroke="#94A3B8" stroke-width="4.0" stroke-linecap="round" marker-end="url(#arrowhead)"/>
 <rect x="1833.0" y="387.7" width="637.0" height="577.9" rx="24.0" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="2.0"/>
 <text x="1890.2" y="487.8" font-family="Arial, Helvetica, sans-serif" font-size="24.0" fill="#0F172A" font-weight="700" text-anchor="start"><tspan x="1890.2" dy="0.0">All status comparisons</tspan></text>
-<text x="1890.2" y="537.8" font-family="Arial, Helvetica, sans-serif" font-size="17.0" fill="#64748B" font-weight="400" text-anchor="start"><tspan x="1890.2" dy="0.0">between consecutive clinical visits</tspan></text>
+<text x="1890.2" y="537.8" font-family="Arial, Helvetica, sans-serif" font-size="17.0" fill="#64748B" font-weight="400" text-anchor="start"><tspan x="1890.2" dy="0.0">between adjacent selected Longcycler episodes</tspan></text>
 <rect x="1885.0" y="532.5" width="52.0" height="38.0" rx="5.0" fill="#E0F2FE" stroke="#0072B2" stroke-width="1.2"/>
-<text x="1976.0" y="578.8" font-family="Arial, Helvetica, sans-serif" font-size="18.5" fill="#475569" font-weight="400" text-anchor="start"><tspan x="1976.0" dy="0.0">Not_UTI-&gt;Not_UTI</tspan></text>
-<text x="2392.0" y="580.3" font-family="Arial, Helvetica, sans-serif" font-size="20.0" fill="#0072B2" font-weight="700" text-anchor="end"><tspan x="2392.0" dy="0.0">391</tspan></text>
+<text x="1976.0" y="578.8" font-family="Arial, Helvetica, sans-serif" font-size="18.5" fill="#475569" font-weight="400" text-anchor="start"><tspan x="1976.0" dy="0.0">Not UTI -&gt; Not UTI</tspan></text>
+<text x="2392.0" y="580.3" font-family="Arial, Helvetica, sans-serif" font-size="20.0" fill="#0072B2" font-weight="700" text-anchor="end"><tspan x="2392.0" dy="0.0">349</tspan></text>
 <rect x="1885.0" y="629.1" width="52.0" height="38.0" rx="5.0" fill="#F1F5F9" stroke="#64748B" stroke-width="1.2"/>
-<text x="1976.0" y="675.4" font-family="Arial, Helvetica, sans-serif" font-size="18.5" fill="#475569" font-weight="400" text-anchor="start"><tspan x="1976.0" dy="0.0">UTI-&gt;Not_UTI</tspan></text>
-<text x="2392.0" y="676.9" font-family="Arial, Helvetica, sans-serif" font-size="20.0" fill="#64748B" font-weight="700" text-anchor="end"><tspan x="2392.0" dy="0.0">14</tspan></text>
+<text x="1976.0" y="675.4" font-family="Arial, Helvetica, sans-serif" font-size="18.5" fill="#475569" font-weight="400" text-anchor="start"><tspan x="1976.0" dy="0.0">UTI -&gt; Not UTI</tspan></text>
+<text x="2392.0" y="676.9" font-family="Arial, Helvetica, sans-serif" font-size="20.0" fill="#64748B" font-weight="700" text-anchor="end"><tspan x="2392.0" dy="0.0">12</tspan></text>
 <rect x="1885.0" y="725.6" width="52.0" height="38.0" rx="5.0" fill="#FFF7ED" stroke="#D55E00" stroke-width="1.2"/>
-<text x="1976.0" y="771.9" font-family="Arial, Helvetica, sans-serif" font-size="18.5" fill="#475569" font-weight="400" text-anchor="start"><tspan x="1976.0" dy="0.0">Not_UTI-&gt;UTI</tspan></text>
-<text x="2392.0" y="773.4" font-family="Arial, Helvetica, sans-serif" font-size="20.0" fill="#D55E00" font-weight="700" text-anchor="end"><tspan x="2392.0" dy="0.0">11</tspan></text>
+<text x="1976.0" y="771.9" font-family="Arial, Helvetica, sans-serif" font-size="18.5" fill="#475569" font-weight="400" text-anchor="start"><tspan x="1976.0" dy="0.0">Not UTI -&gt; UTI</tspan></text>
+<text x="2392.0" y="773.4" font-family="Arial, Helvetica, sans-serif" font-size="20.0" fill="#D55E00" font-weight="700" text-anchor="end"><tspan x="2392.0" dy="0.0">9</tspan></text>
 <rect x="1885.0" y="822.2" width="52.0" height="38.0" rx="5.0" fill="#FEF9C3" stroke="#E69F00" stroke-width="1.2"/>
-<text x="1976.0" y="868.5" font-family="Arial, Helvetica, sans-serif" font-size="18.5" fill="#475569" font-weight="400" text-anchor="start"><tspan x="1976.0" dy="0.0">UTI-&gt;UTI</tspan></text>
+<text x="1976.0" y="868.5" font-family="Arial, Helvetica, sans-serif" font-size="18.5" fill="#475569" font-weight="400" text-anchor="start"><tspan x="1976.0" dy="0.0">UTI -&gt; UTI</tspan></text>
 <text x="2392.0" y="870.0" font-family="Arial, Helvetica, sans-serif" font-size="20.0" fill="#E69F00" font-weight="700" text-anchor="end"><tspan x="2392.0" dy="0.0">1</tspan></text>
-<text x="1890.2" y="943.3" font-family="Arial, Helvetica, sans-serif" font-size="17.2" fill="#475569" font-weight="400" text-anchor="start"><tspan x="1890.2" dy="0.0">Only the 11 Not_UTI -&gt; UTI</tspan><tspan x="1890.2" dy="19.3">transitions enter the focused</tspan><tspan x="1890.2" dy="19.3">review.</tspan></text>
+<text x="1890.2" y="943.3" font-family="Arial, Helvetica, sans-serif" font-size="17.2" fill="#475569" font-weight="400" text-anchor="start"><tspan x="1890.2" dy="0.0">Only the 9 Not UTI -&gt; UTI</tspan><tspan x="1890.2" dy="19.3">transitions enter the focused</tspan><tspan x="1890.2" dy="19.3">review.</tspan></text>
 <rect x="175.5" y="1280.1" width="2249.0" height="117.0" rx="24.0" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.8"/>
 <text x="221.0" y="1321.3" font-family="Arial, Helvetica, sans-serif" font-size="19.2" fill="#475569" font-weight="400" text-anchor="start"><tspan x="221.0" dy="0.0">Interpretation boundary: these transitions are evidence buckets for follow-up, not proven mechanisms. The linked subset</tspan><tspan x="221.0" dy="21.5">is smaller because both endpoint visits must have usable WGS/VF evidence.</tspan></text>
 <text x="117.0" y="1428.2" font-family="Arial, Helvetica, sans-serif" font-size="16.4" fill="#64748B" font-weight="400" text-anchor="start"><tspan x="117.0" dy="0.0">Source: results/vf/vf_transition_case_index.csv</tspan></text>

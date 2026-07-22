@@ -191,13 +191,25 @@ stop_if_stale <- function(target, upstream, target_label, upstream_label) {
 
 ready_file <- FILE_VF_READY
 if (!file.exists(ready_file)) stop("Missing ", ready_file, ". Run 22_vf_build_analysis_dataset.R first.")
+if (!file.exists(FILE_ANALYSIS_CLINICAL_COHORT)) stop("Missing ", FILE_ANALYSIS_CLINICAL_COHORT)
+analysis_keys <- read_csv(FILE_ANALYSIS_CLINICAL_COHORT, show_col_types = FALSE) %>%
+  transmute(Participant_id = as.character(.data$Participant_id),
+            tp_lab = normalise_timepoint_preserve_events(.data$tp_lab)) %>%
+  distinct()
 stop_if_stale(ready_file, FILE_VF_PA, "vf_analysis_ready.csv", "vf_pa_all.csv")
 vf_ready <- read_csv(ready_file, show_col_types = FALSE) %>%
   prefer_primary_uti_status() %>%
   apply_manual_sample_curation(context = "24_vf_ready") %>%
   filter_primary_genomics() %>%
   mutate(Participant_id = as.character(Participant_id),
+         tp_lab = normalise_timepoint_preserve_events(.data$tp_lab),
          ST = if ("ST" %in% names(.)) normalise_st_label(ST) else NA_character_)
+vf_keys <- vf_ready %>% distinct(.data$Participant_id, .data$tp_lab)
+if (nrow(vf_keys) != nrow(vf_ready) ||
+    nrow(anti_join(analysis_keys, vf_keys, by = c("Participant_id", "tp_lab"))) ||
+    nrow(anti_join(vf_keys, analysis_keys, by = c("Participant_id", "tp_lab")))) {
+  stop("vf_analysis_ready.csv keys do not exactly equal the selected Longcycler analysis cohort")
+}
 
 gene_map <- read_csv(file.path(DIR_VF, "gene_map.csv"), show_col_types = FALSE) %>%
   mutate(Gene = as.character(Gene),
@@ -218,8 +230,26 @@ if (!file.exists(pairwise_file)) {
 }
 pairwise <- read_csv(pairwise_file, show_col_types = FALSE) %>%
   prepare_pairwise_for_strain_context()
+if (any(tolower(pairwise$Assembler_A) != ANALYSIS_ASSEMBLER |
+        tolower(pairwise$Assembler_B) != ANALYSIS_ASSEMBLER, na.rm = TRUE)) {
+  stop("pairwise_metrics.csv contains endpoints outside the selected Longcycler cohort")
+}
 msg("Loaded pairwise strain metrics: %d rows; same-strain SNP threshold <=%d",
     nrow(pairwise), strain_snp_threshold())
+
+canonical_transition_file <- file.path(DIR_RESULTS, "longitudinal", "longcycler_transitions.csv")
+if (!file.exists(canonical_transition_file)) stop("Missing canonical transition export: ", canonical_transition_file)
+canonical_transitions <- read_csv(canonical_transition_file, show_col_types = FALSE) %>%
+  transmute(
+    Participant_id = as.character(.data$Participant_id),
+    tp_from = normalise_timepoint_preserve_events(.data$tp_from),
+    tp_to = normalise_timepoint_preserve_events(.data$tp_to),
+    canonical_snps = as.numeric(.data$TotalSNPs),
+    transition_key = paste(.data$Participant_id, .data$tp_from, .data$tp_to, sep = "|")
+  )
+if (nrow(canonical_transitions) != 371L || anyDuplicated(canonical_transitions$transition_key)) {
+  stop("Canonical transition export must contain 371 unique ordered selected-Longcycler pairs")
+}
 
 # ==============================================================================
 # 2. TRANSITION-BUILDING FUNCTION
@@ -310,6 +340,14 @@ build_transitions <- function(data, gene_cols, cohort_label = "all") {
         ST_to = st_to,
         has_vf_pair = TRUE
       )
+      if (is.na(strain_ctx$SNPs)) {
+        stop("Missing direct pairwise SNP evidence for selected Longcycler pair ",
+             pid, " ", as.character(rf$tp_lab), " -> ", as.character(rt$tp_lab))
+      }
+      if (length(gene_cols) > 0 && is.na(jac)) {
+        stop("VF Jaccard is missing despite two selected endpoints for ",
+             pid, " ", as.character(rf$tp_lab), " -> ", as.character(rt$tp_lab))
+      }
       date_from <- rf$Collection_Date_parsed
       date_to <- rt$Collection_Date_parsed
       days_between <- if (!is.na(date_from) && !is.na(date_to)) {
@@ -436,6 +474,28 @@ write_csv(results[["all"]]$summary,     file.path(DIR_VF, "vf_transition_summary
 all_trans <- bind_rows(lapply(results, `[[`, "transitions"))
 all_summ  <- bind_rows(lapply(results, `[[`, "summary"))
 full_trans <- results[["all"]]$transitions
+
+expected_full_transitions <- vf_ready %>%
+  count(.data$Participant_id, name = "n_episodes") %>%
+  summarise(n = sum(pmax(.data$n_episodes - 1L, 0L))) %>%
+  pull(.data$n)
+if (nrow(full_trans) != expected_full_transitions) {
+  stop("VF longitudinal output is not the complete adjacent-pair set for the selected Longcycler cohort")
+}
+if (sum(full_trans$status_from == "Not_UTI" & full_trans$status_to == "UTI", na.rm = TRUE) != 9L) {
+  stop("Expected 9 adjacent Not_UTI-to-UTI transitions in the selected Longcycler cohort")
+}
+if (any(is.na(full_trans$SNPs)) || any(is.na(full_trans$jaccard_similarity))) {
+  stop("Selected Longcycler transitions require nonmissing direct SNP and VF Jaccard evidence")
+}
+full_transition_check <- full_trans %>%
+  mutate(transition_key = paste(.data$Participant_id, .data$tp_from, .data$tp_to, sep = "|")) %>%
+  left_join(canonical_transitions %>% select(transition_key, canonical_snps),
+            by = "transition_key", relationship = "one-to-one")
+if (any(is.na(full_transition_check$canonical_snps)) ||
+    any(full_transition_check$SNPs != full_transition_check$canonical_snps)) {
+  stop("VF longitudinal transitions do not exactly match the canonical Longcycler transition export")
+}
 
 write_csv(all_trans, file.path(DIR_VF, "vf_transitions_stratified.csv"))
 write_csv(all_summ,  file.path(DIR_VF, "vf_transition_summary_stratified.csv"))
@@ -846,7 +906,7 @@ sl("Generated: %s", format(Sys.time()))
 sl("")
 
 if (nrow(full_trans) > 0) {
-  sl("Total transitions (full cohort): %d from %d participants",
+  sl("Total transitions (selected Longcycler cohort): %d from %d participants",
      nrow(full_trans), n_distinct(full_trans$Participant_id))
   sl("Median Jaccard: %.3f", median(full_trans$jaccard_similarity, na.rm = TRUE))
   sl("Mean Jaccard: %.3f",   mean(full_trans$jaccard_similarity, na.rm = TRUE))

@@ -17,8 +17,7 @@
 #
 # KEY DESIGN DECISIONS:
 #   - Uses one selected, QC-passing Longcycler assembly per
-#     participant×timepoint. Flye candidates remain visible in QC/audit files
-#     but are not eligible for VF profiling or as an assembler fallback.
+#     participant×timepoint, with no alternative assembly input.
 #   - Minimum thresholds: identity ≥ 80%, coverage ≥ 80% (Abricate defaults).
 #   - Results are cached per-isolate in results/vf/abricate/ so re-runs
 #     skip already-processed assemblies.
@@ -220,8 +219,8 @@ append_denominator_summary(
   "02_gene_presence_analysis.R",
   paste0("vf_abricate_input", stage_suffix),
   "participant_timepoint",
-  FILE_METADATA,
-  paste0("Selected assemblies from ", selection_file)
+  selection_file,
+  "Selected QC-passing Longcycler assemblies with exact manifest paths"
 )
 
 # 5. Setup Output Directories
@@ -232,38 +231,98 @@ ensure_dir(plot_out_dir)
 
 # 6. Run Abricate (VFDB)
 # ------------------------------------------------------------------------------
+if (!requireNamespace("digest", quietly = TRUE)) stop("Package 'digest' is required for content-bound VF caching.")
+abricate_path <- Sys.which("abricate")
+if (!nzchar(abricate_path)) stop("Abricate not found in PATH.")
+abricate_version <- tryCatch(
+  paste(system2(abricate_path, "--version", stdout = TRUE, stderr = TRUE), collapse = " "),
+  error = function(e) "unknown"
+)
+
+read_abricate_cache <- function(path) {
+  if (!file.exists(path) || file.size(path) == 0) return(tibble::tibble())
+  readr::read_tsv(path, show_col_types = FALSE, progress = FALSE)
+}
+
 run_abr_cached <- function(fasta, db = "vfdb", min_cov = opt$min_cov, min_id = opt$min_id) {
-  # Cache filename includes thresholds to avoid stale results if params change
-  cache_name <- paste0(basename(fasta), ".vfdb.id", min_id, ".cov", min_cov, ".tsv")
+  fasta <- normalizePath(fasta, winslash = "/", mustWork = TRUE)
+  fasta_sha256 <- unname(digest::digest(fasta, algo = "sha256", file = TRUE))
+  cache_schema <- "abricate_vfdb_sha256_v1"
+  signature <- digest::digest(
+    paste(cache_schema, fasta, fasta_sha256, db, min_cov, min_id, abricate_version, sep = "\n"),
+    algo = "sha256", serialize = FALSE
+  )
+  cache_name <- paste0(basename(fasta), ".", substr(signature, 1, 20), ".tsv")
   cache <- file.path(DIR_ABRICATE, cache_name)
+  sidecar <- paste0(cache, ".provenance.csv")
+  expected <- tibble::tibble(
+    cache_schema = cache_schema,
+    cache_signature = signature,
+    fasta_path = fasta,
+    fasta_sha256 = fasta_sha256,
+    fasta_size = as.character(file.size(fasta)),
+    database = db,
+    min_identity = as.character(min_id),
+    min_coverage = as.character(min_cov),
+    abricate_path = normalizePath(abricate_path, winslash = "/", mustWork = TRUE),
+    abricate_version = abricate_version
+  )
 
-  if (file.exists(cache)) {
-    return(readr::read_tsv(cache, show_col_types = FALSE, progress = FALSE))
+  if (file.exists(cache) && file.exists(sidecar)) {
+    observed <- tryCatch(readr::read_csv(sidecar, show_col_types = FALSE, col_types = cols(.default = "c")), error = function(e) NULL)
+    provenance_matches <- !is.null(observed) && nrow(observed) == 1L &&
+      all(names(expected) %in% names(observed)) &&
+      "result_sha256" %in% names(observed) &&
+      all(vapply(names(expected), function(nm) {
+        identical(as.character(observed[[nm]][1]), as.character(expected[[nm]][1]))
+      }, logical(1))) &&
+      identical(as.character(observed$result_sha256[1]), unname(digest::digest(cache, algo = "sha256", file = TRUE)))
+    if (provenance_matches) return(read_abricate_cache(cache))
   }
 
-  # Check if abricate is available
-  if (Sys.which("abricate") == "") {
-    stop("Abricate not found in PATH.")
+  res <- processx::run(
+    abricate_path,
+    c("--quiet", "--db", db, "--mincov", as.character(min_cov), "--minid", as.character(min_id), fasta),
+    echo = FALSE,
+    error_on_status = FALSE
+  )
+  if (res$status != 0L) {
+    stop("Abricate failed for ", fasta, " (status ", res$status, "): ", trimws(res$stderr))
   }
 
-  cmd <- glue::glue("abricate --quiet --db {db} --mincov {min_cov} --minid {min_id} {shQuote(fasta)} > {shQuote(cache)}")
-  exit <- system(cmd)
-  if (exit != 0) warning("Abricate non-zero exit: ", basename(fasta))
-
-  readr::read_tsv(cache, show_col_types = FALSE, progress = FALSE)
+  writeLines(res$stdout, cache, useBytes = TRUE)
+  hits <- read_abricate_cache(cache)
+  write_csv(expected %>% mutate(
+    result_sha256 = unname(digest::digest(cache, algo = "sha256", file = TRUE)),
+    n_hits = as.character(nrow(hits)),
+    result_status = ifelse(nrow(hits), "hits", "zero_hits")
+  ), sidecar)
+  hits
 }
 
 # Parallel Execution
 future::plan(future::multisession, workers = CORES_USE)
 on.exit(future::plan(sequential), add = TRUE)
 
-safe_abr <- purrr::safely(run_abr_cached, otherwise = NULL, quiet = TRUE)
-
 message("Running Abricate on ", nrow(assembly_df), " assemblies...")
-vf_hits_all <- assembly_df %>%
-  mutate(vfdb = furrr::future_map(full_path, ~ safe_abr(.x)$result, .progress = TRUE)) %>%
-  filter(purrr::map_lgl(vfdb, ~ !is.null(.x) && NROW(.x) > 0)) %>%
-  tidyr::unnest(vfdb)
+vf_results <- assembly_df %>%
+  mutate(vfdb = furrr::future_map(full_path, run_abr_cached, .progress = TRUE))
+vf_nonempty <- vf_results %>% filter(purrr::map_int(vfdb, nrow) > 0L)
+vf_hits_all <- if (nrow(vf_nonempty) > 0) {
+  tidyr::unnest(vf_nonempty, vfdb)
+} else {
+  assembly_df[0, , drop = FALSE] %>% mutate(GENE = character())
+}
+
+provenance_files <- list.files(DIR_ABRICATE, pattern = "\\.provenance\\.csv$", full.names = TRUE)
+cache_provenance <- if (length(provenance_files)) {
+  provenance_files %>%
+    purrr::map_dfr(~ read_csv(.x, show_col_types = FALSE, col_types = cols(.default = "c"))) %>%
+    filter(fasta_path %in% assembly_df$full_path)
+} else {
+  tibble::tibble()
+}
+write_csv(cache_provenance, file.path(opt$out_dir, paste0("vf_abricate_cache_provenance", suffix_part, ".csv")))
 
 # Clean up column names
 if (!"tp_lab" %in% names(vf_hits_all)) {
@@ -273,9 +332,11 @@ if (!"tp_lab" %in% names(vf_hits_all)) {
 }
 
 # Standardize Gene Column
-gene_col <- intersect(c("GENE", "GENE_NAME", "NAME", "PRODUCT", "GENE SYMBOL"), names(vf_hits_all))[1]
-if (is.na(gene_col)) stop("No gene name column found in Abricate output.")
-vf_hits_all <- vf_hits_all %>% rename(GENE = all_of(gene_col))
+if (nrow(vf_hits_all) > 0) {
+  gene_col <- intersect(c("GENE", "GENE_NAME", "NAME", "PRODUCT", "GENE SYMBOL"), names(vf_hits_all))[1]
+  if (is.na(gene_col)) stop("No gene name column found in Abricate output.")
+  if (gene_col != "GENE") vf_hits_all <- vf_hits_all %>% rename(GENE = all_of(gene_col))
+}
 
 saveRDS(vf_hits_all, vf_hits_file)
 message("✓ Saved VF hits: ", vf_hits_file)
@@ -284,14 +345,20 @@ message("✓ Saved VF hits: ", vf_hits_file)
 # ------------------------------------------------------------------------------
 # We aggregate Abricate hits to the participant-timepoint level after the
 # Longcycler-only selection. Each episode is represented by one assembly.
-vf_pa_all <- vf_hits_all %>%
-  filter(!is.na(Participant_id), !is.na(tp_lab), !is.na(GENE)) %>%
-  mutate(
-    Episode_ID = if ("Episode_ID" %in% names(.)) as.character(Episode_ID) else build_episode_id(., timepoint_col = "tp_lab", event_col = "Event_type", date_col = "Collection_Date")
-  ) %>%
-  distinct(Participant_id, tp_lab, Episode_ID, GENE) %>%
-  mutate(present = 1) %>%
-  pivot_wider(names_from = GENE, values_from = present, values_fill = 0)
+vf_episode_base <- assembly_df %>% distinct(Participant_id, tp_lab, Episode_ID)
+if (nrow(vf_hits_all) > 0) {
+  vf_detected <- vf_hits_all %>%
+    filter(!is.na(Participant_id), !is.na(tp_lab), !is.na(GENE)) %>%
+    mutate(Episode_ID = as.character(Episode_ID)) %>%
+    distinct(Participant_id, tp_lab, Episode_ID, GENE) %>%
+    mutate(present = 1L) %>%
+    pivot_wider(names_from = GENE, values_from = present, values_fill = 0L)
+  vf_pa_all <- vf_episode_base %>%
+    left_join(vf_detected, by = c("Participant_id", "tp_lab", "Episode_ID")) %>%
+    mutate(across(-c(Participant_id, tp_lab, Episode_ID), ~ replace_na(as.integer(.x), 0L)))
+} else {
+  vf_pa_all <- vf_episode_base
+}
 
 readr::write_csv(vf_pa_all, vf_pa_file)
 

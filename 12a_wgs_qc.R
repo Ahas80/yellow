@@ -181,7 +181,14 @@ write_csv(canonical_selection, canonical_file)
 log_info("Written canonical assembly selection to: ", canonical_file)
 
 analysis_manifest <- canonical_selection %>%
-    filter(selected_canonical %in% TRUE, QC_PASS %in% TRUE)
+    filter(selected_canonical %in% TRUE, QC_PASS %in% TRUE) %>%
+    mutate(
+        Participant_id = as.character(Participant_id),
+        tp_lab = normalise_timepoint_preserve_events(tp_lab),
+        full_path = normalizePath(full_path, winslash = "/", mustWork = TRUE),
+        fasta_path = full_path,
+        fasta_sha256 = vapply(full_path, digest::digest, character(1), algo = "sha256", file = TRUE)
+    )
 assert_analysis_assembly_manifest(
     analysis_manifest,
     context = "12a Longcycler-only analysis manifest",
@@ -193,7 +200,6 @@ assert_analysis_assembly_manifest(
 write_csv(analysis_manifest, FILE_ANALYSIS_ASSEMBLY_MANIFEST)
 log_info("Written Longcycler-only analysis manifest to: ", FILE_ANALYSIS_ASSEMBLY_MANIFEST)
 log_info("  Selected Longcycler assemblies: ", nrow(analysis_manifest))
-log_info("  Selected non-Longcycler assemblies: 0")
 
 append_denominator_summary(
     qc_res,
@@ -215,6 +221,7 @@ append_denominator_summary(
 # QC selection bias by primary UTI status.  This uses exact-style Fisher testing
 # because UTI counts are sparse and the chi-square approximation can be invalid.
 status_file <- FILE_STATUS_MAP
+if (file.exists(FILE_ANALYSIS_CLINICAL_COHORT)) unlink(FILE_ANALYSIS_CLINICAL_COHORT)
 if (file.exists(status_file)) {
     status <- read_csv(status_file, show_col_types = FALSE) %>%
         prefer_primary_uti_status() %>%
@@ -301,7 +308,10 @@ if (file.exists(status_file)) {
             ),
             file.path(DIR_QC, "qc_selection_bias_report.txt")
         )
+        stop("Status map has duplicated Participant_id + tp_lab keys; exact Longcycler clinical cohort was not published.")
     }
+} else {
+    stop("Primary status map is required to publish the exact Longcycler analysis cohort: ", status_file)
 }
 
 write_uti_attrition_outputs()

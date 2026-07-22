@@ -1,0 +1,29 @@
+{
+  "schema_version": "dnadiff_sha256_cache_v1",
+  "pair_key": "122025__T2__vs__130037__T6",
+  "cache_signature": "ec787f94a593fe99430263de7bc56c37d87e9745f265edfd3d13a1247ad2a29e",
+  "input_a": {
+    "path": "/Users/Aamir/Desktop/rUTIs/ont-yellow-routine-fastas/PR0042_barcode48_2445C110101-longcycler.fasta",
+    "sha256": "1063c7aa62cba122e5a677d969c7257d20eb35501a4928a49ee1e28ede043642",
+    "size_bytes": 5292101,
+    "mtime_utc": "2026-05-06T13:20:26.000000Z"
+  },
+  "input_b": {
+    "path": "/Users/Aamir/Desktop/rUTIs/ont-yellow-routine-fastas/PR0049_barcode07_2547C233701-1-longcycler.fasta",
+    "sha256": "4617511cdb1b7085b8bfd717e4ce528893f51efd3bea067572aa8acfb142b9c7",
+    "size_bytes": 5133237,
+    "mtime_utc": "2026-05-06T13:22:02.000000Z"
+  },
+  "report": {
+    "path": "/Users/Aamir/Desktop/rUTIs/outputs/nursing_home_candidate_clusters_20260717/direct_pairwise/dnadiff_cache_sha256_v1/122025__T2__vs__130037__T6__ec787f94a593fe99430263de.report",
+    "sha256": "8d7763a0b80f67a7b540295f79a1811ae74512a3b68fadb92b54b652d036471c",
+    "size_bytes": 4281,
+    "mtime_utc": "2026-07-17T11:30:13.671061Z"
+  },
+  "dnadiff": {
+    "executable": "/opt/homebrew/Cellar/mummer/4.0.1/bin/dnadiff",
+    "version": "dnadiff | DNAdiff version 1.3",
+    "command": "dnadiff -p 'outputs/nursing_home_candidate_clusters_20260717/direct_pairwise/dnadiff_cache_sha256_v1/122025__T2__vs__130037__T6__ec787f94a593fe99430263de' '/Users/Aamir/Desktop/rUTIs/ont-yellow-routine-fastas/PR0042_barcode48_2445C110101-longcycler.fasta' '/Users/Aamir/Desktop/rUTIs/ont-yellow-routine-fastas/PR0049_barcode07_2547C233701-1-longcycler.fasta'",
+    "generated_at_utc": "2026-07-17T11:30:13.679192Z"
+  }
+}

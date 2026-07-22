@@ -22,7 +22,7 @@
 #
 # INPUTS:
 #   - results/vf/vf_hits_all.rds          (from 02_gene_presence_analysis.R)
-#   - results/clinical/status_map.csv     (from 00b_classify_episodes.R)
+#   - results/clinical/analysis_cohort_longcycler.csv
 #
 # OUTPUTS:
 #   - results/vf/annotated_gene_table.csv       (gene-level annotation)
@@ -221,7 +221,11 @@ if (nrow(nitrate_long)) {
 
 # 7. Focus Genes Analysis (GLMM)
 # ------------------------------------------------------------------------------
-FILE_STATUS_MAP <- file.path(DIR_CLINICAL, "status_map.csv")
+FILE_STATUS_MAP <- FILE_ANALYSIS_CLINICAL_COHORT
+if (!file.exists(FILE_STATUS_MAP)) {
+  stop("Missing selected Longcycler clinical cohort: ", FILE_STATUS_MAP,
+       ". Run 12a_wgs_qc.R first.")
+}
 
 if (file.exists(FILE_STATUS_MAP)) {
   status_map <- read_csv(FILE_STATUS_MAP, show_col_types = FALSE) %>%
@@ -230,9 +234,19 @@ if (file.exists(FILE_STATUS_MAP)) {
     status_map <- bind_cols(status_map, tp_norm(status_map$Timepoint))
   }
   status_map <- status_map %>%
+    mutate(
+      Participant_id = as.character(Participant_id),
+      tp_lab = normalise_timepoint_preserve_events(tp_lab)
+    ) %>%
     select(any_of(c("Participant_id", "tp_lab", "Infection_Status", "UTI_Status",
                     "UTI_binary", "Not_UTI_subgroup", "Batch"))) %>%
     distinct()
+  if (nrow(status_map) != 532L || n_distinct(status_map$Participant_id) != 161L ||
+      sum(status_map$UTI_Status == "UTI", na.rm = TRUE) != 16L ||
+      sum(status_map$UTI_Status == "Not_UTI", na.rm = TRUE) != 516L ||
+      anyDuplicated(status_map[c("Participant_id", "tp_lab")])) {
+    stop("Focused-gene analysis requires the exact 532-episode selected Longcycler clinical cohort.")
+  }
   if (!"Batch" %in% names(status_map)) status_map$Batch <- NA_character_
 
   # Focus gene list (subset for brevity in example, expand as needed)

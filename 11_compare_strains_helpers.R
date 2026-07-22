@@ -291,13 +291,30 @@ load_core_tables <- function() {
     }
   }
 
+  # Assembly-first predicted plasmid profiles from numbered script 09b.
+  # These are kept separate from PlasmidFinder replicon-marker profiles.
+  mob_file <- file.path(
+    "results", "plasmids", "mob_suite", "episode_plasmid_profiles.csv"
+  )
+  mob_marker <- file.path(
+    "results", "plasmids", "mob_suite", "RUN_COMPLETE.txt"
+  )
+  mob_profiles <- NULL
+  if (file.exists(mob_file) && file.exists(mob_marker)) {
+    mob_profiles <- readr::read_csv(mob_file, show_col_types = FALSE)
+    if (!"Isolate_ID" %in% names(mob_profiles)) {
+      stop("MOB episode profiles lack Isolate_ID.")
+    }
+  }
+
   list(
     assemblies = asm,
     status_map = status_map,
     mlst = mlst,
     vf_pa = vf_pa,
     inc_pa = inc_pa,
-    pmlst_wide = pmlst_wide
+    pmlst_wide = pmlst_wide,
+    mob_profiles = mob_profiles
   )
 }
 
@@ -564,6 +581,90 @@ jaccard_from_wide <- function(df_wide, row_key_cols = c("Participant_id", "tp_la
   inter <- sum(a & b)
   un <- sum(a | b)
   list(jaccard = if (un == 0) NA_real_ else inter / un, n_int = inter, n_union = un)
+}
+
+empty_profile_metrics <- function() {
+  list(
+    jaccard = NA_real_,
+    n_intersection = NA_integer_,
+    n_union = NA_integer_,
+    both_empty = NA,
+    available = FALSE,
+    gains = NA_character_,
+    losses = NA_character_,
+    n_gains = NA_integer_,
+    n_losses = NA_integer_
+  )
+}
+
+set_profile_metrics <- function(a, b, available_a = TRUE, available_b = TRUE) {
+  if (!isTRUE(available_a) || !isTRUE(available_b)) return(empty_profile_metrics())
+  a <- sort(unique(as.character(a[!is.na(a) & nzchar(a)])))
+  b <- sort(unique(as.character(b[!is.na(b) & nzchar(b)])))
+  union_set <- union(a, b)
+  intersection_set <- intersect(a, b)
+  gains <- setdiff(b, a)
+  losses <- setdiff(a, b)
+  both_empty <- !length(a) && !length(b)
+  list(
+    jaccard = if (both_empty) 1 else length(intersection_set) / length(union_set),
+    n_intersection = length(intersection_set),
+    n_union = length(union_set),
+    both_empty = both_empty,
+    available = TRUE,
+    gains = paste(gains, collapse = ";"),
+    losses = paste(losses, collapse = ";"),
+    n_gains = length(gains),
+    n_losses = length(losses)
+  )
+}
+
+binary_profile_metrics <- function(pa, isolate_a, isolate_b, feature_cols = NULL) {
+  if (is.null(pa) || !"Isolate_ID" %in% names(pa)) return(empty_profile_metrics())
+  row_a <- pa[match(isolate_a, pa$Isolate_ID), , drop = FALSE]
+  row_b <- pa[match(isolate_b, pa$Isolate_ID), , drop = FALSE]
+  if (!nrow(row_a) || !nrow(row_b) ||
+      is.na(match(isolate_a, pa$Isolate_ID)) ||
+      is.na(match(isolate_b, pa$Isolate_ID))) {
+    return(empty_profile_metrics())
+  }
+  if (is.null(feature_cols)) feature_cols <- setdiff(names(pa), "Isolate_ID")
+  feature_cols <- intersect(feature_cols, names(pa))
+  if (!length(feature_cols)) return(set_profile_metrics(character(), character()))
+  a_values <- suppressWarnings(as.numeric(unlist(
+    row_a[1, feature_cols, drop = FALSE], use.names = FALSE
+  )))
+  b_values <- suppressWarnings(as.numeric(unlist(
+    row_b[1, feature_cols, drop = FALSE], use.names = FALSE
+  )))
+  if (any(is.na(a_values)) || any(is.na(b_values))) return(empty_profile_metrics())
+  set_profile_metrics(
+    feature_cols[a_values > 0],
+    feature_cols[b_values > 0]
+  )
+}
+
+delimited_profile_metrics <- function(
+    profiles, isolate_a, isolate_b, value_col,
+    status_col = "mob_call_status", delimiter = ";") {
+  if (is.null(profiles) ||
+      !all(c("Isolate_ID", value_col, status_col) %in% names(profiles))) {
+    return(empty_profile_metrics())
+  }
+  idx_a <- match(isolate_a, profiles$Isolate_ID)
+  idx_b <- match(isolate_b, profiles$Isolate_ID)
+  if (is.na(idx_a) || is.na(idx_b)) return(empty_profile_metrics())
+  status_a <- identical(as.character(profiles[[status_col]][idx_a]), "complete")
+  status_b <- identical(as.character(profiles[[status_col]][idx_b]), "complete")
+  parse_values <- function(x) {
+    if (is.na(x) || !nzchar(x)) return(character())
+    trimws(strsplit(as.character(x), delimiter, fixed = TRUE)[[1L]])
+  }
+  set_profile_metrics(
+    parse_values(profiles[[value_col]][idx_a]),
+    parse_values(profiles[[value_col]][idx_b]),
+    status_a, status_b
+  )
 }
 
 # ------------- classification -------------------------------------------------

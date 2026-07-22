@@ -1,161 +1,32 @@
 {
-  "sourcePptx": "/Users/Aamir/Desktop/rUTIs/outputs/manual-20260527-current-review/presentations/ruti-current-results-scientific-review-v2/output/rUTI_Current_Results_VF_Focused_Review_2026-05-27.pptx",
-  "note": "The source v2 deck is used as an imported editable starting artifact. This v3 task is a deliberate content refocus from rUTI clinical review to longitudinal urinary E. coli VF pipeline review. The build edits the duplicated source slides in place while preserving the v2 academic-report dimensions, palette, and rhythm.",
-  "outputSlides": [
-    {
-      "outputSlide": 1,
-      "sourceSlide": 1,
-      "narrativeRole": "editable frame vf 01",
-      "reuseMode": "duplicate-slide",
-      "editTargets": []
-    },
-    {
-      "outputSlide": 2,
-      "sourceSlide": 2,
-      "narrativeRole": "editable frame vf 02",
-      "reuseMode": "duplicate-slide",
-      "editTargets": []
-    },
-    {
-      "outputSlide": 3,
-      "sourceSlide": 3,
-      "narrativeRole": "editable frame vf 03",
-      "reuseMode": "duplicate-slide",
-      "editTargets": []
-    },
-    {
-      "outputSlide": 4,
-      "sourceSlide": 4,
-      "narrativeRole": "editable frame vf 04",
-      "reuseMode": "duplicate-slide",
-      "editTargets": []
-    },
-    {
-      "outputSlide": 5,
-      "sourceSlide": 5,
-      "narrativeRole": "editable frame vf 05",
-      "reuseMode": "duplicate-slide",
-      "editTargets": []
-    },
-    {
-      "outputSlide": 6,
-      "sourceSlide": 6,
-      "narrativeRole": "editable frame vf 06",
-      "reuseMode": "duplicate-slide",
-      "editTargets": []
-    },
-    {
-      "outputSlide": 7,
-      "sourceSlide": 7,
-      "narrativeRole": "editable frame vf 07",
-      "reuseMode": "duplicate-slide",
-      "editTargets": []
-    },
-    {
-      "outputSlide": 8,
-      "sourceSlide": 8,
-      "narrativeRole": "editable frame vf 08",
-      "reuseMode": "duplicate-slide",
-      "editTargets": []
-    },
-    {
-      "outputSlide": 9,
-      "sourceSlide": 9,
-      "narrativeRole": "editable frame vf 09",
-      "reuseMode": "duplicate-slide",
-      "editTargets": []
-    },
-    {
-      "outputSlide": 10,
-      "sourceSlide": 10,
-      "narrativeRole": "editable frame vf 10",
-      "reuseMode": "duplicate-slide",
-      "editTargets": []
-    },
-    {
-      "outputSlide": 11,
-      "sourceSlide": 11,
-      "narrativeRole": "editable frame vf 11",
-      "reuseMode": "duplicate-slide",
-      "editTargets": []
-    },
-    {
-      "outputSlide": 12,
-      "sourceSlide": 12,
-      "narrativeRole": "editable frame vf 12",
-      "reuseMode": "duplicate-slide",
-      "editTargets": []
-    },
-    {
-      "outputSlide": 13,
-      "sourceSlide": 13,
-      "narrativeRole": "editable frame vf 13",
-      "reuseMode": "duplicate-slide",
-      "editTargets": []
-    },
-    {
-      "outputSlide": 14,
-      "sourceSlide": 14,
-      "narrativeRole": "editable frame vf 14",
-      "reuseMode": "duplicate-slide",
-      "editTargets": []
-    },
-    {
-      "outputSlide": 15,
-      "sourceSlide": 15,
-      "narrativeRole": "editable frame vf 15",
-      "reuseMode": "duplicate-slide",
-      "editTargets": []
-    },
-    {
-      "outputSlide": 16,
-      "sourceSlide": 16,
-      "narrativeRole": "editable frame vf 16",
-      "reuseMode": "duplicate-slide",
-      "editTargets": []
-    },
-    {
-      "outputSlide": 17,
-      "sourceSlide": 17,
-      "narrativeRole": "editable frame vf 17",
-      "reuseMode": "duplicate-slide",
-      "editTargets": []
-    },
-    {
-      "outputSlide": 18,
-      "sourceSlide": 18,
-      "narrativeRole": "editable frame vf 18",
-      "reuseMode": "duplicate-slide",
-      "editTargets": []
-    },
-    {
-      "outputSlide": 19,
-      "sourceSlide": 19,
-      "narrativeRole": "editable frame vf 19",
-      "reuseMode": "duplicate-slide",
-      "editTargets": []
-    },
-    {
-      "outputSlide": 20,
-      "sourceSlide": 20,
-      "narrativeRole": "editable frame vf 20",
-      "reuseMode": "duplicate-slide",
-      "editTargets": []
-    },
-    {
-      "outputSlide": 21,
-      "sourceSlide": 21,
-      "narrativeRole": "editable frame vf 21",
-      "reuseMode": "duplicate-slide",
-      "editTargets": []
-    },
-    {
-      "outputSlide": 22,
-      "sourceSlide": 22,
-      "narrativeRole": "editable frame vf 22",
-      "reuseMode": "duplicate-slide",
-      "editTargets": []
-    }
-  ],
-  "omittedSourceSlides": []
+  "deck": "Longcycler-only v3 scientific review",
+  "output_slide_count": 22,
+  "visual_fidelity_source": "output/Longitudinal_Urinary_Ecoli_VF_Pipeline_Review_2026-05-27.pptx",
+  "element_reference_source": "output/Longitudinal_Urinary_Ecoli_VF_Pipeline_Review_2026-05-27_EDITABLE_GENERATED_REPAIR_WARNING.pptx",
+  "reuse_mode": "artifact-tool reconstruction from audited element-level references",
+  "slides": [
+    {"output": 1, "source": 1, "role": "title and release anchors"},
+    {"output": 2, "source": 2, "role": "scope lock"},
+    {"output": 3, "source": 3, "role": "selected cohort"},
+    {"output": 4, "source": 4, "role": "numbered pipeline and RQ01-RQ10"},
+    {"output": 5, "source": 5, "role": "VF representation"},
+    {"output": 6, "source": 6, "role": "gene repertoire"},
+    {"output": 7, "source": 7, "role": "curated modules"},
+    {"output": 8, "source": 8, "role": "direct pairs versus adjacent transitions"},
+    {"output": 9, "source": 9, "role": "adjacent-transition gain and loss"},
+    {"output": 10, "source": 10, "role": "MLST context"},
+    {"output": 11, "source": 11, "role": "exploratory clinical overlay"},
+    {"output": 12, "source": 12, "role": "aggregate transition evidence"},
+    {"output": 13, "source": 13, "role": "evidence boundary and next steps"},
+    {"output": 14, "source": 14, "role": "operational handover"},
+    {"output": 15, "source": 15, "role": "denominator audit"},
+    {"output": 16, "source": 16, "role": "module prevalence annotation"},
+    {"output": 17, "source": 17, "role": "complete mechanism casebook"},
+    {"output": 18, "source": 18, "role": "stable-state context"},
+    {"output": 19, "source": 19, "role": "robustness and near-miss boundary"},
+    {"output": 20, "source": 20, "role": "lineage diagnostic"},
+    {"output": 21, "source": 21, "role": "accessory context only"},
+    {"output": 22, "source": 22, "role": "release registry and sources"}
+  ]
 }
+

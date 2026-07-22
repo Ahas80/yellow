@@ -1,17 +1,13 @@
-# Deviation Log
+# Deviation log — Longcycler-only v3 review
 
-## Intentional Scientific Reframe
-- Slides 1-10 now present virulence-factor repertoire, curation, and longitudinal stability/change across repeated urinary E. coli isolates.
-- Slides 11-12 introduce UTI versus Not_UTI as exploratory clinical annotation/application.
-- Appendix slides preserve current UTI-transition and AMR context as backup evidence only.
+## Intentional departures
+- The canonical source is flattened, so exact inherited text-object editing is impossible. The clean editable warning deck was used as the element-level reference while the canonical deck governed visual fidelity.
+- A new artifact-tool presentation is authored with the same dimensions, hierarchy, palette, and repeated frames so every analytical text object remains editable.
+- Counts, notes, and provenance are rebuilt from the release claim registry rather than retained from any earlier deck package.
+- A single participant anecdote is replaced by aggregate focused-transition evidence: 9 transitions, 5 at or below 25 SNPs, and a 9/9/0 casebook.
+- The source clinical denominator is confined to an attrition/QC slide; analytical claims use the selected 532-episode cohort.
 
-## Media And Diagram Policy
-- Explanatory visuals are rebuilt as native shapes/text.
-- Analytical figures are embedded from current PNG outputs.
-- No SVG, .bin media, or external image relationships are permitted in the final package.
+## Media policy
+- Current-run PNG plots are embedded without external links.
+- No empty inherited placeholders or hidden source-slide content are retained.
 
-## Guardrails
-- No legacy ASB-vs-UTI conclusion is presented.
-- No significant lpf claim is presented.
-- No global AMR association claim is presented.
-- Stable VF profiles are framed as supportive, not mechanistic proof.

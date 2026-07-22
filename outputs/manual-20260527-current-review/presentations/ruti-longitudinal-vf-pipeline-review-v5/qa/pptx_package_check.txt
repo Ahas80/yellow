@@ -1,5 +1,0 @@
-PPTX: /Users/Aamir/Desktop/rUTIs/outputs/manual-20260527-current-review/presentations/ruti-longitudinal-vf-pipeline-review-v5/output/Longitudinal_Urinary_Ecoli_VF_Pipeline_Review_Compact_Onboarding_2026-05-28.pptx
-slides: 17
-media: 8
-media_types: .png
-PASS

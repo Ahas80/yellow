@@ -1,0 +1,7 @@
+PR0010_barcode37_24150193001-1_longcycler_assembly_1	DUP	1946209	1947540	1332
+PR0010_barcode37_24150193001-1_longcycler_assembly_1	GAP	1976576	1976574	-1	-332	331
+PR0010_barcode37_24150193001-1_longcycler_assembly_1	SEQ	2243306	2230515	-12790	PR0010_barcode74_24270072201-1_longcycler_assembly_1	PR0010_barcode74_24270072201-1_longcycler_assembly_2
+PR0010_barcode37_24150193001-1_longcycler_assembly_1	SEQ	3033138	3015375	-17762	PR0010_barcode74_24270072201-1_longcycler_assembly_2	PR0010_barcode74_24270072201-1_longcycler_assembly_1
+PR0010_barcode37_24150193001-1_longcycler_assembly_1	GAP	4491615	4471583	-20031	-20039	8
+PR0010_barcode37_24150193001-1_longcycler_assembly_1	GAP	5188611	5188523	-87	-51	-36
+PR0010_barcode37_24150193001-1_longcycler_assembly_2	JMP	2470	2469	0

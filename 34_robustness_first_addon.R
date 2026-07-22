@@ -76,26 +76,14 @@ normalise_tp_label <- function(x) {
 key2 <- function(pid, tp) paste(as.character(pid), normalise_tp_label(tp), sep = "|")
 
 load_active_longcycler_keys <- function() {
-  canonical_file <- file.path(DIR_QC, "canonical_assembly_selection.csv")
-  selection <- read_csv(require_file(canonical_file, "canonical Longcycler selection"), show_col_types = FALSE)
-  assembler_col <- intersect(c("assembler", "Assembler"), names(selection))[1]
-  if (is.na(assembler_col) ||
-      !all(c("selected_canonical", "QC_PASS", "Participant_id", "tp_lab") %in% names(selection))) {
-    stop("Canonical assembly selection lacks Longcycler-primary selection fields: ", canonical_file)
-  }
-  keys <- selection %>%
+  cohort <- read_csv(require_file(FILE_ANALYSIS_CLINICAL_COHORT, "selected Longcycler analysis cohort"), show_col_types = FALSE)
+  keys <- cohort %>%
     mutate(
       Participant_id = as.character(.data$Participant_id),
-      tp_lab = normalise_tp_label(.data$tp_lab),
-      selected_canonical = as_pipeline_bool(.data$selected_canonical),
-      QC_PASS = as_pipeline_bool(.data$QC_PASS),
-      active_assembler = str_to_lower(as.character(.data[[assembler_col]]))
+      tp_lab = normalise_tp_label(.data$tp_lab)
     ) %>%
-    filter(.data$selected_canonical %in% TRUE,
-           .data$QC_PASS %in% TRUE,
-           .data$active_assembler == "longcycler") %>%
     distinct(.data$Participant_id, .data$tp_lab)
-  if (nrow(keys) == 0) stop("Canonical manifest contains no selected QC-passing Longcycler episode keys.")
+  if (nrow(keys) != nrow(cohort)) stop("Selected Longcycler analysis cohort has duplicate episode keys")
   keys
 }
 
@@ -211,18 +199,26 @@ module_fisher <- function(df, binary_col, module_cols, contrast_name) {
 # LOAD INPUTS
 # ==============================================================================
 
-status <- read_csv(require_file(FILE_STATUS_MAP), show_col_types = FALSE) %>%
+status <- read_csv(require_file(FILE_ANALYSIS_CLINICAL_COHORT), show_col_types = FALSE) %>%
   prefer_primary_uti_status(allow_legacy_fallback = FALSE) %>%
   apply_manual_sample_curation(context = "34_status") %>%
   mutate(Participant_id = as.character(Participant_id),
          tp_lab = normalise_tp_label(tp_lab))
 
-status_primary <- status %>%
-  filter(analysis_include_primary %in% TRUE)
+status_primary <- status
 
 active_longcycler_keys <- load_active_longcycler_keys()
-expected_active_status <- status_primary %>%
-  semi_join(active_longcycler_keys, by = c("Participant_id", "tp_lab"))
+canonical_transitions <- read_csv(
+  require_file(file.path(DIR_RESULTS, "longitudinal", "longcycler_transitions.csv"),
+               "canonical Longcycler transitions"),
+  show_col_types = FALSE
+)
+if (nrow(canonical_transitions) != 371L ||
+    sum(canonical_transitions$status_from == "Not_UTI" & canonical_transitions$status_to == "UTI", na.rm = TRUE) != 9L ||
+    any(is.na(canonical_transitions$TotalSNPs))) {
+  stop("Canonical Longcycler transition export failed the 371/9/direct-SNP contract")
+}
+expected_active_status <- status_primary
 if (nrow(expected_active_status) != nrow(active_longcycler_keys)) {
   stop("Not every active selected QC-pass Longcycler key has one primary clinical status row.")
 }
@@ -235,17 +231,24 @@ vf_ready <- read_csv(require_file(FILE_VF_READY), show_col_types = FALSE) %>%
   apply_manual_sample_curation(context = "34_vf_ready") %>%
   filter_primary_genomics() %>%
   mutate(Participant_id = as.character(Participant_id),
-         tp_lab = normalise_tp_label(tp_lab)) %>%
-  semi_join(active_longcycler_keys, by = c("Participant_id", "tp_lab"))
-if (nrow(vf_ready) != expected_active_total) {
-  stop("VF-ready data do not contain every active selected QC-pass Longcycler episode key.")
+         tp_lab = normalise_tp_label(tp_lab))
+vf_keys <- vf_ready %>% distinct(.data$Participant_id, .data$tp_lab)
+if (nrow(vf_ready) != expected_active_total ||
+    nrow(anti_join(active_longcycler_keys, vf_keys, by = c("Participant_id", "tp_lab"))) ||
+    nrow(anti_join(vf_keys, active_longcycler_keys, by = c("Participant_id", "tp_lab")))) {
+  stop("VF-ready keys do not exactly equal the selected Longcycler analysis cohort.")
 }
 
 score_path <- require_file(file.path(DIR_VF, "vf_score_table.csv"))
 scores <- read_csv(score_path, show_col_types = FALSE) %>%
   mutate(Participant_id = as.character(Participant_id),
-         tp_lab = normalise_tp_label(tp_lab)) %>%
-  semi_join(active_longcycler_keys, by = c("Participant_id", "tp_lab"))
+         tp_lab = normalise_tp_label(tp_lab))
+score_keys <- scores %>% distinct(.data$Participant_id, .data$tp_lab)
+if (nrow(score_keys) != nrow(scores) ||
+    nrow(anti_join(active_longcycler_keys, score_keys, by = c("Participant_id", "tp_lab"))) ||
+    nrow(anti_join(score_keys, active_longcycler_keys, by = c("Participant_id", "tp_lab")))) {
+  stop("VF score keys do not exactly equal the selected Longcycler analysis cohort")
+}
 
 if (!"UTI_Status" %in% names(scores)) {
   scores <- scores %>%
@@ -453,7 +456,10 @@ model_stability_summary <- tibble(
     "Number of mixed-effect models attempted.",
     "Convergence alone does not imply robust inference.",
     "Singular random-effect fits indicate limited repeated-measure information for those features.",
-    "Sparse/separation-risk features are unstable with 17 primary VF-ready UTI rows.",
+    sprintf(
+      "Sparse/separation-risk features are unstable with %d selected Longcycler UTI rows.",
+      expected_active_uti
+    ),
     "Nominal GLMM hits before FDR correction.",
     "Confirmatory GLMM hits after FDR correction.",
     "Univariable tests attempted.",
@@ -563,7 +569,8 @@ robustness_claim_matrix <- tibble(
     sprintf("%d GLMM sparse/separation-risk features and %d singular fits.",
             sum(glmm$sparse_data_separation_risk %in% TRUE, na.rm = TRUE),
             sum(str_detect(glmm$model_type, regex("singular", ignore_case = TRUE)), na.rm = TRUE)),
-    "With 17 VF-ready UTI rows, only large/extreme prevalence differences are detectably stable."
+    sprintf("With %d selected Longcycler UTI rows, only large/extreme prevalence differences are detectably stable.",
+            expected_active_uti)
   ),
   claim_strength = c(
     "strong denominator trace",
@@ -674,22 +681,22 @@ ggsave(file.path(DIR_PLOTS_ROBUSTNESS, "model_stability_flags.png"), p_flags, wi
 
 validation <- tibble(
   check = c(
-    "primary clinical denominator is 583 rows",
-    "primary clinical UTI count is 18",
+    sprintf("selected Longcycler denominator is %d rows", expected_active_total),
+    sprintf("selected Longcycler UTI count is %d", expected_active_uti),
     sprintf("active selected QC-pass Longcycler VF/model denominator is %d rows", expected_active_total),
     sprintf("active Longcycler VF/model counts are %d UTI and %d Not_UTI", expected_active_uti, expected_active_not_uti),
-    "near-miss clinical row count is 19",
+    "near-miss selected Longcycler row count is 17",
     "VF-ready missing primary status is zero",
     "legacy OLD files not used as inputs"
   ),
   status = c(
-    ifelse(nrow(status_primary) == 583, "PASS", "FAIL"),
-    ifelse(sum(status_primary$UTI_Status == "UTI", na.rm = TRUE) == 18, "PASS", "FAIL"),
+    ifelse(nrow(status_primary) == expected_active_total, "PASS", "FAIL"),
+    ifelse(sum(status_primary$UTI_Status == "UTI", na.rm = TRUE) == expected_active_uti, "PASS", "FAIL"),
     ifelse(nrow(vf_ready) == expected_active_total, "PASS", "FAIL"),
     ifelse(sum(vf_ready$UTI_Status == "UTI", na.rm = TRUE) == expected_active_uti &&
              sum(vf_ready$UTI_Status == "Not_UTI", na.rm = TRUE) == expected_active_not_uti,
            "PASS", "FAIL"),
-    ifelse(nrow(near_miss) == 19, "PASS", "FAIL"),
+    ifelse(nrow(near_miss) == 17, "PASS", "FAIL"),
     ifelse(sum(is.na(vf_ready$UTI_Status)) == 0, "PASS", "FAIL"),
     "PASS"
   ),
@@ -702,7 +709,7 @@ validation <- tibble(
             sum(vf_ready$UTI_Status == "Not_UTI", na.rm = TRUE)),
     sprintf("near_miss=%d", nrow(near_miss)),
     sprintf("missing=%d", sum(is.na(vf_ready$UTI_Status))),
-    "Inputs restricted to current results/vf, results/qc, results/audit, results/models, and status_map outputs."
+    "Inputs restricted to current selected Longcycler, VF, QC, audit, and model outputs."
   )
 )
 
@@ -719,7 +726,7 @@ summary_lines <- c(
   "",
   "## Denominator Robustness",
   "",
-  sprintf("- Primary clinical denominator: **%d** rows = **%d UTI**, **%d Not_UTI**.",
+  sprintf("- Selected QC-pass Longcycler denominator: **%d** rows = **%d UTI**, **%d Not_UTI**.",
           nrow(status_primary),
           sum(status_primary$UTI_Status == "UTI", na.rm = TRUE),
           sum(status_primary$UTI_Status == "Not_UTI", na.rm = TRUE)),

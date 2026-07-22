@@ -23,12 +23,12 @@ if (!file.exists(FILE_MLST_CANONICAL)) {
   stop("Provider-preferred MLST file is missing: ", FILE_MLST_CANONICAL)
 }
 
-canonical_file <- file.path(DIR_QC, "canonical_assembly_selection.csv")
+canonical_file <- FILE_ANALYSIS_ASSEMBLY_MANIFEST
 if (!file.exists(canonical_file)) {
   stop("Canonical assembly selection is mandatory: ", canonical_file)
 }
 
-canonical <- read_csv(canonical_file, show_col_types = FALSE, progress = FALSE)
+canonical <- load_analysis_assemblies(canonical_file, require_files = TRUE)
 required_canonical <- c("Participant_id", "tp_lab", "Isolate_ID", "selected_canonical", "QC_PASS")
 missing_canonical <- setdiff(required_canonical, names(canonical))
 if (length(missing_canonical) > 0) {
@@ -47,7 +47,8 @@ canonical <- canonical %>%
       if ("Assembler" %in% names(.)) as.character(Assembler) else NA_character_,
       detect_assembler(coalesce(as.character(full_path), as.character(file_name)))
     )),
-    full_path = normalizePath(as.character(full_path), winslash = "/", mustWork = FALSE)
+    full_path = normalizePath(as.character(full_path), winslash = "/", mustWork = TRUE),
+    fasta_sha256 = vapply(full_path, digest::digest, character(1), algo = "sha256", file = TRUE)
   ) %>%
   filter(selected_canonical %in% TRUE, QC_PASS %in% TRUE)
 
@@ -62,7 +63,10 @@ if (anyDuplicated(canonical[c("Participant_id", "tp_lab")])) {
 mlst <- read_csv(FILE_MLST_CANONICAL, show_col_types = FALSE, progress = FALSE)
 required_cols <- c(
   "ST", "ST_source", "ST_provider", "ST_local", "provider_PercGoodTargets",
-  "provider_file", "provider_batch_match", "provider_assembler", "full_path"
+  "provider_file", "provider_batch_match", "provider_assembler", "full_path", "fasta_sha256",
+  "provider_has_classic_7_loci", "ST_numeric_comparable_to_local",
+  "ST_provider_below_qc95", "provider_below_qc95_PercGoodTargets",
+  "local_mlst_complete", "local_ambiguous_call"
 )
 missing_cols <- setdiff(required_cols, names(mlst))
 if (length(missing_cols) > 0) {
@@ -92,6 +96,10 @@ mlst <- mlst %>%
 if (!setequal(mlst$full_path, canonical$full_path)) {
   stop("Provider-preferred MLST FASTA paths do not exactly match the selected Longcycler manifest.")
 }
+if (!setequal(
+  paste(mlst$full_path, mlst$fasta_sha256, sep = "\n"),
+  paste(canonical$full_path, canonical$fasta_sha256, sep = "\n")
+)) stop("Provider-preferred MLST FASTA path/SHA-256 pairs do not exactly match the selected Longcycler manifest.")
 if (any(is.na(mlst$active_assembler) | mlst$active_assembler != "longcycler")) {
   stop("Provider-preferred MLST contains non-Longcycler or missing active assembly provenance.")
 }
@@ -109,16 +117,49 @@ if (any(is.na(mlst$ST_source) | !nzchar(as.character(mlst$ST_source)))) {
 }
 
 provider_primary <- mlst %>% filter(ST_source == "provider_qc95")
+if (nrow(provider_primary) > 0 && any(provider_primary$provider_assembler != "longcycler")) {
+  stop("Provider-primary MLST is not tied to the selected Longcycler manifest.")
+}
+if (nrow(provider_primary) > 0 && any(!(provider_primary$provider_has_classic_7_loci %in% TRUE))) {
+  stop("Provider-primary MLST lacks classic seven-locus scheme evidence.")
+}
 if (nrow(provider_primary) > 0 && any(
-  is.na(provider_primary$provider_assembler) |
-    provider_primary$provider_assembler != "longcycler"
+  is.na(provider_primary$ST_provider) |
+    !nzchar(as.character(provider_primary$ST_provider)) |
+    is.na(provider_primary$provider_PercGoodTargets) |
+    provider_primary$provider_PercGoodTargets < 95
 )) {
-  stop("Provider-primary MLST contains Flye, combined, unknown, or missing provider provenance.")
+  stop("Provider-primary MLST contains a missing ST or a call below the QC95 threshold.")
+}
+dual_usable <- provider_primary %>% filter(!is.na(.data$ST_local), nzchar(as.character(.data$ST_local)), .data$ST_local != "-")
+if (nrow(dual_usable) > 0 && any(as.character(dual_usable$ST_provider) != as.character(dual_usable$ST_local))) {
+  stop("Provider/local classic seven-locus ST discordance is present in the active MLST layer.")
 }
 
 local_fallback <- mlst %>% filter(str_starts(ST_source, "local_fallback"))
 if (nrow(local_fallback) > 0 && any(is.na(local_fallback$ST_local))) {
   stop("A local-fallback MLST row lacks its Longcycler local ST provenance.")
+}
+if (nrow(local_fallback) > 0 && any(
+  !(local_fallback$local_mlst_complete %in% TRUE) |
+    local_fallback$local_ambiguous_call %in% TRUE
+)) {
+  stop("A local-fallback MLST row is incomplete or ambiguous at the classic seven loci.")
+}
+fallback_below <- local_fallback %>%
+  filter(!is.na(.data$ST_provider_below_qc95), nzchar(as.character(.data$ST_provider_below_qc95)))
+if (nrow(fallback_below) > 0 && any(
+  as.character(fallback_below$ST_local) != as.character(fallback_below$ST_provider_below_qc95)
+)) {
+  stop("A local fallback disagrees with its retained below-QC95 provider ST evidence.")
+}
+missing_rows <- mlst %>% filter(.data$ST_source %in% c("missing", "missing_provider_conflict"))
+if (nrow(missing_rows) > 0 && any(!is.na(missing_rows$ST) & nzchar(as.character(missing_rows$ST)))) {
+  stop("An MLST row labelled missing contains an accepted active ST.")
+}
+called <- mlst %>% filter(!is.na(.data$ST), nzchar(as.character(.data$ST)), .data$ST != "-")
+if (nrow(called) > 0 && any(!(called$ST_numeric_comparable_to_local %in% TRUE))) {
+  stop("A usable active MLST call is not certified as classic seven-locus comparable.")
 }
 
 source_counts <- mlst %>% count(ST_source, name = "n")

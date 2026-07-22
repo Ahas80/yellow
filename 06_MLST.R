@@ -82,10 +82,9 @@ source_counts <- if ("ST_source" %in% names(active_mlst)) {
 provider_rows <- active_mlst %>%
   filter(ST_source == "provider_qc95")
 if (nrow(provider_rows) > 0 && any(
-  is.na(provider_rows$provider_assembler) |
-    tolower(provider_rows$provider_assembler) != "longcycler"
+  tolower(provider_rows$provider_assembler) != "longcycler"
 )) {
-  stop("Active provider-primary MLST contains non-Longcycler provider provenance.")
+  stop("Active provider-primary MLST is not tied to the selected Longcycler manifest.")
 }
 
 active_assembler <- tolower(coalesce(

@@ -1,0 +1,268 @@
+# Exploratory tiered crosswalk between the primary ABRicate/VFDB feature matrix
+# and CGE VirulenceFinder 3.2.1 gene families.
+#
+# USER-EDITABLE FILE
+# ------------------
+# Edit mappings here, then rerun:
+#   python3 scripts/build_virulencefinder_tiered_concordance.py
+#
+# Scientific rules:
+# - `direct_exact` and `direct_alias` may be compared as individual genes.
+# - `high_risk_exact` is shown separately and MUST NOT enter the strict direct
+#   concordance universe without an explicit scientific review.
+# - `system_rule` creates an "any listed member is present" binary endpoint.
+#   It is suitable for a separately labelled system-level sensitivity only.
+# - Features outside every tier remain NA, never zero, in cross-database fields.
+# - Changing a mapping is a scientific decision. Update the locked expected
+#   counts below only after reviewing the resulting reconciliation report.
+
+[contract]
+schema_version = "1.0.0"
+comparison_label = "Exploratory tiered CGE VirulenceFinder versus primary ABRicate/VFDB concordance"
+expected_samples = 532
+expected_primary_features = 227
+expected_cge_families = 681
+expected_direct_exact = 43
+expected_direct_alias = 5
+expected_high_risk_exact = 9
+expected_system_rules = 7
+expected_system_primary_memberships = 41
+expected_system_cge_memberships = 118
+expected_any_tier_primary = 89
+expected_any_tier_cge = 166
+expected_non_comparable_primary = 138
+expected_non_comparable_cge = 515
+not_comparable_value = "NA"
+
+# These same/case-normalized names have compatible local descriptions and
+# sequence evidence and are provisionally acceptable for individual-gene
+# concordance. `fimH` and `faeJ` retain explicit technical warnings below.
+[direct_exact]
+default_rationale = "Same or case-normalized gene-family name with compatible local reference sequence and function."
+mappings = [
+  { primary = "aslA", cge = "AslA" },
+  { primary = "agg3A", cge = "agg3A" },
+  { primary = "agg3C", cge = "agg3C" },
+  { primary = "agg3D", cge = "agg3D" },
+  { primary = "aggA", cge = "aggA" },
+  { primary = "aggC", cge = "aggC" },
+  { primary = "aggD", cge = "aggD" },
+  { primary = "astA", cge = "astA" },
+  { primary = "cif", cge = "cif" },
+  { primary = "cnf1", cge = "cnf1" },
+  { primary = "cswA", cge = "cswA" },
+  { primary = "efa1", cge = "efa1" },
+  { primary = "espA", cge = "espA" },
+  { primary = "espF", cge = "espF" },
+  { primary = "espP", cge = "espP" },
+  { primary = "espY2", cge = "espY2" },
+  { primary = "faeC", cge = "faeC" },
+  { primary = "faeD", cge = "faeD" },
+  { primary = "faeE", cge = "faeE" },
+  { primary = "faeF", cge = "faeF" },
+  { primary = "faeH", cge = "faeH" },
+  { primary = "faeI", cge = "faeI" },
+  { primary = "faeJ", cge = "faeJ" },
+  { primary = "fdeC", cge = "fdeC" },
+  { primary = "fimH", cge = "fimH" },
+  { primary = "focG", cge = "focG" },
+  { primary = "fyuA", cge = "fyuA" },
+  { primary = "hlyA", cge = "hlyA" },
+  { primary = "ibeA", cge = "ibeA" },
+  { primary = "iroN", cge = "iroN" },
+  { primary = "irp2", cge = "irp2" },
+  { primary = "iucC", cge = "iucC" },
+  { primary = "iutA", cge = "iutA" },
+  { primary = "nleA", cge = "nleA" },
+  { primary = "nleC", cge = "nleC" },
+  { primary = "papC", cge = "papC" },
+  { primary = "pic", cge = "pic" },
+  { primary = "sat", cge = "sat" },
+  { primary = "senB", cge = "senB" },
+  { primary = "sfaS", cge = "sfaS" },
+  { primary = "sigA", cge = "sigA" },
+  { primary = "tcpC", cge = "tcpC" },
+  { primary = "vat", cge = "vat" },
+]
+
+[direct_exact.technical_flags]
+# CGE fimH references cover a diagnostic 421-528 nt region, whereas the local
+# primary fimH reference NP_757248 is 912 nt. Calls nevertheless agreed 532/532.
+fimH = "partial_reference_domain; interpret as diagnostic-region presence, not full-length identity"
+# faeJ has an exact same-name reference but also strong homology to CGE aalH.
+faeJ = "paralog_homology; exact calls agreed in this cohort but retain caution"
+
+# Different labels that are exact full-length nucleotide matches in the local
+# pinned/reference files. These are acceptable individual-gene aliases.
+[[direct_alias]]
+primary = "aap/aspU"
+cge = "aap"
+primary_accession = "YP_006099176"
+cge_reference = "aap:3:FN554767"
+rationale = "VFDB combined symbol and CGE aap are exact full-length nucleotide matches (dispersin)."
+
+[[direct_alias]]
+primary = "f17d-A"
+cge = "F17A"
+primary_accession = "AAA92618"
+cge_reference = "F17A:13:L77091"
+rationale = "Alternative F17 subunit naming; exact full-length nucleotide match."
+
+[[direct_alias]]
+primary = "f17d-C"
+cge = "F17C"
+primary_accession = "AAA92620"
+cge_reference = "F17C:13:L77091"
+rationale = "Alternative F17 subunit naming; exact full-length nucleotide match."
+
+[[direct_alias]]
+primary = "f17d-D"
+cge = "F17D"
+primary_accession = "AAA92619"
+cge_reference = "F17D:13:L77091"
+rationale = "Alternative F17 subunit naming; exact full-length nucleotide match."
+
+[[direct_alias]]
+primary = "f17d-G"
+cge = "F17G"
+primary_accession = "AAA92621"
+cge_reference = "F17G:13:L77091"
+rationale = "Alternative F17 subunit naming; exact full-length nucleotide match."
+
+# Same-name pairs that the audit found unsafe for ordinary one-to-one use.
+# They are retained so their raw discrepancy remains visible, but they are
+# excluded from the strict direct universe and never silently counted as zero.
+[[high_risk_exact]]
+primary = "afaA"
+cge = "afaA"
+rationale = "Typed afaA-VIII and draA primary references also map exactly to CGE afaA; system granularity collision."
+recommended_system_rule = "afa_dra_daf_system"
+
+[[high_risk_exact]]
+primary = "afaD"
+cge = "afaD"
+rationale = "Typed afaD-VIII and draD primary references also map exactly to CGE afaD; system granularity collision."
+recommended_system_rule = "afa_dra_daf_system"
+
+[[high_risk_exact]]
+primary = "aggB"
+cge = "aggB"
+rationale = "Primary aggB is nearly identical to CGE afaD as well as exact aggB; best-hit attribution is ambiguous."
+recommended_system_rule = ""
+
+[[high_risk_exact]]
+primary = "agg3B"
+cge = "agg3B"
+rationale = "Primary agg3B is nearly identical to CGE afaD as well as exact agg3B; best-hit attribution is ambiguous."
+recommended_system_rule = ""
+
+[[high_risk_exact]]
+primary = "chuA"
+cge = "chuA"
+rationale = "Primary shuA and chuA both map nearly identically to CGE chuA; CGE cannot distinguish the two primary labels."
+recommended_system_rule = "chu_shu_heme_receptor"
+
+[[high_risk_exact]]
+primary = "focC"
+cge = "focC"
+rationale = "focC, focCsfaE and sfaE CGE references are near-identical across the full primary focC sequence."
+recommended_system_rule = "sfa_foc_system"
+
+[[high_risk_exact]]
+primary = "kpsM"
+cge = "kpsM"
+rationale = "Primary K1 kpsM maps to CGE kpsMII_K1; the generic CGE kpsM column is a different reference granularity."
+recommended_system_rule = "kpsM_any_subtype"
+
+[[high_risk_exact]]
+primary = "sfaD"
+cge = "sfaD"
+rationale = "Primary sfaD also has near-full-length near-identity to CGE focI."
+recommended_system_rule = "sfa_foc_system"
+
+[[high_risk_exact]]
+primary = "sfaE"
+cge = "sfaE"
+rationale = "Primary sfaE maps near-identically to CGE sfaE, focC and focCsfaE."
+recommended_system_rule = "sfa_foc_system"
+
+# Aggregate rules. `mode = "any"` means a method is positive when at least one
+# listed/expanded member is present. Prefix expansion is validated against the
+# expected member count so a database update cannot silently alter a rule.
+[[system_rule]]
+id = "eae_any_subtype"
+label = "Intimin (any CGE eae subtype)"
+mode = "any"
+support = "sequence_backed_allele_collapse"
+primary = ["eae"]
+cge_prefix = "eae-"
+expected_cge_members = 65
+rationale = "VFDB uses a generic eae feature; CGE separates 65 intimin subtype families."
+
+[[system_rule]]
+id = "papA_any_allele"
+label = "PapA major pilin (any CGE papA allele)"
+mode = "any"
+support = "sequence_backed_allele_collapse"
+primary = ["papA"]
+cge_prefix = "papA_"
+expected_cge_members = 20
+rationale = "VFDB uses generic papA; CGE separates antigenically diverse papA allele families."
+
+[[system_rule]]
+id = "kpsM_any_subtype"
+label = "Capsule KpsM (any CGE kpsM family)"
+mode = "any"
+support = "sequence_backed_allele_collapse"
+primary = ["kpsM"]
+cge_prefix = "kpsM"
+expected_cge_members = 17
+rationale = "CGE reports group/subtype-specific kpsM families; exact generic kpsM is not a valid proxy for primary K1 kpsM."
+
+[[system_rule]]
+id = "nleB_any_variant"
+label = "NleB effector (either primary variant)"
+mode = "any"
+support = "sequence_backed_many_to_one"
+primary = ["nleB1", "nleB2"]
+cge = ["nleB"]
+rationale = "Both local VFDB NleB variants have exact full-length matches within the generic CGE nleB family."
+
+[[system_rule]]
+id = "chu_shu_heme_receptor"
+label = "ChuA/ShuA outer-membrane heme receptor"
+mode = "any"
+support = "sequence_backed_many_to_one"
+primary = ["chuA", "shuA"]
+cge = ["chuA"]
+rationale = "Primary ChuA and ShuA references are both near-identical to CGE chuA; compare receptor-system presence only."
+
+[[system_rule]]
+id = "afa_dra_daf_system"
+label = "Afa/Dr/DAF adherence system"
+mode = "any"
+support = "mixed_sequence_and_local_annotation"
+primary = [
+  "afaA", "afaA-VIII", "afaB-I", "afaB-VIII", "afaC-I", "afaC-VIII",
+  "afaD", "afaD-VIII", "afaE-I", "afaE-V", "afaE-VIII", "afaF-VII",
+  "draA", "draD", "draE2", "draP", "daaF",
+]
+cge = ["afaA", "afaB", "afaC", "afaD", "afaE", "nfaA", "nfaE"]
+sequence_supported_primary = [
+  "afaA", "afaA-VIII", "afaB-I", "afaB-VIII", "afaC-I", "afaC-VIII",
+  "afaD", "afaD-VIII", "afaE-I", "afaE-V", "draA", "draD",
+]
+rationale = "Several typed Afa/Dr components collapse onto generic CGE families; unsupported members contribute only to this broad system endpoint."
+
+[[system_rule]]
+id = "sfa_foc_system"
+label = "Sfa/Foc fimbrial system"
+mode = "any"
+support = "local_annotation_and_cross_homology"
+primary = [
+  "focA", "focC", "focD", "focF", "focG", "focH",
+  "sfaA", "sfaB", "sfaC", "sfaD", "sfaE", "sfaF", "sfaG", "sfaH",
+  "sfaS", "sfaX", "sfaY",
+]
+cge = ["focC", "focCsfaE", "focG", "focI", "sfaD", "sfaE", "sfaS"]
+rationale = "CGE Sfa/Foc minor-subunit/chaperone references are highly cross-homologous; compare system presence, never individual operon burden."

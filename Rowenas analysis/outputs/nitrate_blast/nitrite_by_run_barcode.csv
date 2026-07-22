@@ -1,6 +1,0 @@
-sequencing_run,sequencing_barcode,run_barcode,total_rows,matched_binary_n,positive_n,negative_n,missing_or_unmatched_n,positive_pct_among_matched,distinct_participants,distinct_isolates
-PR0010,20,PR0010_barcode20,1,1,1,0,0,100,1,1
-PR0010,21,PR0010_barcode21,1,1,1,0,0,100,1,1
-PR0010,22,PR0010_barcode22,1,1,1,0,0,100,1,1
-PR0022,31,PR0022_barcode31,1,1,0,1,0,0,1,1
-PR0048,01,PR0048_barcode01,1,1,0,1,0,0,1,1

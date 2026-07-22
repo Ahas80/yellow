@@ -1,0 +1,1664 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/ofy9wn61",
+    "id": "ofy9wn61",
+    "slide": 3,
+    "layoutId": "/ppt/slideLayouts/slideLayout1.xml",
+    "layoutName": "DEFAULT",
+    "masterLayoutId": "/ppt/slideMasters/slideMaster1.xml",
+    "backgroundColor": "#FFFFFF",
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "Office",
+    "colors": {
+      "accent1": "#4472C4",
+      "accent2": "#ED7D31",
+      "accent3": "#A5A5A5",
+      "accent4": "#FFC000",
+      "accent5": "#5B9BD5",
+      "accent6": "#70AD47",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#44546A",
+      "lt2": "#E7E6E6",
+      "hlink": "#0563C1",
+      "folHlink": "#954F72"
+    },
+    "fontScheme": {
+      "name": "Office",
+      "majorFont": {
+        "latinTypeface": "Aptos Display"
+      },
+      "minorFont": {
+        "latinTypeface": "Aptos"
+      }
+    },
+    "typefaces": [
+      "Aptos",
+      "Aptos Display"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "/ppt/slideLayouts/slideLayout1.xml",
+      "name": "DEFAULT",
+      "parentLayoutId": "/ppt/slideMasters/slideMaster1.xml",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "/ppt/slideMasters/slideMaster1.xml",
+      "type": "master",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/cza94vmx",
+      "id": "2",
+      "name": "Shape 0",
+      "bbox": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "geometry": "rect",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Aptos",
+        "color": "tx1",
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "#FFFFFF",
+      "lineColor": "rgba(255, 255, 255, 0)",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/d0jax03i",
+      "id": "3",
+      "name": "Shape 1",
+      "bbox": [
+        0,
+        0,
+        12.48,
+        720
+      ],
+      "geometry": "rect",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Aptos",
+        "color": "tx1",
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "#2B6CB0",
+      "lineColor": "rgba(255, 255, 255, 0)",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 3,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/298ryl4v",
+      "id": "4",
+      "name": "Text 2",
+      "bbox": [
+        53.76,
+        28.8,
+        883.2,
+        21.12
+      ],
+      "geometry": "rect",
+      "text": "CLINICAL CLASSIFICATION",
+      "textPreview": "CLINICAL CLASSIFICATION",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Aptos",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0.05,
+          "right": 0.05,
+          "bottom": 0.05,
+          "left": 0.05
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "CLINICAL CLASSIFICATION"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "CLINICAL CLASSIFICATION",
+          "marginLeft": 0,
+          "indent": 0,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "CLINICAL CLASSIFICATION",
+              "fontSize": 11.33,
+              "typeface": "Aptos",
+              "color": "#64748B",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": ""
+        }
+      ]
+    },
+    {
+      "order": 4,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/3ah8rqlg",
+      "id": "5",
+      "name": "Text 3",
+      "bbox": [
+        53.76,
+        55.68,
+        1142.4,
+        46.08
+      ],
+      "geometry": "rect",
+      "text": "UTI uses the versioned operational culture-plus-symptom rule",
+      "textPreview": "UTI uses the versioned operational culture-plus-symptom rule",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Aptos",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0.05,
+          "right": 0.05,
+          "bottom": 0.05,
+          "left": 0.05
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "UTI uses the versioned operational culture-plus-symptom rule"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "UTI uses the versioned operational culture-plus-symptom rule",
+          "marginLeft": 0,
+          "indent": 0,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "UTI uses the versioned operational culture-plus-symptom rule",
+              "fontSize": 29.33,
+              "typeface": "Aptos Display",
+              "color": "#111827",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": ""
+        }
+      ]
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/obq90bml",
+      "id": "6",
+      "name": "Text 4",
+      "bbox": [
+        53.76,
+        103.68,
+        1123.2,
+        30.72
+      ],
+      "geometry": "rect",
+      "text": "The phenotype is assigned before genomic analysis and is not the full published protocol.",
+      "textPreview": "The phenotype is assigned before genomic analysis and is not the full published protocol.",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Aptos",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0.05,
+          "right": 0.05,
+          "bottom": 0.05,
+          "left": 0.05
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "The phenotype is assigned before genomic analysis and is not the full published protocol."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "The phenotype is assigned before genomic analysis and is not the full published protocol.",
+          "marginLeft": 0,
+          "indent": 0,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "The phenotype is assigned before genomic analysis and is not the full published protocol.",
+              "fontSize": 15.33,
+              "typeface": "Aptos",
+              "color": "#64748B"
+            }
+          ],
+          "bulletCharacter": ""
+        }
+      ]
+    },
+    {
+      "order": 6,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/pcjqtg36",
+      "id": "7",
+      "name": "Shape 5",
+      "bbox": [
+        53.76,
+        141.12,
+        1169.28,
+        0
+      ],
+      "geometry": "line",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Aptos",
+        "color": "tx1",
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "lineColor": "#CBD5E1",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 7,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/m5cra54z",
+      "id": "8",
+      "name": "Shape 6",
+      "bbox": [
+        53.76,
+        675.84,
+        1169.28,
+        0
+      ],
+      "geometry": "line",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Aptos",
+        "color": "tx1",
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "lineColor": "#CBD5E1",
+      "lineWidth": 1.07
+    },
+    {
+      "order": 8,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/n6ls3alk",
+      "id": "9",
+      "name": "Text 7",
+      "bbox": [
+        75.76,
+        683.52,
+        832.4,
+        17.28
+      ],
+      "geometry": "rect",
+      "text": "      Source: selected clinical cohort | versioned operational UTI phenotype",
+      "textPreview": "Source: selected clinical cohort | versioned operational UTI phenotype",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Aptos",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0.05,
+          "right": 0.05,
+          "bottom": 0.05,
+          "left": 0.05
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "      Source: selected clinical cohort | versioned operational UTI phenotype"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "      Source: selected clinical cohort | versioned operational UTI phenotype",
+          "marginLeft": 0,
+          "indent": 0,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "      Source: selected clinical cohort | versioned operational UTI phenotype",
+              "fontSize": 10.13,
+              "typeface": "Aptos",
+              "color": "#64748B"
+            }
+          ],
+          "bulletCharacter": ""
+        }
+      ]
+    },
+    {
+      "order": 9,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/n2l4fq98",
+      "id": "10",
+      "name": "Text 8",
+      "bbox": [
+        1147.2,
+        683.52,
+        74.88,
+        17.28
+      ],
+      "geometry": "rect",
+      "text": "03",
+      "textPreview": "03",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Aptos",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0.05,
+          "right": 0.05,
+          "bottom": 0.05,
+          "left": 0.05
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "03"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "03",
+          "marginLeft": 0,
+          "indent": 0,
+          "resolvedTextStyle": {
+            "alignment": "right"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "03",
+              "fontSize": 10.13,
+              "typeface": "Aptos",
+              "color": "#64748B"
+            }
+          ],
+          "bulletCharacter": ""
+        }
+      ]
+    },
+    {
+      "order": 10,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/m1c3mlsn",
+      "id": "11",
+      "name": "Shape 9",
+      "bbox": [
+        82.56,
+        182.4,
+        303.36,
+        149.76
+      ],
+      "geometry": "roundRect",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Aptos",
+        "color": "tx1",
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "#E8F1FA",
+      "lineColor": "#B9D5F0",
+      "lineWidth": 1.07
+    },
+    {
+      "order": 11,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/943mhgre",
+      "id": "12",
+      "name": "Text 10",
+      "bbox": [
+        99.84,
+        197.76,
+        268.8,
+        34.56
+      ],
+      "geometry": "rect",
+      "text": "1. Culture support",
+      "textPreview": "1. Culture support",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Aptos",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0.05,
+          "right": 0.05,
+          "bottom": 0.05,
+          "left": 0.05
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "1. Culture support"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "1. Culture support",
+          "marginLeft": 0,
+          "indent": 0,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "1. Culture support",
+              "fontSize": 17.33,
+              "typeface": "Aptos",
+              "color": "#2B6CB0",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": ""
+        }
+      ]
+    },
+    {
+      "order": 12,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/83ulovat",
+      "id": "13",
+      "name": "Text 11",
+      "bbox": [
+        99.84,
+        234.24,
+        268.8,
+        94.08
+      ],
+      "geometry": "rect",
+      "text": "Recorded CFU is used where available; a documented category lower bound is used when CFU is absent.",
+      "textPreview": "Recorded CFU is used where available; a documented category lower bound is used when CFU is absent.",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Aptos",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0.05,
+          "right": 0.05,
+          "bottom": 0.05,
+          "left": 0.05
+        }
+      },
+      "textLayout": {
+        "lineCount": 3,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Recorded CFU is used where available; a"
+          },
+          {
+            "index": 2,
+            "text": "documented category lower bound is used"
+          },
+          {
+            "index": 3,
+            "text": "when CFU is absent."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Recorded CFU is used where available; a documented category lower bound is used when CFU is absent.",
+          "marginLeft": 0,
+          "indent": 0,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Recorded CFU is used where available; a documented category lower bound is used when CFU is absent.",
+              "fontSize": 12.93,
+              "typeface": "Aptos",
+              "color": "#64748B"
+            }
+          ],
+          "bulletCharacter": ""
+        }
+      ]
+    },
+    {
+      "order": 13,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/v6l4jq94",
+      "id": "14",
+      "name": "Text 12",
+      "bbox": [
+        99.84,
+        291.84,
+        264,
+        19.2
+      ],
+      "geometry": "rect",
+      "text": "≥1000 CFU/mL lower-bound rule",
+      "textPreview": "≥1000 CFU/mL lower-bound rule",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Aptos",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0.05,
+          "right": 0.05,
+          "bottom": 0.05,
+          "left": 0.05
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "≥1000 CFU/mL lower-bound rule"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "≥1000 CFU/mL lower-bound rule",
+          "marginLeft": 0,
+          "indent": 0,
+          "resolvedTextStyle": {
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "≥1000 CFU/mL lower-bound rule",
+              "fontSize": 10.93,
+              "typeface": "Aptos",
+              "color": "#2B6CB0",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": ""
+        }
+      ]
+    },
+    {
+      "order": 14,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/x8nml0ra",
+      "id": "16",
+      "name": "Text 14",
+      "bbox": [
+        436.8,
+        244.8,
+        26.88,
+        19.2
+      ],
+      "geometry": "rect",
+      "text": "+",
+      "textPreview": "+",
+      "resolvedFontSize": 16.85,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Aptos",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "autoFitScale": 0.7,
+        "insets": {
+          "top": 0.05,
+          "right": 0.05,
+          "bottom": 0.05,
+          "left": 0.05
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "+"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "+",
+          "marginLeft": 0,
+          "indent": 0,
+          "resolvedTextStyle": {
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "+",
+              "fontSize": 22.67,
+              "typeface": "Aptos",
+              "color": "#111827",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": ""
+        }
+      ]
+    },
+    {
+      "order": 15,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/w7ulsvqp",
+      "id": "17",
+      "name": "Shape 15",
+      "bbox": [
+        506.88,
+        182.4,
+        303.36,
+        149.76
+      ],
+      "geometry": "roundRect",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Aptos",
+        "color": "tx1",
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "#EAF7EF",
+      "lineColor": "#BCE4C9",
+      "lineWidth": 1.07
+    },
+    {
+      "order": 16,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ja54na9g",
+      "id": "18",
+      "name": "Text 16",
+      "bbox": [
+        524.16,
+        197.76,
+        268.8,
+        34.56
+      ],
+      "geometry": "rect",
+      "text": "2. Symptom rule",
+      "textPreview": "2. Symptom rule",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Aptos",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0.05,
+          "right": 0.05,
+          "bottom": 0.05,
+          "left": 0.05
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "2. Symptom rule"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "2. Symptom rule",
+          "marginLeft": 0,
+          "indent": 0,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "2. Symptom rule",
+              "fontSize": 17.33,
+              "typeface": "Aptos",
+              "color": "#2F855A",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": ""
+        }
+      ]
+    },
+    {
+      "order": 17,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/i9w3u58v",
+      "id": "19",
+      "name": "Text 17",
+      "bbox": [
+        524.16,
+        234.24,
+        268.8,
+        94.08
+      ],
+      "geometry": "rect",
+      "text": "Non-catheter: local symptoms, or flank pain plus systemic symptoms. Catheter: systemic symptoms.",
+      "textPreview": "Non-catheter: local symptoms, or flank pain plus systemic symptoms. Catheter: systemic symptoms.",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Aptos",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0.05,
+          "right": 0.05,
+          "bottom": 0.05,
+          "left": 0.05
+        }
+      },
+      "textLayout": {
+        "lineCount": 3,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Non-catheter: local symptoms, or flank pain"
+          },
+          {
+            "index": 2,
+            "text": "plus systemic symptoms. Catheter: systemic"
+          },
+          {
+            "index": 3,
+            "text": "symptoms."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Non-catheter: local symptoms, or flank pain plus systemic symptoms. Catheter: systemic symptoms.",
+          "marginLeft": 0,
+          "indent": 0,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Non-catheter: local symptoms, or flank pain plus systemic symptoms. Catheter: systemic symptoms.",
+              "fontSize": 12.93,
+              "typeface": "Aptos",
+              "color": "#64748B"
+            }
+          ],
+          "bulletCharacter": ""
+        }
+      ]
+    },
+    {
+      "order": 18,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/e10f2twf",
+      "id": "20",
+      "name": "Text 18",
+      "bbox": [
+        547.2,
+        291.84,
+        220.8,
+        19.2
+      ],
+      "geometry": "rect",
+      "text": "catheter-aware operational rule",
+      "textPreview": "catheter-aware operational rule",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Aptos",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0.05,
+          "right": 0.05,
+          "bottom": 0.05,
+          "left": 0.05
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "catheter-aware operational rule"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "catheter-aware operational rule",
+          "marginLeft": 0,
+          "indent": 0,
+          "resolvedTextStyle": {
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "catheter-aware operational rule",
+              "fontSize": 10.93,
+              "typeface": "Aptos",
+              "color": "#2F855A",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": ""
+        }
+      ]
+    },
+    {
+      "order": 19,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/f29gbyx0",
+      "id": "21",
+      "name": "Shape 19",
+      "bbox": [
+        827.52,
+        259.2,
+        80.64,
+        0
+      ],
+      "geometry": "line",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Aptos",
+        "color": "tx1",
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "lineColor": "#94A3B8",
+      "lineWidth": 2.13
+    },
+    {
+      "order": 20,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/03ix43e5",
+      "id": "22",
+      "name": "Shape 20",
+      "bbox": [
+        929.28,
+        203.52,
+        234.24,
+        105.6
+      ],
+      "geometry": "roundRect",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Aptos",
+        "color": "tx1",
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "#FFF4E6",
+      "lineColor": "#F4B15F",
+      "lineWidth": 1.07
+    },
+    {
+      "order": 21,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/14ryd8fq",
+      "id": "23",
+      "name": "Text 21",
+      "bbox": [
+        946.56,
+        218.88,
+        199.68,
+        34.56
+      ],
+      "geometry": "rect",
+      "text": "UTI",
+      "textPreview": "UTI",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Aptos",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0.05,
+          "right": 0.05,
+          "bottom": 0.05,
+          "left": 0.05
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "UTI"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "UTI",
+          "marginLeft": 0,
+          "indent": 0,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "UTI",
+              "fontSize": 25.33,
+              "typeface": "Aptos",
+              "color": "#D97706",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": ""
+        }
+      ]
+    },
+    {
+      "order": 22,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/6d0fytg3",
+      "id": "24",
+      "name": "Text 22",
+      "bbox": [
+        946.56,
+        255.36,
+        199.68,
+        49.92
+      ],
+      "geometry": "rect",
+      "text": "Both operational components met",
+      "textPreview": "Both operational components met",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Aptos",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0.05,
+          "right": 0.05,
+          "bottom": 0.05,
+          "left": 0.05
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Both operational components met"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Both operational components met",
+          "marginLeft": 0,
+          "indent": 0,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Both operational components met",
+              "fontSize": 12.67,
+              "typeface": "Aptos",
+              "color": "#64748B"
+            }
+          ],
+          "bulletCharacter": ""
+        }
+      ]
+    },
+    {
+      "order": 23,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/re9g7yxo",
+      "id": "25",
+      "name": "Shape 23",
+      "bbox": [
+        97.92,
+        418.56,
+        497.28,
+        99.84
+      ],
+      "geometry": "roundRect",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Aptos",
+        "color": "tx1",
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "#FFF4E6",
+      "lineColor": "#F4B15F",
+      "lineWidth": 1.07
+    },
+    {
+      "order": 24,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/sfix03y9",
+      "id": "26",
+      "name": "Text 24",
+      "bbox": [
+        115.2,
+        433.92,
+        462.72,
+        34.56
+      ],
+      "geometry": "rect",
+      "text": "Analytical cohort denominator",
+      "textPreview": "Analytical cohort denominator",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Aptos",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0.05,
+          "right": 0.05,
+          "bottom": 0.05,
+          "left": 0.05
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Analytical cohort denominator"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Analytical cohort denominator",
+          "marginLeft": 0,
+          "indent": 0,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Analytical cohort denominator",
+              "fontSize": 16.67,
+              "typeface": "Aptos",
+              "color": "#D97706",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": ""
+        }
+      ]
+    },
+    {
+      "order": 25,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/tgry9ofu",
+      "id": "27",
+      "name": "Text 25",
+      "bbox": [
+        115.2,
+        470.4,
+        462.72,
+        44.16
+      ],
+      "geometry": "rect",
+      "text": "532 episodes from 161 residents: 16 UTI and 516 Not_UTI",
+      "textPreview": "532 episodes from 161 residents: 16 UTI and 516 Not_UTI",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Aptos",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0.05,
+          "right": 0.05,
+          "bottom": 0.05,
+          "left": 0.05
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "532 episodes from 161 residents: 16 UTI and 516 Not_UTI"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "532 episodes from 161 residents: 16 UTI and 516 Not_UTI",
+          "marginLeft": 0,
+          "indent": 0,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "532 episodes from 161 residents: 16 UTI and 516 Not_UTI",
+              "fontSize": 16.4,
+              "typeface": "Aptos",
+              "color": "#111827"
+            }
+          ],
+          "bulletCharacter": ""
+        }
+      ]
+    },
+    {
+      "order": 26,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/a9kfadwn",
+      "id": "28",
+      "name": "Shape 26",
+      "bbox": [
+        672,
+        418.56,
+        497.28,
+        99.84
+      ],
+      "geometry": "roundRect",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Aptos",
+        "color": "tx1",
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "#EEF3F8",
+      "lineColor": "#CBD5E1",
+      "lineWidth": 1.07
+    },
+    {
+      "order": 27,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/batgjixs",
+      "id": "29",
+      "name": "Text 27",
+      "bbox": [
+        689.28,
+        433.92,
+        462.72,
+        34.56
+      ],
+      "geometry": "rect",
+      "text": "Not_UTI is not a healthy control",
+      "textPreview": "Not_UTI is not a healthy control",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Aptos",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0.05,
+          "right": 0.05,
+          "bottom": 0.05,
+          "left": 0.05
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Not_UTI is not a healthy control"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Not_UTI is not a healthy control",
+          "marginLeft": 0,
+          "indent": 0,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Not_UTI is not a healthy control",
+              "fontSize": 16.67,
+              "typeface": "Aptos",
+              "color": "#111827",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": ""
+        }
+      ]
+    },
+    {
+      "order": 28,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/l4fi9cza",
+      "id": "30",
+      "name": "Text 28",
+      "bbox": [
+        689.28,
+        470.4,
+        462.72,
+        44.16
+      ],
+      "geometry": "rect",
+      "text": "It includes episodes below the operational threshold or with indeterminate evidence; 17 near-miss rows remain a separate audit set.",
+      "textPreview": "It includes episodes below the operational threshold or with indeterminate evidence; 17 near-miss rows remain a separate audit set.",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Aptos",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0.05,
+          "right": 0.05,
+          "bottom": 0.05,
+          "left": 0.05
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "It includes episodes below the operational threshold or with indeterminate"
+          },
+          {
+            "index": 2,
+            "text": "evidence; 17 near-miss rows remain a separate audit set."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "It includes episodes below the operational threshold or with indeterminate evidence; 17 near-miss rows remain a separate audit set.",
+          "marginLeft": 0,
+          "indent": 0,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "It includes episodes below the operational threshold or with indeterminate evidence; 17 near-miss rows remain a separate audit set.",
+              "fontSize": 12.67,
+              "typeface": "Aptos",
+              "color": "#64748B"
+            }
+          ],
+          "bulletCharacter": ""
+        }
+      ]
+    }
+  ],
+  "composeRuns": []
+}

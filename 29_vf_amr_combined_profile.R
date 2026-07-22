@@ -4,18 +4,32 @@
 # ==============================================================================
 #
 # GOAL:
-#   Combine VF profiles with AMR data (if available) and plasmid replicon data.
-#   If no dedicated AMR database screening exists, produce a VF + plasmid
-#   exploratory analysis and a clear availability report.
+#   Own the complete genomic-AMR layer for the exact selected Longcycler cohort,
+#   then integrate validated episode profiles with VF and plasmid outputs.
 #
 # METHOD:
-#   1. Audit whether true AMR data exist (ResFinder, CARD, AMRFinder, etc.).
-#   2. Load supplementary VF endpoints from script 27 and plasmid replicon data.
-#   3. Build episode-level combined VF + plasmid profiles.
-#   4. Summarise replicon diversity by ST and primary UTI status.
-#   5. Explore VF-plasmid co-occurrence patterns.
+#   1. Validate 532 selected FASTAs and sequence-equivalent Prokka annotations.
+#   2. Run SHA-bound ABRicate-ResFinder, AMRFinderPlus and ResFinder/PointFinder.
+#   3. Harmonise calls, audit caller agreement and build episode profiles.
+#   4. Analyse 371 adjacent pairs and the nine Not_UTI-to-UTI transitions.
+#   5. Integrate genomic AMR with existing VF and plasmid profiles.
 #
 # OUTPUT:
+#   - results/amr/provenance/{input,run,published_output}_manifest.csv
+#   - results/amr/harmonized_determinants_long.csv
+#   - results/amr/{episode,resident}_amr_profiles.csv
+#   - results/amr/caller_concordance_discrepancies.csv
+#   - results/amr/{gene,class,mutation}_prevalence_episode_resident.csv
+#   - results/amr/resfinder_predicted_phenotypes_genomic_not_ast.csv
+#   - results/amr/adjacent_pair_amr_profiles_371.csv
+#   - results/amr/not_uti_to_uti_amr_profiles_9.csv
+#   - results/amr/longitudinal_resident_bootstrap_inference.csv
+#   - results/amr/validation_checks.csv
+#   - results/plasmids/mob_suite/plasmid_gene_locations_long.csv
+#   - results/plasmids/mob_suite/episode_mechanism_profiles.csv
+#   - results/plasmids/mob_suite/adjacent_pair_plasmid_metrics_371.csv
+#   - results/plasmids/mob_suite/not_uti_to_uti_plasmid_metrics_9.csv
+#   - plots/amr/*.png (three supplementary AMR figures)
 #   - results/vf_amr/vf_amr_input_availability_report.txt
 #   - results/vf_amr/vf_amr_combined_profile_table.csv
 #   - results/vf_amr/vf_plasmid_combined_profile.csv
@@ -30,13 +44,15 @@
 #   - plots/vf_amr/vf_plasmid_analysis_scope.png
 #
 # NOTE:
-#   This script does NOT invent AMR data. If true AMR results are absent,
-#   only VF + plasmid replicon analysis is performed, and the report clearly
-#   states that true VF+AMR integration was not done.
+#   AMRFinderPlus is the primary profile caller. ResFinder/PointFinder is
+#   complementary and ABRicate-ResFinder is a legacy comparison. Genomic
+#   predictions are not phenotypic AST.
 # ==============================================================================
 
 source("00_config.R")
 source("R/plot_helpers.R")
+source("R/amr_helpers.R")
+source("R/plasmid_mechanism_helpers.R")
 suppressPackageStartupMessages({
   library(dplyr); library(readr); library(tidyr); library(stringr)
   library(ggplot2); library(tibble)
@@ -49,8 +65,24 @@ msg("Starting 29_vf_amr_combined_profile.R")
 # ==============================================================================
 DIR_VF_AMR <- file.path(DIR_RESULTS, "vf_amr")
 DIR_PLOTS_VF_AMR <- file.path(DIR_PLOTS, "vf_amr")
+DIR_AMR <- file.path(DIR_RESULTS, "amr")
+DIR_PLOTS_AMR <- file.path(DIR_PLOTS, "amr")
 ensure_dir(DIR_VF_AMR)
 ensure_dir(DIR_PLOTS_VF_AMR)
+ensure_dir(DIR_AMR)
+ensure_dir(DIR_PLOTS_AMR)
+
+msg("Running/reusing authoritative genomic-AMR calls for the exact 532-episode cohort")
+amr_analysis <- run_genomic_amr_analysis(
+  root = DIR_ROOT,
+  output_root = DIR_AMR,
+  plot_root = DIR_PLOTS_AMR
+)
+amr_profiles <- amr_analysis$profiles
+msg(
+  "Genomic AMR complete: %d episode profiles, %d adjacent pairs, %d focused transitions",
+  nrow(amr_profiles), nrow(amr_analysis$transitions), nrow(amr_analysis$focused)
+)
 
 plot_theme_vf_amr <- function(base_size = 11) {
   theme_bw(base_size = base_size) +
@@ -82,7 +114,7 @@ extract_lab_isolate_id <- function(x) {
 }
 
 # ==============================================================================
-# 2. AUDIT AMR DATA AVAILABILITY
+# 2. RECORD AMR DATA AVAILABILITY
 # ==============================================================================
 report <- character()
 ra <- function(...) report <<- c(report, sprintf(...))
@@ -91,39 +123,36 @@ ra("=== VF / AMR INPUT AVAILABILITY REPORT ===")
 ra("Timestamp: %s", format(Sys.time()))
 ra("")
 
-# Check for dedicated AMR database results
-amr_candidates <- c(
-  file.path(DIR_RESULTS, "amr"),
-  file.path(DIR_RESULTS, "abricate", "resfinder"),
-  file.path(DIR_RESULTS, "abricate", "card"),
-  file.path(DIR_RESULTS, "abricate", "ncbi"),
-  file.path(DIR_RESULTS, "abricate", "amrfinder"),
-  file.path(DIR_RESULTS, "amrfinder")
+# Record only the authoritative script-29 results. CARD and other unrelated
+# screens are deliberately outside this analysis contract.
+amr_files <- c(
+  file.path(DIR_AMR, "episode_amr_profiles.csv"),
+  file.path(DIR_AMR, "harmonized_determinants_long.csv"),
+  file.path(DIR_AMR, "adjacent_pair_amr_profiles_371.csv"),
+  file.path(DIR_AMR, "not_uti_to_uti_amr_profiles_9.csv"),
+  file.path(DIR_AMR, "validation_checks.csv"),
+  file.path(DIR_AMR, "RUN_COMPLETE.txt")
 )
-
-amr_found <- FALSE
-amr_files <- character()
-for (path in amr_candidates) {
-  if (dir.exists(path)) {
-    csvs <- list.files(path, pattern = "\\.csv$|\\.tsv$|\\.tab$|\\.txt$", full.names = TRUE, recursive = TRUE)
-    if (length(csvs) > 0) {
-      amr_found <- TRUE
-      amr_files <- c(amr_files, csvs)
-      ra("TRUE AMR data found at: %s (%d files)", path, length(csvs))
-    }
-  }
+if (!all(file.exists(amr_files))) {
+  stop(
+    "Authoritative Script-29 AMR outputs are incomplete: ",
+    paste(basename(amr_files[!file.exists(amr_files)]), collapse = ", "),
+    call. = FALSE
+  )
 }
+amr_found <- TRUE
+ra("Authoritative AMR output directory: %s (%d required products)",
+   DIR_AMR, length(amr_files))
 
-if (!amr_found) {
-  ra("NO dedicated AMR database screening results found.")
-  ra("Checked: %s", paste(amr_candidates, collapse = ", "))
-  ra("")
-  ra("IMPORTANT: True VF + AMR integration was NOT performed.")
-  ra("The gene_map.csv from 04_gene_breakdown.R does NOT contain an AMR category.")
-  ra("All VFDB-derived genes are either assigned to VF categories or 'Unassigned'.")
-  ra("")
-  ra("This script will produce VF + plasmid replicon exploratory analysis only.")
-}
+ra("")
+ra("Authoritative genomic-AMR status: COMPLETE")
+ra("Primary caller: AMRFinderPlus acquired genes and known resistance mutations")
+ra("Complementary caller: ResFinder/PointFinder")
+ra("Legacy comparison: ABRicate-ResFinder at >=80%% identity and coverage")
+ra("Episode profiles: %d", nrow(amr_profiles))
+ra("Adjacent-pair profiles: %d", nrow(amr_analysis$transitions))
+ra("Focused Not_UTI-to-UTI profiles: %d", nrow(amr_analysis$focused))
+ra("Interpretation: genomic prediction—not phenotypic AST")
 
 # Check for plasmid data
 f_plasmid_pa   <- file.path(DIR_PLASMIDS, "plasmidfinder_presence_absence.csv")
@@ -158,9 +187,10 @@ writeLines(report, file.path(DIR_VF_AMR, "vf_amr_input_availability_report.txt")
 msg("Availability report written")
 
 if (!has_vf) {
-  msg("WARNING: vf_analysis_ready.csv not found. Cannot proceed.")
-  msg("✓ 29_vf_amr_combined_profile.R complete (no VF data).")
-  quit(save = "no", status = 0)
+  stop(
+    "vf_analysis_ready.csv is required for Script 29 VF/AMR integration.",
+    call. = FALSE
+  )
 }
 
 # ==============================================================================
@@ -201,52 +231,95 @@ msg("VF data: %d episodes", nrow(vf))
 # 4. LOAD AND PROCESS PLASMID DATA
 # ==============================================================================
 if (!has_replicon_long && !has_plasmid_long) {
-  msg("No plasmid replicon data available. Writing minimal outputs.")
-  writeLines(c(report, "", "No plasmid data available for VF+plasmid analysis."),
-             file.path(DIR_VF_AMR, "vf_amr_input_availability_report.txt"))
-  msg("✓ 29_vf_amr_combined_profile.R complete (no plasmid data).")
-  quit(save = "no", status = 0)
+  stop(
+    "Plasmid replicon data are required for Script 29 VF/plasmid integration.",
+    call. = FALSE
+  )
 }
 
 # Load replicon long-format data
-if (has_replicon_long) {
-  rep_long <- read_csv(f_replicon_long, show_col_types = FALSE)
-} else {
+if (has_plasmid_long) {
   rep_long <- read_csv(f_plasmid_long, show_col_types = FALSE) %>%
     rename(isolate_id = Isolate_ID, replicon = GENE)
+} else {
+  rep_long <- read_csv(f_replicon_long, show_col_types = FALSE)
 }
 
 msg("Replicon hits: %d rows, %d unique replicons", nrow(rep_long), n_distinct(rep_long$replicon))
 
-# Parse isolate_id to extract Participant_id and timepoint
-# Format: PR00XX_barcodeYY_ZZZZZZZZZZ-N_assembler
-# We map only through the validated Longcycler analysis manifest. Flye
-# replicon rows cannot be rescued through isolate-ID matching.
+# Map plasmid results only by the exact selected FASTA path and content hash.
 meta_file <- FILE_ANALYSIS_ASSEMBLY_MANIFEST
-if (file.exists(meta_file)) {
-  asm_meta <- load_analysis_assemblies(meta_file, require_files = TRUE) %>%
-    mutate(
-      Participant_id = as.character(Participant_id),
-      tp_lab = if ("tp_lab" %in% names(.)) as.character(tp_lab) else normalise_tp_label(Timepoint),
-      assembly_key = normalise_assembly_key(coalesce(file_name, basename(full_path))),
-      lab_isolate_id = extract_lab_isolate_id(Isolate_ID)
-    )
-
-  asm_lookup <- asm_meta %>%
-    select(assembly_key, lab_isolate_id, Participant_id, tp_lab) %>%
-    filter(!is.na(assembly_key)) %>%
-    distinct()
-
-  rep_mapped <- rep_long %>%
-    mutate(
-      assembly_key = normalise_assembly_key(isolate_id),
-      lab_isolate_id = extract_lab_isolate_id(isolate_id)
-    ) %>%
-    inner_join(asm_lookup %>% select(assembly_key, Participant_id, tp_lab) %>% distinct(),
-               by = "assembly_key")
-} else {
-  rep_mapped <- rep_long %>% mutate(Participant_id = NA_character_, tp_lab = NA_character_)
+asm_meta <- load_analysis_assemblies(meta_file, require_files = TRUE) %>%
+  mutate(
+    Participant_id = as.character(Participant_id),
+    tp_lab = as.character(tp_lab),
+    fasta_path = normalizePath(full_path, winslash = "/", mustWork = TRUE),
+    fasta_sha256 = vapply(fasta_path, digest::digest, character(1), algo = "sha256", file = TRUE)
+  )
+required_replicon_provenance <- c("fasta_path", "fasta_sha256")
+missing_replicon_provenance <- setdiff(required_replicon_provenance, names(rep_long))
+if (length(missing_replicon_provenance)) {
+  stop(
+    "Plasmid results lack exact FASTA provenance (", paste(missing_replicon_provenance, collapse = ", "),
+    "). Rerun 08_core_vs_plasmid.R or 09_inc_plasmid_network.R from the current Longcycler manifest."
+  )
 }
+rep_long <- rep_long %>%
+  mutate(
+    fasta_path = normalizePath(fasta_path, winslash = "/", mustWork = FALSE),
+    fasta_sha256 = tolower(as.character(fasta_sha256))
+  )
+replicon_endpoint_lookup <- asm_meta %>%
+  transmute(
+    fasta_path,
+    fasta_sha256 = tolower(as.character(fasta_sha256)),
+    manifest_Participant_id = as.character(Participant_id),
+    manifest_tp_lab = normalise_timepoint_preserve_events(tp_lab)
+  ) %>%
+  distinct()
+if (anyDuplicated(replicon_endpoint_lookup[c("fasta_path", "fasta_sha256")])) {
+  stop("Selected Longcycler manifest has duplicate FASTA path/hash endpoint keys.")
+}
+unmatched_replicon <- rep_long %>%
+  anti_join(replicon_endpoint_lookup, by = c("fasta_path", "fasta_sha256"))
+if (nrow(unmatched_replicon)) {
+  stop("Plasmid results contain ", nrow(unmatched_replicon), " row(s) not tied to the current selected Longcycler FASTA path and SHA-256.")
+}
+rep_long$source_Participant_id <- if ("Participant_id" %in% names(rep_long)) {
+  as.character(rep_long$Participant_id)
+} else {
+  NA_character_
+}
+rep_long$source_tp_lab <- if ("tp_lab" %in% names(rep_long)) {
+  normalise_timepoint_preserve_events(rep_long$tp_lab)
+} else {
+  NA_character_
+}
+rep_mapped <- rep_long %>%
+  select(-any_of(c("Participant_id", "tp_lab"))) %>%
+  inner_join(
+    replicon_endpoint_lookup,
+    by = c("fasta_path", "fasta_sha256"),
+    relationship = "many-to-one"
+  ) %>%
+  mutate(
+    Participant_id = .data$manifest_Participant_id,
+    tp_lab = .data$manifest_tp_lab
+  )
+source_key_disagreement <-
+  (!is.na(rep_mapped$source_Participant_id) &
+     rep_mapped$source_Participant_id != rep_mapped$Participant_id) |
+  (!is.na(rep_mapped$source_tp_lab) &
+     rep_mapped$source_tp_lab != rep_mapped$tp_lab)
+if (any(source_key_disagreement)) {
+  stop(
+    "Plasmid result episode identifiers disagree with the exact selected Longcycler FASTA path/hash for ",
+    sum(source_key_disagreement), " hit row(s)."
+  )
+}
+rep_mapped <- rep_mapped %>%
+  select(-manifest_Participant_id, -manifest_tp_lab,
+         -source_Participant_id, -source_tp_lab)
 
 if (nrow(rep_mapped) == 0) {
   msg("No plasmid-replicon rows matched the selected Longcycler assembly keys; no isolate-ID fallback is permitted.")
@@ -288,24 +361,51 @@ if (has_scores && !is.null(scores)) {
 
 combined <- combined %>%
   left_join(rep_episode, by = c("Participant_id", "tp_lab")) %>%
+  left_join(
+    amr_profiles %>%
+      select(
+        Participant_id, tp_lab, mdfA_detected,
+        informative_acquired_genes,
+        acquired_genes_sensitivity_including_mdfA,
+        informative_acquired_classes, primary_known_mutations,
+        amr_gene_count_informative, amr_gene_count_including_mdfA,
+        amr_class_count, amr_mutation_count,
+        any_informative_acquired_amr,
+        any_acquired_amr_including_mdfA
+      ),
+    by = c("Participant_id", "tp_lab"),
+    relationship = "one-to-one"
+  ) %>%
   mutate(
     n_replicons = replace_na(n_replicons, 0L),
     replicon_list = replace_na(replicon_list, ""),
     across(any_of(c("has_IncF", "has_Col", "has_IncI", "has_IncB", "has_IncX")),
            ~replace_na(as.logical(.x), FALSE)),
-    amr_data_available = FALSE,
-    true_amr_integration_performed = FALSE,
+    amr_data_available = TRUE,
+    true_amr_integration_performed = TRUE,
     plasmid_data_available = TRUE,
-    amr_gene_count_total = NA_integer_,
-    amr_class_count = NA_integer_,
+    amr_gene_count_total = amr_gene_count_informative,
     high_vf_flag = if ("vf_count_curated" %in% names(.)) {
       vf_count_curated >= median(vf_count_curated, na.rm = TRUE)
     } else {
       vf_count_total >= median(vf_count_total, na.rm = TRUE)
     },
-    high_amr_flag = NA,
-    vf_amr_profile_group = "AMR unavailable; VF+plasmid only"
+    high_amr_flag = amr_gene_count_informative >=
+      median(amr_gene_count_informative, na.rm = TRUE),
+    vf_amr_profile_group = case_when(
+      high_vf_flag & high_amr_flag ~ "High VF / high informative AMR",
+      high_vf_flag & !high_amr_flag ~ "High VF / lower informative AMR",
+      !high_vf_flag & high_amr_flag ~ "Lower VF / high informative AMR",
+      TRUE ~ "Lower VF / lower informative AMR"
+    )
   )
+
+if (nrow(combined) != 532L ||
+    anyNA(combined$amr_gene_count_informative) ||
+    !all(combined$amr_data_available) ||
+    !all(combined$true_amr_integration_performed)) {
+  stop("VF/plasmid integration did not retain all 532 validated AMR profiles.")
+}
 
 write_csv(combined, file.path(DIR_VF_AMR, "vf_plasmid_combined_profile.csv"))
 write_csv(combined, file.path(DIR_VF_AMR, "vf_amr_combined_profile_table.csv"))
@@ -345,8 +445,12 @@ vf_amr_by_status <- combined %>%
     q25 = ifelse(all(is.na(value)), NA_real_, quantile(value, 0.25, na.rm = TRUE)),
     q75 = ifelse(all(is.na(value)), NA_real_, quantile(value, 0.75, na.rm = TRUE)),
     mean = ifelse(all(is.na(value)), NA_real_, round(mean(value, na.rm = TRUE), 2)),
-    true_amr_integration_performed = FALSE,
-    note = ifelse(str_detect(first(metric), "^amr_"), "No dedicated AMR screening output detected", "VF/plasmid descriptive metric"),
+    true_amr_integration_performed = TRUE,
+    note = ifelse(
+      str_detect(first(metric), "^amr_"),
+      "AMRFinderPlus informative acquired-gene profile; mdf(A) excluded from primary burden",
+      "VF/plasmid descriptive metric"
+    ),
     .groups = "drop"
   )
 write_csv(vf_amr_by_status, file.path(DIR_VF_AMR, "vf_amr_score_summary_by_status.csv"))
@@ -379,8 +483,12 @@ vf_amr_by_st <- combined %>%
     median = ifelse(all(is.na(value)), NA_real_, median(value, na.rm = TRUE)),
     q25 = ifelse(all(is.na(value)), NA_real_, quantile(value, 0.25, na.rm = TRUE)),
     q75 = ifelse(all(is.na(value)), NA_real_, quantile(value, 0.75, na.rm = TRUE)),
-    true_amr_integration_performed = FALSE,
-    note = ifelse(str_detect(first(metric), "^amr_"), "No dedicated AMR screening output detected", "VF/plasmid descriptive metric"),
+    true_amr_integration_performed = TRUE,
+    note = ifelse(
+      str_detect(first(metric), "^amr_"),
+      "AMRFinderPlus informative acquired-gene profile; mdf(A) excluded from primary burden",
+      "VF/plasmid descriptive metric"
+    ),
     .groups = "drop"
   ) %>%
   arrange(desc(n_episodes), ST)
@@ -389,8 +497,8 @@ write_csv(vf_amr_by_st, file.path(DIR_VF_AMR, "vf_amr_score_summary_by_ST.csv"))
 profile_groups <- combined %>%
   count(vf_amr_profile_group, Infection_Status, name = "n_episodes") %>%
   mutate(
-    true_amr_integration_performed = FALSE,
-    note = "Profile grouping not performed because true AMR data are unavailable"
+    true_amr_integration_performed = TRUE,
+    note = "Descriptive VF/AMR groups; genomic determinants are not phenotypic AST"
   )
 write_csv(profile_groups, file.path(DIR_VF_AMR, "vf_amr_profile_groups.csv"))
 
@@ -430,8 +538,10 @@ p1 <- ggplot(combined %>% filter(!is.na(Infection_Status)),
   labs(title = "Plasmid replicon diversity by primary UTI status",
        subtitle = sprintf("UTI n=%d, Not_UTI n=%d", n_uti, n_not_uti),
        x = NULL, y = "Number of distinct replicon types") +
-  theme_minimal(base_size = 12) + theme(legend.position = "none")
-ggsave(file.path(DIR_PLOTS_VF_AMR, "replicon_burden_by_status.png"), p1, width = 7, height = 5, dpi = 150)
+  scale_x_discrete(labels = c(UTI = "UTI", Not_UTI = "Not UTI")) +
+  theme_ruti_publication() + theme(legend.position = "none")
+ggsave(file.path(DIR_PLOTS_VF_AMR, "replicon_burden_by_status.png"), p1,
+       width = 7, height = 5, dpi = 300, bg = "white")
 
 # VF vs replicon scatter
 if ("vf_count_total" %in% names(combined)) {
@@ -442,12 +552,17 @@ if ("vf_count_total" %in% names(combined)) {
     scale_colour_uti_status() +
     labs(title = "VF burden vs plasmid replicon diversity",
          x = "Total VF gene count", y = "Number of replicon types") +
-    theme_minimal(base_size = 11) + theme(legend.position = "right")
-  ggsave(file.path(DIR_PLOTS_VF_AMR, "vf_vs_replicon_scatter.png"), p2, width = 8, height = 6, dpi = 150)
+    theme_ruti_publication() + theme(legend.position = "right")
+  ggsave(file.path(DIR_PLOTS_VF_AMR, "vf_vs_replicon_scatter.png"), p2,
+         width = 8, height = 6, dpi = 300, bg = "white")
 }
 
 # Replicon heatmap for top STs
-top_sts <- combined %>% count(ST) %>% filter(n >= 5) %>% pull(ST)
+top_sts <- combined %>%
+  filter(!is.na(ST), nzchar(as.character(ST))) %>%
+  count(ST) %>%
+  filter(n >= 5) %>%
+  pull(ST)
 if (length(top_sts) >= 3) {
   inc_types <- c("has_IncF","has_Col","has_IncI","has_IncB","has_IncX")
   inc_types <- intersect(inc_types, names(combined))
@@ -462,12 +577,17 @@ if (length(top_sts) >= 3) {
 
     p3 <- ggplot(heat_data, aes(x = replicon_type, y = ST, fill = pct)) +
       geom_tile(colour = "white") +
-      geom_text(aes(label = sprintf("%.0f%%", pct)), size = 3) +
-      scale_fill_gradient(low = "white", high = "steelblue") +
-      labs(title = "Replicon type prevalence by ST (≥5 episodes)",
-           x = "Replicon family", y = "ST", fill = "% episodes") +
-      theme_minimal(base_size = 11)
-    ggsave(file.path(DIR_PLOTS_VF_AMR, "replicon_heatmap_top_STs.png"), p3, width = 8, height = 6, dpi = 150)
+      geom_text(aes(label = ifelse(is.na(pct), "Unavailable", sprintf("%.0f%%", pct))), size = 3) +
+      scale_fill_viridis_c(option = "C", limits = c(0, 100), na.value = "#BDBDBD") +
+      labs(
+        title = "Replicon-family prevalence by sequence type",
+        subtitle = "Sequence types represented by at least five typed episodes; missing/non-typable ST calls are excluded",
+        x = "Replicon family", y = "Sequence type", fill = "Episodes (%)",
+        caption = "Descriptive episode-level prevalence; repeated episodes from the same participant are not independent."
+      ) +
+      theme_ruti_publication()
+    ggsave(file.path(DIR_PLOTS_VF_AMR, "replicon_heatmap_top_STs.png"), p3,
+           width = 8, height = 6, dpi = 300, bg = "white")
   }
 }
 
@@ -505,7 +625,7 @@ p_scope <- ggplot(scope_counts, aes(x = metric, y = n, fill = interpretation)) +
   )) +
   labs(
     title = "Scope of VF, plasmid, and AMR data integration",
-    subtitle = "This script provides VF+plasmid/mobile-context summaries; true AMR screening is absent unless AMR rows are non-zero",
+    subtitle = "All 532 selected Longcycler episodes have validated genomic-AMR profiles",
     x = NULL,
     y = "Rows / isolates",
     fill = "Interpretation",
@@ -516,8 +636,8 @@ p_scope <- ggplot(scope_counts, aes(x = metric, y = n, fill = interpretation)) +
       sprintf("Denominator: n=%d VF/WGS-linked E. coli isolates from %d participants.",
               nrow(combined), n_distinct(combined$Participant_id)),
       "Level of analysis: input availability and analysis-scope diagnostic.",
-      "Rows with AMR data or true VF+AMR integration equal zero when no dedicated AMR screening output is available.",
-      "Do not interpret plasmid replicon or VFDB-derived summaries as true AMR analysis."
+      "AMRFinderPlus defines the primary genomic-AMR profile; ResFinder/PointFinder and ABRicate are complementary/legacy evidence.",
+      "Genomic AMR determinants and predicted phenotypes are not measured susceptibility."
     )
   ) +
   plot_theme_vf_amr(base_size = 11) +
@@ -525,5 +645,41 @@ p_scope <- ggplot(scope_counts, aes(x = metric, y = n, fill = interpretation)) +
 
 ggsave(file.path(DIR_PLOTS_VF_AMR, "vf_plasmid_analysis_scope.png"),
        p_scope, width = 8.5, height = 5.4, dpi = 300)
+
+if (tolower(Sys.getenv("AMR_ONLY", "0")) %in% c("1", "true", "yes")) {
+  msg(
+    "AMR_ONLY requested: genomic-AMR marker is complete; ",
+    "predicted-plasmid localization is deferred until script 09b completes."
+  )
+} else {
+  msg(
+    paste0(
+      "Localizing pinned CGE VF, genomic-AMR and PlasmidFinder calls ",
+      "to MOB predicted contig assignments"
+    )
+  )
+  plasmid_mechanism <- run_plasmid_gene_localization(
+    root = DIR_ROOT,
+    amr_analysis = amr_analysis,
+    output_root = file.path(DIR_PLASMIDS, "mob_suite")
+  )
+  if (
+    nrow(plasmid_mechanism$episodes) != 532L ||
+      nrow(plasmid_mechanism$adjacent) != 371L ||
+      nrow(plasmid_mechanism$focused) != 9L
+  ) {
+    stop("Script-29 predicted-plasmid mechanism denominator gate failed.")
+  }
+  msg(
+    paste0(
+      "Predicted-plasmid localization complete: %d calls, %d episodes, ",
+      "%d adjacent pairs and %d focused transitions"
+    ),
+    nrow(plasmid_mechanism$locations),
+    nrow(plasmid_mechanism$episodes),
+    nrow(plasmid_mechanism$adjacent),
+    nrow(plasmid_mechanism$focused)
+  )
+}
 
 msg("✓ 29_vf_amr_combined_profile.R complete.")

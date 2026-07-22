@@ -15,7 +15,7 @@
 #   (which could bias downstream VF detection).
 #
 # INPUTS:
-#   - results/clinical/status_map.csv    (from 00b_classify_episodes.R)
+#   - results/clinical/analysis_cohort_longcycler.csv
 #   - results/qc/analysis_assembly_manifest.csv (selected Longcycler genomes)
 #
 # OUTPUTS:
@@ -42,13 +42,34 @@ suppressPackageStartupMessages({
 msg("Starting 00c_plot_clinical_summary.R")
 
 # Load Data
-episode_tbl <- read_csv(FILE_STATUS_MAP, show_col_types = FALSE)
+if (!file.exists(FILE_ANALYSIS_CLINICAL_COHORT)) {
+    stop("Missing ", FILE_ANALYSIS_CLINICAL_COHORT,
+         ". Run canonical assembly/QC selection before plotting.")
+}
+episode_tbl <- read_csv(FILE_ANALYSIS_CLINICAL_COHORT, show_col_types = FALSE) %>%
+    prefer_primary_uti_status(allow_legacy_fallback = FALSE) %>%
+    mutate(
+        Participant_id = as.character(.data$Participant_id),
+        tp_lab = normalise_timepoint_preserve_events(.data$tp_lab)
+    )
 if (!all(c("UTI_Status", "UTI_binary") %in% names(episode_tbl))) {
-    stop("status_map.csv lacks UTI_Status/UTI_binary. Rerun 00b_classify_episodes.R before plotting.")
+    stop("Longcycler analysis cohort lacks UTI_Status/UTI_binary.")
 }
 assembly_df <- load_analysis_assemblies(FILE_ANALYSIS_ASSEMBLY_MANIFEST, require_files = TRUE)
+assembly_keys <- assembly_df %>%
+    transmute(Participant_id = as.character(.data$Participant_id),
+              tp_lab = normalise_timepoint_preserve_events(.data$tp_lab)) %>%
+    distinct()
+cohort_keys <- episode_tbl %>% distinct(.data$Participant_id, .data$tp_lab)
+if (nrow(cohort_keys) != nrow(episode_tbl) ||
+    nrow(assembly_keys) != nrow(assembly_df) ||
+    nrow(anti_join(cohort_keys, assembly_keys, by = c("Participant_id", "tp_lab"))) ||
+    nrow(anti_join(assembly_keys, cohort_keys, by = c("Participant_id", "tp_lab")))) {
+    stop("Clinical cohort and selected Longcycler analysis manifest keys are not exactly equal.")
+}
 
-msg("Loaded status_map.csv (%d rows) and Longcycler-only analysis manifest (%d rows)", nrow(episode_tbl), nrow(assembly_df))
+msg("Loaded %d selected Longcycler clinical episodes and %d matching assemblies",
+    nrow(episode_tbl), nrow(assembly_df))
 
 # Helpers
 # ------------------------------------------------------------------------------
@@ -56,14 +77,17 @@ safe_save_plot <- function(filename, plot, width, height, dpi = 300, units = "in
     tryCatch(
         {
             if (grepl("\\.png$", filename, ignore.case = TRUE) && requireNamespace("ragg", quietly = TRUE)) {
-                ggsave(filename, plot, device = ragg::agg_png, width = width, height = height, dpi = dpi, units = units)
+                ggsave(filename, plot, device = ragg::agg_png, width = width, height = height,
+                       dpi = dpi, units = units, bg = "white")
             } else {
-                ggsave(filename, plot, width = width, height = height, dpi = dpi, units = units)
+                ggsave(filename, plot, width = width, height = height, dpi = dpi, units = units,
+                       bg = "white")
             }
         },
         error = function(e) {
             warning("Fallback saver for ", filename, ": ", conditionMessage(e))
-            ggsave(filename, plot, width = width, height = height, dpi = dpi, units = units)
+            ggsave(filename, plot, width = width, height = height, dpi = dpi, units = units,
+                   bg = "white")
         }
     )
 }
@@ -143,7 +167,7 @@ p_traj <- ggplot(plot_df, aes(tp_lab, Participant_id, fill = Status_plot)) +
     scale_y_discrete(drop = FALSE) +
     scale_fill_uti_status() +
     labs(
-        title = "Longitudinal UTI Status by Participant",
+        title = "Longitudinal UTI Status in the Selected Longcycler Cohort",
         subtitle = "Primary definition: catheter-aware S&S plus >=10^3 CFU culture support",
         x = "Timepoint",
         y = "Participant ID",
@@ -154,13 +178,37 @@ p_traj <- ggplot(plot_df, aes(tp_lab, Participant_id, fill = Status_plot)) +
 
 # 3. Transitions
 # ------------------------------------------------------------------------------
-from_to <- episode_plot %>%
-    filter(!is.na(tp_num)) %>%
-    arrange(Participant_id, tp_num) %>%
+episode_transitions <- episode_plot %>%
+    mutate(
+        Collection_Date_parsed = if ("Collection_Date" %in% names(.)) {
+            coalesce(
+                suppressWarnings(as.Date(.data$Collection_Date, format = "%d/%m/%Y")),
+                suppressWarnings(as.Date(.data$Collection_Date, format = "%Y-%m-%d"))
+            )
+        } else as.Date(NA),
+        fallback_order = case_when(
+            str_detect(as.character(.data$tp_lab), regex("^T\\d+$", ignore_case = TRUE)) ~ as.numeric(.data$tp_num),
+            str_detect(as.character(.data$tp_lab), regex("uricult", ignore_case = TRUE)) ~ 99,
+            str_detect(as.character(.data$tp_lab), regex("^UTI-\\d+$", ignore_case = TRUE)) ~ 100 + as.numeric(.data$tp_num),
+            TRUE ~ NA_real_
+        )
+    ) %>%
     group_by(Participant_id) %>%
-    mutate(Next_Status = dplyr::lead(Status_plot)) %>%
+    mutate(
+        first_date = if (all(is.na(.data$Collection_Date_parsed))) as.Date(NA) else min(.data$Collection_Date_parsed, na.rm = TRUE),
+        date_order = as.numeric(.data$Collection_Date_parsed - .data$first_date),
+        time_order = coalesce(.data$date_order, .data$fallback_order)
+    ) %>%
+    filter(!is.na(.data$time_order)) %>%
+    arrange(.data$Participant_id, .data$time_order, .data$tp_lab, .by_group = TRUE) %>%
+    mutate(Next_Status = dplyr::lead(.data$Status_plot)) %>%
     ungroup() %>%
-    filter(!is.na(Next_Status)) %>%
+    filter(!is.na(.data$Next_Status))
+if (nrow(episode_transitions) != 371L ||
+    sum(episode_transitions$Status_plot == "Not_UTI" & episode_transitions$Next_Status == "UTI") != 9L) {
+    stop("Clinical summary transition contract failed: expected 371 adjacent pairs and 9 Not_UTI-to-UTI pairs")
+}
+from_to <- episode_transitions %>%
     count(From = Status_plot, To = Next_Status, name = "n") %>%
     complete(From = status_order, To = status_order, fill = list(n = 0)) %>%
     mutate(
@@ -185,15 +233,29 @@ make_transitions_plot <- function(from_to, status_levels_story, status_cols = NU
         p_alluv <- try(
             {
                 ggplot(ft, aes(y = n, axis1 = From, axis2 = To)) +
-                    ggalluvial::geom_alluvium(aes(fill = From), width = 0, alpha = 0.9) +
-                    ggalluvial::geom_stratum(width = 0.15, fill = "grey85", colour = "grey40") +
-                    ggplot2::geom_text(stat = "stratum", aes(label = after_stat(stratum))) +
+                    ggalluvial::geom_alluvium(
+                        aes(fill = From), width = 0, alpha = 0.9, discern = TRUE
+                    ) +
+                    ggalluvial::geom_stratum(
+                        width = 0.15, fill = "grey85", colour = "grey40", discern = TRUE
+                    ) +
+                    ggalluvial::stat_stratum(
+                        geom = "text",
+                        aes(label = after_stat(gsub(
+                            "_", " ", sub("[.][0-9]+$", "", stratum), fixed = TRUE
+                        ))),
+                        discern = TRUE
+                    ) +
+                    scale_x_discrete(
+                        limits = c("Previous episode", "Next episode"),
+                        expand = c(0.08, 0.08)
+                    ) +
                     scale_fill_uti_status(drop = FALSE) +
                     labs(
-                        title = "UTI Status Transitions Between Consecutive Timepoints",
-                        x = "From Status",
-                        y = "Count",
-                        fill = "Previous Status"
+                        title = "Operational UTI Status Between Adjacent Selected Episodes",
+                        x = NULL,
+                        y = "Number of adjacent episode pairs",
+                        fill = "Previous episode status"
                     ) +
                     theme_minimal(base_size = 11)
             },
@@ -202,6 +264,11 @@ make_transitions_plot <- function(from_to, status_levels_story, status_cols = NU
         if (!inherits(p_alluv, "try-error")) {
             return(p_alluv)
         }
+        alluvial_error <- attr(p_alluv, "condition")
+        msg(
+            "WARNING: ggalluvial transition rendering failed; using the count-heatmap fallback%s",
+            if (is.null(alluvial_error)) "" else paste0(": ", conditionMessage(alluvial_error))
+        )
     }
 
     ggplot(ft, aes(From, To, fill = n)) +
@@ -298,7 +365,7 @@ p_waterfall <- ggplot(waterfall, aes(x = factor(step, levels = step), y = n)) +
     geom_col() +
     geom_text(aes(label = n), vjust = -0.3, size = 3) +
     labs(
-        title = "Catheter-Aware UTI Case Definition",
+        title = "Catheter-Aware UTI Case Definition in the Selected Longcycler Cohort",
         subtitle = "Culture support uses the primary >=10^3 CFU/mL threshold where CFU is available",
         x = "Selection Step",
         y = "Number of Episodes"
@@ -324,9 +391,9 @@ p_reclass <- ggplot(reclassification, aes(x = legacy_status, y = Not_UTI_subgrou
     geom_text(aes(label = n), size = 3.2) +
     scale_fill_gradient(low = "#f7fbff", high = "#084081", name = "Episodes") +
     labs(
-        title = "Legacy Status Reclassified Under Primary UTI Definition",
+        title = "Source Status Reclassified in the Selected Longcycler Cohort",
         subtitle = "Primary status is UTI vs Not_UTI; Not_UTI subgroups are descriptive",
-        x = "Legacy ASB / UTI / Negative status",
+        x = "Source clinical status",
         y = "Primary UTI or Not_UTI subgroup"
     ) +
     theme_minimal(base_size = 11) +

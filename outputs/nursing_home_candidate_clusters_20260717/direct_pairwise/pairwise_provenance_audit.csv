@@ -1,0 +1,5 @@
+metric,value,requirement
+selected_qc_passing_input_assemblies,532,"All manifest rows selected_canonical=TRUE, QC_PASS=TRUE, and assembler=longcycler"
+pairwise_rows,232,One row per requested unique pair
+noncanonical_endpoint_rows,0,Must equal 0
+stale_or_missing_dnadiff_cache_rows,0,Must equal 0 when dnadiff is available

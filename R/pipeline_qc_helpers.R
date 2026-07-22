@@ -244,18 +244,49 @@ assert_unique_keys <- function(df, keys, context = "table", out_path = NULL, sto
   invisible(dupes)
 }
 
+file_content_sha256 <- function(path) {
+  path <- safe_chr(path)
+  out <- rep(NA_character_, length(path))
+  valid <- !is.na(path) & nzchar(path) & file.exists(path)
+  if (!any(valid)) return(out)
+  if (!requireNamespace("digest", quietly = TRUE)) {
+    stop("Package 'digest' is required for SHA-256 input provenance.")
+  }
+  out[valid] <- vapply(
+    path[valid],
+    function(x) unname(digest::digest(x, algo = "sha256", serialize = FALSE, file = TRUE)),
+    character(1)
+  )
+  out
+}
+
+add_file_content_sha256 <- function(df, path_col, hash_col) {
+  if (!path_col %in% names(df)) stop("Missing path column for SHA-256 provenance: ", path_col)
+  paths <- safe_chr(df[[path_col]])
+  unique_paths <- unique(paths[!is.na(paths) & nzchar(paths)])
+  hashes <- file_content_sha256(unique_paths)
+  lookup <- stats::setNames(hashes, unique_paths)
+  df[[hash_col]] <- unname(lookup[paths])
+  df
+}
+
 hash_input_manifest <- function(df, cols = NULL) {
-  if (!is.null(cols)) df <- df[, intersect(cols, names(df)), drop = FALSE]
+  if (!requireNamespace("digest", quietly = TRUE)) {
+    stop("Package 'digest' is required for SHA-256 manifest provenance.")
+  }
+  if (!is.null(cols)) {
+    missing <- setdiff(cols, names(df))
+    if (length(missing)) stop("Manifest hash columns are missing: ", paste(missing, collapse = ", "))
+    df <- df[, cols, drop = FALSE]
+  }
   df <- as.data.frame(df, stringsAsFactors = FALSE)
   if (nrow(df) > 0) {
-    df[] <- lapply(df, function(x) ifelse(is.na(x), "<NA>", as.character(x)))
-    ord_cols <- names(df)
-    df <- df[do.call(order, df[ord_cols]), , drop = FALSE]
+    df[] <- lapply(df, function(x) ifelse(is.na(x), "<NA>", enc2utf8(as.character(x))))
+    df <- df[do.call(order, c(df, list(na.last = TRUE, method = "radix"))), , drop = FALSE]
   }
-  tmp <- tempfile("manifest_hash_")
-  on.exit(unlink(tmp), add = TRUE)
-  writeLines(c(paste(names(df), collapse = "\t"), apply(df, 1, paste, collapse = "\t")), tmp)
-  unname(tools::md5sum(tmp))
+  rows <- if (nrow(df) > 0) apply(df, 1, paste, collapse = "\t") else character()
+  payload <- paste(c(paste(names(df), collapse = "\t"), rows), collapse = "\n")
+  unname(digest::digest(payload, algo = "sha256", serialize = FALSE))
 }
 
 write_input_manifest <- function(paths, out_file, role = "input") {
@@ -313,25 +344,6 @@ collect_pipeline_gffs <- function(gff_dirs = c(DIR_PROKKA, DIR_PROKKA_SLIM)) {
   unique(normalizePath(all_gffs, winslash = "/", mustWork = FALSE))
 }
 
-choose_pipeline_gff <- function(assembly_id, assembly_base_id, all_gffs) {
-  if (length(all_gffs) == 0) return(NA_character_)
-  lookup_ids <- unique(stats::na.omit(c(as.character(assembly_id), as.character(assembly_base_id))))
-  lookup_ids <- lookup_ids[nzchar(lookup_ids)]
-  if (length(lookup_ids) == 0) return(NA_character_)
-
-  matches <- all_gffs[vapply(all_gffs, function(path) {
-    any(vapply(lookup_ids, function(id) {
-      stringr::str_detect(basename(path), stringr::fixed(id)) ||
-        stringr::str_detect(dirname(path), stringr::fixed(id))
-    }, logical(1)))
-  }, logical(1))]
-  if (length(matches) == 0) return(NA_character_)
-
-  pref <- matches[stringr::str_detect(matches, stringr::regex("prefixed|slim|min270", ignore_case = TRUE))]
-  if (length(pref) > 0) return(sort(pref)[1])
-  sort(matches)[1]
-}
-
 attach_pipeline_gff_paths <- function(expected,
                                       gff_dirs = c(DIR_PROKKA, DIR_PROKKA_SLIM)) {
   if (nrow(expected) == 0) {
@@ -370,16 +382,6 @@ attach_pipeline_gff_paths <- function(expected,
     take_id <- is.na(gff_path) & !is.na(id_match)
     gff_path[take_id] <- gff_keys$gff_path[id_match[take_id]]
 
-    fallback <- if (identical(Sys.getenv("GFF_ALLOW_SUBSTRING_MATCH", "0"), "1")) which(is.na(gff_path)) else integer()
-    if (length(fallback) > 0) {
-      gff_path[fallback] <- mapply(
-        choose_pipeline_gff,
-        expected$Assembly_ID[fallback],
-        expected$Assembly_Base_ID[fallback],
-        MoreArgs = list(all_gffs = all_gffs),
-        USE.NAMES = FALSE
-      )
-    }
   }
 
   gff_exists <- !is.na(gff_path) & file.exists(gff_path)
@@ -436,8 +438,20 @@ assert_analysis_assembly_manifest <- function(df,
                                               require_selected = TRUE,
                                               require_qc = TRUE,
                                               require_files = FALSE,
-                                              require_unique_episode = TRUE) {
+                                              require_unique_episode = TRUE,
+                                              require_nonempty = TRUE,
+                                              require_assembly_id = FALSE) {
   df <- tibble::as_tibble(df)
+  if (isTRUE(require_nonempty) && nrow(df) == 0L) stop(context, " is empty.")
+  identity_cols <- c(if (isTRUE(require_assembly_id)) "Assembly_ID", "Participant_id", "tp_lab")
+  missing_identity <- setdiff(identity_cols, names(df))
+  if (length(missing_identity)) {
+    stop(context, " lacks identity column(s): ", paste(missing_identity, collapse = ", "))
+  }
+  for (col in identity_cols) {
+    value <- trimws(safe_chr(df[[col]]))
+    if (any(is.na(value) | !nzchar(value))) stop(context, " contains missing/blank ", col, " value(s).")
+  }
   assembler <- normalise_assembler_column(df)
   allowed <- if (exists("ANALYSIS_ASSEMBLER", inherits = TRUE)) {
     tolower(get("ANALYSIS_ASSEMBLER", inherits = TRUE))
@@ -470,6 +484,11 @@ assert_analysis_assembly_manifest <- function(df,
     sizes[exists_path] <- file.size(paths[exists_path])
     bad_path <- !exists_path | is.na(sizes) | sizes <= 0
     if (any(bad_path)) stop(context, " contains ", sum(bad_path), " missing or empty FASTA path(s).")
+    path_norm <- normalizePath(paths, winslash = "/", mustWork = FALSE)
+    if (anyDuplicated(path_norm)) stop(context, " contains duplicated FASTA paths.")
+  }
+  if ("Assembly_ID" %in% names(df) && anyDuplicated(safe_chr(df$Assembly_ID))) {
+    stop(context, " contains duplicated Assembly_ID values.")
   }
   if (isTRUE(require_unique_episode)) {
     required_key <- c("Participant_id", "tp_lab")
@@ -508,7 +527,9 @@ load_analysis_assemblies <- function(path = if (exists("FILE_ANALYSIS_ASSEMBLY_M
     require_selected = TRUE,
     require_qc = TRUE,
     require_files = require_files,
-    require_unique_episode = TRUE
+    require_unique_episode = TRUE,
+    require_nonempty = TRUE,
+    require_assembly_id = TRUE
   )
   out
 }
@@ -962,6 +983,7 @@ standardise_gff_assembly_table <- function(df, source_label = "assembly_table") 
 
 build_assembly_gff_inventory <- function(metadata_file = FILE_METADATA,
                                          canonical_file = file.path(DIR_QC, "canonical_assembly_selection.csv"),
+                                         analysis_manifest_file = FILE_ANALYSIS_ASSEMBLY_MANIFEST,
                                          fasta_dir = DIR_FASTAS,
                                          gff_dirs = c(DIR_PROKKA, DIR_PROKKA_SLIM),
                                          metadata_scan_file = file.path(DIR_QC, "metadata_fasta_discovery_manifest.csv"),
@@ -973,7 +995,15 @@ build_assembly_gff_inventory <- function(metadata_file = FILE_METADATA,
     stop("Assembly metadata is missing: ", metadata_file, "\nRun 00_make_assembly_metadata.r first.")
   }
 
-  current_scan <- discover_project_fastas(fasta_dir, recursive = TRUE, include_excluded = TRUE)
+  # The metadata discovery snapshot is deliberately Longcycler-only. Apply the
+  # same boundary to the live staleness scan; otherwise legitimate alternate
+  # assembly files in the shared FASTA directory are falsely reported as new
+  # candidates even though they are outside this analysis contract.
+  current_scan <- discover_project_fastas(fasta_dir, recursive = TRUE, include_excluded = TRUE) |>
+    dplyr::filter(
+      stringr::str_to_lower(.data$Assembler) ==
+        stringr::str_to_lower(.env$ANALYSIS_ASSEMBLER)
+    )
   current_candidates <- current_scan |>
     dplyr::filter(.data$include_in_metadata) |>
     dplyr::mutate(full_path_norm = normalizePath(.data$full_path, winslash = "/", mustWork = FALSE))
@@ -1066,20 +1096,17 @@ build_assembly_gff_inventory <- function(metadata_file = FILE_METADATA,
       ) & .data$active_expected_for_canonical_qc
     )
 
-  canonical_missing <- !file.exists(canonical_file)
-  if (canonical_missing) {
+  if (!file.exists(canonical_file)) {
     stop(canonical_file, " is missing. Run 12a_wgs_qc.R; Panaroo cannot fall back to all QC-passing assemblies.")
   }
-  canonical_raw <- if (!canonical_missing) {
-    readr::read_csv(canonical_file, show_col_types = FALSE)
-  } else {
-    tibble::tibble()
-  }
+  canonical_raw <- readr::read_csv(canonical_file, show_col_types = FALSE)
   canonical_std <- standardise_gff_assembly_table(canonical_raw, "canonical_assembly_selection")
-  panaroo_inventory <- canonical_std |>
-    dplyr::filter(.data$selected_canonical %in% TRUE, .data$QC_PASS %in% TRUE, .data$file_exists) |>
+  analysis_raw <- load_analysis_assemblies(analysis_manifest_file, require_files = TRUE)
+  analysis_std <- standardise_gff_assembly_table(analysis_raw, "analysis_assembly_manifest") |>
+    dplyr::mutate(selection_policy_version = ASSEMBLY_SELECTION_POLICY_VERSION)
+  panaroo_inventory <- analysis_std |>
     dplyr::mutate(
-      inventory_tier = "panaroo_eligible_canonical_qc_pass",
+      inventory_tier = "panaroo_eligible_analysis_manifest",
       gff_requirement = "required_for_panaroo",
       metadata_or_scan_status = "panaroo_input"
     ) |>
@@ -1112,11 +1139,34 @@ build_assembly_gff_inventory <- function(metadata_file = FILE_METADATA,
     dplyr::pull(.data$Assembly_ID) |>
     unique()
 
+  canonical_selected_contract <- canonical_std |>
+    dplyr::filter(
+      .data$selected_canonical %in% TRUE,
+      .data$QC_PASS %in% TRUE,
+      normalise_assembler_column(dplyr::pick(dplyr::everything())) == .env$ANALYSIS_ASSEMBLER
+    ) |>
+    dplyr::transmute(
+      Assembly_ID = safe_chr(.data$Assembly_ID),
+      Participant_id = safe_chr(.data$Participant_id),
+      tp_lab = normalise_timepoint_preserve_events(.data$tp_lab),
+      full_path = normalizePath(.data$full_path, winslash = "/", mustWork = FALSE)
+    ) |>
+    dplyr::arrange(.data$Participant_id, .data$tp_lab, .data$Assembly_ID)
+  analysis_contract <- analysis_std |>
+    dplyr::transmute(
+      Assembly_ID = safe_chr(.data$Assembly_ID),
+      Participant_id = safe_chr(.data$Participant_id),
+      tp_lab = normalise_timepoint_preserve_events(.data$tp_lab),
+      full_path = normalizePath(.data$full_path, winslash = "/", mustWork = FALSE)
+    ) |>
+    dplyr::arrange(.data$Participant_id, .data$tp_lab, .data$Assembly_ID)
+  analysis_matches_canonical <- identical(canonical_selected_contract, analysis_contract)
+
   qc_missing_metadata_ids <- setdiff(metadata_existing_ids, canonical_all_ids)
   qc_extra_ids <- setdiff(canonical_all_ids, metadata_existing_ids)
-  canonical_older_than_metadata <- !canonical_missing &&
-    file.exists(metadata_file) &&
+  canonical_older_than_metadata <- file.exists(metadata_file) &&
     file.info(canonical_file)$mtime < file.info(metadata_file)$mtime
+  analysis_older_than_canonical <- file.info(analysis_manifest_file)$mtime < file.info(canonical_file)$mtime
   active_metadata_missing_on_disk <- metadata_linked |>
     dplyr::filter(
       .data$metadata_or_scan_status == "metadata_path_missing_on_disk",
@@ -1132,8 +1182,9 @@ build_assembly_gff_inventory <- function(metadata_file = FILE_METADATA,
     }
   )
   qc_stale_messages <- c(
-    if (canonical_missing) sprintf("Canonical assembly selection is missing: %s", canonical_file),
     if (canonical_older_than_metadata) "Canonical assembly selection is older than assembly_metadata.csv.",
+    if (analysis_older_than_canonical) "Analysis assembly manifest is older than canonical_assembly_selection.csv.",
+    if (!analysis_matches_canonical) "Analysis assembly manifest does not exactly match the selected QC-passing Longcycler rows in canonical_assembly_selection.csv.",
     if (length(qc_missing_metadata_ids) > 0) sprintf("%d metadata-linked FASTA(s) are absent from canonical_assembly_selection.csv.", length(qc_missing_metadata_ids)),
     if (length(qc_extra_ids) > 0) sprintf("%d canonical selection row(s) are no longer present in assembly_metadata.csv.", length(qc_extra_ids))
   )
@@ -1161,7 +1212,8 @@ build_assembly_gff_inventory <- function(metadata_file = FILE_METADATA,
       "panaroo_gffs_available",
       "panaroo_gffs_missing_required",
       "metadata_inventory_stale",
-      "qc_selection_stale"
+      "qc_selection_stale",
+      "analysis_manifest_matches_canonical_selection"
     ),
     value = as.character(c(
       length(current_candidate_paths),
@@ -1176,7 +1228,8 @@ build_assembly_gff_inventory <- function(metadata_file = FILE_METADATA,
       panaroo_gffs_available,
       panaroo_gffs_missing,
       metadata_stale,
-      qc_stale
+      qc_stale,
+      analysis_matches_canonical
     )),
     severity = c(
       "info", "info", "info", "warning", "warning", "warning",
@@ -1185,7 +1238,8 @@ build_assembly_gff_inventory <- function(metadata_file = FILE_METADATA,
       "info", "info",
       ifelse(panaroo_gffs_missing > 0, "error", "info"),
       ifelse(metadata_stale, "error", "info"),
-      ifelse(qc_stale, "error", "info")
+      ifelse(qc_stale, "error", "info"),
+      ifelse(analysis_matches_canonical, "info", "error")
     )
   )
 
@@ -1213,7 +1267,8 @@ build_assembly_gff_inventory <- function(metadata_file = FILE_METADATA,
       summary = out_summary,
       metadata_scan = metadata_scan_file,
       metadata = metadata_file,
-      canonical = canonical_file
+      canonical = canonical_file,
+      analysis_manifest = analysis_manifest_file
     )
   )
 }

@@ -1,0 +1,23 @@
+{
+  "generated_at": "2026-07-17 13:42:52 CEST",
+  "active_isolates": 532,
+  "active_participants": 161,
+  "emailed_rows": 556,
+  "excluded_emailed_rows": 24,
+  "vf_gene_count": 227,
+  "preliminary_candidate_pairs": 1273,
+  "direct_pairs_attempted": 260,
+  "direct_pairs_with_snp_result": 260,
+  "priority_counts": {
+    "High-priority candidate": 21,
+    "Moderate-priority candidate": 525,
+    "Possible related lineage": 488,
+    "Same lineage, not the same strain": 239
+  },
+  "high_priority_cluster_count": 10,
+  "high_priority_cluster_isolate_count": 28,
+  "amr_screen_method": "ABRicate ResFinder; retained identity >=80% and coverage >=80%",
+  "phenotype_available": false,
+  "phenotype_note": "No phenotypic susceptibility or antibiogram data were available.",
+  "caution": "Candidate genomic clusters require nursing-home, ward and temporal confirmation."
+}

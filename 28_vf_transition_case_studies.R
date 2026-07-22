@@ -4,9 +4,9 @@
 # ==============================================================================
 #
 # GOAL:
-#   Build clinical-first Not_UTI->UTI and phenotype-switch case-study tables. Every
-#   ordered clinical transition is retained, including cases with missing WGS/VF,
-#   and genomic/VF/module/score evidence is layered on only where available.
+#   Build Not_UTI->UTI and phenotype-switch case-study tables for the exact
+#   selected QC-pass Longcycler cohort. Every adjacent pair therefore has two
+#   selected genomic endpoints and direct pairwise evidence.
 #
 # METHOD:
 #   1. Load ordered primary UTI status data, canonical VF data, module outputs,
@@ -128,9 +128,38 @@ stop_if_stale <- function(target, upstream, target_label, upstream_label) {
   }
 }
 
+assert_exact_analysis_keys <- function(df, context) {
+  required <- c("Participant_id", "tp_lab")
+  if (!all(required %in% names(df))) stop(context, " lacks Participant_id/tp_lab")
+  keys <- df %>%
+    transmute(Participant_id = as.character(.data$Participant_id),
+              tp_lab = normalise_tp_label(.data$tp_lab)) %>%
+    distinct()
+  if (nrow(keys) != nrow(df)) stop(context, " has duplicate selected episode keys")
+  missing <- anti_join(analysis_keys, keys, by = required)
+  extra <- anti_join(keys, analysis_keys, by = required)
+  if (nrow(missing) || nrow(extra)) {
+    stop(context, " does not exactly match the selected Longcycler analysis cohort: missing=",
+         nrow(missing), ", extra=", nrow(extra))
+  }
+  invisible(TRUE)
+}
+
 # ==============================================================================
 # 2. LOAD REQUIRED INPUTS
 # ==============================================================================
+if (!file.exists(FILE_ANALYSIS_CLINICAL_COHORT)) stop("Missing ", FILE_ANALYSIS_CLINICAL_COHORT)
+analysis_cohort <- read_csv(FILE_ANALYSIS_CLINICAL_COHORT, show_col_types = FALSE) %>%
+  prefer_primary_uti_status(allow_legacy_fallback = FALSE) %>%
+  mutate(
+    Participant_id = as.character(.data$Participant_id),
+    tp_lab = normalise_tp_label(.data$tp_lab)
+  )
+analysis_keys <- analysis_cohort %>% distinct(.data$Participant_id, .data$tp_lab)
+if (nrow(analysis_keys) != nrow(analysis_cohort)) {
+  stop("Longcycler analysis cohort contains duplicate participant-timepoint keys")
+}
+
 if (!file.exists(FILE_VF_READY)) stop("Missing ", FILE_VF_READY)
 stop_if_stale(FILE_VF_READY, FILE_VF_PA, "vf_analysis_ready.csv", "vf_pa_all.csv")
 
@@ -142,6 +171,7 @@ vf <- read_csv(FILE_VF_READY, show_col_types = FALSE) %>%
     Participant_id = as.character(Participant_id),
     tp_lab = normalise_tp_label(tp_lab)
   )
+assert_exact_analysis_keys(vf, "vf_analysis_ready.csv")
 
 vf_episode_lookup <- vf %>%
   filter(!is.na(Episode_ID), !is.na(Infection_Status)) %>%
@@ -170,29 +200,8 @@ meta_cols <- c("Participant_id", "tp_lab", "Episode_ID", "Event_type", "Collecti
 cat_cols <- grep("^cat_", names(vf), value = TRUE)
 gene_cols <- canonical_vf_gene_cols(names(vf))
 
-status_file <- select_primary_status_map(
-  prefer_poster = TRUE,
-  require_fresh = TRUE,
-  caller = "28_vf_transition_case_studies.R"
-)
-status_plain <- FILE_STATUS_MAP
-
-clinical_raw <- read_csv(status_file, show_col_types = FALSE)
-clinical_raw <- prefer_primary_uti_status(clinical_raw, allow_legacy_fallback = FALSE) %>%
-  apply_manual_sample_curation(context = "28_clinical_status") %>%
-  filter_primary_analysis()
-if (!"Collection_Date" %in% names(clinical_raw) && file.exists(status_plain)) {
-  status_dates <- read_csv(status_plain, show_col_types = FALSE) %>%
-    apply_manual_sample_curation(context = "28_status_dates") %>%
-    filter_primary_analysis() %>%
-    mutate(Participant_id = as.character(Participant_id),
-           Episode_ID = as.character(Episode_ID)) %>%
-    select(any_of(c("Participant_id", "Episode_ID", "Collection_Date")))
-  clinical_raw <- clinical_raw %>%
-    mutate(Participant_id = as.character(Participant_id),
-           Episode_ID = as.character(Episode_ID)) %>%
-    left_join(status_dates, by = c("Participant_id", "Episode_ID"), relationship = "many-to-one")
-}
+status_file <- FILE_ANALYSIS_CLINICAL_COHORT
+clinical_raw <- analysis_cohort
 
 clinical <- clinical_raw %>%
   mutate(
@@ -230,6 +239,24 @@ pairwise <- if (file.exists(f_pair)) {
     ) %>%
     prepare_pairwise_for_strain_context()
 } else NULL
+if (is.null(pairwise)) stop("Missing direct pairwise evidence: ", f_pair)
+if (any(tolower(pairwise$Assembler_A) != ANALYSIS_ASSEMBLER |
+        tolower(pairwise$Assembler_B) != ANALYSIS_ASSEMBLER, na.rm = TRUE)) {
+  stop("Pairwise strain metrics contain endpoints outside the selected Longcycler cohort")
+}
+canonical_transition_file <- file.path(DIR_RESULTS, "longitudinal", "longcycler_transitions.csv")
+if (!file.exists(canonical_transition_file)) stop("Missing canonical transition export: ", canonical_transition_file)
+canonical_transitions <- read_csv(canonical_transition_file, show_col_types = FALSE) %>%
+  transmute(
+    Participant_id = as.character(.data$Participant_id),
+    from_tp = normalise_tp_label(.data$tp_from),
+    to_tp = normalise_tp_label(.data$tp_to),
+    canonical_snps = as.numeric(.data$TotalSNPs),
+    transition_key = paste(.data$Participant_id, .data$from_tp, .data$to_tp, sep = "|")
+  )
+if (nrow(canonical_transitions) != 371L || anyDuplicated(canonical_transitions$transition_key)) {
+  stop("Canonical transition export must contain 371 unique ordered selected-Longcycler pairs")
+}
 
 f_switch <- file.path(DIR_RESULTS, "longitudinal", "phenotype_switch_candidates.csv")
 switches <- if (file.exists(f_switch)) {
@@ -249,6 +276,7 @@ mod_ep <- if (has_mod) {
     prefer_primary_uti_status() %>%
     mutate(Participant_id = as.character(Participant_id), tp_lab = normalise_tp_label(tp_lab))
 } else tibble()
+if (has_mod) assert_exact_analysis_keys(mod_ep, "vf_module_presence_by_episode.csv")
 
 f_scores <- file.path(DIR_VF, "vf_score_table.csv")
 has_scores <- file.exists(f_scores)
@@ -257,6 +285,7 @@ score_tbl <- if (has_scores) {
     prefer_primary_uti_status() %>%
     mutate(Participant_id = as.character(Participant_id), tp_lab = normalise_tp_label(tp_lab))
 } else tibble()
+if (has_scores) assert_exact_analysis_keys(score_tbl, "vf_score_table.csv")
 
 # ==============================================================================
 # 4. BUILD COMPLETE CLINICAL TRANSITION INDEX
@@ -374,6 +403,31 @@ clinical_ordered <- clinical %>%
 
 case_index <- clinical_ordered
 
+expected_transition_n <- analysis_cohort %>%
+  count(.data$Participant_id, name = "n_episodes") %>%
+  summarise(n = sum(pmax(.data$n_episodes - 1L, 0L))) %>%
+  pull(.data$n)
+if (nrow(case_index) != expected_transition_n) {
+  stop("Transition index is not the complete adjacent-pair set for the Longcycler cohort")
+}
+if (any(!case_index$has_vf_pair)) {
+  stop("Every Longcycler analysis transition must have both WGS/VF endpoints")
+}
+if (sum(case_index$is_not_uti_to_uti, na.rm = TRUE) != 9L) {
+  stop("Expected 9 adjacent Not_UTI->UTI transitions in the current Longcycler cohort")
+}
+if (nrow(anti_join(
+  case_index %>% select(transition_key),
+  canonical_transitions %>% select(transition_key),
+  by = "transition_key"
+)) || nrow(anti_join(
+  canonical_transitions %>% select(transition_key),
+  case_index %>% select(transition_key),
+  by = "transition_key"
+))) {
+  stop("Transition case index does not exactly match the canonical Longcycler transition export")
+}
+
 msg("Indexed %d clinical transitions; Not_UTI->UTI=%d; WGS-linked Not_UTI->UTI=%d",
     nrow(case_index), sum(case_index$is_not_uti_to_uti, na.rm = TRUE),
     sum(case_index$is_not_uti_to_uti & case_index$has_vf_pair, na.rm = TRUE))
@@ -404,6 +458,10 @@ for (i in seq_len(nrow(case_index))) {
     evol = evol,
     threshold = SNP_THRESHOLD
   )
+  if (is.na(ctx$SNPs)) {
+    stop("Missing direct pairwise SNP evidence for selected Longcycler transition ",
+         pid, " ", tp_f, " -> ", tp_t)
+  }
 
   strain_ctx <- bind_rows(strain_ctx, tibble(
     case_id = row$case_id,
@@ -436,6 +494,14 @@ case_index <- case_index %>%
   left_join(strain_ctx %>% select(case_id, has_strain_context = pair_interpretation),
             by = "case_id") %>%
   mutate(has_strain_context = !is.na(has_strain_context) & has_strain_context != "Missing strain metrics")
+strain_canonical_check <- strain_ctx %>%
+  mutate(transition_key = paste(.data$Participant_id, .data$from_vf_tp, .data$to_vf_tp, sep = "|")) %>%
+  left_join(canonical_transitions %>% select(transition_key, canonical_snps),
+            by = "transition_key", relationship = "one-to-one")
+if (any(is.na(strain_canonical_check$canonical_snps)) ||
+    any(strain_canonical_check$SNPs != strain_canonical_check$canonical_snps)) {
+  stop("Case-study direct SNP values do not match the canonical Longcycler transition export")
+}
 
 # ==============================================================================
 # 6. GENE, MODULE, AND SCORE CHANGES
@@ -540,6 +606,9 @@ for (i in seq_len(nrow(case_index))) {
     lost <- gene_cols[from_vec == 1 & to_vec == 0]
     stable_present <- gene_cols[from_vec == 1 & to_vec == 1]
     vf_jaccard <- jaccard_from_vectors(from_vec, to_vec)
+    if (length(gene_cols) > 0 && is.na(vf_jaccard)) {
+      stop("VF Jaccard is missing despite two available selected endpoints for case ", row$case_id)
+    }
 
     changed_or_present <- unique(c(gained, lost, stable_present))
     if (length(changed_or_present) > 0) {
@@ -580,7 +649,7 @@ for (i in seq_len(nrow(case_index))) {
         n_vf_genes_gained = length(gained),
         n_vf_genes_lost = length(lost),
         n_stable_present = length(stable_present),
-        vf_jaccard = vf_jaccard,
+        vf_jaccard = .env$vf_jaccard,
         genes_gained = paste(gained, collapse = "; "),
         genes_lost = paste(lost, collapse = "; ")
       )
@@ -798,12 +867,12 @@ not_uti_uti_summary <- case_summary %>% filter(is_not_uti_to_uti)
 ta("=== VF TRANSITION CASE STUDY SUMMARY ===")
 ta("Timestamp: %s", format(Sys.time()))
 ta("Clinical transition source: %s", basename(status_file))
-ta("Total ordered clinical transitions indexed: %d", nrow(case_index))
-ta("Not_UTI->UTI clinical transitions indexed: %d", nrow(not_uti_uti_index))
+ta("Total adjacent selected Longcycler transitions indexed: %d", nrow(case_index))
+ta("Not_UTI->UTI selected Longcycler transitions indexed: %d", nrow(not_uti_uti_index))
 ta("Not_UTI->UTI with both WGS/VF endpoints: %d", sum(not_uti_uti_index$has_vf_pair, na.rm = TRUE))
 ta("Not_UTI->UTI with SNP-defined strong same-strain evidence: %d",
    sum(not_uti_uti_summary$has_vf_pair & not_uti_uti_summary$snp_strain_context == "Strong same strain", na.rm = TRUE))
-ta("Not_UTI->UTI missing one or both WGS/VF endpoints: %d", sum(!not_uti_uti_index$has_vf_pair, na.rm = TRUE))
+ta("Not_UTI->UTI missing one or both WGS/VF endpoints: %d (required to be zero)", sum(!not_uti_uti_index$has_vf_pair, na.rm = TRUE))
 ta("SNP context rule: Strong same strain = 0-%d SNPs; Above same-strain SNP threshold = >%d SNPs; Missing SNP evidence = SNPs unavailable.", SNP_THRESHOLD, SNP_THRESHOLD)
 ta("ST context rule: Same ST, Different ST, or Missing ST evidence. ST is secondary lineage context and does not prove same strain.")
 ta("Uricult-linked Not_UTI->UTI transitions: %d", sum(not_uti_uti_index$is_uricult_transition, na.rm = TRUE))
@@ -879,14 +948,14 @@ if (nrow(timeline_plot_data) > 0) {
     scale_shape_manual(values = c("TRUE" = 21, "FALSE" = 4)) +
     labs(
       title = "Clinical timelines for residents with Not_UTI-to-UTI transitions",
-      subtitle = "Point shape indicates whether the clinical episode has linked WGS/VF data",
+      subtitle = "Every displayed episode is a selected QC-pass Longcycler profile",
       x = "Ordered time within participant",
       y = "Participant",
       fill = "Primary UTI status",
       shape = "WGS/VF linked",
       caption = sprintf(
-        "Data: %s, %s, and %s. Denominator: %d clinical timeline rows from %d Not_UTI-to-UTI transition participants. Level of analysis: clinical episode timeline with WGS/VF availability overlay. Uricult ordering uses Collection_Date where available; display/fallback ordering is reported in results/vf/vf_transition_case_index.csv.",
-        FILE_STATUS_MAP_POSTER, FILE_STATUS_MAP, FILE_VF_READY,
+        "Data: %s and %s. Denominator: %d selected Longcycler timeline rows from %d Not_UTI-to-UTI transition participants. Level of analysis: selected genomic episode timeline. Uricult ordering uses Collection_Date where available; display/fallback ordering is reported in results/vf/vf_transition_case_index.csv.",
+        FILE_ANALYSIS_CLINICAL_COHORT, FILE_VF_READY,
         nrow(timeline_plot_data), n_distinct(timeline_plot_data$Participant_id)
       )
     ) +
@@ -1104,10 +1173,10 @@ if (nrow(snp_plot) > 0) {
 append_denominator_summary(
   case_index,
   "28_vf_transition_case_studies.R",
-  "clinical_transition_index",
-  "clinical_episode_transition",
+  "longcycler_transition_index",
+  "selected_longcycler_episode_transition",
   file.path(DIR_VF, "vf_transition_case_index.csv"),
-  "Clinical-first transition index; Collection_Date is preferred for Uricult ordering and poster labels remain caveats"
+  "Exact selected QC-pass Longcycler adjacent-transition index; every pair has direct SNP and VF evidence"
 )
 write_uti_attrition_outputs()
 

@@ -8,7 +8,7 @@ root <- normalizePath(".", winslash = "/", mustWork = TRUE)
 paths <- list(
   cohort_flow = file.path(root, "results/summary/table_01_cohort_episode_flow.csv"),
   denominator = file.path(root, "results/qc/pipeline_denominator_summary.csv"),
-  canonical_selection = file.path(root, "results/qc/canonical_assembly_selection.csv"),
+  analysis_cohort = file.path(root, "results/clinical/analysis_cohort_longcycler.csv"),
   status_map = file.path(root, "results/clinical/status_map.csv"),
   vf_ready = file.path(root, "results/vf/vf_analysis_ready.csv"),
   transition_index = file.path(root, "results/vf/vf_transition_case_index.csv"),
@@ -17,7 +17,7 @@ paths <- list(
   md = file.path(root, "docs/workflow_case_count_flowchart.md")
 )
 
-for (path in paths[c("cohort_flow", "denominator", "canonical_selection", "status_map",
+for (path in paths[c("cohort_flow", "denominator", "analysis_cohort", "status_map",
                      "vf_ready", "transition_index", "vf_longitudinal")]) {
   if (!file.exists(path)) {
     stop("Required source file is missing: ", path, call. = FALSE)
@@ -32,7 +32,7 @@ read_csv <- function(path) {
 
 cohort_flow <- read_csv(paths$cohort_flow)
 denominator <- read_csv(paths$denominator)
-canonical_selection <- read_csv(paths$canonical_selection)
+analysis_cohort <- read_csv(paths$analysis_cohort)
 status_map <- read_csv(paths$status_map)
 vf_ready_rows <- read_csv(paths$vf_ready)
 transition_index <- read_csv(paths$transition_index)
@@ -61,33 +61,19 @@ truthy <- function(x) {
   toupper(as.character(x)) %in% c("TRUE", "T", "1", "YES", "Y")
 }
 
-assembler_col <- intersect(c("assembler", "Assembler"), names(canonical_selection))[1]
-if (is.na(assembler_col) ||
-    !all(c("selected_canonical", "QC_PASS", "Participant_id", "tp_lab") %in% names(canonical_selection))) {
-  stop("Canonical assembly selection lacks Longcycler-primary fields.", call. = FALSE)
-}
-selected_active <- canonical_selection[
-  truthy(canonical_selection$selected_canonical) & truthy(canonical_selection$QC_PASS),
-  , drop = FALSE
-]
-selected_active$active_assembler <- tolower(as.character(selected_active[[assembler_col]]))
-selected_non_longcycler <- selected_active[selected_active$active_assembler != "longcycler" |
-                                               is.na(selected_active$active_assembler), , drop = FALSE]
-if (nrow(selected_non_longcycler) > 0) {
-  stop(sprintf("Canonical manifest still selects %d non-Longcycler QC-pass row(s).",
-               nrow(selected_non_longcycler)), call. = FALSE)
-}
-active_longcycler_keys <- unique(selected_active[selected_active$active_assembler == "longcycler",
-                                                  c("Participant_id", "tp_lab"), drop = FALSE])
+active_longcycler_keys <- unique(analysis_cohort[c("Participant_id", "tp_lab")])
 active_longcycler_keys$Participant_id <- as.character(active_longcycler_keys$Participant_id)
 active_longcycler_keys$tp_lab <- as.character(active_longcycler_keys$tp_lab)
+if (nrow(active_longcycler_keys) != nrow(analysis_cohort)) {
+  stop("Selected Longcycler analysis cohort has duplicate episode keys.", call. = FALSE)
+}
 
-status_primary_rows <- status_map[truthy(status_map$analysis_include_primary), , drop = FALSE]
+status_primary_rows <- analysis_cohort
 status_primary_rows$Participant_id <- as.character(status_primary_rows$Participant_id)
 status_primary_rows$tp_lab <- as.character(status_primary_rows$tp_lab)
 active_status <- merge(active_longcycler_keys, status_primary_rows, by = c("Participant_id", "tp_lab"), all.x = TRUE)
 if (nrow(active_status) != nrow(active_longcycler_keys) || any(is.na(active_status$UTI_Status))) {
-  stop("Active Longcycler keys do not map one-to-one to primary clinical status rows.", call. = FALSE)
+  stop("Selected Longcycler cohort keys do not map one-to-one to clinical status rows.", call. = FALSE)
 }
 
 vf_ready_rows$Participant_id <- as.character(vf_ready_rows$Participant_id)
@@ -105,6 +91,10 @@ active_transition_endpoints <- from_key %in% active_key_strings & to_key %in% ac
 
 fmt_n <- function(x) {
   format(as.integer(x), big.mark = ",", scientific = FALSE, trim = TRUE)
+}
+
+reader_transition <- function(x) {
+  gsub("->", " -> ", gsub("_", " ", x, fixed = TRUE), fixed = TRUE)
 }
 
 status_all <- pick_denominator("status_map")
@@ -149,25 +139,29 @@ counts <- list(
   linked_not_uti_to_uti = linked_not_uti_to_uti,
   missing_linked_not_uti_to_uti = missing_linked_not_uti_to_uti
 )
+counts$included_not_vf_ready <- counts$included_episodes - counts$vf_ready_episodes
+if (counts$included_not_vf_ready < 0L) {
+  stop("VF-ready episode count exceeds the source-eligible episode count.", call. = FALSE)
+}
 
 checks <- data.frame(
   item = c(
-    "included clinical visits",
+    "source-eligible visits (attrition/QC)",
     "included participants",
     "included UTI",
-    "included Not_UTI",
+    "included Not UTI",
     "assembly candidates",
     "selected genomic profiles",
     "selected genomic participants",
     "VF-ready profiles",
     "VF-ready UTI",
-    "VF-ready Not_UTI",
+    "VF-ready Not UTI",
     "longitudinal visit subset",
     "longitudinal subset participants",
     "longitudinal comparisons",
     "status comparisons",
-    "clinical Not_UTI -> UTI transitions",
-    "WGS/VF-linked Not_UTI -> UTI transitions"
+    "clinical Not UTI -> UTI transitions",
+    "WGS/VF-linked Not UTI -> UTI transitions"
   ),
   observed = c(
     counts$included_episodes,
@@ -190,17 +184,13 @@ checks <- data.frame(
   expected = c(
     583, 166, 18, 565,
     counts$assembly_records,
-    nrow(active_longcycler_keys),
-    length(unique(active_longcycler_keys$Participant_id)),
-    nrow(active_longcycler_keys),
-    sum(active_status$UTI_Status == "UTI", na.rm = TRUE),
-    sum(active_status$UTI_Status == "Not_UTI", na.rm = TRUE),
+    532, 161, 532, 16, 516,
     sum(table(active_vf_ready$Participant_id)[table(active_vf_ready$Participant_id) >= 2]),
     sum(table(active_vf_ready$Participant_id) >= 2),
-    sum(pmax(as.integer(table(active_vf_ready$Participant_id)) - 1L, 0L)),
-    counts$total_transitions,
-    clinical_not_uti_to_uti,
-    linked_not_uti_to_uti
+    371,
+    371,
+    9,
+    9
   )
 )
 
@@ -329,14 +319,14 @@ draw_unit_story <- function() {
   )
 
   text_grob("1. Clinical curation", 0.055, 0.742, 0.18, size = 10, color = palette$orange, bold = TRUE)
-  draw_card(0.230, 0.770, 0.220, 0.135, "1", "Classified clinical visits",
+  draw_card(0.230, 0.770, 0.220, 0.135, "1", "Classified source visits (QC)",
             paste0(fmt_n(counts$classified_episodes), " visits"),
             "participant sample visits",
             fill = palette$orange_fill, line = "#FED7AA", accent = palette$orange)
-  draw_card(0.555, 0.770, 0.240, 0.135, "2", "Included clinical visits",
+  draw_card(0.555, 0.770, 0.240, 0.135, "2", "Source-eligible visits (QC)",
             paste0(fmt_n(counts$included_episodes), " visits"),
             paste0(fmt_n(counts$included_uti), " UTI; ",
-                   fmt_n(counts$included_not_uti), " Not_UTI"),
+                   fmt_n(counts$included_not_uti), " Not UTI"),
             fill = palette$orange_fill, line = "#FED7AA", accent = palette$orange)
 
   draw_arrow(0.455, 0.705, 0.548, 0.705)
@@ -362,7 +352,7 @@ draw_unit_story <- function() {
   draw_card(0.215, 0.250, 0.220, 0.115, "5A", "VF/model-ready table",
             paste0(fmt_n(counts$vf_ready_episodes), " profiles"),
             paste0(fmt_n(counts$vf_ready_uti), " UTI; ",
-                   fmt_n(counts$vf_ready_not_uti), " Not_UTI"),
+                   fmt_n(counts$vf_ready_not_uti), " Not UTI"),
             fill = palette$slate_fill, line = palette$line, accent = palette$green)
   draw_card(0.475, 0.250, 0.220, 0.115, "5B", "Longitudinal visit layer",
             paste0(fmt_n(counts$longitudinal_episodes), " visits"),
@@ -411,21 +401,21 @@ draw_ladder <- function() {
   xs <- c(0.040, 0.232, 0.424, 0.616, 0.808)
   centers_y <- y - h / 2
 
-  draw_card(xs[1], y, w, h, "1", "Classified clinical visits",
+  draw_card(xs[1], y, w, h, "1", "Classified source visits (QC)",
             paste0(fmt_n(counts$classified_episodes), " visits"),
             paste0(fmt_n(counts$classified_participants), " participants; ",
                    fmt_n(counts$classified_uti), " UTI, ",
-                   fmt_n(counts$classified_not_uti), " Not_UTI before exclusions"),
+                   fmt_n(counts$classified_not_uti), " Not UTI before exclusions"),
             fill = palette$orange_fill, line = "#FED7AA", accent = palette$orange)
-  draw_card(xs[2], y, w, h, "2", "Included clinical visits",
+  draw_card(xs[2], y, w, h, "2", "Source-eligible visits (QC)",
             paste0(fmt_n(counts$included_episodes), " visits"),
             paste0(fmt_n(counts$included_participants), " participants; ",
                    fmt_n(counts$included_uti), " UTI, ",
-                   fmt_n(counts$included_not_uti), " Not_UTI; 2 exclusions"),
+                   fmt_n(counts$included_not_uti), " Not UTI; 2 exclusions"),
             fill = palette$orange_fill, line = "#FED7AA", accent = palette$orange)
   draw_card(xs[3], y, w, h, "3", "Assembly candidates for QC",
             fmt_n(counts$assembly_records),
-            "Assembler alternatives stay explicit here; these are not extra visits",
+            "Candidate assembly records stay explicit here; these are source QC rows, not extra visits",
             fill = palette$blue_fill, line = "#BAE6FD", accent = palette$blue)
   draw_card(xs[4], y, w, h, "4", "Selected genomic profiles",
             paste0(fmt_n(counts$canonical_episodes), " profiles"),
@@ -436,7 +426,8 @@ draw_ladder <- function() {
             paste0(fmt_n(counts$vf_ready_episodes), " profiles"),
             paste0(fmt_n(counts$vf_ready_uti), " UTI, ",
                    fmt_n(counts$vf_ready_not_uti),
-                   " Not_UTI; 27 included visits lack VF-ready evidence"),
+                   " Not UTI; ", fmt_n(counts$included_not_vf_ready),
+                   " source-eligible visits are outside this selected VF-ready set"),
             fill = palette$green_fill, line = "#BBF7D0", accent = palette$green)
 
   for (i in 1:4) {
@@ -449,7 +440,7 @@ draw_ladder <- function() {
             paste0(fmt_n(counts$longitudinal_participants), " participants; ",
                    fmt_n(counts$longitudinal_comparisons), " consecutive visit pairs"),
             fill = palette$slate_fill, line = palette$line, accent = palette$blue)
-  draw_card(0.544, branch_y, 0.256, 0.174, "7", "Not_UTI -> UTI transitions",
+  draw_card(0.544, branch_y, 0.256, 0.174, "7", "Not UTI -> UTI transitions",
             paste0(fmt_n(counts$clinical_not_uti_to_uti), " transitions"),
             paste0(fmt_n(counts$linked_not_uti_to_uti),
                    " WGS/VF-linked; ",
@@ -468,7 +459,7 @@ draw_ladder <- function() {
     gp = gpar(fill = palette$pale, col = palette$line, lwd = 0.9)
   )
   text_grob(
-    wrap_text("Reading rule: do not compare these as one shrinking group. Each number answers a different question: clinical visit inclusion, assembly QC, selected profiles, consecutive visit pairs, or Not_UTI -> UTI transitions.", 145),
+    wrap_text("Reading rule: do not compare these as one shrinking group. Each number answers a different question: clinical visit inclusion, assembly QC, selected profiles, consecutive visit pairs, or Not UTI -> UTI transitions.", 145),
     0.085, 0.120, 0.80, size = 8.6, color = palette$muted
   )
   text_grob("Sources: table_01_cohort_episode_flow.csv; pipeline_denominator_summary.csv; vf_longitudinal_transitions.csv; vf_transition_case_index.csv",
@@ -519,7 +510,7 @@ draw_breakdown_table <- function() {
     gp = gpar(fill = palette$pale, col = palette$line, lwd = 1)
   )
   text_grob("All status comparisons", x + 0.022, y - 0.030, w - 0.044, size = 11, bold = TRUE)
-  text_grob("between consecutive clinical visits", x + 0.022, y - 0.064, w - 0.044, size = 7.6, color = palette$faint)
+  text_grob("between adjacent selected Longcycler episodes", x + 0.022, y - 0.064, w - 0.044, size = 7.6, color = palette$faint)
 
   order <- c("Not_UTI->Not_UTI", "UTI->Not_UTI", "Not_UTI->UTI", "UTI->UTI")
   fills <- c(palette$blue_fill, palette$slate_fill, palette$orange_fill, palette$yellow_fill)
@@ -535,14 +526,14 @@ draw_breakdown_table <- function() {
       r = unit(0.003, "npc"),
       gp = gpar(fill = fills[i], col = accents[i], lwd = 0.7)
     )
-    text_grob(order[i], x + 0.055, yy + 0.014, 0.125, size = 8.2, color = palette$muted)
+    text_grob(reader_transition(order[i]), x + 0.055, yy + 0.014, 0.125, size = 8.2, color = palette$muted)
     text_grob(fmt_n(n), x + w - 0.030, yy + 0.014, 0.035, size = 9.0, color = accents[i],
               bold = TRUE, just = c("right", "top"))
   }
   text_grob(
     wrap_text(
       paste0("Only the ", fmt_n(counts$clinical_not_uti_to_uti),
-             " Not_UTI -> UTI transitions enter the focused review."),
+             " Not UTI -> UTI transitions enter the focused review."),
       39
     ),
     x + 0.022, y - 0.342, w - 0.044, size = 7.8, color = palette$muted
@@ -551,7 +542,7 @@ draw_breakdown_table <- function() {
 
 draw_funnel <- function() {
   draw_title(
-    "Transition funnel: status comparisons to linked Not_UTI -> UTI transitions",
+    "Transition funnel: status comparisons to linked Not UTI -> UTI transitions",
     "This companion view separates the transition question from the broader clinical-to-genomics workflow."
   )
 
@@ -559,14 +550,14 @@ draw_funnel <- function() {
     0.790, 0.178, 0.610, 0.500, palette$blue_fill, "#BAE6FD",
     "All consecutive status comparisons",
     paste0(fmt_n(counts$total_transitions), " comparisons"),
-    paste0(fmt_n(counts$transition_participants), " participants with consecutive clinical visits"),
+    paste0(fmt_n(counts$transition_participants), " participants with adjacent selected episodes"),
     "1", palette$blue
   )
   draw_funnel_band(
     0.552, 0.165, 0.430, 0.350, palette$orange_fill, "#FED7AA",
-    "Not_UTI -> UTI transitions",
+    "Not UTI -> UTI transitions",
     paste0(fmt_n(counts$clinical_not_uti_to_uti), " transitions"),
-    "Status comparisons where a Not_UTI visit is followed by a UTI visit",
+    "Status comparisons where a Not UTI visit is followed by a UTI visit",
     "2", palette$orange
   )
   draw_funnel_band(
@@ -714,21 +705,21 @@ write_ladder_svg <- function(path) {
       "Numbered workflow denominators with plain-language units",
       "Each card title names the unit; the large number shows the count for that stage."
     ),
-    svg_card(xs[1], y, w, h, "1", "Classified clinical visits",
+    svg_card(xs[1], y, w, h, "1", "Classified source visits (QC)",
              paste0(fmt_n(counts$classified_episodes), " visits"),
              paste0(fmt_n(counts$classified_participants), " participants; ",
                     fmt_n(counts$classified_uti), " UTI, ",
-                    fmt_n(counts$classified_not_uti), " Not_UTI before exclusions"),
+                    fmt_n(counts$classified_not_uti), " Not UTI before exclusions"),
              fill = palette$orange_fill, line = "#FED7AA", accent = palette$orange),
-    svg_card(xs[2], y, w, h, "2", "Included clinical visits",
+    svg_card(xs[2], y, w, h, "2", "Source-eligible visits (QC)",
              paste0(fmt_n(counts$included_episodes), " visits"),
              paste0(fmt_n(counts$included_participants), " participants; ",
                     fmt_n(counts$included_uti), " UTI, ",
-                    fmt_n(counts$included_not_uti), " Not_UTI; 2 exclusions"),
+                    fmt_n(counts$included_not_uti), " Not UTI; 2 exclusions"),
              fill = palette$orange_fill, line = "#FED7AA", accent = palette$orange),
     svg_card(xs[3], y, w, h, "3", "Assembly candidates for QC",
              fmt_n(counts$assembly_records),
-             "Assembler alternatives stay explicit here; these are not extra visits",
+             "Candidate assembly records stay explicit here; these are source QC rows, not extra visits",
              fill = palette$blue_fill, line = "#BAE6FD", accent = palette$blue),
     svg_card(xs[4], y, w, h, "4", "Selected genomic profiles",
              paste0(fmt_n(counts$canonical_episodes), " profiles"),
@@ -739,7 +730,8 @@ write_ladder_svg <- function(path) {
              paste0(fmt_n(counts$vf_ready_episodes), " profiles"),
              paste0(fmt_n(counts$vf_ready_uti), " UTI, ",
                     fmt_n(counts$vf_ready_not_uti),
-                    " Not_UTI; 27 included visits lack VF-ready evidence"),
+                    " Not UTI; ", fmt_n(counts$included_not_vf_ready),
+                    " source-eligible visits are outside this selected VF-ready set"),
              fill = palette$green_fill, line = "#BBF7D0", accent = palette$green)
   )
   for (i in 1:4) {
@@ -752,7 +744,7 @@ write_ladder_svg <- function(path) {
              paste0(fmt_n(counts$longitudinal_participants), " participants; ",
                     fmt_n(counts$longitudinal_comparisons), " consecutive visit pairs"),
              fill = palette$slate_fill, line = palette$line, accent = palette$blue),
-    svg_card(0.544, 0.335, 0.256, 0.174, "7", "Not_UTI -> UTI transitions",
+    svg_card(0.544, 0.335, 0.256, 0.174, "7", "Not UTI -> UTI transitions",
              paste0(fmt_n(counts$clinical_not_uti_to_uti), " transitions"),
              paste0(fmt_n(counts$linked_not_uti_to_uti),
                     " WGS/VF-linked; ",
@@ -761,7 +753,7 @@ write_ladder_svg <- function(path) {
     svg_line(xs[5] + w / 2, y - h - 0.010, 0.350, 0.335 + 0.010),
     svg_line(xs[5] + w / 2, y - h - 0.010, 0.672, 0.335 + 0.010),
     svg_roundrect(0.0675, 0.135, 0.865, 0.080, palette$pale, palette$line, 1.8, 24),
-    svg_text("Reading rule: do not compare these as one shrinking group. Each number answers a different question: clinical visit inclusion, assembly QC, selected profiles, consecutive visit pairs, or Not_UTI -> UTI transitions.",
+    svg_text("Reading rule: do not compare these as one shrinking group. Each number answers a different question: clinical visit inclusion, assembly QC, selected profiles, consecutive visit pairs, or Not UTI -> UTI transitions.",
              0.085, 0.120, 19.2, palette$muted, "400", wrap = 122),
     svg_text("Sources: table_01_cohort_episode_flow.csv; pipeline_denominator_summary.csv; vf_longitudinal_transitions.csv; vf_transition_case_index.csv",
              0.045, 0.035, 16.4, palette$faint, "400")
@@ -783,14 +775,14 @@ write_unit_story_svg <- function(path) {
       "Clinical visits expand into assembly candidates for QC, then collapse back to one selected genomic profile per usable visit."
     ),
     svg_text("1. Clinical curation", 0.055, 0.729, 23, palette$orange, "700"),
-    svg_card(0.230, 0.770, 0.220, 0.135, "1", "Classified clinical visits",
+    svg_card(0.230, 0.770, 0.220, 0.135, "1", "Classified source visits (QC)",
              paste0(fmt_n(counts$classified_episodes), " visits"),
              "participant sample visits",
              fill = palette$orange_fill, line = "#FED7AA", accent = palette$orange),
-    svg_card(0.555, 0.770, 0.240, 0.135, "2", "Included clinical visits",
+    svg_card(0.555, 0.770, 0.240, 0.135, "2", "Source-eligible visits (QC)",
              paste0(fmt_n(counts$included_episodes), " visits"),
              paste0(fmt_n(counts$included_uti), " UTI, ",
-                    fmt_n(counts$included_not_uti), " Not_UTI"),
+                    fmt_n(counts$included_not_uti), " Not UTI"),
              fill = palette$orange_fill, line = "#FED7AA", accent = palette$orange),
     svg_line(0.455, 0.705, 0.548, 0.705),
     svg_label_box("-2 manual exclusions", 0.455, 0.755, 0.110),
@@ -812,7 +804,7 @@ write_unit_story_svg <- function(path) {
     svg_card(0.215, 0.250, 0.220, 0.115, "5A", "VF/model-ready table",
              paste0(fmt_n(counts$vf_ready_episodes), " profiles"),
              paste0(fmt_n(counts$vf_ready_uti), " UTI, ",
-                    fmt_n(counts$vf_ready_not_uti), " Not_UTI"),
+                    fmt_n(counts$vf_ready_not_uti), " Not UTI"),
              fill = palette$slate_fill, line = palette$line, accent = palette$green),
     svg_card(0.475, 0.250, 0.220, 0.115, "5B", "Longitudinal visit layer",
              paste0(fmt_n(counts$longitudinal_episodes), " visits"),
@@ -885,7 +877,7 @@ svg_breakdown_table <- function() {
   body <- c(
     svg_roundrect(x, y, w, h, palette$pale, palette$line, 2, 24),
     svg_text("All status comparisons", x + 0.022, y - 0.052, 24, palette$ink, "700"),
-    svg_text("between consecutive clinical visits", x + 0.022, y - 0.091, 17, palette$faint, "400")
+    svg_text("between adjacent selected Longcycler episodes", x + 0.022, y - 0.091, 17, palette$faint, "400")
   )
   for (i in seq_along(order)) {
     yy <- y - 0.112 - (i - 1) * 0.066
@@ -893,7 +885,7 @@ svg_breakdown_table <- function() {
     body <- c(
       body,
       svg_roundrect(x + 0.020, yy + 0.013, 0.020, 0.026, fills[i], accents[i], 1.2, 5),
-      svg_text(order[i], x + 0.055, yy - 0.006, 18.5, palette$muted, "400"),
+      svg_text(reader_transition(order[i]), x + 0.055, yy - 0.006, 18.5, palette$muted, "400"),
       svg_text(fmt_n(n), x + w - 0.030, yy - 0.006, 20, accents[i], "700", "end")
     )
   }
@@ -901,7 +893,7 @@ svg_breakdown_table <- function() {
     body,
     svg_text(
       paste0("Only the ", fmt_n(counts$clinical_not_uti_to_uti),
-             " Not_UTI -> UTI transitions enter the focused review."),
+             " Not UTI -> UTI transitions enter the focused review."),
       x + 0.022, y - 0.368, 17.2, palette$muted, "400", wrap = 34
     )
   )
@@ -910,21 +902,21 @@ svg_breakdown_table <- function() {
 write_funnel_svg <- function(path) {
   body <- c(
     svg_title(
-      "Transition funnel: status comparisons to linked Not_UTI -> UTI transitions",
+      "Transition funnel: status comparisons to linked Not UTI -> UTI transitions",
       "This companion view separates the transition question from the broader clinical-to-genomics workflow."
     ),
     svg_funnel_band(
       0.790, 0.178, 0.610, 0.500, palette$blue_fill, "#BAE6FD",
       "All consecutive status comparisons",
       paste0(fmt_n(counts$total_transitions), " comparisons"),
-      paste0(fmt_n(counts$transition_participants), " participants with consecutive clinical visits"),
+      paste0(fmt_n(counts$transition_participants), " participants with adjacent selected episodes"),
       "1", palette$blue
     ),
     svg_funnel_band(
       0.552, 0.165, 0.430, 0.350, palette$orange_fill, "#FED7AA",
-      "Not_UTI -> UTI transitions",
+      "Not UTI -> UTI transitions",
       paste0(fmt_n(counts$clinical_not_uti_to_uti), " transitions"),
-      "Status comparisons where a Not_UTI visit is followed by a UTI visit",
+      "Status comparisons where a Not UTI visit is followed by a UTI visit",
       "2", palette$orange
     ),
     svg_funnel_band(
@@ -982,17 +974,17 @@ md_lines <- c(
   "",
   "| Term | Meaning | Count examples |",
   "| :--- | :--- | :--- |",
-  sprintf("| Clinical visit | One participant urine-sample visit/timepoint with a UTI or Not_UTI status. | %s classified; %s included |", fmt_n(counts$classified_episodes), fmt_n(counts$included_episodes)),
+  sprintf("| Clinical visit | One participant urine-sample visit/timepoint with a UTI or Not UTI status. | %s classified; %s included |", fmt_n(counts$classified_episodes), fmt_n(counts$included_episodes)),
   sprintf("| Assembly candidate | One genome assembly file evaluated during QC. A single clinical visit can have more than one candidate assembly. | %s |", fmt_n(counts$assembly_records)),
   sprintf("| Selected genomic profile | The selected QC-pass Longcycler assembly plus VF profile for a usable clinical visit. | %s |", fmt_n(counts$canonical_episodes)),
   sprintf("| Consecutive VF visit pair | Two neighboring selected Longcycler genomic profiles from the same participant. | %s |", fmt_n(counts$longitudinal_comparisons)),
-  sprintf("| Not_UTI -> UTI transition | A consecutive visit comparison where a Not_UTI visit is followed by a UTI visit. | %s total; %s active Longcycler WGS/VF-linked |", fmt_n(counts$clinical_not_uti_to_uti), fmt_n(counts$linked_not_uti_to_uti)),
+  sprintf("| Not UTI -> UTI transition | A consecutive visit comparison where a Not UTI visit is followed by a UTI visit. | %s total; %s active Longcycler WGS/VF-linked |", fmt_n(counts$clinical_not_uti_to_uti), fmt_n(counts$linked_not_uti_to_uti)),
   "",
   "## What Is Going On?",
   "",
-  sprintf("The confusing part is `%s`. That number is not a larger set of people or clinical visits. It is a temporary audit inventory of assembly candidates where assembler alternatives and FASTA files are kept separately for QC. The active analysis then retains only selected QC-pass Longcycler profiles, giving `%s` genomic profiles.", fmt_n(counts$assembly_records), fmt_n(counts$canonical_episodes)),
+  sprintf("The `%s` assembly-candidate count is a source QC inventory, not a larger set of people or analytical visits. The active analysis uses only the `%s` selected QC-pass Longcycler profiles.", fmt_n(counts$assembly_records), fmt_n(counts$canonical_episodes)),
   "",
-  sprintf("A cleaner way to read the main story is: `%s` classified clinical visits -> `%s` included clinical visits -> temporary expansion to `%s` assembly candidates -> `%s` active selected QC-pass Longcycler profiles -> analysis-specific subsets such as `%s` longitudinal visits, `%s` consecutive VF visit pairs, `%s` Not_UTI -> UTI transitions, and `%s` active Longcycler WGS/VF-linked transitions.", fmt_n(counts$classified_episodes), fmt_n(counts$included_episodes), fmt_n(counts$assembly_records), fmt_n(counts$canonical_episodes), fmt_n(counts$longitudinal_episodes), fmt_n(counts$longitudinal_comparisons), fmt_n(counts$clinical_not_uti_to_uti), fmt_n(counts$linked_not_uti_to_uti)),
+  sprintf("Read the main story as: `%s` classified source visits -> `%s` source-eligible visits (both attrition/QC only) -> `%s` assembly candidates (QC only) -> `%s` selected QC-pass Longcycler analytical profiles -> `%s` longitudinal profiles -> `%s` adjacent pairs -> `%s` Not UTI -> UTI transitions, all `%s` directly linked.", fmt_n(counts$classified_episodes), fmt_n(counts$included_episodes), fmt_n(counts$assembly_records), fmt_n(counts$canonical_episodes), fmt_n(counts$longitudinal_episodes), fmt_n(counts$longitudinal_comparisons), fmt_n(counts$clinical_not_uti_to_uti), fmt_n(counts$linked_not_uti_to_uti)),
   "",
   "## Images",
   "",
@@ -1010,26 +1002,26 @@ md_lines <- c(
   "",
   "## How To Read The Counts",
   "",
-  "- `583` is the included clinical-visit denominator after manual curation exclusions.",
+  sprintf("- `%s` is a source-eligibility count shown for attrition/QC only; it is not an analytical denominator.", fmt_n(counts$included_episodes)),
   sprintf("- `%s` is larger because assembly QC counts genome assembly candidates, not extra people or visits.", fmt_n(counts$assembly_records)),
   sprintf("- `%s` is the active genomic profile denominator: one selected QC-pass Longcycler assembly and VF profile per usable clinical visit.", fmt_n(counts$canonical_episodes)),
   sprintf("- `%s` is the repeated-measures longitudinal visit subset; it produces `%s` consecutive within-participant VF visit pairs.", fmt_n(counts$longitudinal_episodes), fmt_n(counts$longitudinal_comparisons)),
-  sprintf("- `%s` is the clinical Not_UTI -> UTI transition count; `%s` of those transitions have active Longcycler WGS/VF-linked endpoints.", fmt_n(counts$clinical_not_uti_to_uti), fmt_n(counts$linked_not_uti_to_uti)),
+  sprintf("- `%s` is the clinical Not UTI -> UTI transition count; `%s` of those transitions have active Longcycler WGS/VF-linked endpoints.", fmt_n(counts$clinical_not_uti_to_uti), fmt_n(counts$linked_not_uti_to_uti)),
   "",
   "## Source Table",
   "",
   "| Step | Count shown | Human-readable unit | Technical source unit | Source | Notes |",
   "| :--- | :--- | :--- | :--- | :--- | :--- |",
-  paste0("| Classified clinical visits | ", fmt_n(counts$classified_episodes), " | clinical visit | clinical_episode | `results/qc/pipeline_denominator_summary.csv` | Before primary manual curation exclusions; ", fmt_n(counts$classified_uti), " UTI and ", fmt_n(counts$classified_not_uti), " Not_UTI. |"),
-  paste0("| Included clinical visits | ", fmt_n(counts$included_episodes), " | clinical visit | clinical_episode | `results/qc/pipeline_denominator_summary.csv` | ", fmt_n(counts$included_participants), " participants; ", fmt_n(counts$included_uti), " UTI and ", fmt_n(counts$included_not_uti), " Not_UTI. |"),
-  paste0("| Assembly candidates for QC | ", fmt_n(counts$assembly_records), " | assembly candidate | assembly | `results/qc/pipeline_denominator_summary.csv` | Includes assembler alternatives, so it is not a clinical-visit count. |"),
+  paste0("| Classified source visits (attrition/QC only) | ", fmt_n(counts$classified_episodes), " | source clinical visit | clinical_episode | `results/qc/pipeline_denominator_summary.csv` | Before primary manual curation exclusions; ", fmt_n(counts$classified_uti), " UTI and ", fmt_n(counts$classified_not_uti), " Not UTI. Not an analytical denominator. |"),
+  paste0("| Source-eligible visits (attrition/QC only) | ", fmt_n(counts$included_episodes), " | source clinical visit | clinical_episode | `results/qc/pipeline_denominator_summary.csv` | ", fmt_n(counts$included_participants), " participants; ", fmt_n(counts$included_uti), " UTI and ", fmt_n(counts$included_not_uti), " Not UTI. Not an analytical denominator. |"),
+  paste0("| Assembly candidates for QC | ", fmt_n(counts$assembly_records), " | assembly candidate | assembly | `results/qc/pipeline_denominator_summary.csv` | Source QC inventory; not a clinical-visit or analytical count. |"),
   paste0("| Selected genomic profiles | ", fmt_n(counts$canonical_episodes), " | selected profile | participant_timepoint | `results/qc/canonical_assembly_selection.csv` | ", fmt_n(counts$canonical_participants), " participants; selected canonical = TRUE, QC_PASS = TRUE, assembler = Longcycler. |"),
-  paste0("| VF/model-ready profiles | ", fmt_n(counts$vf_ready_episodes), " | selected profile | participant_timepoint | `results/qc/pipeline_denominator_summary.csv` | ", fmt_n(counts$vf_ready_uti), " UTI and ", fmt_n(counts$vf_ready_not_uti), " Not_UTI. |"),
+  paste0("| VF/model-ready profiles | ", fmt_n(counts$vf_ready_episodes), " | selected profile | participant_timepoint | `results/qc/pipeline_denominator_summary.csv` | ", fmt_n(counts$vf_ready_uti), " UTI and ", fmt_n(counts$vf_ready_not_uti), " Not UTI. |"),
   paste0("| Longitudinal visit subset | ", fmt_n(counts$longitudinal_episodes), " | clinical visit with selected profile | participant_timepoint | `results/summary/table_01_cohort_episode_flow.csv` | ", fmt_n(counts$longitudinal_participants), " participants represented in VF transition output. |"),
   paste0("| Consecutive VF visit pairs | ", fmt_n(counts$longitudinal_comparisons), " | consecutive visit pair | participant_timepoint pair | `results/vf/vf_longitudinal_transitions.csv` | Derived from the longitudinal subset; ", fmt_n(counts$longitudinal_comparison_participants), " participants. |"),
   paste0("| All consecutive status comparisons | ", fmt_n(counts$total_transitions), " | status comparison | clinical_episode_transition | `results/vf/vf_transition_case_index.csv` | ", fmt_n(counts$transition_participants), " participants with consecutive ordered clinical states. |"),
-  paste0("| Not_UTI -> UTI transitions | ", fmt_n(counts$clinical_not_uti_to_uti), " | transition | clinical_episode_transition | `results/vf/vf_transition_case_index.csv` | Focused transition denominator. |"),
-  paste0("| WGS/VF-linked Not_UTI -> UTI transitions | ", fmt_n(counts$linked_not_uti_to_uti), " | linked transition | clinical_episode_transition | `results/vf/vf_transition_case_index.csv` | ", fmt_n(counts$missing_linked_not_uti_to_uti), " transition lacks a usable VF-ready endpoint. |"),
+  paste0("| Not UTI -> UTI transitions | ", fmt_n(counts$clinical_not_uti_to_uti), " | transition | clinical_episode_transition | `results/vf/vf_transition_case_index.csv` | Focused transition denominator. |"),
+  paste0("| WGS/VF-linked Not UTI -> UTI transitions | ", fmt_n(counts$linked_not_uti_to_uti), " | linked transition | clinical_episode_transition | `results/vf/vf_transition_case_index.csv` | ", fmt_n(counts$missing_linked_not_uti_to_uti), " transition lacks a usable VF-ready endpoint. |"),
   "",
   "## Validation",
   "",

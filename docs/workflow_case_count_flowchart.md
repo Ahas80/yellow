@@ -1,60 +1,50 @@
-# Workflow Denominator Map
+# Longcycler-only denominator map
 
-This guide explains why the numbers change as the project moves from clinical visits to genome assemblies, selected genomic profiles, and transition-focused comparisons. The point is that the workflow is not one shrinking cohort; it temporarily changes what is being counted.
+The analytical release and full-source attrition/QC context are distinct and must not be combined.
 
-## Plain-Language Terms
+## Denominator flow
 
-| Term | Meaning | Count examples |
-| :--- | :--- | :--- |
-| Clinical visit | One participant urine-sample visit/timepoint with a UTI or Not_UTI status. | 585 classified; 583 included |
-| Assembly candidate | One genome assembly file evaluated during QC. A single clinical visit can have more than one candidate assembly. | 1,291 |
-| Selected genomic profile | The one chosen genome assembly plus VF profile for a usable clinical visit. | 556 |
-| Consecutive VF visit pair | Two neighboring selected genomic profiles from the same participant. | 394 |
-| Not_UTI -> UTI transition | A consecutive visit comparison where a Not_UTI visit is followed by a UTI visit. | 11 total; 10 WGS/VF-linked |
+```mermaid
+flowchart LR
+  A[Full clinical source: attrition/QC context only] --> B[Selected analytical episodes]
+  B --> C[All within-resident direct pairs]
+  B --> D[Adjacent pairs]
+  D --> E[Pairs at or below the operational SNP threshold]
+  D --> F[Not_UTI to UTI focused transitions]
+  F --> G[Fully linked mechanism casebook]
+```
 
-## What Is Going On?
+## Reading rule
 
-The confusing part is `1,291`. That number is not a larger set of people or clinical visits. It is a temporary list of assembly candidates where assembler alternatives and FASTA files are kept separately for QC. After QC, the workflow collapses back to one selected genomic profile per usable clinical visit, which is why the profile count becomes `556`.
+Counts change because the unit changes from source episodes, to selected analytical episodes, to pairs and finally to focused transitions. They do not represent one simple attrition ladder.
 
-A cleaner way to read the main story is: `585` classified clinical visits -> `583` included clinical visits -> temporary expansion to `1,291` assembly candidates -> `556` selected genomic profiles -> analysis-specific subsets such as `538` longitudinal visits, `394` consecutive VF visit pairs, `11` Not_UTI -> UTI transitions, and `10` WGS/VF-linked transitions.
+## Audited release contract
 
-## Images
+- Scope: Longcycler-only selected QC-passing assemblies; one selected assembly per analytical episode.
+- Clinical definition: operational UTI phenotype. It is a versioned culture-plus-compatible-symptom rule, not a reconstruction of the full published protocol.
+- Analytical cohort: 532/161/16/516 (episodes/residents/operational UTI/operational Not_UTI).
+- Direct evidence: 893 all within-resident pairs.
+- Adjacent evidence: 371/139/140 (pairs/residents/pairs at or below 25 SNP).
+- Focused transitions: 9 Not_UTI -> UTI; 5/9 at or below 25 SNP.
+- Mechanism casebook: 9/9/0 (cases/linked/missing).
+- Near-miss audit: 17 rows; these are not operational UTI cases.
+- Attrition/QC context only: 583/166/18/565 (full-source episodes/residents/operational UTI/operational Not_UTI); these are not analytical denominators.
+- Research-question boundary: RQ01-RQ10 only.
+- Interpretation: exploratory, observational and non-causal.
 
-![Unit-aware denominator story](figures/workflow_flowchart/08_unit_aware_denominator_story.png)
+## Methods fixed by the registry
 
-[SVG version](figures/workflow_flowchart/08_unit_aware_denominator_story.svg)
+- Operational phenotype: culture lower bound >=1,000 CFU/mL plus compatible symptoms under the versioned rule.
+- Assembly QC: <=200 contigs, N50 >=20,000 bp and genome size 4,000,000-6,000,000 bp; read coverage, completeness and contamination are excluded metrics.
+- VF calls: ABRicate with VFDB at >=80% identity and >=80% coverage, SHA-bound to the selected Longcycler FASTA manifest.
+- MLST: lineage context only; provider calls require >=95% good targets. Policy: provider_qc95 call key/path-linked to the selected Longcycler episode; local fallback excluded. When required, local calls are labelled and use the same selected FASTA.
+- Pair-specific evidence: dnadiff is primary, with an operational threshold of <=25 SNP; MLST or graph context cannot overrule a conflicting direct pair.
+- Population context: Parsnp core-genome and Panaroo pangenome outputs provide context, not pair-specific continuity proof.
 
-![Numbered denominator ladder](figures/workflow_flowchart/09_case_count_workflow_ladder.png)
+## Provenance
 
-[SVG version](figures/workflow_flowchart/09_case_count_workflow_ladder.svg)
+- Claim registry: `results/pipeline/longcycler_release_claim_registry.json`
+- Registry SHA-256: `87f65979259a4c92545afbb74b5d3a8efffb8a3d18cd2481df165b97e5c6d30e`
+- Registry generated: 2026-07-15 01:36:53 CEST
+- This file is generated; edit the registry-producing analysis or this writer rather than hand-editing release claims.
 
-![Transition funnel](figures/workflow_flowchart/10_transition_count_funnel.png)
-
-[SVG version](figures/workflow_flowchart/10_transition_count_funnel.svg)
-
-## How To Read The Counts
-
-- `583` is the included clinical-visit denominator after manual curation exclusions.
-- `1,291` is larger because assembly QC counts genome assembly candidates, not extra people or visits.
-- `556` is the selected genomic profile denominator: one selected QC-pass assembly and VF profile per usable clinical visit.
-- `538` is the repeated-measures longitudinal visit subset; it produces `394` consecutive within-participant VF visit pairs.
-- `11` is the Not_UTI -> UTI transition count; `10` of those transitions have WGS/VF-linked endpoints.
-
-## Source Table
-
-| Step | Count shown | Human-readable unit | Technical source unit | Source | Notes |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| Classified clinical visits | 585 | clinical visit | clinical_episode | `results/qc/pipeline_denominator_summary.csv` | Before primary manual curation exclusions; 18 UTI and 567 Not_UTI. |
-| Included clinical visits | 583 | clinical visit | clinical_episode | `results/qc/pipeline_denominator_summary.csv` | 166 participants; 18 UTI and 565 Not_UTI. |
-| Assembly candidates for QC | 1,291 | assembly candidate | assembly | `results/qc/pipeline_denominator_summary.csv` | Includes assembler alternatives, so it is not a clinical-visit count. |
-| Selected genomic profiles | 556 | selected profile | participant_timepoint | `results/qc/pipeline_denominator_summary.csv` | 162 participants; one selected QC-pass profile per usable clinical visit. |
-| VF/model-ready profiles | 556 | selected profile | participant_timepoint | `results/qc/pipeline_denominator_summary.csv` | 17 UTI and 539 Not_UTI. |
-| Longitudinal visit subset | 538 | clinical visit with selected profile | participant_timepoint | `results/summary/table_01_cohort_episode_flow.csv` | 144 participants represented in VF transition output. |
-| Consecutive VF visit pairs | 394 | consecutive visit pair | participant_timepoint pair | `results/vf/vf_longitudinal_transitions.csv` | Derived from the longitudinal subset; 144 participants. |
-| All consecutive status comparisons | 417 | status comparison | clinical_episode_transition | `results/vf/vf_transition_case_index.csv` | 152 participants with consecutive ordered clinical states. |
-| Not_UTI -> UTI transitions | 11 | transition | clinical_episode_transition | `results/vf/vf_transition_case_index.csv` | Focused transition denominator. |
-| WGS/VF-linked Not_UTI -> UTI transitions | 10 | linked transition | clinical_episode_transition | `results/vf/vf_transition_case_index.csv` | 1 transition lacks a usable VF-ready endpoint. |
-
-## Validation
-
-The figures and this Markdown file were generated by `scripts/create_workflow_case_count_flowchart.R`. The script re-reads the source CSVs and stops if the expected counts in this document drift from the current audited outputs.

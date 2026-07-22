@@ -5,10 +5,10 @@
 #
 # GOAL:
 #   Build a mechanism-first interpretation layer for the primary UTI vs Not_UTI
-#   analysis. This script is descriptive: it explains the 11 clinical
+#   analysis. This script is descriptive: it explains the selected Longcycler
 #   Not_UTI -> UTI transitions using host context, strain evidence, VF/module
 #   stability, accessory-gene changes, plasmid context, variant annotations, and
-#   optional AMR screening if local ABRicate databases are available.
+#   validated genomic-AMR profiles produced by numbered script 29.
 #
 # OUTPUT:
 #   - results/mechanism/not_uti_to_uti_casebook.csv
@@ -19,11 +19,12 @@
 #   - plots/mechanism/not_uti_to_uti_case_matrix.png
 #   - plots/mechanism/strain_replacement_vs_stability.png
 #   - plots/mechanism/host_context_transition_heatmap.png
-#   - optional AMR outputs under results/mechanism/
+#   - validated AMR context consumed from results/amr/
 #
 # ==============================================================================
 
 source("00_config.R")
+source("R/plot_helpers.R")
 suppressPackageStartupMessages({
   library(dplyr)
   library(readr)
@@ -41,10 +42,6 @@ DIR_MECHANISM <- file.path(DIR_RESULTS, "mechanism")
 DIR_PLOTS_MECHANISM <- file.path(DIR_PLOTS, "mechanism")
 ensure_dir(DIR_MECHANISM)
 ensure_dir(DIR_PLOTS_MECHANISM)
-
-MECHANISM_AMR_THREADS <- suppressWarnings(as.integer(Sys.getenv("MECHANISM_AMR_THREADS", "4")))
-if (is.na(MECHANISM_AMR_THREADS) || MECHANISM_AMR_THREADS < 1) MECHANISM_AMR_THREADS <- 1L
-MECHANISM_AMR_THREADS <- min(MECHANISM_AMR_THREADS, max(1L, CORES_USE))
 
 # ==============================================================================
 # HELPERS
@@ -171,8 +168,8 @@ path_gene_changes <- require_file(file.path(DIR_VF, "vf_transition_gene_changes.
 path_module_changes <- require_file(file.path(DIR_VF, "vf_transition_module_changes.csv"))
 path_strain_ctx <- require_file(file.path(DIR_VF, "vf_transition_strain_context.csv"))
 path_vf_ready <- require_file(FILE_VF_READY)
-path_status <- require_file(FILE_STATUS_MAP)
-path_status_poster <- require_file(FILE_STATUS_MAP_POSTER)
+path_status <- require_file(FILE_ANALYSIS_CLINICAL_COHORT)
+path_canonical_transitions <- require_file(file.path(DIR_RESULTS, "longitudinal", "longcycler_transitions.csv"))
 
 case_summary_all <- read_csv(path_case_summary, show_col_types = FALSE) %>%
   mutate(
@@ -213,6 +210,22 @@ case_index <- read_csv(path_case_index, show_col_types = FALSE) %>%
     from_tp = normalise_tp_label(from_tp),
     to_tp = normalise_tp_label(to_tp)
   )
+canonical_transitions <- read_csv(path_canonical_transitions, show_col_types = FALSE) %>%
+  transmute(
+    transition_key = paste(as.character(.data$Participant_id),
+                           normalise_tp_label(.data$tp_from), normalise_tp_label(.data$tp_to), sep = "|"),
+    canonical_snps = as.numeric(.data$TotalSNPs)
+  )
+case_transition_keys <- case_summary_all %>%
+  transmute(transition_key = paste(.data$Participant_id, .data$from_tp, .data$to_tp, sep = "|"),
+            observed_snps = as.numeric(.data$SNPs))
+canonical_case_check <- case_transition_keys %>%
+  left_join(canonical_transitions, by = "transition_key", relationship = "one-to-one")
+if (nrow(canonical_transitions) != 371L || anyDuplicated(canonical_transitions$transition_key) ||
+    any(is.na(canonical_case_check$canonical_snps)) ||
+    any(canonical_case_check$observed_snps != canonical_case_check$canonical_snps)) {
+  stop("Mechanism transition inputs do not exactly match the canonical Longcycler transition export")
+}
 
 gene_changes <- read_csv(path_gene_changes, show_col_types = FALSE) %>%
   mutate(Participant_id = as.character(Participant_id))
@@ -241,13 +254,16 @@ status <- read_csv(path_status, show_col_types = FALSE) %>%
     Collection_Date_parsed = parse_date_safe(Collection_Date)
   )
 
-status_poster <- read_csv(path_status_poster, show_col_types = FALSE) %>%
-  prefer_primary_uti_status(allow_legacy_fallback = FALSE) %>%
-  apply_manual_sample_curation(context = "33_status_poster") %>%
-  mutate(
-    Participant_id = as.character(Participant_id),
-    tp_lab = normalise_tp_label(tp_lab)
-  )
+analysis_keys <- status %>% distinct(.data$Participant_id, .data$tp_lab)
+vf_keys <- vf_ready %>% distinct(.data$Participant_id, .data$tp_lab)
+if (nrow(analysis_keys) != nrow(status) || nrow(vf_keys) != nrow(vf_ready) ||
+    nrow(anti_join(analysis_keys, vf_keys, by = c("Participant_id", "tp_lab"))) ||
+    nrow(anti_join(vf_keys, analysis_keys, by = c("Participant_id", "tp_lab")))) {
+  stop("Mechanism inputs do not exactly match the selected Longcycler analysis cohort")
+}
+if (nrow(case_index) != 371L || nrow(case_summary_all) != 371L) {
+  stop("Mechanism inputs must contain the 371 adjacent selected Longcycler transitions")
+}
 
 msg("Loaded transition, clinical, and VF outputs.")
 
@@ -383,11 +399,18 @@ if (file.exists(path_panaroo_roary) && file.exists(path_panaroo_manifest)) {
     mutate(
       Participant_id = as.character(Participant_id),
       tp_lab = normalise_tp_label(tp_lab),
-      Assembly_Base_ID = as.character(Assembly_Base_ID)
+      Assembly_Base_ID = as.character(Assembly_Base_ID),
+      # Panaroo names sample columns from the input GFF basename.  Slim Prokka
+      # annotations carry a `.min270.gff` suffix, so Assembly_Base_ID alone
+      # silently misses those otherwise valid selected Longcycler samples.
+      panaroo_sample_id = str_remove(
+        basename(as.character(gff_path)),
+        regex("\\.gff$", ignore_case = TRUE)
+      )
     )
 
   panaroo <- read_csv(path_panaroo_roary, show_col_types = FALSE)
-  sample_cols <- intersect(pan_manifest$Assembly_Base_ID, names(panaroo))
+  sample_cols <- intersect(pan_manifest$panaroo_sample_id, names(panaroo))
   if (length(sample_cols) == 0) {
     warning("No Panaroo sample columns matched panaroo_input_manifest.csv; accessory change output will be empty.")
   } else {
@@ -422,7 +445,7 @@ if (file.exists(path_panaroo_roary) && file.exists(path_panaroo_manifest)) {
 
     sample_lookup <- pan_manifest %>%
       distinct(Participant_id, tp_lab, .keep_all = TRUE) %>%
-      select(Participant_id, tp_lab, Assembly_Base_ID)
+      select(Participant_id, tp_lab, panaroo_sample_id)
 
     not_uti_uti_cases <- case_summary_all %>%
       filter(is_not_uti_to_uti %in% TRUE) %>%
@@ -434,11 +457,11 @@ if (file.exists(path_panaroo_roary) && file.exists(path_panaroo_manifest)) {
       cr <- not_uti_uti_cases[i, ]
       from_sample <- sample_lookup %>%
         filter(Participant_id == cr$Participant_id, tp_lab == cr$from_vf_tp) %>%
-        pull(Assembly_Base_ID) %>%
+        pull(panaroo_sample_id) %>%
         first()
       to_sample <- sample_lookup %>%
         filter(Participant_id == cr$Participant_id, tp_lab == cr$to_vf_tp) %>%
-        pull(Assembly_Base_ID) %>%
+        pull(panaroo_sample_id) %>%
         first()
 
       if (length(from_sample) == 0 || length(to_sample) == 0 ||
@@ -501,181 +524,113 @@ accessory_summary <- accessory_gene_changes %>%
   )
 
 # ==============================================================================
-# OPTIONAL AMR SCREENING WITH ABRICATE RESFINDER
+# VALIDATED GENOMIC AMR PROFILES FROM NUMBERED SCRIPT 29
 # ==============================================================================
 
-run_abricate_resfinder <- function() {
-  report <- character()
-  add <- function(...) report <<- c(report, sprintf(...))
-  report_path <- file.path(DIR_MECHANISM, "amr_screen_report.txt")
-  cache_dir <- file.path(DIR_MECHANISM, "abricate_resfinder_cache")
-  ensure_dir(cache_dir)
-
-  add("=== Optional AMR Screen ===")
-  add("Generated: %s", format(Sys.time()))
-  add("Tool preference: ABRicate ResFinder, cached per FASTA")
-  add("")
-
-  abricate_bin <- Sys.which("abricate")
-  if (abricate_bin == "") {
-    add("Status: SKIPPED")
-    add("Reason: abricate not found in PATH.")
-    writeLines(report, report_path)
-    return(list(status = "skipped", summary = tibble(), transition = tibble()))
-  }
-
-  db_list <- tryCatch(system2(abricate_bin, "--list", stdout = TRUE, stderr = TRUE), error = function(e) character())
-  if (!any(str_detect(db_list, "^resfinder\\s"))) {
-    add("Status: SKIPPED")
-    add("Reason: ABRicate database 'resfinder' not found.")
-    add("Available database output:")
-    add("%s", paste(db_list, collapse = "\n"))
-    writeLines(report, report_path)
-    return(list(status = "skipped", summary = tibble(), transition = tibble()))
-  }
-
-  selection_file <- file.path(DIR_QC, "canonical_assembly_selection.csv")
-  if (!file.exists(selection_file)) {
-    add("Status: SKIPPED")
-    add("Reason: canonical_assembly_selection.csv not found.")
-    writeLines(report, report_path)
-    return(list(status = "skipped", summary = tibble(), transition = tibble()))
-  }
-
-  manifest <- read_csv(selection_file, show_col_types = FALSE) %>%
-    mutate(
-      Participant_id = as.character(Participant_id),
-      tp_lab = normalise_tp_label(tp_lab),
-      selected_canonical = as_pipeline_bool(selected_canonical),
-      file_path = if ("full_path" %in% names(.)) as.character(full_path) else as.character(fasta_path),
-      file_exists = file.exists(file_path)
-    ) %>%
-    filter(selected_canonical %in% TRUE, file_exists %in% TRUE) %>%
-    distinct(Participant_id, tp_lab, .keep_all = TRUE)
-
-  add("Status: RUNNING_OR_REUSING_CACHE")
-  add("ABRicate: %s", abricate_bin)
-  add("Database: resfinder")
-  add("Canonical FASTAs: %d", nrow(manifest))
-  add("Threads: %d", MECHANISM_AMR_THREADS)
-
-  run_one <- function(path) {
-    key <- tools::file_path_sans_ext(basename(path))
-    out <- file.path(cache_dir, paste0(key, ".resfinder.tab"))
-    if (file.exists(out) && file.size(out) > 0) return(out)
-    res <- tryCatch(
-      system2(
-        abricate_bin,
-        c("--quiet", "--threads", "1", "--db", "resfinder", path),
-        stdout = TRUE,
-        stderr = TRUE
-      ),
-      error = function(e) structure(character(), status = 1L)
-    )
-    status <- attr(res, "status")
-    if (is.null(status)) status <- 0L
-    if (status == 0L) {
-      writeLines(res, out)
-      out
-    } else {
-      fail <- file.path(cache_dir, paste0(key, ".resfinder.failed.txt"))
-      writeLines(res, fail)
-      NA_character_
-    }
-  }
-
-  tab_files <- if (.Platform$OS.type == "unix" && MECHANISM_AMR_THREADS > 1) {
-    unlist(parallel::mclapply(manifest$file_path, run_one, mc.cores = MECHANISM_AMR_THREADS), use.names = FALSE)
-  } else {
-    vapply(manifest$file_path, run_one, character(1))
-  }
-
-  manifest <- manifest %>%
-    mutate(tab_file = tab_files) %>%
-    filter(!is.na(tab_file), file.exists(tab_file))
-
-  read_one <- function(tab_file, Participant_id, tp_lab, Assembly_ID, Isolate_ID) {
-    if (!file.exists(tab_file) || file.size(tab_file) == 0) return(tibble())
-    raw <- suppressWarnings(read_tsv(tab_file, show_col_types = FALSE, col_types = cols(.default = "c")))
-    if (nrow(raw) == 0 || !"GENE" %in% names(raw)) return(tibble())
-    raw %>%
-      mutate(
-        Participant_id = Participant_id,
-        tp_lab = tp_lab,
-        Assembly_ID = Assembly_ID,
-        Isolate_ID = Isolate_ID,
-        identity = suppressWarnings(parse_number(`%IDENTITY`)),
-        coverage = suppressWarnings(parse_number(`%COVERAGE`)),
-        resistance_class = if ("RESISTANCE" %in% names(.)) RESISTANCE else NA_character_,
-        product = if ("PRODUCT" %in% names(.)) PRODUCT else NA_character_
-      ) %>%
-      filter(is.na(identity) | identity >= 80, is.na(coverage) | coverage >= 80) %>%
-      select(Participant_id, tp_lab, Assembly_ID, Isolate_ID,
-             gene = GENE, resistance_class, product, identity, coverage,
-             accession = ACCESSION, database = DATABASE)
-  }
-
-  hits <- pmap_dfr(
-    manifest %>% select(tab_file, Participant_id, tp_lab, Assembly_ID, Isolate_ID),
-    read_one
-  ) %>%
-    distinct()
-
-  write_csv(hits, file.path(DIR_MECHANISM, "amr_resfinder_hits_long.csv"))
-
-  episode_summary <- if (nrow(hits) > 0) {
-    hits %>%
-      group_by(Participant_id, tp_lab) %>%
-      summarise(
-        amr_gene_count = n_distinct(gene),
-        amr_class_count = n_distinct(resistance_class[!is.na(resistance_class) & resistance_class != ""]),
-        amr_genes = clean_list_string(gene, 20),
-        amr_classes = clean_list_string(resistance_class, 12),
-        .groups = "drop"
-      )
-  } else {
-    tibble(Participant_id = character(), tp_lab = character(),
-           amr_gene_count = integer(), amr_class_count = integer(),
-           amr_genes = character(), amr_classes = character())
-  }
-
-  write_csv(episode_summary, file.path(DIR_MECHANISM, "amr_presence_by_episode.csv"))
-
-  transition_amr <- case_summary_all %>%
-    filter(transition_type %in% c("Not_UTI->UTI", "UTI->Not_UTI")) %>%
-    select(case_id, Participant_id, transition_type, from_vf_tp, to_vf_tp) %>%
-    rowwise() %>%
-    mutate(
-      from_amr = list(episode_summary %>%
-                        filter(Participant_id == .env$Participant_id, tp_lab == .env$from_vf_tp) %>%
-                        pull(amr_genes) %>%
-                        split_semicolon()),
-      to_amr = list(episode_summary %>%
-                      filter(Participant_id == .env$Participant_id, tp_lab == .env$to_vf_tp) %>%
-                      pull(amr_genes) %>%
-                      split_semicolon()),
-      n_amr_gained = length(setdiff(to_amr, from_amr)),
-      n_amr_lost = length(setdiff(from_amr, to_amr)),
-      amr_gained = clean_list_string(setdiff(to_amr, from_amr), 12),
-      amr_lost = clean_list_string(setdiff(from_amr, to_amr), 12)
-    ) %>%
-    ungroup() %>%
-    select(case_id, transition_type, n_amr_gained, n_amr_lost, amr_gained, amr_lost)
-
-  write_csv(transition_amr, file.path(DIR_MECHANISM, "amr_transition_changes.csv"))
-
-  add("Status: COMPLETE")
-  add("Successful cached/run tab files: %d", nrow(manifest))
-  add("Hit rows after identity/coverage filtering: %d", nrow(hits))
-  add("Episodes with AMR hits: %d", nrow(episode_summary))
-  add("Transition AMR summaries: %d", nrow(transition_amr))
-  writeLines(report, report_path)
-  list(status = "complete", summary = episode_summary, transition = transition_amr)
+amr_episode_path <- file.path(DIR_RESULTS, "amr", "episode_amr_profiles.csv")
+amr_transition_path <- file.path(
+  DIR_RESULTS, "amr", "not_uti_to_uti_amr_profiles_9.csv"
+)
+plasmid_mechanism_path <- file.path(
+  DIR_RESULTS, "plasmids", "mob_suite",
+  "not_uti_to_uti_plasmid_metrics_9.csv"
+)
+if (
+  !file.exists(amr_episode_path) ||
+    !file.exists(amr_transition_path) ||
+    !file.exists(plasmid_mechanism_path)
+) {
+  stop(
+    "Validated script-29 AMR and predicted-plasmid outputs are required. Run ",
+    "29_vf_amr_combined_profile.R before script 33."
+  )
 }
-
-amr_result <- run_abricate_resfinder()
-amr_episode_summary <- amr_result$summary
-amr_transition <- amr_result$transition
+amr_episode_summary <- read_csv(amr_episode_path, show_col_types = FALSE) %>%
+  transmute(
+    Participant_id = as.character(Participant_id),
+    tp_lab = normalise_tp_label(tp_lab),
+    amr_gene_count = as.integer(amr_gene_count_informative),
+    amr_class_count = as.integer(amr_class_count),
+    amr_genes = as.character(informative_acquired_genes),
+    amr_classes = as.character(informative_acquired_classes),
+    mdfA_detected = as.logical(mdfA_detected)
+  )
+if (nrow(amr_episode_summary) != 532L) {
+  stop("Script-29 episode AMR profile is not complete for all 532 episodes.")
+}
+amr_transition <- read_csv(amr_transition_path, show_col_types = FALSE) %>%
+  transmute(
+    Participant_id = as.character(Participant_id),
+    from_tp = normalise_tp_label(tp_from),
+    to_tp = normalise_tp_label(tp_to),
+    n_amr_gained = as.integer(n_informative_genes_gained),
+    n_amr_lost = as.integer(n_informative_genes_lost),
+    amr_gained = as.character(informative_genes_gained),
+    amr_lost = as.character(informative_genes_lost),
+    amr_jaccard = as.numeric(acquired_gene_jaccard),
+    amr_mutation_change = as.logical(any_mutation_profile_change),
+    mdfA_threshold_change_qc_flag =
+      as.logical(mdfA_threshold_change_qc_flag)
+  )
+if (nrow(amr_transition) != 9L) {
+  stop("Script-29 focused AMR profile is not complete for all nine transitions.")
+}
+plasmid_mechanism_transition <- read_csv(
+  plasmid_mechanism_path, show_col_types = FALSE
+) %>%
+  transmute(
+    Participant_id = as.character(Participant_id),
+    from_tp = normalise_tp_label(tp_from),
+    to_tp = normalise_tp_label(tp_to),
+    direct_snps = as.numeric(TotalSNPs),
+    direct_pair_interpretation = as.character(pair_interpretation),
+    corrected_replicon_jaccard = as.numeric(replicon_jaccard),
+    corrected_replicon_both_empty = as.logical(replicon_both_empty),
+    corrected_replicons_gained = as.character(replicons_gained),
+    corrected_replicons_lost = as.character(replicons_lost),
+    any_corrected_replicon_change =
+      as.logical(any_replicon_profile_change),
+    mob_cluster_jaccard = as.numeric(mob_cluster_jaccard),
+    mob_cluster_both_empty = as.logical(mob_cluster_both_empty),
+    mob_clusters_gained = as.character(mob_clusters_gained),
+    mob_clusters_lost = as.character(mob_clusters_lost),
+    any_mob_cluster_change = as.logical(any_mob_cluster_change),
+    predicted_plasmid_count_from =
+      as.integer(predicted_plasmid_count_from),
+    predicted_plasmid_count_to =
+      as.integer(predicted_plasmid_count_to),
+    predicted_plasmid_count_difference =
+      as.integer(predicted_plasmid_count_difference),
+    predicted_plasmid_bins_gained =
+      as.character(predicted_plasmid_bins_gained),
+    predicted_plasmid_bins_lost =
+      as.character(predicted_plasmid_bins_lost),
+    plasmid_binned_vf_genes_gained =
+      as.character(plasmid_binned_vf_genes_gained),
+    plasmid_binned_vf_genes_lost =
+      as.character(plasmid_binned_vf_genes_lost),
+    plasmid_binned_informative_amr_genes_gained =
+      as.character(plasmid_binned_informative_amr_genes_gained),
+    plasmid_binned_informative_amr_genes_lost =
+      as.character(plasmid_binned_informative_amr_genes_lost),
+    predicted_linkage_groups_from =
+      as.character(predicted_linkage_groups_from),
+    predicted_linkage_groups_to =
+      as.character(predicted_linkage_groups_to),
+    mob_high_confidence_profiles_both =
+      as.logical(mob_high_confidence_profiles_both)
+  )
+if (
+  nrow(plasmid_mechanism_transition) != 9L ||
+    anyDuplicated(plasmid_mechanism_transition[
+      c("Participant_id", "from_tp", "to_tp")
+    ])
+) {
+  stop(
+    "Script-29 focused predicted-plasmid profile is not complete ",
+    "for all nine transitions."
+  )
+}
 
 # ==============================================================================
 # CASEBOOK
@@ -689,12 +644,37 @@ not_uti_to_uti <- case_summary_all %>%
   left_join(accessory_summary, by = "case_id", relationship = "many-to-one") %>%
   left_join(variant_summary, by = c("Participant_id", "from_tp", "to_tp"), relationship = "many-to-one") %>%
   left_join(vf_transition_metrics, by = c("Participant_id", "from_tp", "to_tp"), relationship = "many-to-one") %>%
-  left_join(amr_transition, by = c("case_id", "transition_type"), relationship = "many-to-one") %>%
+  left_join(
+    amr_transition,
+    by = c("Participant_id", "from_tp", "to_tp"),
+    relationship = "many-to-one"
+  ) %>%
+  left_join(
+    plasmid_mechanism_transition,
+    by = c("Participant_id", "from_tp", "to_tp"),
+    relationship = "many-to-one"
+  ) %>%
   mutate(
     across(c(n_plasmid_gained, n_plasmid_lost,
              n_accessory_genes_gained, n_accessory_genes_lost,
              n_annotated_variants, n_coding_or_gene_variants,
              n_amr_gained, n_amr_lost), ~ replace_na(as.integer(.x), 0L)),
+    across(
+      c(
+        corrected_replicons_gained, corrected_replicons_lost,
+        mob_clusters_gained, mob_clusters_lost,
+        predicted_plasmid_bins_gained, predicted_plasmid_bins_lost,
+        plasmid_binned_vf_genes_gained,
+        plasmid_binned_vf_genes_lost,
+        plasmid_binned_informative_amr_genes_gained,
+        plasmid_binned_informative_amr_genes_lost,
+        predicted_linkage_groups_from, predicted_linkage_groups_to
+      ),
+      ~ replace_na(as.character(.x), "")
+    ),
+    any_corrected_replicon_change =
+      replace_na(any_corrected_replicon_change, FALSE),
+    any_mob_cluster_change = replace_na(any_mob_cluster_change, FALSE),
     from_collection_date_parsed = parse_date_safe(from_Collection_Date),
     to_collection_date_parsed = parse_date_safe(to_Collection_Date),
     days_between = as.integer(to_collection_date_parsed - from_collection_date_parsed),
@@ -728,11 +708,13 @@ not_uti_to_uti <- case_summary_all %>%
     accessory_change_count = replace_na(n_accessory_genes_gained, 0L) + replace_na(n_accessory_genes_lost, 0L),
     profile_change_count = replace_na(n_vf_genes_gained, 0L) + replace_na(n_vf_genes_lost, 0L) +
       replace_na(n_modules_gained, 0L) + replace_na(n_modules_lost, 0L) +
-      replace_na(n_plasmid_gained, 0L) + replace_na(n_plasmid_lost, 0L) +
+      as.integer(replace_na(any_corrected_replicon_change, FALSE)) +
+      as.integer(replace_na(any_mob_cluster_change, FALSE)) +
       replace_na(n_amr_gained, 0L) + replace_na(n_amr_lost, 0L),
     mechanism_bucket = case_when(
       !has_vf_pair ~ "missing_wgs_endpoint",
-      pair_interpretation == "Replacement likely" ~ "strain_replacement",
+      pair_interpretation == "Replacement supported by SNP and ST" ~
+        "strain_replacement",
       snp_strain_context == "Strong same strain" & profile_change_count == 0 ~ "same_strain_stable_profile",
       snp_strain_context == "Strong same strain" & profile_change_count > 0 ~ "same_strain_genomic_change",
       TRUE ~ "uncertain"
@@ -772,6 +754,8 @@ casebook <- not_uti_to_uti %>%
     snp_strain_context,
     st_lineage_context,
     pair_interpretation,
+    direct_snps,
+    direct_pair_interpretation,
     same_strain_evidence,
     vf_jaccard,
     module_jaccard,
@@ -789,6 +773,28 @@ casebook <- not_uti_to_uti %>%
     n_plasmid_lost,
     plasmid_gained,
     plasmid_lost,
+    corrected_replicon_jaccard,
+    corrected_replicon_both_empty,
+    corrected_replicons_gained,
+    corrected_replicons_lost,
+    any_corrected_replicon_change,
+    mob_cluster_jaccard,
+    mob_cluster_both_empty,
+    mob_clusters_gained,
+    mob_clusters_lost,
+    any_mob_cluster_change,
+    predicted_plasmid_count_from,
+    predicted_plasmid_count_to,
+    predicted_plasmid_count_difference,
+    predicted_plasmid_bins_gained,
+    predicted_plasmid_bins_lost,
+    plasmid_binned_vf_genes_gained,
+    plasmid_binned_vf_genes_lost,
+    plasmid_binned_informative_amr_genes_gained,
+    plasmid_binned_informative_amr_genes_lost,
+    predicted_linkage_groups_from,
+    predicted_linkage_groups_to,
+    mob_high_confidence_profiles_both,
     n_amr_gained,
     n_amr_lost,
     amr_gained,
@@ -850,7 +856,8 @@ classify_transition_mechanism <- function(df) {
         replace_na(n_modules_gained, 0L) + replace_na(n_modules_lost, 0L),
       mechanism_bucket = case_when(
         !has_vf_pair ~ "missing_wgs_endpoint",
-        pair_interpretation == "Replacement likely" ~ "strain_replacement",
+        pair_interpretation == "Replacement supported by SNP and ST" ~
+          "strain_replacement",
         snp_strain_context == "Strong same strain" & profile_change_count == 0 ~ "same_strain_stable_profile",
         snp_strain_context == "Strong same strain" & profile_change_count > 0 ~ "same_strain_genomic_change",
         TRUE ~ "uncertain"
@@ -932,9 +939,9 @@ md_lines <- c(
   "",
   "## Headline Counts",
   "",
-  sprintf("- Clinical Not_UTI -> UTI transitions: %d", nrow(casebook)),
-  sprintf("- WGS/VF-linked transitions: %d", sum(casebook$has_vf_pair %in% TRUE, na.rm = TRUE)),
-  sprintf("- Missing WGS/VF endpoint transitions: %d", sum(casebook$mechanism_bucket == "missing_wgs_endpoint", na.rm = TRUE)),
+  sprintf("- Selected Longcycler Not_UTI -> UTI transitions: %d", nrow(casebook)),
+  sprintf("- Direct SNP/VF-linked transitions: %d", sum(casebook$has_vf_pair %in% TRUE, na.rm = TRUE)),
+  sprintf("- Missing endpoint transitions: %d (required to be zero)", sum(casebook$mechanism_bucket == "missing_wgs_endpoint", na.rm = TRUE)),
   sprintf("- Uricult-linked transitions: %d", sum(casebook$is_uricult_transition %in% TRUE, na.rm = TRUE)),
   "",
   "## Mechanism Bucket Counts",
@@ -959,7 +966,33 @@ case_md_table <- casebook %>%
     same_strain_evidence,
     VF_delta = paste0("+", n_vf_genes_gained, "/-", n_vf_genes_lost),
     accessory_delta = paste0("+", n_accessory_genes_gained, "/-", n_accessory_genes_lost),
-    plasmid_delta = paste0("+", n_plasmid_gained, "/-", n_plasmid_lost),
+    corrected_replicon_delta = ifelse(
+      any_corrected_replicon_change,
+      paste0(
+        "gain:", coalesce(corrected_replicons_gained, ""),
+        " loss:", coalesce(corrected_replicons_lost, "")
+      ),
+      "none"
+    ),
+    MOB_cluster_delta = ifelse(
+      any_mob_cluster_change,
+      paste0(
+        "gain:", coalesce(mob_clusters_gained, ""),
+        " loss:", coalesce(mob_clusters_lost, "")
+      ),
+      "none"
+    ),
+    predicted_plasmid_count_delta = predicted_plasmid_count_difference,
+    plasmid_binned_VF_delta = paste0(
+      "gain:", coalesce(plasmid_binned_vf_genes_gained, ""),
+      " loss:", coalesce(plasmid_binned_vf_genes_lost, "")
+    ),
+    plasmid_binned_AMR_delta = paste0(
+      "gain:",
+      coalesce(plasmid_binned_informative_amr_genes_gained, ""),
+      " loss:",
+      coalesce(plasmid_binned_informative_amr_genes_lost, "")
+    ),
     AMR_delta = paste0("+", n_amr_gained, "/-", n_amr_lost),
     clinical_trigger
   )
@@ -969,7 +1002,10 @@ md_lines <- c(md_lines, readLines(tmp_case_md), "", "## Interpretation Guardrail
               "- Treat same-strain stable-profile cases as evidence against simple VF gain/loss explanations, not as evidence against regulation, expression, inoculum, or host-state effects.",
               "- Panaroo accessory-gene changes are shown as exploratory leads and are not used alone to reclassify stable VF/module cases, because low-SNP pairs can still show annotation/presence-absence noise.",
               "- Treat replacement cases separately from within-strain evolution.",
-              "- AMR output is optional and should be read only if `amr_screen_report.txt` says COMPLETE.",
+              "- AMR context comes from script 29's validated AMRFinderPlus primary profiles; it is genomic prediction, not phenotypic AST.",
+              "- Replicon detection, MOB-suite reconstructed bins and determinant localization are separate assembly-based prediction layers.",
+              "- Only determinants placed in the same predicted MOB bin are described as predicted linkage; co-occurrence alone is not physical linkage.",
+              "- No plasmid circularity, transfer, transmission or causality is inferred.",
               "- UTI n remains sparse; these outputs are hypothesis-generating.")
 
 writeLines(md_lines, casebook_md)
@@ -997,26 +1033,78 @@ plot_cases <- casebook %>%
     ),
     `VF or module change` = ifelse((n_vf_genes_gained + n_vf_genes_lost + n_modules_gained + n_modules_lost) > 0, "yes", "no"),
     `Accessory change` = ifelse((n_accessory_genes_gained + n_accessory_genes_lost) > 0, "yes", "no"),
-    `Plasmid change` = ifelse((n_plasmid_gained + n_plasmid_lost) > 0, "yes", "no"),
+    `Replicon change` = ifelse(
+      any_corrected_replicon_change, "yes", "no"
+    ),
+    `MOB-bin change` = ifelse(any_mob_cluster_change, "yes", "no"),
+    `Plasmid-binned VF/AMR change` = ifelse(
+      nzchar(plasmid_binned_vf_genes_gained) |
+        nzchar(plasmid_binned_vf_genes_lost) |
+        nzchar(plasmid_binned_informative_amr_genes_gained) |
+        nzchar(plasmid_binned_informative_amr_genes_lost),
+      "yes", "no"
+    ),
     `AMR change` = ifelse((n_amr_gained + n_amr_lost) > 0, "yes", "no"),
-    `Host trigger` = str_trunc(clinical_trigger, 32)
+    `Host trigger` = case_when(
+      is.na(clinical_trigger) ~ "host_missing",
+      clinical_trigger == "symptom emergence on culture-supported bacteriuria" ~
+        "host_symptom_emergence",
+      clinical_trigger == "culture support plus symptoms emerged" ~
+        "host_culture_and_symptoms_emerged",
+      clinical_trigger == "UTI criteria present at endpoint" ~
+        "host_endpoint_criteria",
+      clinical_trigger == "review clinical rule inputs" ~
+        "host_review",
+      TRUE ~ paste0("unmapped_host_trigger:", clinical_trigger)
+    )
   ) %>%
   pivot_longer(-case, names_to = "feature", values_to = "value") %>%
   mutate(feature = factor(feature, levels = unique(feature)))
 
+case_value_colours <- c(
+  yes = "#2C7A7B",
+  no = "#D8DEE9",
+  strong = "#2F855A",
+  above_threshold = "#D69E2E",
+  same_ST = "#009E73",
+  different_ST = "#D55E00",
+  missing_ST = "#718096",
+  missing = "#718096",
+  uncertain = "#B7791F",
+  host_symptom_emergence = "#805AD5",
+  host_culture_and_symptoms_emerged = "#3182CE",
+  host_endpoint_criteria = "#4A5568",
+  host_review = "#E53E3E",
+  host_missing = "#A0AEC0"
+)
+case_value_labels <- c(
+  yes = "Yes",
+  no = "No",
+  strong = "Strong same-strain evidence",
+  above_threshold = "Above same-strain SNP threshold",
+  same_ST = "Same ST",
+  different_ST = "Different ST",
+  missing_ST = "ST unavailable",
+  missing = "SNP evidence unavailable",
+  uncertain = "Uncertain SNP context",
+  host_symptom_emergence = "Symptoms emerged with culture support",
+  host_culture_and_symptoms_emerged = "Culture support and symptoms emerged",
+  host_endpoint_criteria = "UTI criteria present at endpoint",
+  host_review = "Review clinical-rule inputs",
+  host_missing = "Clinical trigger unavailable"
+)
+assert_ruti_scale_levels(
+  plot_cases$value, case_value_colours,
+  context = "Mechanism case-matrix fill", allow_na = FALSE
+)
+case_value_breaks <- intersect(names(case_value_colours), unique(plot_cases$value))
+
 p_case_matrix <- ggplot(plot_cases, aes(feature, case, fill = value)) +
   geom_tile(colour = "white", linewidth = 0.4) +
   scale_fill_manual(
-    values = c(
-      yes = "#2C7A7B", no = "#D8DEE9", strong = "#2F855A",
-      above_threshold = "#D69E2E", replacement = "#C05621",
-      same_ST = "#009E73", different_ST = "#D55E00", missing_ST = "#718096",
-      missing = "#718096", uncertain = "#B7791F",
-      `symptom emergence on culture-supported bacteriuria` = "#805AD5",
-      `culture support plus symptoms emerged` = "#3182CE",
-      `UTI criteria present at endpoint` = "#4A5568",
-      `review clinical rule inputs` = "#E53E3E"
-    ),
+    values = case_value_colours,
+    breaks = case_value_breaks,
+    labels = unname(case_value_labels[case_value_breaks]),
     na.value = "grey90"
   ) +
   labs(
@@ -1035,15 +1123,21 @@ plot_mech <- transition_mechanism_summary %>%
     transition_type = factor(transition_type, levels = c("Not_UTI->Not_UTI", "Not_UTI->UTI", "UTI->Not_UTI", "UTI->UTI"))
   )
 
+mechanism_colours <- c(
+  same_strain_stable_profile = "#2F855A",
+  same_strain_genomic_change = "#2B6CB0",
+  strain_replacement = "#C05621",
+  uncertain = "#B7791F",
+  missing_wgs_endpoint = "#718096"
+)
+assert_ruti_scale_levels(
+  plot_mech$mechanism_bucket, mechanism_colours,
+  context = "Transition mechanism fill", allow_na = FALSE
+)
+
 p_strain <- ggplot(plot_mech, aes(transition_type, n_transitions, fill = mechanism_bucket)) +
   geom_col(position = "stack", colour = "white", linewidth = 0.2) +
-  scale_fill_manual(values = c(
-    same_strain_stable_profile = "#2F855A",
-    same_strain_genomic_change = "#2B6CB0",
-    strain_replacement = "#C05621",
-    uncertain = "#B7791F",
-    missing_wgs_endpoint = "#718096"
-  )) +
+  scale_fill_manual(values = mechanism_colours) +
   labs(
     title = "Strain stability and replacement across clinical transitions",
     x = NULL, y = "Transitions", fill = "Mechanism bucket",
@@ -1081,9 +1175,19 @@ plot_host <- casebook %>%
     feature = factor(feature, levels = c(unname(symptom_cols), "Collection changed", "Catheter rule changed"))
   )
 
+host_presence_colours <- c(
+  yes = "#2C7A7B",
+  no = "#E2E8F0",
+  unknown = "#A0AEC0"
+)
+assert_ruti_scale_levels(
+  plot_host$present, host_presence_colours,
+  context = "Host-context heatmap fill", allow_na = FALSE
+)
+
 p_host <- ggplot(plot_host, aes(feature, case, fill = present)) +
   geom_tile(colour = "white", linewidth = 0.4) +
-  scale_fill_manual(values = c(yes = "#2C7A7B", no = "#E2E8F0", unknown = "#A0AEC0"), na.value = "#A0AEC0") +
+  scale_fill_manual(values = host_presence_colours, na.value = "#A0AEC0") +
   labs(
     title = "Host and symptom context at UTI endpoint",
     x = NULL, y = NULL, fill = NULL,
@@ -1101,20 +1205,26 @@ ggsave(file.path(DIR_PLOTS_MECHANISM, "host_context_transition_heatmap.png"),
 
 validation <- tibble(
   check = c(
-    "casebook has exactly 11 clinical Not_UTI->UTI transitions",
-    "casebook flags exactly 1 missing WGS/VF endpoint",
-    "casebook has exactly 10 WGS/VF-linked Not_UTI->UTI transitions",
+    "casebook has exactly 9 selected Longcycler Not_UTI->UTI transitions",
+    "casebook flags zero missing WGS/VF endpoints",
+    "all 9 cases have direct SNP/VF evidence",
     "casebook has 0 Uricult-linked Not_UTI->UTI transitions",
     "vf_analysis_ready primary status has no missing UTI_Status",
-    "legacy ASB-vs-UTI OLD files were not used as inputs"
+    "selected clinical and VF episode keys are exactly equal",
+    "script-29 AMR profiles cover all 532 episodes",
+    "script-29 AMR profiles cover all 9 focused transitions",
+    "script-29 predicted-plasmid profiles cover all 9 focused transitions"
   ),
   status = c(
-    ifelse(nrow(casebook) == 11, "PASS", "FAIL"),
-    ifelse(sum(!casebook$has_vf_pair, na.rm = TRUE) == 1, "PASS", "FAIL"),
-    ifelse(sum(casebook$has_vf_pair %in% TRUE, na.rm = TRUE) == 10, "PASS", "FAIL"),
+    ifelse(nrow(casebook) == 9, "PASS", "FAIL"),
+    ifelse(sum(!casebook$has_vf_pair, na.rm = TRUE) == 0, "PASS", "FAIL"),
+    ifelse(sum(casebook$has_vf_pair %in% TRUE & !is.na(casebook$SNPs), na.rm = TRUE) == 9, "PASS", "FAIL"),
     ifelse(sum(casebook$is_uricult_transition %in% TRUE, na.rm = TRUE) == 0, "PASS", "FAIL"),
     ifelse(sum(is.na(vf_ready$UTI_Status)) == 0, "PASS", "FAIL"),
-    "PASS"
+    ifelse(nrow(analysis_keys) == nrow(vf_keys), "PASS", "FAIL"),
+    ifelse(nrow(amr_episode_summary) == 532L, "PASS", "FAIL"),
+    ifelse(nrow(amr_transition) == 9L, "PASS", "FAIL"),
+    ifelse(nrow(plasmid_mechanism_transition) == 9L, "PASS", "FAIL")
   ),
   detail = c(
     sprintf("n=%d", nrow(casebook)),
@@ -1122,7 +1232,13 @@ validation <- tibble(
     sprintf("linked=%d", sum(casebook$has_vf_pair %in% TRUE, na.rm = TRUE)),
     sprintf("uricult=%d", sum(casebook$is_uricult_transition %in% TRUE, na.rm = TRUE)),
     sprintf("missing_status=%d", sum(is.na(vf_ready$UTI_Status))),
-    "Inputs restricted to current status_map, vf_transition, vf_ready, Panaroo, plasmid, variant, and optional ABRicate outputs."
+    "Inputs restricted to the selected Longcycler cohort, VF transitions, Panaroo, plasmid, variant, and validated script-29 AMR outputs.",
+    sprintf("AMR episodes=%d", nrow(amr_episode_summary)),
+    sprintf("focused AMR transitions=%d", nrow(amr_transition)),
+    sprintf(
+      "focused predicted-plasmid transitions=%d",
+      nrow(plasmid_mechanism_transition)
+    )
   )
 )
 

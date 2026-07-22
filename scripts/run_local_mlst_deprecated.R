@@ -13,7 +13,7 @@
 #   non-authoritative provenance and explicit fallback evidence.
 #
 # INPUTS:
-#   - results/qc/canonical_assembly_selection.csv
+#   - results/qc/analysis_assembly_manifest.csv
 #   - selected QC-passing Longcycler FASTAs only
 #
 # OUTPUTS:
@@ -71,40 +71,19 @@ msg("DEPRECATED local MLST runner: Longcycler-only outputs are provenance/local-
 
 # 3. Load the mandatory Longcycler-only canonical manifest
 # ------------------------------------------------------------------------------
-canonical_file <- file.path(DIR_QC, "canonical_assembly_selection.csv")
-if (!file.exists(canonical_file)) {
-  stop("Missing ", canonical_file, ". Run 12a_wgs_qc.R before local MLST.")
-}
-
-assembly_df <- read_csv(canonical_file, show_col_types = FALSE)
-required_selection_cols <- c("Participant_id", "tp_lab", "Isolate_ID", "selected_canonical", "QC_PASS")
-missing_selection_cols <- setdiff(required_selection_cols, names(assembly_df))
-if (length(missing_selection_cols) > 0) {
-  stop("Canonical assembly selection lacks required column(s): ", paste(missing_selection_cols, collapse = ", "))
-}
-if (!"full_path" %in% names(assembly_df) && "fasta_path" %in% names(assembly_df)) {
-  assembly_df$full_path <- assembly_df$fasta_path
-}
-if (!"full_path" %in% names(assembly_df)) {
-  stop("Canonical assembly selection lacks full_path/fasta_path: ", canonical_file)
-}
-if (!"file_name" %in% names(assembly_df)) assembly_df$file_name <- basename(assembly_df$full_path)
-
-assembly_df <- assembly_df %>%
+canonical_file <- FILE_ANALYSIS_ASSEMBLY_MANIFEST
+assembly_df <- load_analysis_assemblies(canonical_file, require_files = TRUE) %>%
   mutate(
-    selected_canonical = as_pipeline_bool(selected_canonical),
-    QC_PASS = as_pipeline_bool(QC_PASS),
     assembler = str_to_lower(coalesce(
       if ("assembler" %in% names(.)) as.character(assembler) else NA_character_,
-      if ("Assembler" %in% names(.)) as.character(Assembler) else NA_character_,
-      detect_assembler(coalesce(as.character(full_path), as.character(file_name)))
+      if ("Assembler" %in% names(.)) as.character(Assembler) else NA_character_
     )),
-    full_path = normalizePath(as.character(full_path), winslash = "/", mustWork = FALSE)
+    full_path = normalizePath(as.character(full_path), winslash = "/", mustWork = TRUE),
+    fasta_sha256 = vapply(full_path, digest::digest, character(1), algo = "sha256", file = TRUE)
   )
 
-selected_qc <- assembly_df %>% filter(selected_canonical %in% TRUE, QC_PASS %in% TRUE)
-if (nrow(selected_qc) == 0) stop("Canonical selection contains no selected QC-passing assemblies.")
-non_longcycler <- selected_qc %>% filter(is.na(assembler) | assembler != "longcycler")
+if (nrow(assembly_df) == 0) stop("Analysis manifest contains no selected QC-passing assemblies.")
+non_longcycler <- assembly_df %>% filter(is.na(assembler) | assembler != "longcycler")
 if (nrow(non_longcycler) > 0) {
   stop(
     "Active local MLST manifest contains ", nrow(non_longcycler),
@@ -112,8 +91,7 @@ if (nrow(non_longcycler) > 0) {
   )
 }
 
-assembly_df <- selected_qc %>%
-  apply_manual_sample_curation(context = "mlst_longcycler_canonical")
+assembly_df <- assembly_df %>% apply_manual_sample_curation(context = "mlst_longcycler_canonical")
 
 curation_excluded <- assembly_df %>%
   filter(!(analysis_include_primary %in% TRUE) | !(genomics_expected_include %in% TRUE))
@@ -143,12 +121,27 @@ msg("Processing ", nrow(assembly_df), " selected QC-passing Longcycler assemblie
 
 # 4. Run MLST
 # ------------------------------------------------------------------------------
-run_mlst <- function(fasta, scheme = SCHEME) {
-  basename <- fs::path_file(fasta)
-  cache <- fs::path(DIR_MLST_RAW, paste0(basename, ".mlst.csv"))
-  log_out <- fs::path(DIR_MLST_LOG, paste0(basename, ".log.txt"))
+mlst_executable <- Sys.which("mlst")
+mlst_tool_version <- paste(tryCatch(system2(mlst_executable, "--version", stdout = TRUE, stderr = TRUE), error = function(e) "unknown"), collapse = " ")
 
-  if (!fs::file_exists(cache)) {
+run_mlst <- function(fasta, fasta_sha256, scheme = SCHEME) {
+  basename <- fs::path_file(fasta)
+  signature <- digest::digest(
+    paste("local_mlst_sha256_v1", normalizePath(fasta, winslash = "/", mustWork = TRUE), fasta_sha256, scheme, mlst_tool_version, sep = "\n"),
+    algo = "sha256", serialize = FALSE
+  )
+  cache <- fs::path(DIR_MLST_RAW, paste0(basename, ".", substr(signature, 1, 20), ".mlst.csv"))
+  sidecar <- paste0(cache, ".provenance.csv")
+  log_out <- fs::path(DIR_MLST_LOG, paste0(basename, ".", substr(signature, 1, 20), ".log.txt"))
+  cache_valid <- FALSE
+  if (fs::file_exists(cache) && fs::file_exists(sidecar)) {
+    prov <- tryCatch(read_csv(sidecar, show_col_types = FALSE, col_types = cols(.default = "c")), error = function(e) NULL)
+    cache_valid <- !is.null(prov) && nrow(prov) == 1L &&
+      identical(prov$cache_signature, signature) && identical(prov$fasta_sha256, fasta_sha256) &&
+      identical(prov$scheme, scheme) && identical(prov$status, "complete")
+  }
+
+  if (!cache_valid) {
     cmd <- c("--quiet", "--threads", "1", "--scheme", scheme, "--csv", "--legacy", fasta)
 
     tryCatch(
@@ -160,6 +153,14 @@ run_mlst <- function(fasta, scheme = SCHEME) {
           return(tibble(.status = "failed"))
         }
         write_lines(px$stdout, cache)
+        write_csv(tibble(
+          cache_signature = signature,
+          fasta_path = normalizePath(fasta, winslash = "/", mustWork = TRUE),
+          fasta_sha256 = fasta_sha256,
+          scheme = scheme,
+          mlst_version = mlst_tool_version,
+          status = "complete"
+        ), sidecar)
       },
       error = function(e) {
         write_lines(as.character(e), log_out, append = TRUE)
@@ -192,7 +193,7 @@ run_mlst <- function(fasta, scheme = SCHEME) {
 # Parallel Execution
 future::plan(future::multisession, workers = THREADS)
 mlst_raw <- assembly_df %>%
-  mutate(mlst = future_map(full_path, run_mlst, .progress = TRUE)) %>%
+  mutate(mlst = future_map2(full_path, fasta_sha256, run_mlst, .progress = TRUE)) %>%
   unnest(mlst)
 future::plan(future::sequential)
 
@@ -236,8 +237,15 @@ mlst_tbl <- mlst_tbl %>%
 # We evaluate typing completeness because missing or ambiguous loci can result in
 # non-typable or inaccurate ST assignments. This helps downstream scripts decide 
 # whether to drop an isolate from lineage-specific analyses.
-meta_cols <- unique(c("scheme", "ST", "Isolate_ID", "file_name", "full_path", names(assembly_df)))
-locus_cols <- setdiff(names(mlst_tbl), meta_cols)
+expected_loci <- c("adk", "fumc", "gyrb", "icd", "mdh", "pura", "reca")
+locus_match <- match(expected_loci, tolower(names(mlst_tbl)))
+if (anyNA(locus_match)) {
+  stop(
+    "Local E. coli MLST output is missing expected classic locus column(s): ",
+    paste(expected_loci[is.na(locus_match)], collapse = ", ")
+  )
+}
+locus_cols <- names(mlst_tbl)[locus_match]
 
 if (length(locus_cols) > 0) {
   write_lines(locus_cols, file.path(DIR_MLST, "mlst_locus_list.txt"))
@@ -247,7 +255,7 @@ if (length(locus_cols) > 0) {
     rowwise() %>%
     mutate(
       n_loci_typed    = sum(!is.na(c_across(all_of(locus_cols))) & c_across(all_of(locus_cols)) != "" & !grepl("^(\\?|0)$", c_across(all_of(locus_cols)))),
-      mlst_complete   = n_loci_typed == length(locus_cols),
+      mlst_complete   = n_loci_typed == length(expected_loci),
       has_new_allele  = any(grepl("NEW|\\*$", c_across(all_of(locus_cols)), ignore.case = TRUE)),
       ambiguous_call  = any(grepl("[,;/]", c_across(all_of(locus_cols))))
     ) %>%
@@ -281,6 +289,13 @@ if (nrow(mlst_episode_tbl) != nrow(assembly_df)) {
 if (!setequal(mlst_episode_tbl$full_path, assembly_df$full_path)) {
   stop("Local MLST output FASTA paths do not exactly match the selected Longcycler manifest.")
 }
+if (!"fasta_sha256" %in% names(mlst_episode_tbl) ||
+    !setequal(
+      paste(mlst_episode_tbl$full_path, mlst_episode_tbl$fasta_sha256, sep = "\n"),
+      paste(assembly_df$full_path, assembly_df$fasta_sha256, sep = "\n")
+    )) {
+  stop("Local MLST output FASTA path/SHA-256 pairs do not exactly match the selected Longcycler manifest.")
+}
 msg("Canonical local MLST table: ", nrow(mlst_episode_tbl), " selected Longcycler assembly rows.")
 
 append_denominator_summary(
@@ -289,7 +304,7 @@ append_denominator_summary(
   "mlst_selected_longcycler_assemblies",
   "assembly",
   canonical_file,
-  "Selected QC-passing Longcycler assemblies only; no Flye or assembler fallback"
+  "Selected QC-passing Longcycler assemblies only; no assembler fallback"
 )
 append_denominator_summary(
   mlst_episode_tbl,

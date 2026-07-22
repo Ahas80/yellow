@@ -89,8 +89,32 @@ if (length(gene_cols) == 0) {
 
 # 4. Tidy Matrix
 # ------------------------------------------------------------------------------
+# Blank or missing calls mean unavailable, not biological absence. Non-missing
+# gene cells must already be explicit binary presence/absence calls.
 vf[gene_cols] <- vf[gene_cols] |>
-  mutate(across(everything(), ~ replace_na(as.numeric(.x), 0)))
+  mutate(across(everything(), ~ {
+    raw <- trimws(as.character(.x))
+    raw_missing <- is.na(.x) | !nzchar(raw)
+    value <- suppressWarnings(as.numeric(raw))
+    value[raw_missing] <- NA_real_
+    invalid_parse <- !raw_missing & is.na(value)
+    invalid_binary <- !is.na(value) & !value %in% c(0, 1)
+    if (any(invalid_parse) || any(invalid_binary)) {
+      stop(
+        "VF gene column '", cur_column(),
+        "' contains non-binary or unparseable non-missing values."
+      )
+    }
+    value
+  }))
+
+collapse_binary_calls <- function(x) {
+  if (all(is.na(x))) return(NA_real_)
+  if (any(x == 1, na.rm = TRUE)) return(1)
+  # Absence is supported only when every contributing call is available and 0.
+  if (anyNA(x)) return(NA_real_)
+  0
+}
 
 vf <- vf |>
   mutate(
@@ -98,13 +122,24 @@ vf <- vf |>
     tp_lab = as.character(tp_lab)
   )
 
-# Maximize per participant-timepoint (handle duplicates/assemblers)
+# Collapse exact duplicate metadata rows conservatively: presence can be
+# supported by any available call, whereas absence requires all calls to be 0.
 vf <- vf |>
   group_by(across(all_of(meta_cols))) |>
-  summarise(across(all_of(gene_cols), max), .groups = "drop") |>
+  summarise(across(all_of(gene_cols), collapse_binary_calls), .groups = "drop") |>
   arrange(across(all_of(meta_cols)))
 
 # Matrix for Heatmap
+if (anyNA(vf$Participant_id) || anyNA(vf$tp_lab)) {
+  stop("VF heatmap rows require non-missing Participant_id and tp_lab.")
+}
+row_ids <- paste(vf$Participant_id, vf$tp_lab, sep = "_")
+if (anyDuplicated(row_ids)) {
+  stop(
+    "VF heatmap row labels are not unique at participant-timepoint level; ",
+    "refusing to merge or silently relabel repeated observations."
+  )
+}
 mat <- vf |>
   unite(row_id, Participant_id, tp_lab, sep = "_", remove = FALSE) |>
   column_to_rownames("row_id") |>
@@ -123,23 +158,34 @@ message(sprintf("Matrix dimensions: %d isolates x %d genes", n_iso, n_genes))
 # True E. coli core genome: ~2000-3000 genes; VFDB captures dozens of VFs
 
 # Calculate prevalence per gene
-gene_sums <- colSums(mat)
+gene_present <- colSums(mat == 1, na.rm = TRUE)
+gene_absent <- colSums(mat == 0, na.rm = TRUE)
+gene_available <- colSums(!is.na(mat))
+gene_missing <- n_iso - gene_available
+if (any(gene_available == 0)) {
+  stop(
+    "VF matrix contains gene(s) with no available calls: ",
+    paste(names(gene_available)[gene_available == 0], collapse = ", ")
+  )
+}
+gene_prevalence <- gene_present / gene_available
+message("Unavailable VF gene calls retained as unavailable: ", sum(gene_missing))
 
 # [BIO] Use 95% threshold instead of 100% (accounts for assembly/annotation gaps)
 core_threshold <- 0.95
-core_genes <- names(which(gene_sums >= core_threshold * n_iso))
+core_genes <- names(which(gene_prevalence >= core_threshold))
 
-# If strict 100% yields too few, one might relax this (e.g. >= 99%),
-# but for now we just report it.
-# Variable genes = present in at least one but not all
-variable_genes <- names(which(gene_sums > 0 & gene_sums < n_iso))
+# Variable here means at least one observed presence and one observed absence.
+# This preserves the historical presence/absence-variation definition; it is
+# not the complement of the >=95% high-prevalence list.
+variable_genes <- names(which(gene_present > 0 & gene_absent > 0))
 
 write_lines(core_genes, file.path(DIR_VF, "core_gene_list.txt"))
 write_lines(variable_genes, file.path(DIR_VF, "variable_gene_list.txt"))
 
 message("Core genes (>=95%): ", length(core_genes))
-message("Variable genes (<95% & >0%): ", length(variable_genes))
-message("Absent genes (0%): ", length(which(gene_sums == 0)))
+message("Variable genes (observed present and absent): ", length(variable_genes))
+message("Absent genes among available calls (0%): ", length(which(gene_present == 0)))
 
 if (length(variable_genes) == 0 && n_genes > 0) {
   message("⚠ No variable genes found. This implies all genes are either high-prevalence (>=95%) or absent.")
@@ -150,9 +196,13 @@ if (length(variable_genes) == 0 && n_genes > 0) {
 
 # 6. Prevalence Bar Plot
 # ------------------------------------------------------------------------------
-gene_prev <- colSums(mat) |>
-  enframe(name = "gene", value = "n_iso") |>
-  mutate(prevalence = n_iso / nrow(mat)) |>
+gene_prev <- tibble(
+  gene = colnames(mat),
+  n_present = unname(gene_present),
+  n_available = unname(gene_available),
+  n_missing = unname(gene_missing),
+  prevalence = unname(gene_prevalence)
+) |>
   arrange(desc(prevalence))
 
 topN <- 40
@@ -165,11 +215,11 @@ prev_plot <- ggplot(
   scale_y_continuous(labels = scales::percent) +
   labs(
     x = NULL,
-    y = "VF/WGS-linked isolates with gene detected",
+    y = "Available isolate calls with gene detected",
     title = "Most prevalent virulence factor genes among VF/WGS-linked isolates",
     subtitle = "Selection criterion: top 40 genes by isolate-level prevalence in the canonical VF matrix",
     caption = sprintf(
-      "Data: %s. Denominator: %d VF/WGS-linked E. coli isolates. This overview is descriptive and is not a UTI-vs-Not_UTI association test.",
+      "Data: %s. Cohort: %d VF/WGS-linked E. coli isolates; each gene's prevalence denominator excludes explicitly unavailable calls. Missing is not treated as absence. This overview is descriptive and is not a UTI-vs-Not_UTI association test.",
       FILE_VF_PA, nrow(mat)
     )
   ) +
@@ -182,30 +232,46 @@ ggsave(file.path(DIR_PLOTS_VF, "gene_prevalence_bar.png"), prev_plot, width = 6,
 # ------------------------------------------------------------------------------
 if (length(variable_genes) > 0) {
   var_mat <- mat[, variable_genes, drop = FALSE]
-  var_mat <- var_mat[, colSums(var_mat) > 0, drop = FALSE]
+  # A deterministic biological/descriptive order is more interpretable than
+  # pheatmap's default Euclidean clustering of binary calls. Order genes by
+  # observed prevalence, then name; keep participant/timepoint row order.
+  var_order <- gene_prev |>
+    filter(gene %in% variable_genes) |>
+    arrange(desc(prevalence), gene) |>
+    pull(gene)
+  var_mat <- var_mat[, var_order, drop = FALSE]
+  var_mat_plot <- var_mat
+  var_mat_plot[is.na(var_mat_plot)] <- 2
 
   ann_row <- vf |>
     unite(row_id, Participant_id, tp_lab, sep = "_", remove = FALSE) |>
     mutate(Timepoint = factor(tp_lab)) |>
     select(row_id, Timepoint) |>
     column_to_rownames("row_id")
+  ann_row <- ann_row[rownames(var_mat_plot), , drop = FALSE]
+  if (!identical(rownames(ann_row), rownames(var_mat_plot))) {
+    stop("VF heatmap row annotation does not exactly align with the matrix.")
+  }
 
-  row_labels <- rownames(var_mat)
-  heat_width <- max(9, 0.08 * ncol(var_mat) + 3.5)
-  heat_height <- max(10, 0.05 * nrow(var_mat) + 2)
-  gene_status_colours <- c("#f2f2f2", "#005aa0")
-  gene_status_breaks <- c(-0.01, 0.5, 1.01)
-  gene_status_legend_breaks <- c(0, 1)
-  gene_status_legend_labels <- c("Absent (light grey)", "Present (blue)")
-  heat_title <- "Variable VF gene presence/absence across VF/WGS-linked isolates\nLight grey = absent gene; blue = present gene"
+  row_labels <- rownames(var_mat_plot)
+  heat_width <- max(9, 0.08 * ncol(var_mat_plot) + 3.5)
+  heat_height <- max(10, 0.05 * nrow(var_mat_plot) + 2)
+  gene_status_colours <- c("#F2F2F2", "#005AA0", "#6A6A6A")
+  gene_status_breaks <- c(-0.5, 0.5, 1.5, 2.5)
+  gene_status_legend_breaks <- c(0, 1, 2)
+  gene_status_legend_labels <- c("Absent", "Present", "Unavailable")
+  heat_title <- paste0(
+    "Variable VF gene presence/absence across VF/WGS-linked isolates\n",
+    "Genes ordered by observed prevalence; rows ordered by participant and timepoint"
+  )
 
   heat_file_png <- file.path(DIR_PLOTS_VF, "variable_gene_heatmap.png")
   heat_file_pdf <- file.path(DIR_PLOTS_VF, "variable_gene_heatmap.pdf")
 
   # PNG
-  pheatmap(var_mat,
+  pheatmap(var_mat_plot,
     cluster_rows   = FALSE,
-    cluster_cols   = TRUE,
+    cluster_cols   = FALSE,
     show_rownames  = TRUE,
     labels_row     = row_labels,
     fontsize       = 8,
@@ -223,10 +289,9 @@ if (length(variable_genes) > 0) {
   )
 
   # PDF
-  pdf(heat_file_pdf, width = heat_width, height = heat_height)
-  pheatmap(var_mat,
+  pheatmap(var_mat_plot,
     cluster_rows   = FALSE,
-    cluster_cols   = TRUE,
+    cluster_cols   = FALSE,
     show_rownames  = TRUE,
     labels_row     = row_labels,
     fontsize       = 8,
@@ -237,9 +302,16 @@ if (length(variable_genes) > 0) {
     legend_breaks  = gene_status_legend_breaks,
     legend_labels  = gene_status_legend_labels,
     main           = heat_title,
-    annotation_row = ann_row
+    annotation_row = ann_row,
+    filename       = heat_file_pdf,
+    width          = heat_width,
+    height         = heat_height
   )
-  dev.off()
+
+  heat_outputs <- c(heat_file_png, heat_file_pdf)
+  if (any(!file.exists(heat_outputs)) || any(file.info(heat_outputs)$size <= 0)) {
+    stop("One or more VF heatmap outputs are missing or empty.")
+  }
 
   message("✓ Heatmaps generated.")
 } else {

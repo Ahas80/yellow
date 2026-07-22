@@ -135,7 +135,32 @@ safe_copy <- function(from, to, overwrite = TRUE) {
 }
 
 write_plot <- function(p, path, w = 8, h = 6, dpi = 300) {
-    if (inherits(p, "ggplot")) try(ggsave(path, p, width = w, height = h, dpi = dpi), silent = TRUE)
+    if (!inherits(p, "ggplot")) {
+        stop("write_plot() requires a ggplot object for: ", path, call. = FALSE)
+    }
+    if (length(path) != 1L || is.na(path) || !nzchar(path)) {
+        stop("write_plot() requires one non-empty output path.", call. = FALSE)
+    }
+    if (any(!is.finite(c(w, h, dpi))) || w <= 0 || h <= 0 || dpi <= 0) {
+        stop("write_plot() requires positive finite width, height, and dpi values.", call. = FALSE)
+    }
+
+    dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
+    msg("Saving plot: %s", path)
+    tryCatch(
+        ggplot2::ggsave(path, plot = p, width = w, height = h, dpi = dpi),
+        error = function(e) {
+            msg("ERROR saving plot %s: %s", path, conditionMessage(e))
+            stop(e)
+        }
+    )
+
+    size <- file.size(path)
+    if (!file.exists(path) || is.na(size) || size <= 0) {
+        stop("Plot save returned without creating a non-empty file: ", path, call. = FALSE)
+    }
+    msg("Saved plot: %s (%d bytes)", path, size)
+    invisible(path)
 }
 
 # --- Data Processing Helpers ---
@@ -260,7 +285,7 @@ discover_samples <- function(asm_dir = ASM_DIR, reads_dir = READS_DIR, pids = "A
         stop("Longcycler analysis-manifest helper is unavailable; source 00_config.R first.")
     }
     analysis_manifest <- load_analysis_assemblies(FILE_ANALYSIS_ASSEMBLY_MANIFEST, require_files = TRUE)
-    asm_files <- analysis_manifest$full_path
+    asm_files <- normalizePath(analysis_manifest$full_path, winslash = "/", mustWork = TRUE)
     reads_R1 <- list.files(reads_dir, pattern = "_R1\\.(fastq|fq)(\\.gz)?$", full.names = TRUE)
     reads_R2 <- gsub("_R1\\.(fastq|fq)(\\.gz)?$", "_R2.\\1\\2", reads_R1, perl = TRUE)
     paired_ok <- file.exists(reads_R2)
@@ -321,7 +346,11 @@ discover_samples <- function(asm_dir = ASM_DIR, reads_dir = READS_DIR, pids = "A
                     },
                     SampleID_meta = if (!is.null(sid_col)) as.character(.data[[sid_col]]) else tools::file_path_sans_ext(.data[[file_col[1]]]),
                     Participant_id_meta = if ("Participant_id" %in% names(.)) as.character(.data[["Participant_id"]]) else NA_character_,
-                    Timepoint_meta = if ("Timepoint" %in% names(.)) as.character(.data[["Timepoint"]]) else NA_character_
+                    Timepoint_meta = if ("Timepoint" %in% names(.)) {
+                        as.character(.data[["Timepoint"]])
+                    } else {
+                        as.character(.data[["tp_lab"]])
+                    }
                 ) %>%
                 dplyr::select(assembly, SampleID_meta, Participant_id_meta, Timepoint_meta)
 
@@ -427,7 +456,8 @@ get_valid_genomes <- function(pid, qc_df) {
         require_selected = TRUE,
         require_qc = TRUE,
         require_files = TRUE,
-        require_unique_episode = TRUE
+        require_unique_episode = TRUE,
+        require_nonempty = FALSE
     )
     candidate$full_path
 }

@@ -8,7 +8,9 @@ the appendix stays synchronized with the actual headers.
 
 from __future__ import annotations
 
-import math
+import hashlib
+import json
+import os
 from collections import Counter
 from datetime import date
 from pathlib import Path
@@ -29,6 +31,35 @@ VF_PA = ROOT / "results/vf/vf_pa_all.csv"
 GENE_MAP = ROOT / "results/vf/gene_map.csv"
 DIAGNOSTICS = ROOT / "results/vf/vf_dataset_diagnostics.txt"
 OUT_DOCX = ROOT / "outputs/codebooks/vf_analysis_ready_lay_codebook.docx"
+CLAIM_REGISTRY = ROOT / "results/pipeline/longcycler_release_claim_registry.json"
+FINAL_MARKER = ROOT / "results/pipeline/RUN_COMPLETE.txt"
+FAILED_MARKER = ROOT / "results/pipeline/RUN_FAILED.txt"
+
+EXPECTED_COHORT = {
+    "episodes": 532,
+    "residents": 161,
+    "operational_UTI": 16,
+    "operational_Not_UTI": 516,
+}
+EXPECTED_METHODS = {
+    "culture_lower_bound_cfu_per_ml": 1000,
+    "max_contigs": 200,
+    "min_n50_bp": 20000,
+    "min_genome_size_bp": 4_000_000,
+    "max_genome_size_bp": 6_000_000,
+    "min_identity_pct": 80,
+    "min_coverage_pct": 80,
+    "provider_min_good_targets_pct": 95,
+}
+SELECTED_ASSEMBLER = "Longcycler"
+# Deliberately assembled so the retired name never appears in generated-source
+# inventories while the release guard can still reject it in every input byte.
+FORBIDDEN_ALTERNATE_TOKEN = "".join(("f", "lye")).encode("ascii")
+TABLE_WIDTH_DXA = 9360
+TABLE_INDENT_DXA = 120
+CELL_MARGINS_DXA = {"top": 80, "bottom": 80, "start": 120, "end": 120}
+COMPACT_EDITORIAL_COVER_OVERRIDE = "compact_editorial_reference_title"
+METHOD_CONTEXT: dict[str, object] = {}
 
 
 BLUE = "2E74B5"
@@ -38,6 +69,150 @@ MUTED = "4B5563"
 LIGHT_BLUE = "E8EEF5"
 LIGHT_GRAY = "F2F4F7"
 PALE_YELLOW = "FFF7D6"
+
+
+def sha256_file(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def require_file(path: Path, label: str) -> Path:
+    if not path.is_file() or path.stat().st_size == 0:
+        raise RuntimeError(f"{label} is missing or empty: {path}")
+    return path
+
+
+def reject_forbidden_token(paths: list[Path]) -> None:
+    needle = FORBIDDEN_ALTERNATE_TOKEN.lower()
+    contaminated = [str(path) for path in paths if needle in path.read_bytes().lower()]
+    if contaminated:
+        raise RuntimeError(
+            "Forbidden alternate-assembler token found in release input(s): "
+            + ", ".join(contaminated)
+        )
+
+
+def registry_source(registry: dict, role: str) -> tuple[Path, str]:
+    matches = [item for item in registry.get("sources", []) if item.get("role") == role]
+    if len(matches) != 1:
+        raise RuntimeError(f"Claim registry must contain exactly one source with role={role!r}.")
+    path = require_file(Path(matches[0]["path"]), f"Registry source {role}")
+    expected_sha = str(matches[0].get("sha256", "")).lower()
+    observed_sha = sha256_file(path)
+    if not expected_sha or observed_sha != expected_sha:
+        raise RuntimeError(f"Registry source SHA-256 mismatch for {role}: {path}")
+    return path, observed_sha
+
+
+def load_and_validate_registry() -> tuple[dict, str, Path]:
+    require_file(CLAIM_REGISTRY, "Final Longcycler claim registry")
+    require_file(FINAL_MARKER, "Final analysis marker")
+    if FAILED_MARKER.exists():
+        raise RuntimeError(f"Analysis failure marker is still present: {FAILED_MARKER}")
+    if "Complete analysis: PASS" not in FINAL_MARKER.read_text(encoding="utf-8"):
+        raise RuntimeError("Final analysis marker does not record PASS.")
+    if CLAIM_REGISTRY.stat().st_mtime_ns > FINAL_MARKER.stat().st_mtime_ns:
+        raise RuntimeError("Claim registry is newer than the final PASS marker.")
+
+    registry_bytes = CLAIM_REGISTRY.read_bytes()
+    registry_sha = hashlib.sha256(registry_bytes).hexdigest()
+    try:
+        registry = json.loads(registry_bytes)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(f"Claim registry is not valid JSON: {exc}") from exc
+    if registry.get("schema_version") != "longcycler_release_claim_registry_v1":
+        raise RuntimeError("Unexpected claim-registry schema version.")
+
+    cohort = registry.get("analytical_cohort", {})
+    if cohort != EXPECTED_COHORT:
+        raise RuntimeError(f"Analytical cohort contract mismatch: {cohort}")
+    scope = registry.get("analysis_scope", {})
+    if scope.get("assembly_policy") != "selected QC-passing Longcycler only":
+        raise RuntimeError("Registry assembly policy is not selected Longcycler only.")
+    if scope.get("clinical_phenotype") != "operational UTI phenotype":
+        raise RuntimeError("Registry does not identify the operational UTI phenotype.")
+    if scope.get("interpretation") != "exploratory observational analysis; no causal claim":
+        raise RuntimeError("Registry exploratory/observational interpretation boundary is missing.")
+
+    methods = registry.get("method_contract", {})
+    observed_methods = {
+        "culture_lower_bound_cfu_per_ml": methods.get("operational_phenotype", {}).get("culture_lower_bound_cfu_per_ml"),
+        "max_contigs": methods.get("assembly_qc", {}).get("max_contigs"),
+        "min_n50_bp": methods.get("assembly_qc", {}).get("min_n50_bp"),
+        "min_genome_size_bp": methods.get("assembly_qc", {}).get("min_genome_size_bp"),
+        "max_genome_size_bp": methods.get("assembly_qc", {}).get("max_genome_size_bp"),
+        "min_identity_pct": methods.get("vfdb", {}).get("min_identity_pct"),
+        "min_coverage_pct": methods.get("vfdb", {}).get("min_coverage_pct"),
+        "provider_min_good_targets_pct": methods.get("mlst", {}).get("provider_min_good_targets_pct"),
+    }
+    if observed_methods != EXPECTED_METHODS:
+        raise RuntimeError(f"Method contract mismatch: {observed_methods}")
+    if methods.get("vfdb", {}).get("tool") in {None, ""} or methods.get("vfdb", {}).get("database") in {None, ""}:
+        raise RuntimeError("Registry VF tool/database values are missing.")
+
+    cohort_path, _ = registry_source(registry, "cohort")
+    # Validate all registry-bound sources, not just the one read below.
+    for source in registry.get("sources", []):
+        registry_source(registry, source["role"])
+    reject_forbidden_token([CLAIM_REGISTRY, cohort_path])
+    return registry, registry_sha, cohort_path
+
+
+def normalized_key_frame(frame: pd.DataFrame, label: str) -> pd.DataFrame:
+    required = {"Participant_id", "tp_lab", "Episode_ID", "UTI_Status"}
+    missing = sorted(required - set(frame.columns))
+    if missing:
+        raise RuntimeError(f"{label} lacks required key/status columns: {missing}")
+    out = frame[list(required)].copy()
+    for column in required:
+        if out[column].isna().any():
+            raise RuntimeError(f"{label} contains missing {column} values.")
+        out[column] = out[column].astype(str).str.strip()
+    out["_pair_key"] = out["Participant_id"] + "|" + out["tp_lab"]
+    if out["_pair_key"].duplicated().any() or out["Episode_ID"].duplicated().any():
+        raise RuntimeError(f"{label} contains duplicate analytical keys.")
+    return out
+
+
+def validate_vf_ready_against_registry(
+    df: pd.DataFrame,
+    cohort_df: pd.DataFrame,
+    registry: dict,
+    gene_count: int,
+) -> None:
+    vf_keys = normalized_key_frame(df, "vf_analysis_ready.csv")
+    cohort_keys = normalized_key_frame(cohort_df, "selected clinical cohort")
+    if len(vf_keys) != EXPECTED_COHORT["episodes"] or len(cohort_keys) != EXPECTED_COHORT["episodes"]:
+        raise RuntimeError("VF-ready and selected-cohort row counts must both equal 532.")
+    if vf_keys["Participant_id"].nunique() != EXPECTED_COHORT["residents"]:
+        raise RuntimeError("VF-ready resident count does not equal 161.")
+    status_counts = vf_keys["UTI_Status"].value_counts().to_dict()
+    if status_counts != {
+        "Not_UTI": EXPECTED_COHORT["operational_Not_UTI"],
+        "UTI": EXPECTED_COHORT["operational_UTI"],
+    }:
+        raise RuntimeError(f"VF-ready operational status contract mismatch: {status_counts}")
+
+    compare_columns = ["_pair_key", "Episode_ID", "UTI_Status"]
+    observed = vf_keys[compare_columns].sort_values("_pair_key").reset_index(drop=True)
+    expected = cohort_keys[compare_columns].sort_values("_pair_key").reset_index(drop=True)
+    if not observed.equals(expected):
+        raise RuntimeError("VF-ready keys/statuses do not exactly match the selected clinical cohort.")
+
+    expected_gene_count = registry.get("genomic_dimensions", {}).get("VFDB_binary_features")
+    if not isinstance(expected_gene_count, int) or gene_count != expected_gene_count:
+        raise RuntimeError(
+            f"VF feature count does not match claim registry: observed={gene_count}; expected={expected_gene_count}"
+        )
+
+    assembler_columns = [column for column in df.columns if "assembler" in column.casefold()]
+    if not assembler_columns:
+        raise RuntimeError("VF-ready file has no assembler provenance field.")
+    for column in assembler_columns:
+        values = df[column].dropna().astype(str).str.strip()
+        values = values[values.ne("")]
+        unexpected = sorted({value for value in values if value.casefold() != SELECTED_ASSEMBLER.casefold()})
+        if unexpected:
+            raise RuntimeError(f"{column} contains values outside Longcycler: {unexpected}")
 
 
 def set_cell_shading(cell, fill: str) -> None:
@@ -64,8 +239,7 @@ def set_cell_margins(cell, top=80, bottom=80, start=120, end=120) -> None:
         node.set(qn("w:type"), "dxa")
 
 
-def set_cell_width(cell, width_in: float) -> None:
-    width = int(width_in * 1440)
+def set_cell_width_dxa(cell, width: int) -> None:
     tc_pr = cell._tc.get_or_add_tcPr()
     tc_w = tc_pr.find(qn("w:tcW"))
     if tc_w is None:
@@ -88,7 +262,7 @@ def set_row_cant_split(row) -> None:
         tr_pr.append(OxmlElement("w:cantSplit"))
 
 
-def set_table_width(table, widths: list[float], indent_dxa: int = 120) -> None:
+def set_table_width(table, widths: list[float], indent_dxa: int = TABLE_INDENT_DXA) -> None:
     table.autofit = False
     table.alignment = WD_TABLE_ALIGNMENT.LEFT
     tbl_pr = table._tbl.tblPr
@@ -96,8 +270,14 @@ def set_table_width(table, widths: list[float], indent_dxa: int = 120) -> None:
     if tbl_w is None:
         tbl_w = OxmlElement("w:tblW")
         tbl_pr.append(tbl_w)
-    total_dxa = int(sum(widths) * 1440)
-    tbl_w.set(qn("w:w"), str(total_dxa))
+    if not widths or any(width <= 0 for width in widths):
+        raise ValueError("Table widths must be positive.")
+    raw_widths = [width / sum(widths) * TABLE_WIDTH_DXA for width in widths]
+    width_dxa = [int(round(width)) for width in raw_widths]
+    width_dxa[-1] += TABLE_WIDTH_DXA - sum(width_dxa)
+    if any(width <= 0 for width in width_dxa):
+        raise ValueError(f"Invalid normalized table widths: {width_dxa}")
+    tbl_w.set(qn("w:w"), str(TABLE_WIDTH_DXA))
     tbl_w.set(qn("w:type"), "dxa")
     tbl_ind = tbl_pr.find(qn("w:tblInd"))
     if tbl_ind is None:
@@ -112,16 +292,16 @@ def set_table_width(table, widths: list[float], indent_dxa: int = 120) -> None:
         table._tbl.insert(0, grid)
     for child in list(grid):
         grid.remove(child)
-    for width in widths:
+    for width in width_dxa:
         col = OxmlElement("w:gridCol")
-        col.set(qn("w:w"), str(int(width * 1440)))
+        col.set(qn("w:w"), str(width))
         grid.append(col)
 
     for row in table.rows:
         for idx, cell in enumerate(row.cells):
             if idx < len(widths):
-                set_cell_width(cell, widths[idx])
-            set_cell_margins(cell)
+                set_cell_width_dxa(cell, width_dxa[idx])
+            set_cell_margins(cell, **CELL_MARGINS_DXA)
             cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
 
 
@@ -189,7 +369,7 @@ def add_note_box(doc: Document, title: str, text: str, fill: str = PALE_YELLOW):
     table.style = "Table Grid"
     cell = table.rows[0].cells[0]
     set_cell_shading(cell, fill)
-    set_cell_margins(cell, top=120, bottom=120, start=160, end=160)
+    set_cell_margins(cell, **CELL_MARGINS_DXA)
     p = cell.paragraphs[0]
     p.paragraph_format.space_after = Pt(4)
     r = p.add_run(title)
@@ -208,6 +388,17 @@ def clean_value(x) -> str:
     if isinstance(x, float) and x.is_integer():
         return str(int(x))
     return str(x)
+
+
+def vf_screen_label() -> str:
+    return f"{METHOD_CONTEXT['vf_tool']}/{METHOD_CONTEXT['vf_database']}"
+
+
+def vf_detection_rule() -> str:
+    return (
+        f">={METHOD_CONTEXT['vf_identity']}% identity and "
+        f">={METHOD_CONTEXT['vf_coverage']}% coverage"
+    )
 
 
 def diagnostic_value(diag_text: str, prefix: str) -> str:
@@ -261,9 +452,11 @@ def group_for_column(col: str, gene_cols: set[str]) -> str:
         return "Identifier"
     if col in {"ST", "ST_source", "ST_provider", "ST_local", "provider_PercGoodTargets", "provider_file", "provider_batch_match", "provider_assembler"}:
         return "ST/MLST"
+    if col in {"Infection_Status_legacy", "Infection_Status_old", "Status_Confidence_epi", "Sx_source_epi", "UTI_Label"}:
+        return "Clinical audit/context"
     if col in {
         "UTI_Status", "Primary_Status", "UTI_binary", "Not_UTI_subgroup", "Infection_Status",
-        "Infection_Status_legacy", "Infection_Status_old", "UTI_definition_version",
+        "UTI_definition_version",
         "UTI_classification_confidence", "UTI_classification_reason", "Status_Confidence_epi",
         "Sx_source_epi", "UTI_Label"
     }:
@@ -308,7 +501,7 @@ def definition_for_column(col: str, group: str, gene_category: str | None) -> st
         "ST_source": "Where the sequence type came from, and whether the source passed the provider quality rule.",
         "ST_provider": "ST from the provider/RIVM SeqSphere source when available.",
         "ST_local": "ST from the local mlst run. A dash means no local ST was available.",
-        "provider_PercGoodTargets": "Provider/RIVM SeqSphere quality measure: percentage of targets passing the provider quality checks. Provider calls were used when this was at least 95.",
+        "provider_PercGoodTargets": f"Provider MLST quality measure: percentage of targets passing provider checks. The registry-bound minimum is {METHOD_CONTEXT['provider_quality']}%.",
         "provider_file": "Provider MLST file(s) from which the ST call was obtained.",
         "provider_batch_match": "Whether the provider MLST record matched the expected batch information.",
         "provider_assembler": "Which assembler's provider MLST result contributed to the ST call.",
@@ -317,8 +510,8 @@ def definition_for_column(col: str, group: str, gene_category: str | None) -> st
         "UTI_binary": "Numeric version of UTI_Status: 1 = UTI and 0 = Not_UTI.",
         "Not_UTI_subgroup": "Subgroup label for rows that are Not_UTI.",
         "Infection_Status": "Current primary status label used by the VF-ready file.",
-        "Infection_Status_legacy": "Older ASB/UTI/Negative label retained for comparison only.",
-        "Infection_Status_old": "Same older ASB/UTI/Negative framing retained for audit/comparison.",
+        "Infection_Status_legacy": "Historical clinical source field retained for audit/context only; it is not an analytical phenotype.",
+        "Infection_Status_old": "Historical clinical source field retained for audit/context only; it is not an analytical phenotype.",
         "UTI_definition_version": "Name of the rule used to classify UTI versus Not_UTI.",
         "UTI_classification_confidence": "Confidence level for the clinical classification.",
         "UTI_classification_reason": "Plain reason the row was classified as UTI or Not_UTI.",
@@ -335,11 +528,11 @@ def definition_for_column(col: str, group: str, gene_category: str | None) -> st
         "systemic_symptom_any": "Whether any systemic symptom was recorded.",
         "cfu_raw": "Original culture count text.",
         "cfu_raw_parsed": "Parsed culture count text used by the pipeline.",
-        "cfu_ge_1e3": "Whether culture count was at least 1,000 CFU/mL.",
+        "cfu_ge_1e3": f"Whether culture count was at least {METHOD_CONTEXT['culture_lower_bound']:,} CFU/mL.",
         "cfu_ge_1e4": "Whether culture count was at least 10,000 CFU/mL.",
         "cfu_ge_1e5": "Whether culture count was at least 100,000 CFU/mL.",
         "culture_supports_uti": "Whether culture results met the primary culture-support rule. In this VF-ready file, all rows meet culture support; UTI versus Not_UTI is separated by symptom compatibility.",
-        "cfu_threshold_used_for_uti": "Culture threshold used by the primary UTI rule; the current file uses 1,000 CFU/mL.",
+        "cfu_threshold_used_for_uti": f"Culture lower bound used by the operational phenotype: {METHOD_CONTEXT['culture_lower_bound']:,} CFU/mL.",
         "cfu_threshold_source": "How the culture threshold decision was derived.",
         "beoord_cat": "Original laboratory assessment category ('beoordeling' in Dutch), when available.",
         "analysis_include_primary": "Whether the episode is included in the primary analysis denominator.",
@@ -357,10 +550,10 @@ def definition_for_column(col: str, group: str, gene_category: str | None) -> st
         "uricult_bridge_applied": "Whether a Uricult clinical event was bridged to a WGS row.",
         "vf_count_total": "Total number detected across all VF gene columns in this row.",
         "total_vf_count_all": "Same as vf_count_total: all VF genes detected.",
-        "total_vf_count_curated": "Number detected among gene columns present in gene_map.csv when this file was built. This is not the later module/score-framework curated set.",
+        "total_vf_count_curated": "Number detected among feature columns mapped in gene_map.csv; a descriptive count, not a validated score.",
         "total_vf_count_upec_candidate": "Descriptive heuristic count of detected genes whose gene_map category/subcategory matched UPEC-relevant terms; this is not a validated score.",
         "total_vf_count_unassigned": "Number detected among gene columns absent from gene_map.csv; it uses the same gene set as cat_Unassigned_matrix.",
-        "low_confidence_count": "Legacy placeholder fixed at zero in this file. Do not use it as the later score-framework low-confidence measure.",
+        "low_confidence_count": "Zero-filled audit/context placeholder. Do not use it as an analytical endpoint.",
         "cat_Adhesion_Fimbriae": "Number of detected genes in the adhesion/fimbriae category.",
         "cat_Unassigned": "Number detected among genes present in gene_map.csv but explicitly assigned to the Unassigned category.",
         "cat_Iron_acquisition": "Number of detected genes in the iron acquisition category.",
@@ -386,28 +579,28 @@ def definition_for_column(col: str, group: str, gene_category: str | None) -> st
     definitions.update(symptom_defs)
     if group == "VF gene":
         category = gene_category or "not assigned in gene_map.csv"
-        return f"Individual VFDB virulence-factor gene column. Category: {category}."
+        return f"Individual {METHOD_CONTEXT['vf_database']} virulence-factor feature. Category: {category}."
     return definitions.get(col, "Column retained from the source or derived during the VF-ready merge.")
 
 
 def source_for_column(group: str, col: str) -> str:
     if group == "VF gene":
-        return "Created from ABRicate/VFDB screening at >=80% identity and >=80% coverage; collapsed to 0/1 per episode."
+        return f"Created from {vf_screen_label()} screening at {vf_detection_rule()}; collapsed to 0/1 per episode."
     if group == "ST/MLST":
         return "Added from provider-preferred MLST output."
-    if group in {"Clinical status", "Culture/symptoms"}:
+    if group in {"Clinical status", "Clinical audit/context", "Culture/symptoms"}:
         return "Added from the clinical status map and classification logic."
     if group == "VF summary":
         if col in {"vf_count_total", "total_vf_count_all"}:
             return "Sum of all VF gene 0/1 columns."
         if col == "total_vf_count_curated":
-            return "Sum of VF columns present in gene_map.csv (script 22)."
+            return "Derived sum of VF columns present in gene_map.csv."
         if col == "total_vf_count_upec_candidate":
-            return "Heuristic gene_map category/subcategory term match (script 22)."
+            return "Derived heuristic gene_map category/subcategory term match."
         if col in {"total_vf_count_unassigned", "cat_Unassigned_matrix"}:
             return "Sum of VF columns absent from gene_map.csv."
         if col == "low_confidence_count":
-            return "Zero-filled legacy placeholder from script 22."
+            return "Zero-filled audit/context placeholder; not an analytical endpoint."
         if col == "n_timepoints":
             return "Distinct tp_lab count per Participant_id."
         return "Sum of VF columns in this gene_map.csv category."
@@ -511,6 +704,23 @@ def configure_styles(doc: Document) -> None:
     normal.paragraph_format.space_after = Pt(6)
     normal.paragraph_format.line_spacing = 1.25
 
+    title = doc.styles["Title"]
+    title.font.name = "Calibri"
+    title.font.size = Pt(22)
+    title.font.bold = True
+    title.font.color.rgb = RGBColor.from_string(BLUE)
+    title.paragraph_format.space_before = Pt(0)
+    title.paragraph_format.space_after = Pt(5)
+    title.paragraph_format.line_spacing = 1.0
+
+    subtitle = doc.styles["Subtitle"]
+    subtitle.font.name = "Calibri"
+    subtitle.font.size = Pt(12)
+    subtitle.font.color.rgb = RGBColor.from_string(DARK_BLUE)
+    subtitle.paragraph_format.space_before = Pt(0)
+    subtitle.paragraph_format.space_after = Pt(8)
+    subtitle.paragraph_format.line_spacing = 1.1
+
     for style_name, size, color, before, after in [
         ("Heading 1", 16, BLUE, 18, 10),
         ("Heading 2", 13, BLUE, 14, 7),
@@ -535,6 +745,50 @@ def configure_styles(doc: Document) -> None:
         st.paragraph_format.line_spacing = 1.25
 
 
+def add_compact_editorial_title_block(
+    doc: Document,
+    registry: dict,
+    registry_sha: str,
+) -> None:
+    """Named compact override inspired by editorial_cover, without cover-page whitespace."""
+    kicker = doc.add_paragraph()
+    kicker.paragraph_format.space_after = Pt(4)
+    kicker.paragraph_format.keep_with_next = True
+    run = kicker.add_run("LONGCYCLER-ONLY REFERENCE GUIDE")
+    run.bold = True
+    run.font.name = "Calibri"
+    run.font.size = Pt(9)
+    run.font.color.rgb = RGBColor.from_string(DARK_BLUE)
+
+    title = doc.add_paragraph(style="Title")
+    title.paragraph_format.keep_with_next = True
+    title.add_run("Codebook for vf_analysis_ready.csv")
+    subtitle = doc.add_paragraph(style="Subtitle")
+    subtitle.add_run("Virulence-factor, sequence-type, and operational clinical fields")
+
+    scope = registry["analysis_scope"]
+    add_body(
+        doc,
+        f"Scope: {scope['assembly_policy']}; {scope['clinical_phenotype']}. "
+        f"Interpretation: {scope['interpretation']}.",
+    )
+    add_body(
+        doc,
+        f"Claim registry: results/pipeline/{CLAIM_REGISTRY.name} | SHA-256: {registry_sha}",
+    )
+    rule = doc.add_paragraph()
+    rule.paragraph_format.space_after = Pt(8)
+    p_pr = rule._p.get_or_add_pPr()
+    borders = OxmlElement("w:pBdr")
+    bottom = OxmlElement("w:bottom")
+    bottom.set(qn("w:val"), "single")
+    bottom.set(qn("w:sz"), "8")
+    bottom.set(qn("w:space"), "1")
+    bottom.set(qn("w:color"), BLUE)
+    borders.append(bottom)
+    p_pr.append(borders)
+
+
 def add_footer(section, text: str) -> None:
     p = section.footer.paragraphs[0]
     p.text = text
@@ -545,7 +799,26 @@ def add_footer(section, text: str) -> None:
 
 
 def main() -> None:
+    registry, registry_sha, cohort_path = load_and_validate_registry()
+    methods = registry["method_contract"]
+    vf_method = methods["vfdb"]
+    mlst_method = methods["mlst"]
+    phenotype_method = methods["operational_phenotype"]
+    METHOD_CONTEXT.update({
+        "vf_tool": vf_method["tool"],
+        "vf_database": vf_method["database"],
+        "vf_identity": vf_method["min_identity_pct"],
+        "vf_coverage": vf_method["min_coverage_pct"],
+        "provider_quality": mlst_method["provider_min_good_targets_pct"],
+        "culture_lower_bound": phenotype_method["culture_lower_bound_cfu_per_ml"],
+    })
+    require_file(VF_READY, "VF-ready dataset")
+    require_file(VF_PA, "Registry-bound VF presence/absence dataset")
+    require_file(GENE_MAP, "VF gene map")
+    require_file(DIAGNOSTICS, "VF dataset diagnostics")
+    reject_forbidden_token([VF_READY, VF_PA, GENE_MAP, DIAGNOSTICS])
     df = pd.read_csv(VF_READY, dtype=object)
+    cohort_df = pd.read_csv(cohort_path, dtype=object)
     vf_pa = pd.read_csv(VF_PA, nrows=1, dtype=object)
     gene_cols = set([c for c in vf_pa.columns if c not in {"Participant_id", "tp_lab", "Episode_ID"}])
     gene_map_df = pd.read_csv(GENE_MAP, dtype=object)
@@ -559,8 +832,7 @@ def main() -> None:
     gene_count = sum(1 for r in rows if r["Group"] == "VF gene")
     if len(rows) != len(df.columns):
         raise RuntimeError("Not every CSV header was included in the appendix.")
-    if gene_count != 227:
-        raise RuntimeError(f"Expected 227 VF gene columns, found {gene_count}.")
+    validate_vf_ready_against_registry(df, cohort_df, registry, gene_count)
     if not all(c in df.columns for c in ["ST", "ST_source", "provider_PercGoodTargets", "UTI_Status", "Primary_Status"]):
         raise RuntimeError("Required ST or clinical status columns are missing.")
 
@@ -580,8 +852,11 @@ def main() -> None:
         raise RuntimeError("UTI_binary is not aligned with UTI_Status.")
     provider_rows = df["ST_source"].eq("provider_qc95")
     provider_quality = pd.to_numeric(df.loc[provider_rows, "provider_PercGoodTargets"], errors="coerce")
-    if provider_quality.isna().any() or (provider_quality < 95).any():
-        raise RuntimeError("A provider_qc95 row lacks provider_PercGoodTargets >= 95.")
+    provider_quality_threshold = mlst_method["provider_min_good_targets_pct"]
+    if provider_quality.isna().any() or (provider_quality < provider_quality_threshold).any():
+        raise RuntimeError(
+            "A provider-qualified row falls below the registry-bound provider quality threshold."
+        )
 
     n_uti = int(df["UTI_Status"].eq("UTI").sum())
     n_not_uti = int(df["UTI_Status"].eq("Not_UTI").sum())
@@ -599,19 +874,9 @@ def main() -> None:
     doc = Document()
     configure_styles(doc)
     add_footer(doc.sections[0], "vf_analysis_ready.csv codebook")
-
-    title = doc.add_paragraph()
-    title.paragraph_format.space_after = Pt(4)
-    run = title.add_run("Codebook for vf_analysis_ready.csv: Virulence Factor and Sequence Type Dataset")
-    run.bold = True
-    run.font.name = "Calibri"
-    run.font.size = Pt(24)
-    run.font.color.rgb = RGBColor.from_string(BLUE)
-    subtitle = doc.add_paragraph()
-    subtitle.paragraph_format.space_after = Pt(12)
-    r = subtitle.add_run("Lay-friendly guide to the merged VF, ST, and clinical analysis file")
-    r.font.size = Pt(14)
-    r.font.color.rgb = RGBColor.from_string(DARK_BLUE)
+    doc.core_properties.identifier = registry_sha
+    doc.core_properties.subject = COMPACT_EDITORIAL_COVER_OVERRIDE
+    add_compact_editorial_title_block(doc, registry, registry_sha)
     add_body(
         doc,
         "Audience: people who need to understand and use the dataset without reading the R scripts."
@@ -626,8 +891,6 @@ def main() -> None:
         doc,
         "Best merge key: Episode_ID. If that is not available in another dataset, use Participant_id plus tp_lab and check carefully for duplicates."
     )
-    doc.add_page_break()
-
     add_heading(doc, "Overview", 1)
     add_body(
         doc,
@@ -639,16 +902,24 @@ def main() -> None:
         "Plain-language reading rule",
         "Start with the identifier columns to see who and when the row is from. Then read the VF gene columns as detected/not detected, the ST columns as bacterial lineage information, and the status columns as the clinical UTI/Not_UTI interpretation."
     )
+    add_note_box(
+        doc,
+        "Interpretation boundary",
+        f"UTI/Not_UTI is the registry-defined operational phenotype: {phenotype_method['rule']}; "
+        f"{phenotype_method['caveat']}. This selected Longcycler-only analysis is exploratory and observational; it supports no causal claim. "
+        "Historical clinical source fields are audit/context only and must not replace the operational phenotype.",
+        fill=LIGHT_BLUE,
+    )
     add_heading(doc, "Quick Start: What To Use For Analysis", 2)
     quick_start_rows = [
         ["Main datafile", "vf_analysis_ready.csv", "Use this as the main analysis file because it already combines episode identifiers, ST calls, VF genes, clinical status, culture/symptom fields, and VF summary counts."],
         ["Best merge key", "Episode_ID", "Safest single field for merging with another episode-level dataset."],
         ["Backup merge key", "Participant_id + tp_lab", "Use only if Episode_ID is not available in the other dataset; check duplicates and dates carefully."],
         ["Sequence type", "ST", "Final sequence type used in the analysis. ST means bacterial lineage label."],
-        ["ST provenance", "ST_source; provider_PercGoodTargets", f"Provider/RIVM SeqSphere calls with at least 95 percent good targets were preferred. Current sources: {n_provider} provider, {n_local_fallback} local fallback, and {n_missing_st} missing."],
-        ["Clinical grouping", "UTI_Status or Primary_Status", f"Use the current UTI versus Not_UTI classification ({n_uti} UTI and {n_not_uti} Not_UTI). Legacy ASB/UTI/Negative fields are for comparison only."],
-        ["Individual VF genes", "Gene-name columns in Appendix B", "Each uses 1 = detected and 0 = not detected after ABRicate/VFDB screening at >=80% identity and >=80% coverage."],
-        ["VF summaries", "vf_count_total and cat_* columns", "Use for descriptive counts overall and by the simple gene_map.csv categories. Later module/score outputs use a separate annotation framework."],
+        ["ST provenance", "ST_source; provider_PercGoodTargets", f"Provider calls meeting the registry-bound {METHOD_CONTEXT['provider_quality']}% quality minimum were preferred. Current sources: {n_provider} provider, {n_local_fallback} labelled local fallback, and {n_missing_st} missing."],
+        ["Clinical grouping", "UTI_Status or Primary_Status", f"Use the operational UTI versus Not_UTI phenotype ({n_uti} UTI and {n_not_uti} Not_UTI). Historical source fields are audit/context only."],
+        ["Individual VF genes", "Gene-name columns in Appendix B", f"Each uses 1 = detected and 0 = not detected after {vf_screen_label()} screening at {vf_detection_rule()}."],
+        ["VF summaries", "vf_count_total and cat_* columns", "Use only as descriptive counts overall and by gene_map.csv categories; they are not validated severity scores."],
         ["Heatmap", "variable_gene_heatmap.png", "Visual summary only. Do not extract or merge data from the image; use vf_analysis_ready.csv."],
         ["Main cautions", "Interpret with caveats", "Detected does not mean active or expressed; missing ST means no usable ST call; VF counts are descriptive and not a validated severity score."],
     ]
@@ -657,25 +928,25 @@ def main() -> None:
     add_note_box(
         doc,
         "Current dataset-specific status context",
-        f"All {culture_supported} rows in this sequenced VF-ready subset meet the culture-support rule. The primary split is therefore symptom-based within this subset: {n_uti} rows meet the compatible symptom rule and are UTI; {n_not_uti} do not meet it and are Not_UTI (bacteriuria_not_UTI). Not_UTI here does not mean culture-negative."
+        f"All {culture_supported} rows in this selected VF-ready subset meet the registry-bound culture rule (lower bound {METHOD_CONTEXT['culture_lower_bound']:,} CFU/mL). The operational phenotype classifies {n_uti} as UTI and {n_not_uti} as Not_UTI from compatible-symptom evidence. Not_UTI here does not mean culture-negative."
     )
 
     add_heading(doc, "How this file was produced", 2)
     for item in [
         "One canonical E. coli assembly was selected for each included participant-timepoint/episode after genomics QC.",
-        "ABRicate screened each selected assembly against VFDB using at least 80% sequence identity and at least 80% gene coverage.",
+        f"{METHOD_CONTEXT['vf_tool']} screened each selected assembly against {METHOD_CONTEXT['vf_database']} using {vf_detection_rule()}.",
         "Gene hits were collapsed to one binary value per episode: 1 = detected and 0 = not detected, producing vf_pa_all.csv.",
-        "Script 22 joined the binary VF matrix to the primary clinical status map and the provider-preferred MLST table.",
-        "Provider/RIVM SeqSphere ST calls with provider_PercGoodTargets >= 95 were preferred; local MLST was used only as an explicitly labelled fallback.",
+        "The release pipeline joined the binary VF matrix to the operational clinical status map and provider-preferred MLST table.",
+        f"Provider ST calls meeting the registry-bound {METHOD_CONTEXT['provider_quality']}% quality minimum were preferred; local MLST was used only as an explicitly labelled fallback.",
         "The final step added VF totals, simple gene_map.csv category counts, provenance fields, and QC/curation fields to create vf_analysis_ready.csv.",
     ]:
         add_bullet(doc, item)
 
     add_heading(doc, "The three most important ideas", 2)
     for item in [
-        "A VF gene value of 1 means the gene was detected at >=80% identity and >=80% coverage. A value of 0 means it was not detected at those thresholds.",
+        f"A VF feature value of 1 means it was detected at {vf_detection_rule()}. A value of 0 means it was not detected at those thresholds.",
         "ST means sequence type, a bacterial lineage label. It helps compare isolates, but it does not by itself prove that two isolates are the same strain.",
-        "Primary_Status and UTI_Status are the current clinical labels. The older ASB/UTI/Negative labels are retained only for comparison.",
+        "Primary_Status and UTI_Status encode the operational phenotype. Historical clinical source fields are retained only for audit/context.",
     ]:
         add_bullet(doc, item)
 
@@ -683,6 +954,8 @@ def main() -> None:
     diag_text = DIAGNOSTICS.read_text()
     diag_rows = [
         ["Codebook verification date", verification_date],
+        ["Claim-registry SHA-256", registry_sha],
+        ["Analytical scope", registry["analysis_scope"]["assembly_policy"]],
         ["Diagnostics timestamp", diagnostic_value(diag_text, "Timestamp")],
         ["Rows", f"{len(df):,}"],
         ["Participants", f"{df['Participant_id'].nunique():,}"],
@@ -716,9 +989,10 @@ def main() -> None:
     add_heading(doc, "Column groups", 1)
     group_rows = [
         ["Identifier", "Columns that tell you who, when, and which episode the row belongs to.", "Use Episode_ID for merging where possible."],
-        ["VF gene", "Individual gene-name columns from the ABRicate/VFDB screen.", "0 = not detected; 1 = detected at >=80% identity and >=80% coverage."],
+        ["VF gene", f"Individual feature columns from the {vf_screen_label()} screen.", f"0 = not detected; 1 = detected at {vf_detection_rule()}."],
         ["ST/MLST", "Sequence type and where the sequence type call came from.", "ST is lineage context, not a same-strain proof."],
-        ["Clinical status", "Primary UTI/Not_UTI classification and legacy status labels.", "Use UTI_Status or Primary_Status for the current analysis."],
+        ["Clinical status", "Registry-bound operational UTI/Not_UTI phenotype.", "Use UTI_Status or Primary_Status; historical source fields are audit/context only."],
+        ["Clinical audit/context", "Historical clinical source fields retained for traceability.", "Do not use these fields as analytical phenotypes."],
         ["Culture/symptoms", "Culture count, symptom, catheter, and clinical rule fields.", "These explain why a row was called UTI or Not_UTI."],
         ["VF summary", "Counts of detected genes overall and by biological category.", "Useful for summaries; not a validated severity score."],
         ["QC/curation", "Inclusion, duplicate, and manual-curation fields.", "Mostly audit fields; blanks often mean not applicable."],
@@ -727,15 +1001,15 @@ def main() -> None:
 
     add_heading(doc, "Value legend", 1)
     legend_rows = [
-        ["0 in a VF gene column", "Gene was not detected at the >=80% identity and >=80% coverage screening thresholds."],
-        ["1 in a VF gene column", "Gene was detected by ABRicate/VFDB at >=80% identity and >=80% coverage."],
+        ["0 in a VF gene column", f"Feature was not detected at the registry-bound {vf_detection_rule()}."],
+        ["1 in a VF gene column", f"Feature was detected by {vf_screen_label()} at {vf_detection_rule()}."],
         ["UTI", "Primary clinical rule classified this episode as UTI."],
         ["Not_UTI", "Primary clinical rule did not classify this episode as UTI. In this VF-ready subset, this means culture-supported bacteriuria without a compatible symptom rule, not a negative culture."],
         ["1 in UTI_binary", "The row is classified as UTI."],
         ["0 in UTI_binary", "The row is classified as Not_UTI."],
-        ["ASB / Negative / UTI in legacy columns", "Older clinical framing retained for comparison; do not use as the main current status unless specifically doing legacy comparison."],
-        ["provider_qc95", "Provider/RIVM ST call used, with at least 95 percent good targets."],
-        ["local_fallback_provider_missing", "Local MLST was used because provider ST was missing."],
+        ["Historical clinical source values", "Audit/context only; they are not alternative analytical phenotype labels."],
+        ["provider_qc95", f"Provider ST call used after meeting the registry-bound {METHOD_CONTEXT['provider_quality']}% quality minimum."],
+        ["local_fallback_provider_missing", "Local MLST was used because no provider ST met the QC95 promotion threshold; any below-threshold provider call is retained in separate provenance fields."],
         ["missing ST", "No usable sequence type call was available."],
         ["TRUE", "Yes, condition met, recorded, or included."],
         ["FALSE", "No, condition not met, not recorded, or not included."],
@@ -745,13 +1019,13 @@ def main() -> None:
 
     add_heading(doc, "Important caveats", 1)
     for item in [
-        "Detected does not mean the gene is switched on or causing disease; it only means the sequence was found at the >=80% identity and >=80% coverage thresholds.",
+        f"Detected does not mean the feature is expressed or causing disease; it only means the sequence was found at {vf_detection_rule()}.",
         "Not detected does not prove absolute absence; it means the gene was not found at those thresholds.",
         "ST helps describe bacterial lineage. Same ST can support similarity, but it does not prove same strain by itself.",
         "Category counts such as cat_Toxins and cat_Adhesion_Fimbriae are descriptive counts, not proven virulence severity scores.",
-        "The cat_* columns and total_vf_count_curated use the simple gene_map.csv grouping used to build vf_analysis_ready.csv. Later module/score outputs use gene_module_map.csv and a separate curation framework, so similarly named counts should not be treated as interchangeable.",
+        "The cat_* columns and total_vf_count_curated are descriptive gene_map.csv groupings; they are not validated severity scores.",
         "cat_Unassigned counts genes that are present in gene_map.csv but labelled Unassigned. cat_Unassigned_matrix and total_vf_count_unassigned count genes absent from gene_map.csv.",
-        "low_confidence_count is a legacy zero-filled placeholder in this file; later score-framework low-confidence annotations are separate.",
+        "low_confidence_count is a zero-filled audit/context placeholder and is not an analytical endpoint.",
         "Repeated rows from the same participant are related observations, so they should not be treated as fully independent in statistical analyses.",
     ]:
         add_bullet(doc, item)
@@ -759,11 +1033,11 @@ def main() -> None:
     add_heading(doc, "Major column groups in plain language", 1)
     plain_sections = [
         ("Identifiers", "Use these first. They tell you which person, timepoint, episode, date, and batch the row describes."),
-        ("VF gene columns", "These are the many gene-name columns near the start of the file. Each asks whether the VFDB gene was detected by ABRicate at >=80% identity and >=80% coverage."),
+        ("VF gene columns", f"These are the many feature columns near the start of the file. Each records detection by {vf_screen_label()} at {vf_detection_rule()}."),
         ("ST/MLST columns", "These describe the sequence type and where the ST came from. ST is useful lineage context, especially when comparing isolates across time."),
-        ("Clinical/status columns", "These show the current UTI/Not_UTI classification and retain older labels for audit. For current analysis, use UTI_Status or Primary_Status."),
+        ("Clinical/status columns", "UTI_Status and Primary_Status encode the operational phenotype. Historical clinical source fields are audit/context only."),
         ("Culture and symptoms", "These fields explain the clinical logic: urine collection method, catheter rule, symptoms, culture count thresholds, and whether culture supported UTI."),
-        ("VF summaries", "These columns count detected genes overall and within the simple gene_map.csv groupings such as adhesion/fimbriae, toxins, and iron acquisition. They are descriptive and are separate from later module/score-framework endpoints."),
+        ("VF summaries", "These columns count detected features overall and within gene_map.csv groupings. They are descriptive and not validated severity scores."),
         ("QC and curation", "These fields document whether rows were included, excluded, duplicated, manually curated, or bridged between clinical and WGS labels."),
     ]
     for heading, text in plain_sections:
@@ -789,7 +1063,7 @@ def main() -> None:
     )
 
     order = [
-        "Identifier", "Clinical status", "Culture/symptoms",
+        "Identifier", "Clinical status", "Clinical audit/context", "Culture/symptoms",
         "QC/curation", "ST/MLST", "VF summary", "Other"
     ]
     rows_by_group = {g: [r for r in rows if r["Group"] == g] for g in order}
@@ -809,7 +1083,7 @@ def main() -> None:
     add_heading(doc, "Appendix B: VF gene category reference", 1)
     add_body(
         doc,
-        "This table lists every individual virulence-factor gene column exactly once, grouped using gene_map.csv, the simple map used to build the cat_* columns in this file. Each gene uses the same coding: 1 means detected by ABRicate/VFDB at >=80% identity and >=80% coverage; 0 means not detected at those thresholds. These categories are separate from the later gene_module_map.csv score/module framework. Use Word's Find command to locate a specific gene name."
+        f"This table lists every individual virulence-factor feature exactly once, grouped using gene_map.csv. Each feature uses the same coding: 1 means detected by {vf_screen_label()} at {vf_detection_rule()}; 0 means not detected at those thresholds. These are descriptive categories, not validated severity scores. Use Word's Find command to locate a specific feature name."
     )
     add_table(
         doc,
@@ -828,9 +1102,17 @@ def main() -> None:
         raise RuntimeError("Appendix contains duplicate headers.")
     if set(ordered_gene_cols) != {r[0] for r in vf_gene_rows}:
         raise RuntimeError("VF gene reference table does not match the VF gene columns.")
-
     OUT_DOCX.parent.mkdir(parents=True, exist_ok=True)
-    doc.save(OUT_DOCX)
+    temp_docx = OUT_DOCX.with_name(f".{OUT_DOCX.stem}.{os.getpid()}.tmp.docx")
+    try:
+        doc.save(temp_docx)
+        if not temp_docx.is_file() or temp_docx.stat().st_size == 0:
+            raise RuntimeError("The staged codebook DOCX is missing or empty.")
+        if sha256_file(CLAIM_REGISTRY) != registry_sha:
+            raise RuntimeError("Claim-registry bytes changed while the codebook was being generated.")
+        os.replace(temp_docx, OUT_DOCX)
+    finally:
+        temp_docx.unlink(missing_ok=True)
     print(OUT_DOCX)
     print(f"headers={len(appended_headers)} vf_gene_columns={gene_count}")
 

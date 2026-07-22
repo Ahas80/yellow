@@ -1,30 +1,46 @@
-# Timepoint vs Isolate Terminology Clarification
+# Episode, assembly and pair terminology
 
-## The Issue
-Some participants appeared to have 6-10 "timepoints" in Panaroo selection plots, which was confusing since the study design only has T0-T4 + Uricult (max 6 biological timepoints).
+The active release does not count multiple assembly alternatives as additional analytical episodes.
 
-## The Explanation
-**Multiple assemblers per sample create multiple isolates:**
+## Terms
 
-- Each biological sample is assembled using **2 different assemblers** (e.g., Flye and Unicycler)
-- Each assembly creates a separate GFF file for Panaroo
-- Example: Participant 20031 has:
-  - 4 biological timepoints: T0, T1, T2, Uricult
-  - 8 assembly files (isolates): 4 samples × 2 assemblers = 8 entries
+- Episode: one resident sampling occasion with an operational clinical label.
+- Selected assembly: the single QC-passing Longcycler FASTA attached to an analytical episode.
+- All within-resident pair: any two selected episodes from the same resident.
+- Adjacent pair: two consecutive selected episodes after chronological ordering within a resident.
+- Focused transition: an adjacent operational Not_UTI episode followed by an operational UTI episode.
 
-## The Fix
-Updated `13_visualise_panaroo_selection.R` to:
-- Changed plot labels from "timepoints" → "isolates"
-- Added subtitle: "Isolates = assembly files passing QC (note: multiple assemblers per sample)"
-- Added comments clarifying that counts represent assembly files, not unique biological samples
+## Figure rule
 
-## Scripts Reviewed
-✅ **Script 13** - Updated (Panaroo counts isolates)  
-✅ **Script 15** - No change needed (uses biological timepoints from status_map)  
-✅ **Script 21** - No change needed (uses biological timepoints from status_map)  
+Axis labels and captions must name the unit being counted. Episode, resident, assembly and pair denominators are not interchangeable.
 
-## Key Distinction
-- **Isolates**: Assembly files (can be 2+ per biological sample due to multiple assemblers)
-- **Timepoints**: Biological sampling occasions (T0, T1, T2, etc.)
+## Audited release contract
 
-In Panaroo analysis specifically, we're counting **isolates** (assembly files), not **timepoints** (sampling occasions).
+- Scope: Longcycler-only selected QC-passing assemblies; one selected assembly per analytical episode.
+- Clinical definition: operational UTI phenotype. It is a versioned culture-plus-compatible-symptom rule, not a reconstruction of the full published protocol.
+- Analytical cohort: 532/161/16/516 (episodes/residents/operational UTI/operational Not_UTI).
+- Direct evidence: 893 all within-resident pairs.
+- Adjacent evidence: 371/139/140 (pairs/residents/pairs at or below 25 SNP).
+- Focused transitions: 9 Not_UTI -> UTI; 5/9 at or below 25 SNP.
+- Mechanism casebook: 9/9/0 (cases/linked/missing).
+- Near-miss audit: 17 rows; these are not operational UTI cases.
+- Attrition/QC context only: 583/166/18/565 (full-source episodes/residents/operational UTI/operational Not_UTI); these are not analytical denominators.
+- Research-question boundary: RQ01-RQ10 only.
+- Interpretation: exploratory, observational and non-causal.
+
+## Methods fixed by the registry
+
+- Operational phenotype: culture lower bound >=1,000 CFU/mL plus compatible symptoms under the versioned rule.
+- Assembly QC: <=200 contigs, N50 >=20,000 bp and genome size 4,000,000-6,000,000 bp; read coverage, completeness and contamination are excluded metrics.
+- VF calls: ABRicate with VFDB at >=80% identity and >=80% coverage, SHA-bound to the selected Longcycler FASTA manifest.
+- MLST: lineage context only; provider calls require >=95% good targets. Policy: provider_qc95 call key/path-linked to the selected Longcycler episode; local fallback excluded. When required, local calls are labelled and use the same selected FASTA.
+- Pair-specific evidence: dnadiff is primary, with an operational threshold of <=25 SNP; MLST or graph context cannot overrule a conflicting direct pair.
+- Population context: Parsnp core-genome and Panaroo pangenome outputs provide context, not pair-specific continuity proof.
+
+## Provenance
+
+- Claim registry: `results/pipeline/longcycler_release_claim_registry.json`
+- Registry SHA-256: `87f65979259a4c92545afbb74b5d3a8efffb8a3d18cd2481df165b97e5c6d30e`
+- Registry generated: 2026-07-15 01:36:53 CEST
+- This file is generated; edit the registry-producing analysis or this writer rather than hand-editing release claims.
+

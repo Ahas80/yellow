@@ -38,6 +38,7 @@
 source("00_config.R")
 source("R/wgs_helpers.R")
 source("R/pipeline_qc_helpers.R")
+source("R/plot_helpers.R")
 
 suppressPackageStartupMessages({
     library(tidyverse)
@@ -45,8 +46,64 @@ suppressPackageStartupMessages({
     library(ggplot2)
 })
 
+# The live/older complete-analysis runner may already have been parsed before a
+# post-Panaroo cleanup hook was added.  Enforce the same boundary here, before
+# any downstream result is read or written.  A cleanup summary older than the
+# newly selected cohort proves that only the start-of-run sweep has happened.
+cleanup_script <- file.path("scripts", "prepare_longcycler_release.R")
+cleanup_summary <- file.path(DIR_RESULTS, "pipeline", "release_cleanup_summary.csv")
+selected_cohort <- FILE_ANALYSIS_CLINICAL_COHORT
+if (!file.exists(selected_cohort)) {
+    stop("Selected Longcycler cohort is missing before downstream cleanup: ", selected_cohort)
+}
+selected_cohort_mtime <- file.info(selected_cohort)$mtime
+cleanup_summary_mtime <- file.info(cleanup_summary)$mtime
+cleanup_is_current <- file.exists(cleanup_summary) &&
+    !is.na(cleanup_summary_mtime) &&
+    !is.na(selected_cohort_mtime) &&
+    cleanup_summary_mtime >= selected_cohort_mtime
+if (!cleanup_is_current) {
+    if (!file.exists(cleanup_script)) {
+        stop("Pre-downstream release cleanup script is missing: ", cleanup_script)
+    }
+    message("Applying required post-Panaroo Longcycler-only generated-output sweep...")
+    cleanup_status <- system2(
+        file.path(R.home("bin"), "Rscript"),
+        c(cleanup_script, "--apply")
+    )
+    if (!identical(as.integer(cleanup_status), 0L)) {
+        stop("Post-Panaroo Longcycler-only cleanup failed with exit status ", cleanup_status, ".")
+    }
+}
+cleanup_summary_mtime <- file.info(cleanup_summary)$mtime
+cleanup_is_current <- file.exists(cleanup_summary) &&
+    !is.na(cleanup_summary_mtime) &&
+    !is.na(selected_cohort_mtime) &&
+    cleanup_summary_mtime >= selected_cohort_mtime
+if (!cleanup_is_current) {
+    stop("Post-Panaroo cleanup did not publish a current release-cleanup summary.")
+}
+
 canon_tp <- function(x) {
     normalise_timepoint_preserve_events(x)
+}
+
+format_qc_reason <- function(qc_pass, qc_reason) {
+    reason <- str_trim(as.character(qc_reason))
+    reason <- str_remove(reason, ";+$")
+    reason <- str_replace_all(reason, c(
+        "HighContigs" = "high contig count",
+        "LowN50" = "low N50",
+        "BadSize" = "assembly size outside QC range",
+        "ReadError" = "assembly read error"
+    ))
+    reason <- str_replace_all(reason, ";+", " + ")
+    case_when(
+        qc_pass %in% TRUE ~ "QC pass",
+        is.na(qc_pass) ~ "QC status unavailable",
+        is.na(reason) | !nzchar(reason) ~ "QC failure: reason unavailable",
+        TRUE ~ paste0("QC failure: ", reason)
+    )
 }
 
 # 2. Load Centralized QC Data (from 12a_wgs_qc.R)
@@ -60,18 +117,6 @@ if (!file.exists(qc_file)) {
 # Load QC summary
 qc_df <- read_csv(qc_file, show_col_types = FALSE)
 
-# Load Metadata to get Timepoint info (QC summary might not have it if it came from fasta filenames only)
-if (file.exists(FILE_METADATA)) {
-    meta <- read_csv(FILE_METADATA, show_col_types = FALSE) %>%
-        select(Isolate_ID, Participant_id, Timepoint) %>%
-        distinct()
-
-    # Join QC with Metadata
-    # Assuming file_name in QC matches Isolate_ID or we need to map it.
-    # 12a_wgs_qc.R uses assembly_metadata.csv, so it should have Participant_id if it was in the input.
-    # Let's check columns of qc_df.
-}
-
 # Prepare 'df' for plotting
 # We map QC_PASS to "Selected" and QC_REASON to "Reason"
 df <- qc_df %>%
@@ -84,45 +129,23 @@ df <- qc_df %>%
     )
 
 canonical_file <- file.path(DIR_QC, "canonical_assembly_selection.csv")
-if (file.exists(canonical_file)) {
-    canonical <- read_csv(canonical_file, show_col_types = FALSE) %>%
-        select(any_of(c("Assembly_ID", "selected_canonical", "canonical_reason")))
-    df <- df %>%
-        left_join(canonical, by = "Assembly_ID", relationship = "one-to-one") %>%
-        mutate(selected_canonical = coalesce(selected_canonical, FALSE))
-} else {
-    df$selected_canonical <- df$QC_PASS
-    df$canonical_reason <- "canonical selection file absent; using QC_PASS as fallback"
-}
+if (!file.exists(canonical_file)) stop("Canonical Longcycler selection is missing: ", canonical_file)
+canonical <- read_csv(canonical_file, show_col_types = FALSE) %>%
+    select(any_of(c("Assembly_ID", "selected_canonical", "canonical_reason")))
+df <- df %>%
+    left_join(canonical, by = "Assembly_ID", relationship = "one-to-one") %>%
+    mutate(selected_canonical = coalesce(as_pipeline_bool(selected_canonical), FALSE))
 
 pan_manifest_file <- file.path(DIR_WGS, "pan", "panaroo_input_manifest.csv")
-if (file.exists(pan_manifest_file)) {
-    pan_manifest <- read_csv(pan_manifest_file, show_col_types = FALSE) %>%
-        select(any_of(c("Assembly_ID", "gff_available", "gff_path")))
-    df <- df %>%
-        left_join(pan_manifest, by = "Assembly_ID", relationship = "one-to-one") %>%
-        mutate(
-            gff_available = coalesce(gff_available, FALSE),
-            included_in_current_panaroo = selected_canonical & gff_available
-        )
-} else {
-    df$gff_available <- FALSE
-    df$gff_path <- NA_character_
-    df$included_in_current_panaroo <- FALSE
-}
-
-# If Participant_id/Timepoint are missing in QC summary (depends on 12a implementation), join them.
-# 12a uses assembly_metadata.csv, so it likely has them or can be joined.
-# Let's assume we need to join if missing.
-if (!"Timepoint" %in% names(df) && exists("meta")) {
-    # Try to join by file_name or Isolate_ID
-    # 12a output has file_name.
-    # We need to map file_name to Isolate_ID if not present.
-    # Actually 12a output preserves input columns from assembly_metadata.csv usually?
-    # Let's check 12a code... it reads FILE_METADATA.
-    # So qc_df should have Participant_id and Timepoint.
-    # pass
-}
+if (!file.exists(pan_manifest_file)) stop("Strict Panaroo input manifest is missing: ", pan_manifest_file)
+pan_manifest <- read_csv(pan_manifest_file, show_col_types = FALSE) %>%
+    select(any_of(c("Assembly_ID", "gff_available", "gff_path")))
+df <- df %>%
+    left_join(pan_manifest, by = "Assembly_ID", relationship = "one-to-one") %>%
+    mutate(
+        gff_available = coalesce(as_pipeline_bool(gff_available), FALSE),
+        included_in_current_panaroo = selected_canonical & gff_available
+    )
 
 # 3. Summary
 selected_count <- sum(df$selected_canonical, na.rm = TRUE)
@@ -144,21 +167,50 @@ df <- df %>%
     )
 
 # Plot 3: Participant vs Timepoint Status
-# We want to see for each person, what they have.
-p3 <- ggplot(df, aes(x = Timepoint, y = Participant_id, fill = Reason)) +
+# We want to see for each person, what they have. Reader-facing plot labels are
+# kept separate so compatibility tables retain the raw QC_REASON field.
+participant_levels <- df %>%
+    distinct(Participant_id) %>%
+    mutate(
+        participant_text = as.character(Participant_id),
+        participant_number = suppressWarnings(as.numeric(participant_text))
+    ) %>%
+    arrange(is.na(participant_number), participant_number, participant_text) %>%
+    pull(participant_text)
+panaroo_matrix_df <- df %>%
+    mutate(
+        Reason_plot = format_qc_reason(QC_PASS, QC_REASON),
+        Participant_plot = factor(as.character(Participant_id),
+                                  levels = rev(participant_levels))
+    )
+reason_levels <- unique(panaroo_matrix_df$Reason_plot)
+reason_levels <- c(
+    intersect("QC pass", reason_levels),
+    sort(setdiff(reason_levels, "QC pass"))
+)
+reason_colours <- setNames(
+    ifelse(
+        reason_levels == "QC pass", "#0072B2",
+        ifelse(reason_levels == "QC status unavailable", "#6A6A6A", "#D55E00")
+    ),
+    reason_levels
+)
+assert_ruti_scale_levels(
+    panaroo_matrix_df$Reason_plot, reason_colours,
+    context = "Panaroo QC-selection matrix fill",
+    allow_na = FALSE,
+    require_all_palette_levels = TRUE
+)
+
+p3 <- ggplot(panaroo_matrix_df, aes(x = Timepoint, y = Participant_plot, fill = Reason_plot)) +
     geom_tile(color = "white", linewidth = 0.2) +
-    scale_fill_manual(values = c(
-        "QC PASS" = "dodgerblue",
-        "Size > 7MB" = "firebrick",
-        "CDS > 6000" = "orange",
-        "Contigs > 500" = "purple",
-        "Other" = "grey50"
-    )) +
+    scale_fill_manual(values = reason_colours, breaks = reason_levels) +
     labs(
         title = "Panaroo Sample Selection Matrix",
-        subtitle = "Blue = Kept, Other colors = Eliminated (Reason)",
+        subtitle = "Blue = QC pass; vermillion = QC failure (reader-facing reason)",
         x = "Timepoint",
-        y = "Participant ID"
+        y = "Participant ID",
+        fill = "Assembly QC outcome"
     ) +
     theme_minimal() +
     theme(
@@ -177,8 +229,7 @@ write_csv(df, out_csv_detailed)
 message(sprintf("Detailed summary saved to %s", out_csv_detailed))
 
 # Plot 4: Overview - How many individuals have X valid isolates?
-# Note: Each biological sample may have 2+ isolates (different assemblers)
-# Group by Participant and count valid assembly files (isolates)
+# Group by participant and count selected Longcycler assemblies.
 overview_df <- df %>%
     group_by(Participant_id) %>%
     summarise(
@@ -188,7 +239,7 @@ overview_df <- df %>%
     ungroup()
 
 # Count how many participants have 0, 1, 2, ... valid isolates
-# Note: n_valid counts ISOLATES (assemblies), not unique biological samples
+# n_valid counts selected Longcycler episode assemblies.
 overview_counts <- overview_df %>%
     dplyr::count(n_valid) %>%
     mutate(label = paste0(n, " participants"))
@@ -197,9 +248,9 @@ p4 <- ggplot(overview_counts, aes(x = factor(n_valid), y = n)) +
     geom_col(fill = "dodgerblue", width = 0.7) +
     geom_text(aes(label = n), vjust = -0.5) +
     labs(
-        title = "Distribution of Valid Isolates per Participant",
-        subtitle = "Isolates = assembly files passing QC (note: multiple assemblers per sample)",
-        x = "Number of Valid Isolates per Participant",
+        title = "Distribution of Selected Longcycler Episodes per Participant",
+        subtitle = "Selected, QC-passing Longcycler episode assemblies",
+        x = "Number of Selected Episodes per Participant",
         y = "Number of Participants"
     ) +
     theme_minimal() +
@@ -220,8 +271,7 @@ message("\nSummarising Panaroo selection at Participant x Timepoint level ...")
 OUTDIR <- DIR_WGS
 PLOTDIR <- DIR_PLOTS_WGS
 
-# 4.1 Use existing dataframe 'df' which contains all 1552 isolates with metadata
-# We already have Participant_id, Timepoint, and Selected status in 'df'.
+# 4.1 Use the Longcycler candidate/QC table with exact current metadata.
 assembly_tp <- df %>%
     mutate(selected_for_panaroo = included_in_current_panaroo)
 
@@ -234,8 +284,8 @@ timepoint_df <- assembly_tp %>%
         n_isolates_selected = sum(selected_for_panaroo, na.rm = TRUE),
         status = case_when(
             n_isolates_selected == 0L ~ "not included (no GFF-backed canonical assembly)",
-            n_isolates_selected == n_isolates_total ~ "included (all assemblies)",
-            TRUE ~ "included (canonical/GFF subset)"
+            n_isolates_selected == n_isolates_total ~ "included (selected Longcycler)",
+            TRUE ~ "included (selected Longcycler/GFF subset)"
         ),
         .groups = "drop"
     )
@@ -263,6 +313,15 @@ tp_bar <- timepoint_df %>%
     ) %>%
     dplyr::count(Timepoint, status_simple, name = "n_timepoints")
 
+tp_bar_colours <- c(
+    "≥1 isolate kept for Panaroo" = "dodgerblue",
+    "0 isolates included (timepoint absent)" = "firebrick"
+)
+assert_ruti_scale_levels(
+    tp_bar$status_simple, tp_bar_colours,
+    context = "Panaroo timepoint bar fill", allow_na = FALSE
+)
+
 p_tp_bar <- ggplot(tp_bar, aes(x = Timepoint, y = n_timepoints, fill = status_simple)) +
     geom_col(position = "stack", colour = "black", linewidth = 0.2) +
     labs(
@@ -272,10 +331,7 @@ p_tp_bar <- ggplot(tp_bar, aes(x = Timepoint, y = n_timepoints, fill = status_si
         y = "Number of participant x timepoint combinations",
         fill = "Panaroo outcome"
     ) +
-    scale_fill_manual(values = c(
-        "≥1 isolate kept for Panaroo" = "dodgerblue",
-        "0 isolates included (timepoint absent)" = "firebrick"
-    )) +
+    scale_fill_manual(values = tp_bar_colours) +
     theme_bw(base_size = 10) +
     theme(
         axis.text.x = element_text(angle = 45, hjust = 1),
@@ -295,14 +351,20 @@ tp_tile <- timepoint_df %>%
         Timepoint = factor(Timepoint, levels = tp_order)
     )
 
+tp_tile_colours <- c(
+    "included (selected Longcycler)" = "dodgerblue",
+    "included (selected Longcycler/GFF subset)" = "skyblue",
+    "not included (no GFF-backed canonical assembly)" = "firebrick"
+)
+assert_ruti_scale_levels(
+    tp_tile$status, tp_tile_colours,
+    context = "Panaroo timepoint tile fill", allow_na = FALSE
+)
+
 p_tp_tile <- ggplot(tp_tile, aes(x = Timepoint, y = Participant_id, fill = status)) +
     geom_tile(colour = "grey80") +
     scale_y_discrete(guide = "none") +
-    scale_fill_manual(values = c(
-        "included (all assemblies)" = "dodgerblue",
-        "included (canonical/GFF subset)" = "skyblue",
-        "not included (no GFF-backed canonical assembly)" = "firebrick"
-    )) +
+    scale_fill_manual(values = tp_tile_colours) +
     labs(
         title = "Panaroo Selection Status Heatmap",
         subtitle = "Each tile = one participant x timepoint; colour shows Panaroo QC outcome",
@@ -329,16 +391,22 @@ sample_util_df <- df %>%
     ) %>%
     dplyr::count(Timepoint, Status)
 
+sample_util_colours <- c(
+    "Included in current Panaroo input" = "dodgerblue",
+    "Not included in current Panaroo input" = "grey50"
+)
+assert_ruti_scale_levels(
+    sample_util_df$Status, sample_util_colours,
+    context = "Panaroo sample-utilisation fill", allow_na = FALSE
+)
+
 p5 <- ggplot(sample_util_df, aes(x = Timepoint, y = n, fill = Status)) +
     geom_col(position = "stack", width = 0.7) +
     geom_text(aes(label = n), position = position_stack(vjust = 0.5), size = 3, color = "white") +
-    scale_fill_manual(values = c(
-        "Included in current Panaroo input" = "dodgerblue",
-        "Not included in current Panaroo input" = "grey50"
-    )) +
+    scale_fill_manual(values = sample_util_colours) +
     labs(
         title = "Sample Utilization for Panaroo by Timepoint",
-        subtitle = "Zoomed-out view of all 1552 samples",
+        subtitle = sprintf("All %d Longcycler candidate/QC rows; %d selected with exact GFFs", nrow(df), included_count),
         x = "Timepoint",
         y = "Number of Samples",
         fill = "Status"
@@ -364,12 +432,17 @@ if (file.exists(status_map_file)) {
     message("\nRunning QC Bias Analysis (QC Pass vs primary UTI status)...")
     status_map <- read_csv(status_map_file, show_col_types = FALSE) %>%
         prefer_primary_uti_status() %>%
+        apply_manual_sample_curation(context = "panaroo_qc_attrition_context") %>%
+        filter_primary_analysis() %>%
         mutate(
             Participant_id = as.character(Participant_id),
             tp_clean = if ("tp_lab" %in% names(.)) canon_tp(tp_lab) else canon_tp(Timepoint)
         ) %>%
         select(Participant_id, tp_clean, Infection_Status) %>%
         distinct()
+    if (nrow(status_map) != 583L || n_distinct(status_map$Participant_id) != 166L) {
+        stop("QC attrition context must be the labelled 583-episode, 166-resident clinical source cohort.")
+    }
 
     status_dupes <- assert_unique_keys(
         status_map,
@@ -409,7 +482,8 @@ if (file.exists(status_map_file)) {
         print(tbl)
 
         bias_summary <- qc_status %>%
-            dplyr::count(Infection_Status, qc_pass, selected_canonical, gff_available, included_in_current_panaroo, name = "n")
+            dplyr::count(Infection_Status, qc_pass, selected_canonical, gff_available, included_in_current_panaroo, name = "n") %>%
+            mutate(dataset_layer = "source_clinical_attrition_qc_context", .before = 1)
         write_csv(bias_summary, file.path(DIR_QC, "qc_selection_bias_by_status.csv"))
 
         if (all(dim(tbl) > 1)) {
@@ -425,6 +499,7 @@ if (file.exists(status_map_file)) {
                 c(
                     "QC selection bias by primary UTI status",
                     sprintf("Generated: %s", format(Sys.time())),
+                    "Dataset layer: full clinical source retained only for attrition/QC context (583 episodes).",
                     "",
                     capture.output(print(tbl)),
                     "",

@@ -7,7 +7,7 @@
 #   Generate final thesis/manuscript-ready summary tables for the VF-focused
 #   YELLOW RoUTIne/rUTI analysis. This script collects, validates, summarises,
 #   and exports key clinical, WGS, MLST, VF, module, score, longitudinal,
-#   transition, lineage, and optional VF+AMR/plasmid outputs.
+#   transition, lineage, and required genomic-AMR/VF/plasmid outputs.
 #
 # METHOD:
 #   1. Load canonical pipeline outputs and optional extension outputs.
@@ -28,7 +28,8 @@
 #   - results/summary/table_10_not_uti_uti_transition_cases.csv
 #   - results/summary/table_11_lineage_context_summary.csv
 #   - results/summary/table_12_missing_data_audit.csv
-#   - results/summary/table_13_optional_vf_amr_summary.csv
+#   - results/summary/table_13_genomic_amr_summary.csv
+#   - results/summary/table_13b_predicted_plasmid_summary.csv
 #   - results/summary/table_14_uti_not_uti_diagnostics.csv
 #   - results/summary/final_key_results_summary.md
 #   - results/summary/final_summary_tables.xlsx [optional]
@@ -177,11 +178,11 @@ score_summary_from_table <- function(df, group_col, score_cols) {
 # ==============================================================================
 # 2. LOAD INPUTS
 # ==============================================================================
-path_status <- FILE_STATUS_MAP
+path_status <- FILE_ANALYSIS_CLINICAL_COHORT
+path_status_source <- FILE_STATUS_MAP
 path_status_poster <- FILE_STATUS_MAP_POSTER
 path_vf_ready <- FILE_VF_READY
 path_vf_pa <- FILE_VF_PA
-path_canonical_selection <- file.path(DIR_QC, "canonical_assembly_selection.csv")
 path_gene_map <- file.path(DIR_VF, "gene_map.csv")
 path_qc_wgs <- file.path(DIR_WGS, "qc_summary.csv")
 path_mlst_freq <- file.path(DIR_MLST, "ST_frequencies.csv")
@@ -196,6 +197,7 @@ path_expec_marker_defs <- file.path(DIR_VF, "vf_expec_marker_definitions.csv")
 path_expec_marker_summary <- file.path(DIR_VF, "vf_expec_marker_summary_by_status.csv")
 path_expec_marker_tests <- file.path(DIR_VF, "vf_expec_marker_tests.csv")
 path_vf_trans <- file.path(DIR_VF, "vf_longitudinal_transitions.csv")
+path_canonical_transitions <- file.path(DIR_RESULTS, "longitudinal", "longcycler_transitions.csv")
 path_vf_same_strain_summary <- file.path(DIR_VF, "vf_same_strain_vf_stability_summary.csv")
 path_vf_replacement_summary <- file.path(DIR_VF, "vf_replacement_vf_change_summary.csv")
 path_vf_strain_context_summary <- file.path(DIR_VF, "vf_strain_context_by_transition_summary.csv")
@@ -206,6 +208,48 @@ path_strain_ctx <- file.path(DIR_VF, "vf_transition_strain_context.csv")
 path_vf_amr_combined <- file.path(DIR_RESULTS, "vf_amr", "vf_amr_combined_profile_table.csv")
 path_vf_plasmid <- file.path(DIR_RESULTS, "vf_amr", "vf_plasmid_combined_profile.csv")
 path_vf_amr_status <- file.path(DIR_RESULTS, "vf_amr", "vf_amr_score_summary_by_status.csv")
+path_amr_profiles <- file.path(DIR_RESULTS, "amr", "episode_amr_profiles.csv")
+path_amr_residents <- file.path(DIR_RESULTS, "amr", "resident_amr_profiles.csv")
+path_amr_runs <- file.path(DIR_RESULTS, "amr", "provenance", "run_manifest.csv")
+path_amr_coverage <- file.path(DIR_RESULTS, "amr", "caller_coverage_summary.csv")
+path_amr_longitudinal <- file.path(DIR_RESULTS, "amr", "adjacent_pair_amr_profiles_371.csv")
+path_amr_longitudinal_summary <- file.path(
+  DIR_RESULTS, "amr", "longitudinal_summary_by_snp_context.csv"
+)
+path_amr_inference <- file.path(
+  DIR_RESULTS, "amr", "longitudinal_resident_bootstrap_inference.csv"
+)
+path_amr_focused <- file.path(
+  DIR_RESULTS, "amr", "not_uti_to_uti_amr_profiles_9.csv"
+)
+path_plasmidfinder_runs <- file.path(
+  DIR_PLASMIDS, "plasmidfinder_run_manifest.csv"
+)
+path_mob_profiles <- file.path(
+  DIR_PLASMIDS, "mob_suite", "episode_plasmid_profiles.csv"
+)
+path_plasmid_locations <- file.path(
+  DIR_PLASMIDS, "mob_suite", "plasmid_gene_locations_long.csv"
+)
+path_plasmid_mechanism_profiles <- file.path(
+  DIR_PLASMIDS, "mob_suite", "episode_mechanism_profiles.csv"
+)
+path_plasmid_location_validation <- file.path(
+  DIR_PLASMIDS, "mob_suite", "plasmid_gene_location_validation.csv"
+)
+path_amr_gene_prevalence <- file.path(
+  DIR_RESULTS, "amr", "gene_prevalence_episode_resident.csv"
+)
+path_amr_class_prevalence <- file.path(
+  DIR_RESULTS, "amr", "class_prevalence_episode_resident.csv"
+)
+path_amr_mutation_prevalence <- file.path(
+  DIR_RESULTS, "amr", "mutation_prevalence_episode_resident.csv"
+)
+path_amr_phenotype <- file.path(
+  DIR_RESULTS, "amr", "resfinder_predicted_phenotypes_genomic_not_ast.csv"
+)
+path_amr_validation <- file.path(DIR_RESULTS, "amr", "validation_checks.csv")
 path_denominator <- file.path(DIR_QC, "pipeline_denominator_summary.csv")
 path_metadata_manifest <- file.path(DIR_QC, "metadata_input_manifest.csv")
 path_metadata_crosswalk <- file.path(DIR_QC, "metadata_input_crosswalk_audit.csv")
@@ -248,60 +292,46 @@ path_stat_validation <- file.path(DIR_RESULTS, "statistical_sensitivity", "stati
 path_stat_fig_meta <- file.path(DIR_RESULTS, "statistical_sensitivity", "statistical_sensitivity_figure_metadata.csv")
 
 status_map <- standardise_episode_keys(safe_read(path_status), "Timepoint")
-status_poster_path_selected <- tryCatch(
-  select_primary_status_map(prefer_poster = TRUE, require_fresh = TRUE,
-                            caller = "30_vf_project_summary_tables.R", quiet = TRUE),
-  error = function(e) NA_character_
-)
-status_poster <- if (!is.na(status_poster_path_selected) && identical(status_poster_path_selected, path_status_poster)) {
-  standardise_episode_keys(safe_read(path_status_poster), "Timepoint")
-} else {
-  msg("  Skipping stale or non-primary status_map_with_poster_tp.csv in summary tables.")
-  NULL
-}
+status_source_qc <- standardise_episode_keys(safe_read(path_status_source), "Timepoint")
+status_poster <- NULL
 poster_status_unsuitable <- !file.exists(path_status_poster) ||
-  is_stale(path_status_poster, path_status) ||
+  is_stale(path_status_poster, path_status_source) ||
   !status_map_has_primary_fields(path_status_poster)
-canonical_selection <- safe_read(path_canonical_selection)
-if (is.null(canonical_selection)) stop("Missing canonical assembly selection: ", path_canonical_selection)
-assembler_col <- intersect(c("assembler", "Assembler"), names(canonical_selection))[1]
-if (is.na(assembler_col) ||
-    !all(c("selected_canonical", "QC_PASS", "Participant_id", "tp_lab") %in% names(canonical_selection))) {
-  stop("Canonical assembly selection lacks Longcycler-primary selection fields: ", path_canonical_selection)
-}
-active_longcycler_keys <- canonical_selection %>%
-  mutate(
-    Participant_id = as.character(.data$Participant_id),
-    tp_lab = normalise_tp_label(.data$tp_lab),
-    selected_canonical = as_pipeline_bool(.data$selected_canonical),
-    QC_PASS = as_pipeline_bool(.data$QC_PASS),
-    active_assembler = str_to_lower(as.character(.data[[assembler_col]]))
-  ) %>%
-  filter(.data$selected_canonical %in% TRUE,
-         .data$QC_PASS %in% TRUE,
-         .data$active_assembler == "longcycler") %>%
-  distinct(.data$Participant_id, .data$tp_lab)
-if (nrow(active_longcycler_keys) == 0) {
-  stop("Canonical manifest contains no selected QC-passing Longcycler episode keys.")
-}
-restrict_to_active_longcycler <- function(df) {
-  if (is.null(df) || !all(c("Participant_id", "tp_lab") %in% names(df))) return(df)
-  df %>% semi_join(active_longcycler_keys, by = c("Participant_id", "tp_lab"))
+if (is.null(status_map)) stop("Missing selected Longcycler analysis cohort: ", path_status)
+active_longcycler_keys <- status_map %>%
+  transmute(Participant_id = as.character(.data$Participant_id),
+            tp_lab = normalise_tp_label(.data$tp_lab)) %>%
+  distinct()
+if (nrow(active_longcycler_keys) != nrow(status_map)) stop("Analysis cohort has duplicate episode keys")
+require_exact_longcycler_keys <- function(df, context) {
+  if (is.null(df)) return(df)
+  if (!all(c("Participant_id", "tp_lab") %in% names(df))) return(df)
+  keys <- df %>%
+    transmute(Participant_id = as.character(.data$Participant_id),
+              tp_lab = normalise_tp_label(.data$tp_lab)) %>%
+    distinct()
+  missing <- anti_join(active_longcycler_keys, keys, by = c("Participant_id", "tp_lab"))
+  extra <- anti_join(keys, active_longcycler_keys, by = c("Participant_id", "tp_lab"))
+  if (nrow(keys) != nrow(df) || nrow(missing) || nrow(extra)) {
+    stop(context, " does not exactly equal the selected Longcycler analysis cohort: missing=",
+         nrow(missing), ", extra=", nrow(extra))
+  }
+  df
 }
 
 vf_pa <- standardise_episode_keys(safe_read(path_vf_pa), genomics = TRUE) %>%
-  restrict_to_active_longcycler()
+  require_exact_longcycler_keys("vf_pa_all.csv")
 vf_ready <- standardise_episode_keys(safe_read(path_vf_ready), genomics = TRUE) %>%
-  restrict_to_active_longcycler()
+  require_exact_longcycler_keys("vf_analysis_ready.csv")
 gene_map <- safe_read(path_gene_map)
 qc_wgs <- safe_read(path_qc_wgs)
 mlst_freq <- safe_read(path_mlst_freq)
 mlst_meta <- standardise_episode_keys(safe_read(path_mlst_meta), "Timepoint", genomics = TRUE) %>%
-  restrict_to_active_longcycler()
+  require_exact_longcycler_keys("canonical MLST metadata")
 mod_summary <- safe_read(path_mod_summary)
 mod_map <- safe_read(path_mod_map)
 score_table <- standardise_episode_keys(safe_read(path_scores), genomics = TRUE) %>%
-  restrict_to_active_longcycler()
+  require_exact_longcycler_keys("VF score table")
 scores_status <- safe_read(path_scores_status)
 scores_st <- safe_read(path_scores_st)
 score_catalog <- safe_read(path_score_catalog)
@@ -309,6 +339,7 @@ expec_marker_defs <- safe_read(path_expec_marker_defs)
 expec_marker_summary <- safe_read(path_expec_marker_summary)
 expec_marker_tests <- safe_read(path_expec_marker_tests)
 vf_trans <- standardise_episode_keys(safe_read(path_vf_trans))
+canonical_transitions <- safe_read(path_canonical_transitions)
 vf_same_strain_summary <- safe_read(path_vf_same_strain_summary)
 vf_replacement_summary <- safe_read(path_vf_replacement_summary)
 vf_strain_context_summary <- safe_read(path_vf_strain_context_summary)
@@ -328,10 +359,52 @@ normalise_transition_flag <- function(df) {
 }
 case_index <- normalise_transition_flag(case_index)
 case_summary <- normalise_transition_flag(case_summary)
+if (is.null(canonical_transitions) || nrow(canonical_transitions) != 371L ||
+    sum(canonical_transitions$status_from == "Not_UTI" & canonical_transitions$status_to == "UTI", na.rm = TRUE) != 9L ||
+    any(is.na(canonical_transitions$TotalSNPs))) {
+  stop("Missing or invalid canonical selected-Longcycler transition export")
+}
+if (is.null(vf_trans) || nrow(vf_trans) != 371L ||
+    sum(vf_trans$status_from == "Not_UTI" & vf_trans$status_to == "UTI", na.rm = TRUE) != 9L ||
+    any(is.na(vf_trans$SNPs))) {
+  stop("VF transition input must contain 371 selected Longcycler adjacent pairs, including 9 Not_UTI-to-UTI pairs with direct SNP evidence")
+}
+vf_transition_keys <- vf_trans %>%
+  transmute(key = paste(as.character(.data$Participant_id),
+                        normalise_tp_label(.data$tp_from), normalise_tp_label(.data$tp_to), sep = "|"))
+canonical_transition_keys <- canonical_transitions %>%
+  transmute(key = paste(as.character(.data$Participant_id),
+                        normalise_tp_label(.data$tp_from), normalise_tp_label(.data$tp_to), sep = "|"))
+if (!setequal(vf_transition_keys$key, canonical_transition_keys$key)) {
+  stop("VF transition summary input does not match the canonical Longcycler transition keys")
+}
+if (is.null(case_index) || nrow(case_index) != 371L ||
+    sum(case_index$is_not_uti_to_uti %in% TRUE, na.rm = TRUE) != 9L ||
+    any(!(case_index$has_vf_pair %in% TRUE))) {
+  stop("Transition case index must contain the 371 fully linked selected Longcycler pairs")
+}
 strain_ctx <- safe_read(path_strain_ctx)
 vf_amr_combined <- standardise_episode_keys(safe_read(path_vf_amr_combined), genomics = TRUE)
 vf_plasmid <- standardise_episode_keys(safe_read(path_vf_plasmid), genomics = TRUE)
 vf_amr_status <- safe_read(path_vf_amr_status)
+amr_profiles <- safe_read(path_amr_profiles)
+amr_residents <- safe_read(path_amr_residents)
+amr_runs <- safe_read(path_amr_runs)
+amr_coverage <- safe_read(path_amr_coverage)
+amr_longitudinal <- safe_read(path_amr_longitudinal)
+amr_longitudinal_summary <- safe_read(path_amr_longitudinal_summary)
+amr_inference <- safe_read(path_amr_inference)
+amr_focused <- safe_read(path_amr_focused)
+plasmidfinder_runs <- safe_read(path_plasmidfinder_runs)
+mob_profiles <- safe_read(path_mob_profiles)
+plasmid_locations <- safe_read(path_plasmid_locations)
+plasmid_mechanism_profiles <- safe_read(path_plasmid_mechanism_profiles)
+plasmid_location_validation <- safe_read(path_plasmid_location_validation)
+amr_gene_prevalence <- safe_read(path_amr_gene_prevalence)
+amr_class_prevalence <- safe_read(path_amr_class_prevalence)
+amr_mutation_prevalence <- safe_read(path_amr_mutation_prevalence)
+amr_phenotype <- safe_read(path_amr_phenotype)
+amr_validation <- safe_read(path_amr_validation)
 denominator_summary <- safe_read(path_denominator)
 metadata_manifest <- safe_read(path_metadata_manifest)
 metadata_crosswalk <- safe_read(path_metadata_crosswalk)
@@ -341,7 +414,7 @@ panaroo_manifest <- safe_read(path_panaroo_manifest)
 qc_bias <- safe_read(path_qc_bias)
 vf_gap <- safe_read(path_vf_gap)
 model_denom <- standardise_episode_keys(safe_read(path_model_denom)) %>%
-  restrict_to_active_longcycler()
+  require_exact_longcycler_keys("model denominator")
 diag_summary <- safe_read(path_diag_summary)
 diag_bootstrap <- safe_read(path_diag_bootstrap)
 diag_feature_fisher <- safe_read(path_diag_feature_fisher)
@@ -366,7 +439,6 @@ stat_glmm <- safe_read(path_stat_glmm)
 stat_validation <- safe_read(path_stat_validation)
 stat_fig_meta <- safe_read(path_stat_fig_meta)
 
-if (is.null(status_map)) stop("Missing required primary UTI status map: ", path_status)
 if (is.null(vf_pa)) stop("Missing required raw VF P/A matrix: ", path_vf_pa)
 if (is.null(vf_ready)) stop("Missing required canonical VF-ready table: ", path_vf_ready)
 if (nrow(vf_pa) != nrow(active_longcycler_keys)) {
@@ -392,9 +464,10 @@ vf_amr_complete <- if (!is.null(vf_amr_combined)) {
 } else NULL
 
 t01 <- bind_rows(
-  flow_row(1, "All-batch clinical episodes", status_map, path_status, "Canonical clinical denominator"),
-  flow_row(2, "Ordered/poster clinical episodes", status_poster, path_status_poster,
-           "Fresh ordered file used only for timelines when available"),
+  flow_row(1, "Source clinical episodes before genomic selection (attrition/QC only)", status_source_qc,
+           path_status_source, "Not an analytical denominator"),
+  flow_row(2, "Selected QC-pass Longcycler clinical episodes", status_map, path_status,
+           "Canonical analytical denominator"),
   flow_row(3, "Raw VF presence/absence rows", vf_pa, path_vf_pa, "Sequenced/VFDB-called episode rows"),
   flow_row(4, "Active Longcycler-primary VF-ready episodes", vf_ready, path_vf_ready,
            "Selected QC-pass Longcycler VF rows joined to primary UTI status/ST by script 22"),
@@ -402,12 +475,12 @@ t01 <- bind_rows(
            "Rows with missing primary UTI status excluded"),
   flow_row(6, "Repeated-measures VF longitudinal subset", longitudinal_subset, path_vf_trans,
            "Participants represented in VF transition output"),
-  flow_row(7, "Clinical Not_UTI->UTI transition cases", not_uti_uti_cases, path_case_index,
-           "All ordered clinical Not_UTI->UTI transitions indexed by script 28"),
-  flow_row(8, "WGS/VF-linked Not_UTI->UTI transition cases", not_uti_uti_wgs_cases, path_case_index,
-           "Both transition endpoints have VF-ready rows"),
-  flow_row(9, "Optional true VF+AMR complete cases", vf_amr_complete, path_vf_amr_combined,
-           "Only populated if dedicated AMR screening outputs exist")
+  flow_row(7, "Selected Longcycler Not_UTI->UTI transition cases", not_uti_uti_cases, path_case_index,
+           "All adjacent selected-episode Not_UTI->UTI transitions indexed by script 28"),
+  flow_row(8, "Directly linked Not_UTI->UTI transition cases", not_uti_uti_wgs_cases, path_case_index,
+           "Both endpoints have selected Longcycler WGS/VF rows and direct pair evidence"),
+  flow_row(9, "Validated genomic-AMR episode profiles", vf_amr_complete, path_vf_amr_combined,
+           "AMRFinderPlus primary profiles integrated by numbered script 29")
 )
 write_csv(t01, file.path(DIR_SUMMARY, "table_01_cohort_episode_flow.csv"))
 
@@ -429,10 +502,9 @@ status_layer <- function(df, layer, source_file) {
 }
 
 t02 <- bind_rows(
-  status_layer(status_map, "all_batch_clinical", path_status),
-  status_layer(status_poster, "ordered_poster_clinical", path_status_poster),
-  status_layer(vf_ready, "vf_ready", path_vf_ready),
-  status_layer(uti_not_uti_model, "uti_not_uti_vf_subset", path_vf_ready)
+  status_layer(status_map, "selected_longcycler_analysis_cohort", path_status),
+  status_layer(vf_ready, "selected_longcycler_vf_ready", path_vf_ready),
+  status_layer(uti_not_uti_model, "selected_longcycler_uti_not_uti_subset", path_vf_ready)
 )
 write_csv(t02, file.path(DIR_SUMMARY, "table_02_clinical_status_counts.csv"))
 
@@ -795,13 +867,17 @@ t12 <- bind_rows(
   missing_row("WGS-linked transition cases missing SNP distance", transition_missing_snp, path_case_summary,
               "Same-strain interpretation weaker", "No pairwise/evolution SNP metric"),
   tibble(
-    missingness_category = "Dedicated true AMR screening output",
-    n_episodes = NA_integer_,
-    n_participants = NA_integer_,
+    missingness_category = "Validated genomic-AMR episode profiles",
+    n_episodes = if (!is.null(amr_profiles)) nrow(amr_profiles) else 0L,
+    n_participants = if (!is.null(amr_profiles)) n_distinct(amr_profiles$Participant_id) else 0L,
     n_ASB = NA_integer_, n_UTI = NA_integer_, n_Negative = NA_integer_, n_other_status = NA_integer_,
-    likely_reason = if (dir.exists(file.path(DIR_RESULTS, "amr"))) "AMR directory exists but parser/status unknown" else "No results/amr directory detected",
-    impact_on_analysis = "Script 29 remains VF+plasmid/mobile-context only; no true VF+AMR claims",
-    source_file = file.path(DIR_RESULTS, "amr")
+    likely_reason = if (!is.null(amr_profiles) && nrow(amr_profiles) == 532L) {
+      "Complete: all selected Longcycler episodes have genomic-AMR profiles"
+    } else {
+      "Missing or incomplete script-29 genomic-AMR output"
+    },
+    impact_on_analysis = "Genomic determinants and predicted phenotypes only; no phenotypic AST claim",
+    source_file = path_amr_profiles
   ),
   tibble(
     missingness_category = "primary status_map_with_poster_tp freshness",
@@ -841,37 +917,467 @@ t12 <- bind_rows(
 write_csv(t12, file.path(DIR_SUMMARY, "table_12_missing_data_audit.csv"))
 
 # ==============================================================================
-# 13. TABLE 13: OPTIONAL VF+AMR SUMMARY
+# 13. TABLE 13: GENOMIC AMR SUMMARY
 # ==============================================================================
-if (!is.null(vf_amr_status)) {
-  note_vec <- if ("note" %in% names(vf_amr_status)) vf_amr_status$note else rep("", nrow(vf_amr_status))
-  t13 <- vf_amr_status %>%
-    mutate(analysis_available = any(!str_detect(note_vec, "No dedicated AMR"), na.rm = TRUE),
-           source_file = path_vf_amr_status)
-} else if (!is.null(vf_amr_combined)) {
-  t13 <- vf_amr_combined %>%
-    summarise(
-      analysis_available = any(amr_data_available %in% TRUE, na.rm = TRUE),
-      metric = "vf_amr_combined_profile_table",
-      group = "all",
-      n = n(),
-      summary_value = ifelse(any(amr_data_available %in% TRUE), "True AMR data present", "No true AMR data integrated"),
-      interpretation = "VF+plasmid/mobile-context table only unless amr_data_available is TRUE",
-      source_file = path_vf_amr_combined
-    )
-} else {
-  t13 <- tibble(
-    analysis_available = FALSE,
-    metric = "true_vf_amr_analysis",
-    group = "all",
-    n = NA_integer_,
-    summary_value = "No script 29 combined table detected",
-    interpretation = "Optional VF+AMR analysis was not performed",
-    source_file = path_vf_amr_combined
+if (is.null(amr_profiles) || is.null(amr_residents) || is.null(amr_runs) ||
+    is.null(amr_coverage) || is.null(amr_longitudinal) ||
+    is.null(amr_longitudinal_summary) || is.null(amr_inference) ||
+    is.null(amr_focused) || is.null(amr_gene_prevalence) ||
+    is.null(amr_class_prevalence) || is.null(amr_mutation_prevalence) ||
+    is.null(amr_phenotype) || is.null(amr_validation)) {
+  stop("Table 13 requires complete genomic-AMR outputs from numbered script 29.")
+}
+if (nrow(amr_profiles) != 532L || n_distinct(amr_profiles$Participant_id) != 161L ||
+    nrow(amr_residents) != 161L ||
+    nrow(amr_longitudinal) != 371L ||
+    nrow(amr_focused) != 9L ||
+    any(!amr_validation$pass & amr_validation$severity == "critical")) {
+  stop("Script-29 genomic-AMR validation contract failed; Table 13 not published.")
+}
+amr_row <- function(metric, group, n = NA_real_, denominator = NA_real_,
+                    estimate = NA_real_, ci_lower = NA_real_,
+                    ci_upper = NA_real_, summary_value, interpretation,
+                    source_file) {
+  tibble(
+    analysis_available = TRUE,
+    metric = as.character(metric),
+    group = as.character(group),
+    n = as.numeric(n),
+    denominator = as.numeric(denominator),
+    estimate = as.numeric(estimate),
+    ci_lower = as.numeric(ci_lower),
+    ci_upper = as.numeric(ci_upper),
+    summary_value = as.character(summary_value),
+    interpretation = as.character(interpretation),
+    source_file = as.character(source_file),
+    scope = "Genomic determinants/predicted phenotypes—not phenotypic AST"
   )
 }
-write_csv(t13, file.path(DIR_SUMMARY, "table_13_optional_vf_amr_summary.csv"))
-write_csv(t13, file.path(DIR_SUMMARY, "table_13_optional_vf_plasmid_summary.csv")) # backward-compatible alias
+caller_rows <- amr_coverage %>%
+  transmute(
+    analysis_available = .data$n_complete == .data$n_expected,
+    metric = paste0("caller_coverage_", .data$caller),
+    group = "all selected episodes",
+    n = as.numeric(.data$n_complete),
+    denominator = as.numeric(.data$n_expected),
+    estimate = .data$n_complete / .data$n_expected,
+    ci_lower = NA_real_,
+    ci_upper = NA_real_,
+    summary_value = sprintf(
+      "%d/%d complete (%d generated; %d cache-reused)",
+      .data$n_complete, .data$n_expected, .data$n_generated, .data$n_reused
+    ),
+    interpretation = case_when(
+      caller == "amrfinderplus" ~ "Primary determinant caller",
+      caller == "resfinder_pointfinder" ~ "Complementary acquired-gene and mutation caller",
+      TRUE ~ "Legacy ABRicate-ResFinder comparison"
+    ),
+    source_file = path_amr_coverage,
+    scope = "Genomic determinants/predicted phenotypes—not phenotypic AST"
+  )
+supported_genomic_prediction_episodes <- amr_phenotype %>%
+  filter(!is.na(.data$match_level), .data$match_level > 0L) %>%
+  distinct(.data$Participant_id, .data$tp_lab) %>%
+  nrow()
+episode_metrics <- bind_rows(
+  amr_row(
+    "any_informative_acquired_gene", "episodes",
+    n = sum(amr_profiles$any_informative_acquired_amr %in% TRUE),
+    denominator = nrow(amr_profiles),
+    estimate = mean(amr_profiles$any_informative_acquired_amr %in% TRUE),
+    summary_value = sprintf(
+      "%d/%d episodes (%.1f%%)",
+      sum(amr_profiles$any_informative_acquired_amr %in% TRUE),
+      nrow(amr_profiles),
+      100 * mean(amr_profiles$any_informative_acquired_amr %in% TRUE)
+    ),
+    interpretation = "AMRFinderPlus acquired genes; mdf(A) excluded",
+    source_file = path_amr_profiles
+  ),
+  amr_row(
+    "any_informative_acquired_gene", "residents",
+    n = sum(amr_residents$any_informative_acquired_amr %in% TRUE),
+    denominator = nrow(amr_residents),
+    estimate = mean(amr_residents$any_informative_acquired_amr %in% TRUE),
+    summary_value = sprintf(
+      "%d/%d residents (%.1f%%)",
+      sum(amr_residents$any_informative_acquired_amr %in% TRUE),
+      nrow(amr_residents),
+      100 * mean(amr_residents$any_informative_acquired_amr %in% TRUE)
+    ),
+    interpretation = "At least one episode with an informative AMRFinderPlus acquired gene",
+    source_file = path_amr_residents
+  ),
+  amr_row(
+    "mdfA_detected_background", "episodes",
+    n = sum(amr_profiles$mdfA_detected %in% TRUE),
+    denominator = nrow(amr_profiles),
+    estimate = mean(amr_profiles$mdfA_detected %in% TRUE),
+    summary_value = sprintf(
+      "%d/%d episodes (%.1f%%)",
+      sum(amr_profiles$mdfA_detected %in% TRUE), nrow(amr_profiles),
+      100 * mean(amr_profiles$mdfA_detected %in% TRUE)
+    ),
+    interpretation = "Background chromosomal efflux determinant retained for sensitivity/QC only",
+    source_file = path_amr_profiles
+  ),
+  amr_row(
+    "known_resistance_mutation", "episodes",
+    n = sum(amr_profiles$amr_mutation_count > 0, na.rm = TRUE),
+    denominator = nrow(amr_profiles),
+    estimate = mean(amr_profiles$amr_mutation_count > 0, na.rm = TRUE),
+    summary_value = sprintf(
+      "%d/%d episodes (%.1f%%)",
+      sum(amr_profiles$amr_mutation_count > 0, na.rm = TRUE),
+      nrow(amr_profiles),
+      100 * mean(amr_profiles$amr_mutation_count > 0, na.rm = TRUE)
+    ),
+    interpretation = "AMRFinderPlus known resistance mutations",
+    source_file = path_amr_profiles
+  ),
+  amr_row(
+    "resfinder_database_supported_genomic_prediction", "episodes",
+    n = supported_genomic_prediction_episodes,
+    denominator = nrow(amr_profiles),
+    estimate = supported_genomic_prediction_episodes / nrow(amr_profiles),
+    summary_value = sprintf(
+      "%d/%d episodes with ≥1 database-supported genomic prediction",
+      supported_genomic_prediction_episodes,
+      nrow(amr_profiles)
+    ),
+    interpretation = "ResFinder genomic prediction—not phenotypic AST; absence of a database match is not proof of susceptibility",
+    source_file = path_amr_phenotype
+  )
+)
+longitudinal_rows <- bind_rows(lapply(
+  seq_len(nrow(amr_longitudinal_summary)),
+  function(i) {
+    row <- amr_longitudinal_summary[i, , drop = FALSE]
+    bind_rows(
+      amr_row(
+        "adjacent_informative_acquired_gene_gain_or_loss",
+        row$direct_snp_context,
+        n = row$any_gain_loss_n, denominator = row$n_pairs,
+        estimate = row$any_gain_loss_pct / 100,
+        summary_value = sprintf(
+          "%d/%d pairs (%.1f%%)",
+          row$any_gain_loss_n, row$n_pairs, row$any_gain_loss_pct
+        ),
+        interpretation = "Primary profile-level longitudinal outcome; mdf(A) excluded",
+        source_file = path_amr_longitudinal_summary
+      ),
+      amr_row(
+        "adjacent_acquired_gene_jaccard",
+        row$direct_snp_context,
+        denominator = row$n_pairs, estimate = row$median_jaccard,
+        summary_value = sprintf(
+          "median %.3f (IQR %.3f–%.3f; n=%d pairs)",
+          row$median_jaccard, row$q25_jaccard, row$q75_jaccard,
+          row$n_pairs
+        ),
+        interpretation = "Informative acquired-gene similarity; mdf(A) excluded",
+        source_file = path_amr_longitudinal_summary
+      )
+    )
+  }
+))
+inference_rows <- amr_inference %>%
+  transmute(
+    analysis_available = TRUE,
+    metric = paste0(
+      "resident_cluster_bootstrap_",
+      str_replace_all(str_to_lower(.data$estimand), "[^a-z0-9]+", "_")
+    ),
+    group = "≤25 versus >25 SNP; adjusted for days between samples",
+    n = NA_real_,
+    denominator = as.numeric(.data$n_pairs),
+    estimate = as.numeric(.data$estimate),
+    ci_lower = as.numeric(.data$ci_lower),
+    ci_upper = as.numeric(.data$ci_upper),
+    summary_value = sprintf(
+      "estimate %.3f (95%% CI %.3f to %.3f; %d/%d valid bootstrap draws)",
+      .data$estimate, .data$ci_lower, .data$ci_upper,
+      .data$bootstrap_reps_valid, .data$bootstrap_reps_requested
+    ),
+    interpretation = paste(
+      .data$estimand,
+      "using resident-cluster bootstrap and time-between-samples adjustment"
+    ),
+    source_file = path_amr_inference,
+    scope = "Genomic determinants/predicted phenotypes—not phenotypic AST"
+  )
+focused_rows <- amr_focused %>%
+  group_by(.data$focused_strain_context) %>%
+  summarise(
+    n_pairs = n(),
+    n_changed = sum(.data$any_informative_acquired_gene_gain_or_loss),
+    .groups = "drop"
+  ) %>%
+  transmute(
+    analysis_available = TRUE,
+    metric = "not_uti_to_uti_informative_acquired_gene_change",
+    group = .data$focused_strain_context,
+    n = as.numeric(.data$n_changed),
+    denominator = as.numeric(.data$n_pairs),
+    estimate = .data$n_changed / .data$n_pairs,
+    ci_lower = NA_real_,
+    ci_upper = NA_real_,
+    summary_value = sprintf(
+      "%d/%d focused transitions with gain/loss",
+      .data$n_changed, .data$n_pairs
+    ),
+    interpretation = "Descriptive only; no regression or UTI association test",
+    source_file = path_amr_focused,
+    scope = "Genomic determinants/predicted phenotypes—not phenotypic AST"
+  )
+top_gene_rows <- amr_gene_prevalence %>%
+  slice_max(.data$episode_prevalence, n = 5L, with_ties = FALSE) %>%
+  transmute(
+    analysis_available = TRUE,
+    metric = paste0("top_informative_acquired_gene_", .data$gene),
+    group = "episodes and residents",
+    n = as.numeric(.data$episodes_positive),
+    denominator = as.numeric(.data$denominator_episodes),
+    estimate = as.numeric(.data$episode_prevalence),
+    ci_lower = NA_real_,
+    ci_upper = NA_real_,
+    summary_value = sprintf(
+      "%d/%d episodes (%.1f%%); %d/%d residents (%.1f%%)",
+      .data$episodes_positive, .data$denominator_episodes,
+      100 * .data$episode_prevalence,
+      .data$residents_positive, .data$denominator_residents,
+      100 * .data$resident_prevalence
+    ),
+    interpretation = "Informative AMRFinderPlus acquired-gene prevalence; mdf(A) excluded",
+    source_file = path_amr_gene_prevalence,
+    scope = "Genomic determinants/predicted phenotypes—not phenotypic AST"
+  )
+top_class_rows <- amr_class_prevalence %>%
+  slice_max(.data$episode_prevalence, n = 5L, with_ties = FALSE) %>%
+  transmute(
+    analysis_available = TRUE,
+    metric = paste0(
+      "top_informative_acquired_class_",
+      str_replace_all(str_to_lower(.data$resistance_class), "[^a-z0-9]+", "_")
+    ),
+    group = "episodes and residents",
+    n = as.numeric(.data$episodes_positive),
+    denominator = as.numeric(.data$denominator_episodes),
+    estimate = as.numeric(.data$episode_prevalence),
+    ci_lower = NA_real_,
+    ci_upper = NA_real_,
+    summary_value = sprintf(
+      "%d/%d episodes (%.1f%%); %d/%d residents (%.1f%%)",
+      .data$episodes_positive, .data$denominator_episodes,
+      100 * .data$episode_prevalence,
+      .data$residents_positive, .data$denominator_residents,
+      100 * .data$resident_prevalence
+    ),
+    interpretation = paste(
+      "Informative AMRFinderPlus acquired-gene class:",
+      .data$resistance_class
+    ),
+    source_file = path_amr_class_prevalence,
+    scope = "Genomic determinants/predicted phenotypes—not phenotypic AST"
+  )
+t13 <- bind_rows(
+  caller_rows, episode_metrics, longitudinal_rows, inference_rows,
+  focused_rows, top_gene_rows, top_class_rows
+)
+write_csv(t13, file.path(DIR_SUMMARY, "table_13_genomic_amr_summary.csv"))
+
+# Keep the three plasmid evidence layers explicit: a replicon marker is not a
+# reconstructed plasmid, and a reconstructed bin is not itself gene linkage.
+if (
+  is.null(plasmidfinder_runs) ||
+    is.null(mob_profiles) ||
+    is.null(plasmid_locations) ||
+    is.null(plasmid_mechanism_profiles) ||
+    is.null(plasmid_location_validation)
+) {
+  stop(
+    "Predicted-plasmid summary requires complete scripts 09, 09b and 29 ",
+    "localization outputs."
+  )
+}
+if (
+  nrow(plasmidfinder_runs) != 532L ||
+    any(plasmidfinder_runs$call_status != "complete") ||
+    nrow(mob_profiles) != 532L ||
+    nrow(plasmid_mechanism_profiles) != 532L ||
+    any(!plasmid_location_validation$pass)
+) {
+  stop(
+    "Replicon detection, MOB reconstruction or predicted localization ",
+    "validation failed; plasmid summary not published."
+  )
+}
+location_rows <- plasmid_locations %>%
+  count(evidence_source, localization, name = "n_calls") %>%
+  left_join(
+    plasmid_locations %>%
+      group_by(evidence_source, localization) %>%
+      summarise(
+        n_episodes = n_distinct(episode_key),
+        n_features = n_distinct(gene),
+        .groups = "drop"
+      ),
+    by = c("evidence_source", "localization")
+  ) %>%
+  transmute(
+    evidence_layer = "predicted gene localization",
+    metric = paste(
+      evidence_source, localization, sep = ": "
+    ),
+    n = as.numeric(n_calls),
+    denominator = NA_real_,
+    summary_value = sprintf(
+      "%d calls; %d features across %d episodes",
+      n_calls, n_features, n_episodes
+    ),
+    interpretation = case_when(
+      localization == "predicted_plasmid" ~
+        "call placed on a contig in a MOB predicted plasmid bin",
+      localization == "chromosome" ~
+        "call placed on a MOB predicted chromosome contig",
+      TRUE ~ "call retained as ambiguous or explicitly unassigned"
+    ),
+    source_file = path_plasmid_locations
+  )
+t13b <- bind_rows(
+  tibble(
+    evidence_layer = "replicon detection",
+    metric = c(
+      "complete_episode_calls", "positive_episode_calls",
+      "valid_no_hit_episode_calls"
+    ),
+    n = c(
+      nrow(plasmidfinder_runs),
+      sum(!plasmidfinder_runs$no_hit),
+      sum(plasmidfinder_runs$no_hit)
+    ),
+    denominator = 532,
+    summary_value = c(
+      sprintf("%d/532 complete", nrow(plasmidfinder_runs)),
+      sprintf("%d/532 with ≥1 marker", sum(!plasmidfinder_runs$no_hit)),
+      sprintf("%d/532 valid zero profiles", sum(plasmidfinder_runs$no_hit))
+    ),
+    interpretation =
+      "PlasmidFinder replicon markers; not reconstructed plasmids",
+    source_file = path_plasmidfinder_runs
+  ),
+  tibble(
+    evidence_layer = "reconstructed plasmid prediction",
+    metric = c(
+      "complete_episode_profiles",
+      "predicted_plasmid_count",
+      "high_confidence_episode_profiles"
+    ),
+    n = c(
+      nrow(mob_profiles),
+      sum(mob_profiles$predicted_plasmid_count),
+      sum(mob_profiles$mob_high_confidence_profile %in% TRUE)
+    ),
+    denominator = c(532, NA_real_, 532),
+    summary_value = c(
+      sprintf("%d/532 complete", nrow(mob_profiles)),
+      sprintf(
+        "median %.1f predicted bins/episode (IQR %.1f–%.1f; total %d)",
+        median(mob_profiles$predicted_plasmid_count),
+        quantile(mob_profiles$predicted_plasmid_count, 0.25),
+        quantile(mob_profiles$predicted_plasmid_count, 0.75),
+        sum(mob_profiles$predicted_plasmid_count)
+      ),
+      sprintf(
+        "%d/532 episodes pass the prespecified high-confidence profile rule",
+        sum(mob_profiles$mob_high_confidence_profile %in% TRUE)
+      )
+    ),
+    interpretation =
+      "MOB-suite assembly-based predicted plasmid bins; circularity and transfer are unconfirmed",
+    source_file = path_mob_profiles
+  ),
+  location_rows
+)
+write_csv(
+  t13b,
+  file.path(DIR_SUMMARY, "table_13b_predicted_plasmid_summary.csv")
+)
+legacy_amr_aliases <- file.path(
+  DIR_SUMMARY,
+  c(
+    "table_13_optional_vf_amr_summary.csv",
+    "table_13_optional_vf_plasmid_summary.csv"
+  )
+)
+unlink(legacy_amr_aliases[file.exists(legacy_amr_aliases)])
+
+# Refresh the AMR rows in report-facing warning/safety tables so no current
+# artifact describes genomic AMR as optional or unavailable.
+warning_path <- file.path(DIR_SUMMARY, "report_key_warnings.csv")
+warnings <- safe_read(warning_path)
+if (is.null(warnings) ||
+    !all(c("area", "severity", "warning", "source_file") %in% names(warnings))) {
+  warnings <- tibble(
+    area = character(), severity = character(),
+    warning = character(), source_file = character()
+  )
+}
+warnings <- warnings %>%
+  filter(!str_detect(.data$area, regex("AMR", ignore_case = TRUE))) %>%
+  bind_rows(tibble(
+    area = "Genomic AMR",
+    severity = "AMBER",
+    warning = paste(
+      "Complete genomic determinant profiles are available for all 532 episodes;",
+      "predicted phenotypes are not phenotypic AST, and no antibiotic-exposure",
+      "or treatment-effect inference is supported."
+    ),
+    source_file = paste(
+      path_amr_profiles,
+      file.path(DIR_SUMMARY, "table_13_genomic_amr_summary.csv"),
+      sep = "; "
+    )
+  ))
+write_csv(warnings, warning_path)
+
+claim_path <- file.path(DIR_SUMMARY, "report_claim_safety_table.csv")
+claim_safety <- safe_read(claim_path)
+if (is.null(claim_safety) ||
+    !all(c("domain", "status", "rationale", "source_file") %in% names(claim_safety))) {
+  claim_safety <- tibble(
+    domain = character(), status = character(),
+    rationale = character(), source_file = character()
+  )
+}
+claim_safety <- claim_safety %>%
+  filter(!str_detect(.data$domain, regex("AMR|susceptib|treatment", ignore_case = TRUE))) %>%
+  bind_rows(
+    tibble(
+      domain = c(
+        "Genomic AMR profile completeness",
+        "Phenotypic susceptibility or treatment effect"
+      ),
+      status = c("GREEN", "RED"),
+      rationale = c(
+        paste(
+          "All 532 selected episodes have validated AMRFinderPlus primary",
+          "profiles with complementary ResFinder/PointFinder and legacy",
+          "ABRicate evidence."
+        ),
+        paste(
+          "No phenotypic AST or antibiotic-exposure data are available;",
+          "genomic predictions cannot establish clinical susceptibility or",
+          "treatment response."
+        )
+      ),
+      source_file = c(
+        path_amr_validation,
+        path_amr_phenotype
+      )
+    )
+  )
+write_csv(claim_safety, claim_path)
 
 # ==============================================================================
 # 14. TABLE 14: PRIMARY UTI/NOT_UTI DIAGNOSTIC LAYER
@@ -929,7 +1435,7 @@ vf_denominator_label <- sprintf(
 )
 
 clinical_denominator_label <- sprintf(
-  "Clinical episodes n=%d; participants n=%d; primary UTI n=%d; primary Not_UTI n=%d; missing/other primary status n=%d",
+  "Selected QC-pass Longcycler episodes n=%d; participants n=%d; primary UTI n=%d; primary Not_UTI n=%d; missing/other primary status n=%d",
   nrow(status_map),
   n_distinct(status_map$Participant_id),
   status_counts(status_map)$n_UTI,
@@ -953,7 +1459,7 @@ model_denominator_label <- if (!is.null(model_denom)) {
 }
 
 amr_scope_denominator_label <- if (!is.null(vf_amr_combined)) {
-  sprintf("VF+plasmid combined rows n=%d; participants n=%d; true AMR rows n=%d",
+  sprintf("VF+plasmid combined rows n=%d; participants n=%d; validated genomic-AMR rows n=%d",
           nrow(vf_amr_combined), n_distinct(vf_amr_combined$Participant_id),
           if ("amr_data_available" %in% names(vf_amr_combined)) sum(vf_amr_combined$amr_data_available %in% TRUE, na.rm = TRUE) else 0)
 } else {
@@ -984,13 +1490,13 @@ figure_index <- tribble(
   "Longitudinal stability", "24_vf_longitudinal_dynamics.R", "vf_jaccard_by_days_between_samples", "plots/vf/vf_jaccard_by_days_between_samples.png", "VF similarity versus time between repeated isolates", path_vf_ready, transition_denominator_label, "dated consecutive within-resident isolate-pair comparison", "None shown", "Descriptive", "Only pairs with parseable dates are shown.",
   "Longitudinal stability", "24_vf_longitudinal_dynamics.R", "vf_jaccard_same_vs_different_st", "plots/vf/vf_jaccard_same_vs_different_st.png", "Secondary lineage diagnostic: VF similarity by sequence-type consistency", path_vf_ready, transition_denominator_label, "consecutive pair stratified by ST agreement", "None shown", "Secondary lineage diagnostic", sprintf("ST agreement is reviewed after SNP-defined same-strain classification (<=%d SNPs) and does not alone prove same strain.", strain_snp_threshold()),
   "Longitudinal stability", "24_vf_longitudinal_dynamics.R", "vf_gene_gain_loss_consecutive_pairs", "plots/vf/vf_gene_gain_loss_consecutive_pairs.png", "VF gene gains and losses between repeated E. coli isolates", path_vf_ready, transition_denominator_label, "consecutive within-resident gene gain/loss summary", "None shown", "Descriptive", "Gain/loss can reflect replacement, assembly/calling differences, or true gene-content change.",
-  "Transition case studies", "28_vf_transition_case_studies.R", "vf_transition_case_timeline", "plots/vf/vf_transition_case_timeline.png", "Clinical timelines for residents with Not_UTI-to-UTI transitions", paste(path_status, path_status_poster, path_vf_ready, sep = "; "), clinical_denominator_label, "clinical episode timeline", "None shown", "Descriptive", "Uricult ordering uses dates where available; fallback/display ordering must be cited.",
+  "Transition case studies", "28_vf_transition_case_studies.R", "vf_transition_case_timeline", "plots/vf/vf_transition_case_timeline.png", "Selected Longcycler timelines for residents with Not_UTI-to-UTI transitions", paste(path_status, path_vf_ready, sep = "; "), clinical_denominator_label, "selected genomic episode timeline", "None shown", "Descriptive", "Uricult ordering uses dates where available; fallback/display ordering must be cited.",
   "Transition case studies", "28_vf_transition_case_studies.R", "vf_transition_score_slopeplot", "plots/vf/vf_transition_score_slopeplot.png", "Supplementary VF endpoint changes across Not_UTI-to-UTI transitions", path_vf_ready, "WGS/VF-linked Not_UTI-to-UTI transition cases", "transition case-study pair", "None shown", "Descriptive", "Changes may reflect lineage replacement or technical differences and do not imply causality.",
   "Transition case studies", "28_vf_transition_case_studies.R", "vf_transition_module_change_heatmap", "plots/vf/vf_transition_module_change_heatmap.png", "VF module changes in Not_UTI-to-UTI transition cases", path_vf_ready, "WGS/VF-linked Not_UTI-to-UTI transition cases", "transition case-study pair", "None shown", "Descriptive", "Modules are descriptive and should be interpreted after SNP same-strain classification; ST is secondary lineage context.",
   "Transition case studies", "28_vf_transition_case_studies.R", "vf_transition_gene_gain_loss_tile", "plots/vf/vf_transition_gene_gain_loss_tile.png", "VF gene gains and losses in Not_UTI-to-UTI transition cases", path_vf_ready, "WGS/VF-linked Not_UTI-to-UTI transition cases", "transition case-study pair", "None shown", "Descriptive", "Gene gain/loss should be interpreted after SNP same-strain classification; ST is secondary lineage context.",
   "Transition case studies", "28_vf_transition_case_studies.R", "vf_transition_snp_vs_vf_jaccard", "plots/vf/vf_transition_snp_vs_vf_jaccard.png", "SNP distance versus VF similarity in Not_UTI-to-UTI transition cases", path_vf_ready, "Not_UTI-to-UTI cases with WGS/VF, SNP distance, and VF Jaccard", "transition case-study pair", "None shown", "Descriptive/diagnostic", "Low SNP distance plus high VF similarity supports persistence but does not establish VF causality for UTI.",
   "Transition case studies", "28_vf_transition_case_studies.R", "vf_not_uti_uti_transition_strain_context", "plots/vf/vf_not_uti_uti_transition_strain_context.png", "Not_UTI-to-UTI VF changes require SNP-first and ST-secondary interpretation", paste(path_case_summary, path_strain_ctx, sep = "; "), "Not_UTI-to-UTI cases with WGS/VF endpoints, SNP distance, and VF burden change", "transition case-study strain-context diagnostic", "None shown", "Descriptive/diagnostic", "VF burden changes should be read through SNP-defined same-strain evidence first; ST explains lineage context but does not prove same strain.",
-  "Transition case studies", "28_vf_transition_case_studies.R", "vf_not_uti_uti_transition_case_classes", "plots/vf/vf_not_uti_uti_transition_case_classes.png", "Not_UTI-to-UTI transition case classes and missing genomic endpoints", path_case_summary, "All clinical Not_UTI-to-UTI transition cases, including missing WGS/VF endpoints", "transition case classification", "None shown", "Descriptive/diagnostic", "Missing WGS/VF endpoints remain part of the clinical transition denominator and should not be hidden.",
+  "Transition case studies", "28_vf_transition_case_studies.R", "vf_not_uti_uti_transition_case_classes", "plots/vf/vf_not_uti_uti_transition_case_classes.png", "Selected Longcycler Not_UTI-to-UTI transition case classes", path_case_summary, "All selected Longcycler Not_UTI-to-UTI transitions; every case has both endpoints", "transition case classification", "None shown", "Descriptive/diagnostic", "Every transition is backed by direct SNP and paired VF evidence.",
   "Confounding checks", "25_vf_lineage_vf_interaction.R", "vf_burden_by_st", "plots/vf/vf_burden_by_st.png", "Virulence factor burden varies by E. coli sequence type", path_vf_ready, vf_denominator_label, "isolate-level ST diagnostic", "Kruskal-Wallis in summary text", "Exploratory/diagnostic", "Repeated isolates are not modelled; sparse STs are filtered.",
   "Confounding checks", "25_vf_lineage_vf_interaction.R", "vf_burden_st_x_status", "plots/vf/vf_burden_st_x_status.png", "UTI/Not_UTI VF burden contrasts within E. coli sequence types", path_vf_ready, vf_denominator_label, "isolate-level within-ST diagnostic", "Wilcoxon in summary text when possible", "Exploratory/diagnostic", "Within-ST UTI counts are often too small for stable inference.",
   "Confounding checks", "25_vf_lineage_vf_interaction.R", "vf_st_composition_by_status", "plots/vf/vf_st_composition_by_status.png", "Primary UTI status distribution across E. coli sequence types", path_vf_ready, vf_denominator_label, "isolate-level ST composition diagnostic", "Fisher simulated in summary text", "Exploratory/diagnostic", "ST distribution differences can confound naive VF-status associations.",
@@ -1009,11 +1515,19 @@ figure_index <- tribble(
   "Score framework", "27_vf_score_framework.R", "vf_pca_ST", "plots/vf/vf_pca_ST.png", "Exploratory PCA of VF module profiles by sequence type", path_vf_ready, vf_denominator_label, "ordination", "PCA", "Diagnostic/descriptive", "Lineage clustering should be considered as confounding.",
   "Score framework", "27_vf_score_framework.R", "vf_pcoa_jaccard_status", "plots/vf/vf_pcoa_jaccard_status.png", "Exploratory Jaccard PCoA of VF module profiles by primary UTI status", path_vf_ready, vf_denominator_label, "ordination", "Jaccard PCoA", "Exploratory/descriptive", "Ordination is descriptive and denominator-sensitive.",
   "Score framework", "27_vf_score_framework.R", "vf_pcoa_jaccard_ST", "plots/vf/vf_pcoa_jaccard_ST.png", "Exploratory Jaccard PCoA of VF module profiles by sequence type", path_vf_ready, vf_denominator_label, "ordination", "Jaccard PCoA", "Diagnostic/descriptive", "Lineage clustering should be considered as confounding.",
-  "Optional VF+plasmid", "29_vf_amr_combined_profile.R", "vf_plasmid_analysis_scope", "plots/vf_amr/vf_plasmid_analysis_scope.png", "Scope of VF, plasmid, and AMR data integration", paste(path_vf_amr_report, path_vf_amr_combined, sep = "; "), amr_scope_denominator_label, "input availability and analysis-scope diagnostic", "None shown", "Diagnostic", "Script 29 is VF+plasmid/mobile-context only unless dedicated AMR screening rows are present; plasmid summaries are not true AMR analysis."
+  "Genomic AMR and VF/plasmid", "29_vf_amr_combined_profile.R", "vf_plasmid_analysis_scope", "plots/vf_amr/vf_plasmid_analysis_scope.png", "Scope of VF, plasmid, and genomic-AMR integration", paste(path_vf_amr_report, path_vf_amr_combined, path_amr_profiles, sep = "; "), amr_scope_denominator_label, "input availability and analysis-scope diagnostic", "None shown", "Diagnostic", "All 532 selected episodes have AMRFinderPlus primary profiles; genomic determinants and predicted phenotypes are not phenotypic AST.",
+  "Genomic AMR and VF/plasmid", "29_vf_amr_combined_profile.R", "most_prevalent_informative_acquired_genes", "plots/amr/most_prevalent_informative_acquired_genes.png", "Most prevalent informative acquired AMR genes", path_amr_gene_prevalence, "All 532 selected episodes and 161 residents; mdf(A) excluded", "episode- and resident-level acquired-gene prevalence", "None; descriptive prevalence", "Supplementary/descriptive", "Genomic determinants are not phenotypic AST; prevalence does not demonstrate expression, treatment response, transmission, or UTI causation.",
+  "Genomic AMR and VF/plasmid", "29_vf_amr_combined_profile.R", "amr_profile_stability_by_direct_snp_context", "plots/amr/amr_profile_stability_by_direct_snp_context.png", "AMR-profile stability by direct SNP context", paste(path_amr_longitudinal, path_amr_inference, sep = "; "), "All 371 adjacent within-resident pairs", "adjacent-pair informative acquired-gene similarity", "Resident-cluster bootstrap with 10,000 replicates and time-between-samples adjustment in companion table", "Supplementary/supporting", "AMR profiles do not define strain identity; mdf(A) is excluded and pairwise displays are descriptive.",
+  "Genomic AMR and VF/plasmid", "29_vf_amr_combined_profile.R", "caller_concordance_by_determinant_class", "plots/amr/caller_concordance_by_determinant_class.png", "Caller concordance by AMR determinant class", paste(path_amr_runs, path_amr_profiles, sep = "; "), "All 532 selected episodes screened by each required caller", "caller-by-determinant-class audit", "No two-of-three voting; descriptive caller audit", "Supplementary/diagnostic", "Caller differences reflect databases and models; AMRFinderPlus remains the primary profile."
 ) %>%
   mutate(
     output_exists = file.exists(file.path(DIR_ROOT, output_file)),
-    note = ifelse(output_exists, "Generated or expected from current pipeline", "Optional/skipped if required inputs were absent")
+    note = case_when(
+      .data$output_exists ~ "Generated or expected from current pipeline",
+      .data$script == "29_vf_amr_combined_profile.R" ~
+        "Required script-29 output missing; release validation must fail",
+      TRUE ~ "Optional/skipped if required inputs were absent"
+    )
   )
 
 if (!is.null(diag_fig_meta) && nrow(diag_fig_meta) > 0) {
@@ -1044,7 +1558,8 @@ if (!is.null(diag_fig_meta) && nrow(diag_fig_meta) > 0) {
       title = recode(.data$figure_id, !!!diagnostic_title, .default = .data$figure_id),
       input_data = paste(path_status, path_vf_ready, path_model_denom, path_diag_summary, sep = "; "),
       denominator = sprintf(
-        "Clinical primary n=583 (UTI 18, Not_UTI 565); active selected QC-pass Longcycler VF/model primary n=%d (UTI %d, Not_UTI %d, missing status %d)",
+        "Selected QC-pass Longcycler primary n=%d (UTI %d, Not_UTI %d); VF/model primary n=%d (UTI %d, Not_UTI %d, missing status %d)",
+        nrow(status_map), status_counts(status_map)$n_UTI, status_counts(status_map)$n_Not_UTI,
         nrow(vf_ready), status_counts(vf_ready)$n_UTI,
         status_counts(vf_ready)$n_Not_UTI, status_counts(vf_ready)$n_other_status
       ),
@@ -1081,7 +1596,8 @@ visualisation_audit <- figure_index %>%
       script == "26_vf_define_gene_modules.R" ~ "Section 11, module/category plots",
       script == "27_vf_score_framework.R" ~ "Section 10, score/ordination plots",
       script == "28_vf_transition_case_studies.R" ~ "Section 10, transition figures",
-      script == "29_vf_amr_combined_profile.R" ~ "Section 8, VF+plasmid plots",
+      script == "29_vf_amr_combined_profile.R" ~
+        "Authoritative genomic-AMR plots plus Section 8 VF/plasmid integration",
       script == "32_uti_not_uti_diagnostic_stats.R" ~ "Primary UTI/Not_UTI diagnostic layer",
       TRUE ~ "See script"
     ),
@@ -1103,7 +1619,7 @@ visualisation_audit <- figure_index %>%
         "ADD companion plot / MARK diagnostic",
       module == "Primary UTI/Not_UTI diagnostics" ~ "MARK diagnostic",
       module %in% c("Confounding checks") ~ "ADD companion plot / MARK diagnostic",
-      module %in% c("Annotation confidence", "Optional VF+plasmid") ~ "ADD companion plot / MARK diagnostic",
+      module %in% c("Annotation confidence", "Genomic AMR and VF/plasmid") ~ "ADD companion plot / MARK diagnostic",
       str_detect(exploratory_or_confirmatory, regex("Exploratory", ignore_case = TRUE)) ~ "MARK exploratory",
       TRUE ~ "AMEND labels/caption only"
     ),
@@ -1111,7 +1627,7 @@ visualisation_audit <- figure_index %>%
       module == "Confounding checks" ~ "Needed explicit denominator, ST, batch, event-type, and Uricult-bridge diagnostic framing.",
       module == "Model evidence bridge" ~ "Nominal Fisher screening hits needed a direct visual comparison with corrected participant-aware model evidence.",
       module == "Annotation confidence" ~ "Module plots needed an explicit annotation-confidence and gene-map coverage diagnostic.",
-      module == "Optional VF+plasmid" ~ "VF+plasmid outputs needed a scope figure preventing interpretation as true AMR integration.",
+      module == "Genomic AMR and VF/plasmid" ~ "Genomic-AMR integration needs explicit caller, mdf(A), and non-AST scope labels.",
       module == "Primary UTI/Not_UTI diagnostics" ~ "Needed explicit sparse-count, denominator, exclusion, duplicate, and near-miss diagnostics under the primary UTI rule.",
       module == "Longitudinal stability" ~ "Older logic risked omitting T5/T6 and UTI-N event labels and needed clearer comparison scope.",
       module == "Gene prevalence" ~ "Gene selection and multiple-testing/exploratory status needed explicit wording.",
@@ -1135,7 +1651,7 @@ qc_log <- character()
 qa <- function(...) qc_log <<- c(qc_log, sprintf(...))
 qa("=== SUMMARY QC LOG ===")
 qa("Generated: %s", format(Sys.time()))
-qa("status_map.csv modified: %s", mtime_chr(path_status))
+qa("analysis_cohort_longcycler.csv modified: %s", mtime_chr(path_status))
 qa("status_map_with_poster_tp.csv modified: %s", mtime_chr(path_status_poster))
 qa("vf_pa_all.csv modified: %s", mtime_chr(path_vf_pa))
 qa("vf_analysis_ready.csv modified: %s", mtime_chr(path_vf_ready))
@@ -1195,8 +1711,8 @@ ma("")
 ma("**Generated:** %s", format(Sys.time(), "%Y-%m-%d %H:%M"))
 ma("")
 ma("## Cohort Availability")
-ma("- Clinical episodes: **%d** (%d participants)", nrow(status_map), n_distinct(status_map$Participant_id))
-ma("- Clinical primary status counts: UTI **%d**, Not_UTI **%d**, Other/unknown primary status **%d**",
+ma("- Selected QC-pass Longcycler episodes: **%d** (%d participants)", nrow(status_map), n_distinct(status_map$Participant_id))
+ma("- Selected cohort primary status counts: UTI **%d**, Not_UTI **%d**, Other/unknown primary status **%d**",
    status_counts(status_map)$n_UTI, status_counts(status_map)$n_Not_UTI,
    status_counts(status_map)$n_other_status)
 if (!is.null(status_poster)) {
@@ -1224,7 +1740,7 @@ if (!is.null(diag_summary)) {
     val <- diag_summary %>% filter(.data$metric == !!metric) %>% pull(.data$value)
     if (length(val) == 0) NA_real_ else val[[1]]
   }
-  ma("- Clinical primary denominator confirmed by script 32: **%s** rows = UTI **%s**, Not_UTI **%s**.",
+  ma("- Selected Longcycler denominator confirmed by script 32: **%s** rows = UTI **%s**, Not_UTI **%s**.",
      diag_metric("primary_clinical_total"),
      diag_metric("primary_clinical_uti"),
      diag_metric("primary_clinical_not_uti"))
@@ -1295,9 +1811,9 @@ if (!is.null(vf_same_strain_by_ST) && nrow(vf_same_strain_by_ST) > 0) {
 ma("")
 ma("## Not_UTI->UTI Transition Cases")
 if (!is.null(not_uti_uti_cases)) {
-  ma("- Clinical Not_UTI->UTI transitions indexed: **%d**", nrow(not_uti_uti_cases))
-  ma("- WGS/VF-linked Not_UTI->UTI transitions: **%d**", nrow(not_uti_uti_wgs_cases))
-  ma("- Not_UTI->UTI transitions missing WGS/VF endpoint: **%d**", nrow(not_uti_uti_cases) - nrow(not_uti_uti_wgs_cases))
+  ma("- Selected Longcycler Not_UTI->UTI transitions indexed: **%d**", nrow(not_uti_uti_cases))
+  ma("- Direct SNP/VF-linked Not_UTI->UTI transitions: **%d**", nrow(not_uti_uti_wgs_cases))
+  ma("- Selected transitions missing WGS/VF endpoint: **%d** (required to be zero)", nrow(not_uti_uti_cases) - nrow(not_uti_uti_wgs_cases))
 }
 if (nrow(t10) > 0 && "case_class" %in% names(t10)) {
   stable_n <- sum(str_detect(t10$case_class, "stable VF/module"), na.rm = TRUE)
@@ -1310,16 +1826,91 @@ if (!is.null(stat_feature_tests)) {
   ma("- Paired binary feature sensitivity is available in `table_18_paired_binary_feature_sensitivity.csv`; features are restricted to prespecified/top Fisher, GLMM, and module candidates.")
 }
 ma("")
-ma("## Optional VF+AMR/Plasmid")
-if (!is.null(vf_amr_combined) && "amr_data_available" %in% names(vf_amr_combined)) {
-  if (any(vf_amr_combined$amr_data_available %in% TRUE, na.rm = TRUE)) {
-    ma("- True AMR data were integrated for at least one episode.")
-  } else {
-    ma("- No dedicated AMR database screening output was integrated; script 29 produced VF+plasmid/mobile-context summaries only.")
-  }
-} else {
-  ma("- Optional VF+AMR combined profile table was not available.")
+ma("## Genomic AMR And VF/Plasmid Integration")
+ma("- Script 29 produced validated genomic-AMR profiles for **%d** episodes and **%d** adjacent pairs.",
+   nrow(amr_profiles), nrow(amr_longitudinal))
+ma("- AMRFinderPlus defines the primary acquired-gene/mutation profile; ResFinder/PointFinder is complementary and ABRicate-ResFinder is the legacy comparison.")
+ma("- mdf(A) is retained raw and in sensitivity metrics but excluded from primary acquired-gene burden, gain/loss and Jaccard calculations.")
+ma(
+  "- Informative acquired genes were detected in **%d/%d episodes (%.1f%%)** and **%d/%d residents (%.1f%%)**; mdf(A) was detected separately in **%d/%d episodes (%.1f%%)**.",
+  sum(amr_profiles$any_informative_acquired_amr %in% TRUE),
+  nrow(amr_profiles),
+  100 * mean(amr_profiles$any_informative_acquired_amr %in% TRUE),
+  sum(amr_residents$any_informative_acquired_amr %in% TRUE),
+  nrow(amr_residents),
+  100 * mean(amr_residents$any_informative_acquired_amr %in% TRUE),
+  sum(amr_profiles$mdfA_detected %in% TRUE),
+  nrow(amr_profiles),
+  100 * mean(amr_profiles$mdfA_detected %in% TRUE)
+)
+ma(
+  "- Known AMRFinderPlus resistance mutations occurred in **%d/%d episodes (%.1f%%)**; ResFinder yielded at least one database-supported genomic phenotype prediction in **%d/%d episodes**.",
+  sum(amr_profiles$amr_mutation_count > 0, na.rm = TRUE),
+  nrow(amr_profiles),
+  100 * mean(amr_profiles$amr_mutation_count > 0, na.rm = TRUE),
+  supported_genomic_prediction_episodes,
+  nrow(amr_profiles)
+)
+for (i in seq_len(nrow(amr_longitudinal_summary))) {
+  row <- amr_longitudinal_summary[i, , drop = FALSE]
+  ma(
+    "- In the **%s** group, informative acquired-gene gain/loss occurred in **%d/%d pairs (%.1f%%)**; median Jaccard similarity was **%.3f (IQR %.3f–%.3f)**.",
+    row$direct_snp_context, row$any_gain_loss_n, row$n_pairs,
+    row$any_gain_loss_pct, row$median_jaccard,
+    row$q25_jaccard, row$q75_jaccard
+  )
 }
+for (i in seq_len(nrow(amr_inference))) {
+  row <- amr_inference[i, , drop = FALSE]
+  ma(
+    "- Resident-cluster bootstrap: %s = **%.3f (95%% CI %.3f to %.3f)** after adjustment for time between samples.",
+    row$estimand, row$estimate, row$ci_lower, row$ci_upper
+  )
+}
+focused_context <- amr_focused %>%
+  count(.data$focused_strain_context, name = "n_pairs") %>%
+  arrange(.data$focused_strain_context)
+ma(
+  "- The nine Not_UTI→UTI transitions are descriptive: **%s**; no regression or additional UTI-association endpoint was fitted.",
+  paste(
+    paste0(focused_context$focused_strain_context, " n=", focused_context$n_pairs),
+    collapse = "; "
+  )
+)
+if (nrow(amr_gene_prevalence)) {
+  top_gene <- amr_gene_prevalence %>%
+    slice_max(.data$episode_prevalence, n = 5L, with_ties = FALSE)
+  ma(
+    "- The most prevalent informative acquired genes were: **%s**.",
+    paste(
+      sprintf(
+        "%s %d/%d (%.1f%%)",
+        top_gene$gene, top_gene$episodes_positive,
+        top_gene$denominator_episodes, 100 * top_gene$episode_prevalence
+      ),
+      collapse = "; "
+    )
+  )
+}
+ma("- Full numeric results are in `table_13_genomic_amr_summary.csv`; dedicated AMR plots remain supplementary.")
+ma("")
+ma("## Predicted Plasmid Mechanism Context")
+ma(
+  "- Replicon detection was complete for **532/532 episodes**: **%d** had at least one PlasmidFinder marker and **%d** were valid no-hit profiles.",
+  sum(!plasmidfinder_runs$no_hit),
+  sum(plasmidfinder_runs$no_hit)
+)
+ma(
+  "- MOB-suite produced complete assembly-based profiles for **532/532 episodes**, with **%d predicted plasmid bins** in total (median **%.1f** per episode).",
+  sum(mob_profiles$predicted_plasmid_count),
+  median(mob_profiles$predicted_plasmid_count)
+)
+ma(
+  "- VF, AMR and replicon calls were mapped to predicted plasmid, chromosome, or explicit ambiguous/unassigned context; numeric results are in `table_13b_predicted_plasmid_summary.csv`."
+)
+ma(
+  "- These layers are distinct: replicon detection is marker evidence, MOB output is reconstructed plasmid prediction, and same-bin placement is predicted linkage only—not confirmed circularity, transfer, transmission, phenotype, or UTI causation."
+)
 ma("")
 ma("## QC And Caveats")
 if (!is.null(denominator_summary)) {
@@ -1355,16 +1946,13 @@ if (is_stale(path_vf_ready, path_vf_pa) && !vf_ready_matches_pa(vf_ready, vf_pa)
 } else if (is_stale(path_vf_ready, path_vf_pa)) {
   ma("- `vf_analysis_ready.csv` has an older timestamp than `vf_pa_all.csv`, but row count and VF gene set match; this was treated as current.")
 }
-if (poster_status_unsuitable) {
-  ma("- **WARNING:** `status_map_with_poster_tp.csv` is missing, older than `status_map.csv`, or lacks primary UTI columns; rerun script 00d before transition interpretation.")
-}
 if (length(legacy_found) > 0) {
   ma("- Legacy/stale-looking summary files were detected and are listed in `summary_qc_log.txt`; use current `results/summary/` outputs as truth.")
 }
 ma("- UTI sample size in the VF-linked dataset is limited; supplementary endpoint tests are descriptive/exploratory and underpowered for definitive UTI association.")
-ma("- Repeated measures, ST/lineage structure, remaining missing/ambiguous WGS/VF endpoints, and Uricult bridge assumptions limit causal interpretation.")
+ma("- Repeated measures, ST/lineage structure, and Uricult ordering assumptions limit causal interpretation.")
 ma("- VF presence does not imply expression or functional activity.")
-ma("- Do not interpret VFDB-derived or plasmid-only summaries as true AMR analysis.")
+ma("- Genomic AMR determinants and ResFinder predicted phenotypes are not measured susceptibility; no treatment-effect claim is supported.")
 ma("- Pangenome/core-SNP and same-strain conclusions require current input hashes; stale or incomplete reports mean those outputs require rerun after GFF/core-SNP refresh.")
 
 writeLines(md, file.path(DIR_SUMMARY, "final_key_results_summary.md"))
@@ -1392,7 +1980,8 @@ all_tables <- list(
   table_10_not_uti_uti_transition_cases = t10,
   table_11_lineage_context_summary = t11,
   table_12_missing_data_audit = t12,
-  table_13_optional_vf_amr_summary = t13,
+  table_13_genomic_amr_summary = t13,
+  table_13b_predicted_plasmid_summary = t13b,
   table_14_uti_not_uti_diagnostics = t14,
   table_15_uti_not_uti_test_interpretation = diag_interpretation %||% tibble(),
   table_16_uti_not_uti_diagnostic_figures = diag_fig_meta %||% tibble(),
